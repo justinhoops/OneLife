@@ -1,0 +1,952 @@
+{
+  "source": "/Users/justinjeffery/Desktop/OneLife/OneLife/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Okay",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 3147
+        }
+      },
+      {
+        "comment": "",
+        "key": "Randomize Details",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 3196
+        }
+      },
+      {
+        "comment": "",
+        "key": "Begin at 14",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 3207
+        }
+      },
+      {
+        "comment": "",
+        "key": "OneLife",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 3221
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start with a compressed backstory, land at age 14, and let the real shaping happen from there.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 3224
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open settings",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 3446
+        }
+      },
+      {
+        "comment": "",
+        "key": "Shows debug tools and save management actions.",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 3447
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3396
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 3400
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 3420
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 3429
+        }
+      },
+      {
+        "comment": "",
+        "key": "Selected",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 3474
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not selected",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 3474
+        }
+      },
+      {
+        "comment": "",
+        "key": "Switch to the %@ planner tab.",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 3475
+        }
+      },
+      {
+        "comment": "",
+        "key": "Advance one year and resolve the consequences of your current focus.",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 3675
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your recent years will land here after your next turn.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3954
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Life",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3939
+        }
+      },
+      {
+        "comment": "",
+        "key": "Full History",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 3943
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld • %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 3960
+        }
+      },
+      {
+        "comment": "",
+        "key": "Suggested Focus",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 4043
+        }
+      },
+      {
+        "comment": "",
+        "key": "Locked In",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 4043
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Feed",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fast read, hard choices, and the fallout that keeps following you.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4393
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4475
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year In Brief",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4479
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4502
+        }
+      },
+      {
+        "comment": "",
+        "key": "Forecast",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4511
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start The Year",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4526
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep Going",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4580
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fallout",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4590
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep Going",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4603
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wrap",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4611
+        }
+      },
+      {
+        "comment": "",
+        "key": "Systemic Crisis",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 4634
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pitch Deck",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 4686
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4794
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Breakdown",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5221
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why This Changed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5187
+        }
+      },
+      {
+        "comment": "",
+        "key": "Next Year",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 5206
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5225
+        }
+      },
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5286
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feedback Pulse",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 5246
+        }
+      },
+      {
+        "comment": "",
+        "key": "Lifecycle",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 5266
+        }
+      },
+      {
+        "comment": "",
+        "key": "QA",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 5278
+        }
+      },
+      {
+        "comment": "",
+        "key": "Haptics",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5247
+        }
+      },
+      {
+        "comment": "",
+        "key": "Animation",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5253
+        }
+      },
+      {
+        "comment": "",
+        "key": "Color Emphasis",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5259
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start New Life",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5267
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset Saved Progress",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5271
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open QA Scenarios",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5279
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 5290
+        }
+      },
+      {
+        "comment": "",
+        "key": "Traits are still settling into place.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 5303
+        }
+      },
+      {
+        "comment": "",
+        "key": "Suggested yearly focus",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 5360
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current yearly focus",
+        "location": {
+          "startingColumn": 92,
+          "startingLine": 5360
+        }
+      },
+      {
+        "comment": "",
+        "key": "Suggested focus",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 5350
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current focus",
+        "location": {
+          "startingColumn": 74,
+          "startingLine": 5350
+        }
+      },
+      {
+        "comment": "",
+        "key": "Selected",
+        "location": {
+          "startingColumn": 80,
+          "startingLine": 5397
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not selected",
+        "location": {
+          "startingColumn": 93,
+          "startingLine": 5397
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sets your yearly focus to %@.",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 5398
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Consequences",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 5483
+        }
+      },
+      {
+        "comment": "",
+        "key": "Risk Preview",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 5515
+        }
+      },
+      {
+        "comment": "",
+        "key": "School Climate",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 5899
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fast money is running beside your normal career and can still blow back into work, health, and relationships.",
+        "location": {
+          "startingColumn": 64,
+          "startingLine": 5968
+        }
+      },
+      {
+        "comment": "",
+        "key": "Attention-based work is opening a second career lane, but the audience and burnout numbers matter as much as income.",
+        "location": {
+          "startingColumn": 178,
+          "startingLine": 5968
+        }
+      },
+      {
+        "comment": "",
+        "key": "Regional policy, housing strain, and budget pressure all decide whether a decent income actually feels livable.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 6207
+        }
+      },
+      {
+        "comment": "",
+        "key": "Family pressure is no longer abstract. Health, money, and relationship alignment are all in the same conversation now.",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 6435
+        }
+      },
+      {
+        "comment": "",
+        "key": "Family planning stays quiet until it doesn’t. This bucket keeps the hidden load visible before it blindsides the year.",
+        "location": {
+          "startingColumn": 171,
+          "startingLine": 6435
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 6555
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • %lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 6667
+        }
+      },
+      {
+        "comment": "",
+        "key": "Luxury Upgrades",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 6800
+        }
+      },
+      {
+        "comment": "",
+        "key": "Property Market",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 6815
+        }
+      },
+      {
+        "comment": "",
+        "key": "Equity: $%lld",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 6779
+        }
+      },
+      {
+        "comment": "",
+        "key": "Maintenance: $%lld/mo",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 6781
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL PROPERTY",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 6789
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fine Jewelry",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6846
+        }
+      },
+      {
+        "comment": "",
+        "key": "Aviation Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6876
+        }
+      },
+      {
+        "comment": "",
+        "key": "Marine Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6905
+        }
+      },
+      {
+        "comment": "",
+        "key": "Firearm Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6933
+        }
+      },
+      {
+        "comment": "",
+        "key": "Legal Hardware",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6937
+        }
+      },
+      {
+        "comment": "",
+        "key": "Black Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6947
+        }
+      },
+      {
+        "comment": "",
+        "key": "Exotic & Rare",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6959
+        }
+      },
+      {
+        "comment": "",
+        "key": "Vehicle Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6986
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7019
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld Value",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7021
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • Resale: $%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7043
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7051
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7081
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • Maint: $%lld/mo",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7114
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL ($%lld)",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7122
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7151
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7153
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • Maint: $%lld/mo",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7175
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL ($%lld)",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7183
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7212
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7214
+        }
+      },
+      {
+        "comment": "",
+        "key": "Spd: %lld / Hnd: %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7243
+        }
+      },
+      {
+        "comment": "",
+        "key": "Safety: +%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 7246
+        }
+      },
+      {
+        "comment": "",
+        "key": "+ %@ ($%lld)",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 7266
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7299
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7301
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pwr: %lld / Rel: %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7340
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7335
+        }
+      },
+      {
+        "comment": "",
+        "key": "+ %@ ($%lld)",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 7358
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7409
+        }
+      },
+      {
+        "comment": "",
+        "key": "ILLICIT",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7412
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld • %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 7924
+        }
+      },
+      {
+        "comment": "",
+        "key": "Testing",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 7989
+        }
+      },
+      {
+        "comment": "",
+        "key": "QA Scenario Lab",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7950
+        }
+      },
+      {
+        "comment": "",
+        "key": "These seeded states are debug-only. They preserve the production planner layout while making hidden feature bands directly testable.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7953
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset to Normal Start",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 7979
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Review",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 8113
+        }
+      },
+      {
+        "comment": "",
+        "key": "No year summary available.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 8096
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld Review",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 8039
+        }
+      },
+      {
+        "comment": "",
+        "key": "What Changed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 8043
+        }
+      },
+      {
+        "comment": "",
+        "key": "What It Touched",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 8076
+        }
+      },
+      {
+        "comment": "",
+        "key": "Coming Out Of The Year",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 8087
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue to Event",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 8104
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Event",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 8185
+        }
+      },
+      {
+        "comment": "",
+        "key": "No event",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 8180
+        }
+      }
+    ]
+  },
+  "version": 1
+}

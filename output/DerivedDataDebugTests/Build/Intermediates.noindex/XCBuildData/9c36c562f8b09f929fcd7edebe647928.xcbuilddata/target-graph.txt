@@ -1,0 +1,6 @@
+Target dependency graph (3 targets)
+Target 'OneLifeUITests' in project 'OneLife'
+➜ Explicit dependency on target 'OneLife' in project 'OneLife'
+Target 'OneLifeTests' in project 'OneLife'
+➜ Explicit dependency on target 'OneLife' in project 'OneLife'
+Target 'OneLife' in project 'OneLife' (no dependencies)

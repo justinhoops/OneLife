@@ -1,0 +1,1960 @@
+{
+  "events": [
+    {
+      "id": "school_exam_push",
+      "category": "general",
+      "tags": ["school", "routine"],
+      "title": "Exam Week Pressure",
+      "text": "A major exam is coming up, and everyone around you is stressing about it.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 12,
+      "cooldownYears": 1,
+      "requirements": ["career.status==student"],
+      "choices": [
+        {
+          "text": "Study hard and stay disciplined",
+          "effects": {
+            "core": { "happiness": -1, "smarts": 3 },
+            "finance": { "discretionaryCostDelta": -150 }
+          }
+        },
+        {
+          "text": "Blow off steam instead",
+          "effects": {
+            "core": { "happiness": 2, "smarts": -1 },
+            "finance": { "discretionaryCostDelta": 250 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "unexpected_bill",
+      "category": "finance",
+      "tags": ["money", "cost"],
+      "title": "Unexpected Bill",
+      "text": "An unplanned expense lands in your lap and needs attention this year.",
+      "minAge": 14,
+      "maxAge": 90,
+      "weight": 10,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Pay it now and move on",
+          "effects": {
+            "finance": { "cashDelta": -900, "financialStressDelta": 4 },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "Delay it and hope it settles down",
+          "effects": {
+            "finance": { "livingCostDelta": 600, "financialStressDelta": 10 },
+            "health": { "mental": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "budget_shopping",
+      "category": "finance",
+      "tags": ["money", "routine"],
+      "title": "Tight Grocery Budget",
+      "text": "You realize your weekly spending habits are quietly draining your cash.",
+      "minAge": 14,
+      "maxAge": 90,
+      "weight": 11,
+      "cooldownYears": 1,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Plan meals and cut waste",
+          "effects": {
+            "finance": { "livingCostDelta": -700, "financialStressDelta": -4 },
+            "health": { "nutrition": 3 }
+          }
+        },
+        {
+          "text": "Keep buying whatever feels convenient",
+          "effects": {
+            "finance": { "livingCostDelta": 500, "financialStressDelta": 2 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "small_windfall",
+      "category": "finance",
+      "tags": ["chance", "money"],
+      "title": "Small Windfall",
+      "text": "A small bit of unexpected money comes your way this year.",
+      "minAge": 14,
+      "maxAge": 90,
+      "weight": 9,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Save it",
+          "effects": {
+            "finance": { "cashDelta": 1400, "financialStressDelta": -5 }
+          }
+        },
+        {
+          "text": "Spend some on yourself",
+          "effects": {
+            "finance": { "cashDelta": 800, "discretionaryCostDelta": 400 },
+            "core": { "happiness": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "extra_shift",
+      "category": "finance",
+      "tags": ["career", "money"],
+      "title": "Extra Shift Available",
+      "text": "There is extra paid work available if you are willing to stretch yourself.",
+      "minAge": 15,
+      "maxAge": 90,
+      "weight": 10,
+      "cooldownYears": 1,
+      "requirements": ["career.status!=student"],
+      "choices": [
+        {
+          "text": "Take the extra work",
+          "effects": {
+            "finance": { "cashDelta": 1200 },
+            "career": { "performance": 3 },
+            "health": { "mental": -2, "stressManagement": -2 }
+          }
+        },
+        {
+          "text": "Protect your free time",
+          "effects": {
+            "health": { "mental": 2 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "study_group_pull",
+      "category": "career",
+      "tags": ["school", "social"],
+      "title": "Study Group Invite",
+      "text": "A few classmates want to start a regular study group, but joining means giving up some free time.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 11,
+      "cooldownYears": 1,
+      "requirements": ["career.status==student"],
+      "choices": [
+        {
+          "text": "Join and stay consistent",
+          "effects": {
+            "core": { "smarts": 2, "happiness": -1 },
+            "relationship": { "meetNewFriend": true, "friendChange": 4 }
+          }
+        },
+        {
+          "text": "Keep your own pace instead",
+          "effects": {
+            "core": { "happiness": 1 },
+            "career": { "performance": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "weekend_side_hustle",
+      "category": "finance",
+      "tags": ["money", "career", "routine"],
+      "title": "Weekend Side Hustle",
+      "text": "A neighbor offers small weekend work that could help your cash, but it would eat into your downtime.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 10,
+      "cooldownYears": 1,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Take the work",
+          "effects": {
+            "finance": { "cashDelta": 350, "financialStressDelta": -2 },
+            "career": { "performance": 2 },
+            "health": { "mental": -1, "stressManagement": -1 }
+          }
+        },
+        {
+          "text": "Protect your weekends",
+          "effects": {
+            "health": { "mental": 2 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "peer_pressure_risk",
+      "category": "relationships",
+      "tags": ["social", "risk"],
+      "title": "Bad Idea With Good Company",
+      "text": "Friends are drifting toward something reckless, and saying no might make you look weak.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 9,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Go along with it",
+          "effects": {
+            "core": { "happiness": 2, "health": -2 },
+            "relationship": { "friendChange": 4 },
+            "health": { "mental": -1 }
+          }
+        },
+        {
+          "text": "Back out and hold your ground",
+          "effects": {
+            "relationship": { "friendChange": -3 },
+            "career": { "performance": 1 },
+            "health": { "stressManagement": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sleep_schedule_slide",
+      "category": "health",
+      "tags": ["health", "routine", "school"],
+      "title": "Sleep Schedule Slide",
+      "text": "Your sleep rhythm is drifting later and later, and the next few weeks could either reset you or drain you.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 10,
+      "cooldownYears": 1,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Reset your routine now",
+          "effects": {
+            "health": { "mental": 2, "stressManagement": 2, "exercise": 1 },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "Push through and deal with it later",
+          "effects": {
+            "health": { "mental": -3, "physical": -2 },
+            "career": { "performance": -1 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "creative_club_tryout",
+      "category": "relationships",
+      "tags": ["social", "career", "school"],
+      "title": "Club Tryout Window",
+      "text": "A school club is taking new people, and joining could change who you spend your time around.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 8,
+      "cooldownYears": 1,
+      "requirements": ["career.status==student"],
+      "choices": [
+        {
+          "text": "Put yourself forward",
+          "effects": {
+            "relationship": { "meetNewFriend": true, "friendChange": 5 },
+            "career": { "performance": 1 },
+            "core": { "happiness": 1 }
+          }
+        },
+        {
+          "text": "Stay invisible this time",
+          "effects": {
+            "health": { "mental": -1 },
+            "core": { "happiness": -1, "smarts": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "confidence_spike",
+      "category": "general",
+      "tags": ["social", "chance", "career"],
+      "title": "Unexpected Recognition",
+      "text": "Something you did gets noticed more than expected, and for once people are looking at you like you might become something.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Lean into it",
+          "effects": {
+            "core": { "happiness": 2, "looks": 1 },
+            "career": { "performance": 2 }
+          }
+        },
+        {
+          "text": "Keep your head down",
+          "effects": {
+            "health": { "mental": 1 },
+            "core": { "smarts": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cost_of_living_squeeze",
+      "category": "finance",
+      "tags": ["money", "cost"],
+      "title": "Cost of Living Squeeze",
+      "text": "Everything from food to transportation feels more expensive than it did last year.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 9,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Cut back across the board",
+          "effects": {
+            "finance": { "livingCostDelta": -300, "financialStressDelta": 3 },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "Absorb the higher cost and keep going",
+          "effects": {
+            "finance": { "livingCostDelta": 1800, "financialStressDelta": 6 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "friend_night_out",
+      "category": "relationships",
+      "tags": ["social", "money"],
+      "title": "Night Out With Friends",
+      "text": "Your friends want to go out, and joining them would cost more than a quiet night in.",
+      "minAge": 16,
+      "maxAge": 90,
+      "weight": 9,
+      "cooldownYears": 1,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Go and make the memory",
+          "effects": {
+            "relationship": { "meetNewFriend": true, "friendChange": 6 },
+            "finance": { "cashDelta": -250, "discretionaryCostDelta": 150 },
+            "core": { "happiness": 2 }
+          }
+        },
+        {
+          "text": "Stay in and save money",
+          "effects": {
+            "finance": { "financialStressDelta": -2 },
+            "relationship": { "friendChange": -3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "checkup_choice",
+      "category": "health",
+      "tags": ["health", "money"],
+      "title": "Routine Checkup Decision",
+      "text": "You have the chance to schedule a routine checkup and get ahead of any issues.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Book the appointment",
+          "effects": {
+            "finance": { "cashDelta": -350, "financialStressDelta": 1 },
+            "health": { "physical": 4, "hasPrimaryCare": true }
+          }
+        },
+        {
+          "text": "Skip it this year",
+          "effects": {
+            "health": { "mental": -1, "addCondition": "Ignored Symptoms" },
+            "finance": { "financialStressDelta": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "performance_review",
+      "category": "career",
+      "tags": ["career", "routine"],
+      "title": "Performance Review",
+      "text": "Your yearly review is here, and your recent effort is under a brighter light than usual.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 9,
+      "cooldownYears": 1,
+      "requirements": ["career.status!=student", "career.status!=unemployed"],
+      "choices": [
+        {
+          "text": "Push for more responsibility",
+          "effects": {
+            "career": { "performance": 5, "yearsWorked": 1, "incomeBonus": 600 },
+            "health": { "mental": -2, "stressManagement": -1 }
+          }
+        },
+        {
+          "text": "Hold steady and protect your energy",
+          "effects": {
+            "career": { "performance": 1 },
+            "health": { "mental": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "skills_course",
+      "category": "career",
+      "tags": ["career", "school"],
+      "title": "Night Course Opportunity",
+      "text": "A practical course could sharpen your future prospects, but it would cut into your time and budget.",
+      "minAge": 17,
+      "maxAge": 35,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Enroll and stay disciplined",
+          "effects": {
+            "core": { "smarts": 2, "happiness": -1 },
+            "career": { "performance": 2 },
+            "finance": { "educationCostDelta": 900, "financialStressDelta": 2 }
+          }
+        },
+        {
+          "text": "Skip it and keep your routine simple",
+          "effects": {
+            "health": { "mental": 1 },
+            "career": { "performance": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "relationship_repair",
+      "category": "relationships",
+      "tags": ["social", "routine"],
+      "title": "A Strained Connection",
+      "text": "Someone close to you feels neglected, and ignoring it would make the distance harder to undo.",
+      "minAge": 16,
+      "maxAge": 90,
+      "weight": 8,
+      "cooldownYears": 1,
+      "requirements": ["relationships.friendCount>=1"],
+      "choices": [
+        {
+          "text": "Make the time and repair it",
+          "effects": {
+            "relationship": { "friendChange": 7 },
+            "finance": { "cashDelta": -120 },
+            "core": { "happiness": 1 }
+          }
+        },
+        {
+          "text": "Let the distance keep growing",
+          "effects": {
+            "relationship": { "friendChange": -6 },
+            "core": { "happiness": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "new_romance",
+      "category": "relationships",
+      "tags": ["romance", "social"],
+      "title": "A New Spark",
+      "text": "A new connection feels promising, but building something real will cost attention and emotional energy.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["relationships.hasPartner==false"],
+      "choices": [
+        {
+          "text": "See where it goes",
+          "effects": {
+            "relationship": { "startDating": true, "partnerChange": 6 },
+            "finance": { "cashDelta": -180 },
+            "core": { "happiness": 2 }
+          }
+        },
+        {
+          "text": "Keep your life simpler for now",
+          "effects": {
+            "health": { "mental": 1 },
+            "core": { "happiness": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sleep_debt",
+      "category": "health",
+      "tags": ["health", "routine"],
+      "title": "Sleep Debt",
+      "text": "A run of poor sleep is starting to catch up with your body and your patience.",
+      "minAge": 15,
+      "maxAge": 90,
+      "weight": 8,
+      "cooldownYears": 1,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Reset your routine and recover",
+          "effects": {
+            "health": { "physical": 3, "mental": 2, "stressManagement": 3 },
+            "career": { "performance": 1 }
+          }
+        },
+        {
+          "text": "Power through it",
+          "effects": {
+            "health": { "physical": -4, "mental": -2, "addCondition": "Sleep Deprivation" },
+            "core": { "happiness": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "preventive_habit",
+      "category": "health",
+      "tags": ["health", "routine"],
+      "title": "Preventive Habit",
+      "text": "A small daily health habit could help now, even though the payoff will feel slow and unspectacular.",
+      "minAge": 14,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Commit to the habit",
+          "effects": {
+            "health": { "exercise": 2, "nutrition": 2, "physical": 2 },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "Stay with what is easy",
+          "effects": {
+            "health": { "physical": -1, "mental": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "scholarship_window",
+      "category": "education",
+      "tags": ["school", "career"],
+      "title": "Scholarship Window",
+      "text": "A teacher points you toward a scholarship path that could ease the cost of staying on track.",
+      "minAge": 15,
+      "maxAge": 18,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["education.pathway==student"],
+      "choices": [
+        {
+          "text": "Push for it",
+          "effects": {
+            "education": { "schoolStanding": 5, "engagement": 4, "hasScholarship": true },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "Let it pass",
+          "effects": {
+            "education": { "engagement": -2, "attendancePressure": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "trade_program_pitch",
+      "category": "education",
+      "tags": ["career", "school"],
+      "title": "Trade Program Pitch",
+      "text": "A practical training program offers a steadier path than drifting through school without direction.",
+      "minAge": 16,
+      "maxAge": 22,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["education.schoolStanding<60"],
+      "choices": [
+        {
+          "text": "Commit to the training path",
+          "effects": {
+            "education": { "setPathway": "training", "engagement": 4, "addCredential": "Certificate Track" },
+            "career": { "performance": 2 }
+          }
+        },
+        {
+          "text": "Keep winging it",
+          "effects": {
+            "education": { "attendancePressure": 5, "schoolStanding": -3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "roommate_conflict",
+      "category": "relationships",
+      "tags": ["social", "money", "cost"],
+      "title": "Roommate Conflict",
+      "text": "Sharing space is saving money, but the tension at home is starting to leak into everything else.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 1,
+      "requirements": ["housing.stability<55"],
+      "choices": [
+        {
+          "text": "Swallow it and keep the cheaper rent",
+          "effects": {
+            "housing": { "stabilityDelta": -6, "hasRoommate": true },
+            "finance": { "livingCostDelta": -400 },
+            "health": { "mental": -2 }
+          }
+        },
+        {
+          "text": "Move and protect your peace",
+          "effects": {
+            "housing": { "setArrangement": "soloRenting", "stabilityDelta": 6, "hasRoommate": false },
+            "finance": { "livingCostDelta": 1600, "financialStressDelta": 5 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "regional_relocation",
+      "category": "finance",
+      "tags": ["money", "career", "chance"],
+      "title": "Relocation Offer",
+      "text": "A move to a different region could change your costs, schooling, and healthcare pressures all at once.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 5,
+      "cooldownYears": 3,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Take the expensive coastal move",
+          "effects": {
+            "finance": { "setRegionPolicyID": "expensive_coastal", "cashDelta": 1800 },
+            "career": { "performance": 2 },
+            "housing": { "setArrangement": "roommates", "stabilityDelta": -4, "hasRoommate": true }
+          }
+        },
+        {
+          "text": "Choose the cheaper factory town",
+          "effects": {
+            "finance": { "setRegionPolicyID": "factory_town", "cashDelta": 500, "financialStressDelta": -3 },
+            "housing": { "stabilityDelta": 3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "disciplined_teacher_notice",
+      "category": "education",
+      "tags": ["school", "routine", "career"],
+      "title": "A Teacher Starts Taking You Seriously",
+      "text": "Your consistency has become noticeable, and a teacher offers extra guidance that could compound over time.",
+      "minAge": 14,
+      "maxAge": 22,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["trait==disciplined", "education.pathway!=dropout"],
+      "choices": [
+        {
+          "text": "Lean into the structure",
+          "effects": {
+            "education": { "schoolStanding": 5, "engagement": 4 },
+            "career": { "performance": 2 },
+            "core": { "happiness": -1, "smarts": 2 }
+          }
+        },
+        {
+          "text": "Take the compliment and keep your own pace",
+          "effects": {
+            "education": { "schoolStanding": 2 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "impulsive_purchase_sting",
+      "category": "finance",
+      "tags": ["spend", "money", "risk"],
+      "title": "The Purchase That Felt Good for an Hour",
+      "text": "A flashy purchase is right in front of you, and the emotional hit is arriving before the math does.",
+      "minAge": 15,
+      "maxAge": 90,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["trait==impulsive", "finance.cashOnHand>=150"],
+      "choices": [
+        {
+          "text": "Buy it and deal with the aftermath later",
+          "effects": {
+            "finance": { "cashDelta": -950, "financialStressDelta": 5 },
+            "core": { "happiness": 3 },
+            "health": { "mental": -1 }
+          }
+        },
+        {
+          "text": "Walk away before it becomes a problem",
+          "effects": {
+            "finance": { "financialStressDelta": -2 },
+            "core": { "happiness": -1, "smarts": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "charismatic_network_pull",
+      "category": "career",
+      "tags": ["social", "career", "chance"],
+      "title": "A Connection Opens a Door",
+      "text": "Someone you know offers to put your name in the right room, but only if you follow through.",
+      "minAge": 16,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["trait==charismatic"],
+      "choices": [
+        {
+          "text": "Show up prepared and make it count",
+          "effects": {
+            "career": { "performance": 4, "incomeBonus": 900 },
+            "relationship": { "friendChange": 3 },
+            "core": { "smarts": 1 }
+          }
+        },
+        {
+          "text": "Coast on charm and improvise",
+          "effects": {
+            "career": { "performance": -2 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "anxious_spiral_year",
+      "category": "health",
+      "tags": ["health", "school", "routine"],
+      "title": "You Start Spiraling Before Anything Happens",
+      "text": "Nothing catastrophic has happened, but your mind is treating the whole year like incoming damage.",
+      "minAge": 14,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["trait==anxious", "health.mentalWellness<58"],
+      "choices": [
+        {
+          "text": "Build stricter routines around yourself",
+          "effects": {
+            "health": { "mental": 4, "stressManagement": 5 },
+            "education": { "engagement": 2 },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "White-knuckle it and pretend you're fine",
+          "effects": {
+            "health": { "mental": -4 },
+            "career": { "performance": 1 },
+            "finance": { "financialStressDelta": 3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "survivor_resourcefulness",
+      "category": "finance",
+      "tags": ["money", "health", "routine"],
+      "title": "You Learn to Stretch a Bad Year",
+      "text": "Pressure has become normal enough that you spot small survival moves other people miss.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 2,
+      "requirements": ["progress.lifePath==survivor"],
+      "choices": [
+        {
+          "text": "Strip life down to essentials and stabilize",
+          "effects": {
+            "finance": { "livingCostDelta": -1100, "financialStressDelta": -4 },
+            "health": { "mental": 2 },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "Take on one more burden to stay afloat",
+          "effects": {
+            "finance": { "cashDelta": 850 },
+            "career": { "performance": 2 },
+            "health": { "mental": -3, "physical": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "club_tryout_pull",
+      "category": "education",
+      "tags": ["school", "social", "chance"],
+      "title": "A Club Tryout Opens Up",
+      "text": "An activity is taking new people, and joining could change how visible and connected you feel at school.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["education.pathway==student"],
+      "choices": [
+        {
+          "text": "Try out and commit to showing up",
+          "effects": {
+            "education": { "engagement": 4, "activityMomentum": 8 },
+            "relationship": { "meetNewFriend": true, "friendChange": 2 }
+          }
+        },
+        {
+          "text": "Skip it and stay in the background",
+          "effects": {
+            "education": { "activityMomentum": -4, "engagement": -1 },
+            "core": { "happiness": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "teacher_mentorship_track",
+      "category": "education",
+      "tags": ["school", "routine", "career"],
+      "title": "A Teacher Starts Investing in You",
+      "text": "Your effort is getting hard to miss, and one teacher offers guidance that could compound if you let it.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["education.schoolStanding>=68", "education.activityMomentum>=35"],
+      "choices": [
+        {
+          "text": "Take the guidance seriously",
+          "effects": {
+            "education": { "schoolStanding": 4, "engagement": 3, "activityMomentum": 4 },
+            "core": { "smarts": 1, "happiness": -1 }
+          }
+        },
+        {
+          "text": "Keep things casual and don't overcommit",
+          "effects": {
+            "education": { "schoolStanding": 1, "activityMomentum": -1 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "friend_group_drift",
+      "category": "relationships",
+      "tags": ["social", "school", "routine"],
+      "title": "Your Group Starts Shifting Without You",
+      "text": "The social map at school is moving, and doing nothing might leave you more isolated than you expected.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["relationships.friendCount<2"],
+      "choices": [
+        {
+          "text": "Push yourself to stay in the mix",
+          "effects": {
+            "relationship": { "meetNewFriend": true, "friendChange": 3 },
+            "education": { "engagement": 2 }
+          }
+        },
+        {
+          "text": "Withdraw and tell yourself it doesn't matter",
+          "effects": {
+            "relationship": { "friendChange": -3 },
+            "education": { "engagement": -2, "attendancePressure": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cash_temptation_small_hustle",
+      "category": "finance",
+      "tags": ["money", "risk", "routine"],
+      "title": "Quick Cash Is On the Table",
+      "text": "A small under-the-table hustle could put money in your pocket fast, but it will compete with the rest of your life.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": [],
+      "choices": [
+        {
+          "text": "Take the money and absorb the strain",
+          "effects": {
+            "finance": { "cashDelta": 180, "financialStressDelta": 1 },
+            "health": { "mental": -2, "stressManagement": -2 }
+          }
+        },
+        {
+          "text": "Pass and protect your time",
+          "effects": {
+            "health": { "mental": 1 },
+            "core": { "happiness": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sleep_erodes_under_load",
+      "category": "health",
+      "tags": ["health", "school", "routine"],
+      "title": "The Week Starts Feeling Permanently Tired",
+      "text": "Between pressure, screens, and everything else, sleep has stopped feeling automatic.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["health.mentalWellness<58"],
+      "choices": [
+        {
+          "text": "Cut back and protect sleep",
+          "effects": {
+            "health": { "mental": 4, "stressManagement": 5 },
+            "education": { "attendancePressure": -3 }
+          }
+        },
+        {
+          "text": "Push through and keep the pace",
+          "effects": {
+            "health": { "mental": -3, "physical": -1 },
+            "education": { "attendancePressure": 4 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "family_money_leaks_into_school",
+      "category": "finance",
+      "tags": ["money", "school", "cost"],
+      "title": "You Can Feel the House Budget in the Room",
+      "text": "Money pressure at home is changing how school feels, even when nobody says it directly.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["finance.financialStress>=32"],
+      "choices": [
+        {
+          "text": "Carry the worry quietly and keep functioning",
+          "effects": {
+            "education": { "attendancePressure": 4, "engagement": -1 },
+            "health": { "mental": -2 }
+          }
+        },
+        {
+          "text": "Ask for structure and protect your footing",
+          "effects": {
+            "education": { "schoolStanding": 2, "attendancePressure": -1 },
+            "core": { "happiness": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "balanced_recognition",
+      "category": "education",
+      "tags": ["school", "social", "chance"],
+      "title": "People Start Talking About You Like You Have Momentum",
+      "text": "Being steady in more than one area is starting to compound into a real reputation.",
+      "minAge": 15,
+      "maxAge": 17,
+      "weight": 6,
+      "cooldownYears": 2,
+      "requirements": ["education.schoolStanding>=72", "education.activityMomentum>=50", "health.mentalWellness>=52"],
+      "choices": [
+        {
+          "text": "Lean into it and raise your standard",
+          "effects": {
+            "education": { "activityMomentum": 6, "schoolStanding": 3, "hasScholarship": true },
+            "relationship": { "friendChange": 3 }
+          }
+        },
+        {
+          "text": "Enjoy the moment and keep things light",
+          "effects": {
+            "core": { "happiness": 2 },
+            "education": { "activityMomentum": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "recoverable_school_warning",
+      "category": "education",
+      "tags": ["school", "health", "routine"],
+      "title": "You Get Warned Before Things Fully Break",
+      "text": "Someone notices your footing slipping and gives you one of those warnings that still leaves room to recover.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["education.attendancePressure>=45", "education.pathway==student"],
+      "choices": [
+        {
+          "text": "Treat it like a real warning",
+          "effects": {
+            "education": { "attendancePressure": -6, "schoolStanding": 2 },
+            "health": { "mental": 1 }
+          }
+        },
+        {
+          "text": "Shrug it off and keep drifting",
+          "effects": {
+            "education": { "attendancePressure": 6, "schoolStanding": -3 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "open_mic_pull",
+      "category": "career",
+      "tags": ["career", "chance", "social"],
+      "title": "A Small Crowd Actually Pays Attention",
+      "text": "A modest entertainment opportunity lands in front of you. It is not glamorous, but it could compound if you show up prepared.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 2,
+      "requirements": ["specialCareer.track==entertainment"],
+      "choices": [
+        {
+          "text": "Over-prepare and treat it like it matters",
+          "effects": {
+            "specialCareer": { "fame": 6, "audience": 8, "burnout": 3 },
+            "career": { "performance": 1 },
+            "health": { "mental": -1 }
+          }
+        },
+        {
+          "text": "Play it loose and conserve your energy",
+          "effects": {
+            "specialCareer": { "fame": 2, "audience": 3, "burnout": -1 },
+            "core": { "happiness": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "viral_but_empty",
+      "category": "career",
+      "tags": ["career", "chance", "money"],
+      "title": "A Flash Of Attention That Does Not Fix Your Life",
+      "text": "Something you did gets noticed more widely than usual, but attention and stability still are not the same thing.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 5,
+      "cooldownYears": 3,
+      "requirements": ["specialCareer.track==entertainment", "specialCareer.audience>=25"],
+      "choices": [
+        {
+          "text": "Convert the moment into paid work",
+          "effects": {
+            "specialCareer": { "fame": 8, "audience": 10, "burnout": 5, "lastPayout": 2500 },
+            "finance": { "cashDelta": 2500, "financialStressDelta": -2 }
+          }
+        },
+        {
+          "text": "Take the attention and protect your head",
+          "effects": {
+            "specialCareer": { "fame": 4, "audience": 5, "burnout": -2 },
+            "health": { "mental": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "spotlight_burnout_event",
+      "category": "career",
+      "tags": ["career", "health", "social"],
+      "title": "The Spotlight Stops Feeling Worth It",
+      "text": "The work starts to feel more extractive than exciting, and people around you can tell you are running hot.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 3,
+      "requirements": ["specialCareer.track==entertainment", "specialCareer.burnout>=70"],
+      "choices": [
+        {
+          "text": "Step back before you break",
+          "effects": {
+            "specialCareer": { "exitTrack": true },
+            "health": { "mental": 2, "stressManagement": 2 },
+            "core": { "happiness": -1 }
+          }
+        },
+        {
+          "text": "Push through and hope the feeling passes",
+          "effects": {
+            "specialCareer": { "burnout": 8, "fame": -3, "audience": -4 },
+            "health": { "mental": -3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "easy_score_offer",
+      "category": "career",
+      "tags": ["career", "money", "risk"],
+      "title": "An Easy Score Falls Into Reach",
+      "text": "Someone brings you a job that sounds low-effort and high-return, which is usually how bad stories begin.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 2,
+      "requirements": ["specialCareer.track==crime"],
+      "choices": [
+        {
+          "text": "Take the score and move fast",
+          "effects": {
+            "specialCareer": { "heat": 9, "notoriety": 7, "burnout": 3 },
+            "finance": { "cashDelta": 2200, "financialStressDelta": -2 }
+          }
+        },
+        {
+          "text": "Keep the money smaller and the footprint lower",
+          "effects": {
+            "specialCareer": { "heat": 3, "notoriety": 2, "burnout": 1 },
+            "finance": { "cashDelta": 900 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "someone_talks",
+      "category": "career",
+      "tags": ["career", "social", "risk"],
+      "title": "Someone Starts Talking Too Freely",
+      "text": "A person near your orbit gets louder than you would like, and now your problem is not just the work but the story around it.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 5,
+      "cooldownYears": 2,
+      "requirements": ["specialCareer.track==crime", "specialCareer.notoriety>=18"],
+      "choices": [
+        {
+          "text": "Pay to calm it down",
+          "effects": {
+            "specialCareer": { "heat": -4, "burnout": 2 },
+            "finance": { "cashDelta": -1400, "financialStressDelta": 1 }
+          }
+        },
+        {
+          "text": "Do nothing and hope it burns out",
+          "effects": {
+            "specialCareer": { "heat": 10, "notoriety": 5 },
+            "health": { "mental": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "crackdown_event",
+      "category": "career",
+      "tags": ["career", "money", "social"],
+      "title": "The Crackdown Arrives",
+      "text": "The pressure around your risky money becomes too visible to shrug off, and the fallout starts arriving all at once.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["specialCareer.track==crime", "specialCareer.heat>=72"],
+      "choices": [
+        {
+          "text": "Disappear, lose the income, and protect what is left",
+          "effects": {
+            "specialCareer": { "exitTrack": true },
+            "finance": { "cashDelta": -2600, "financialStressDelta": 6 },
+            "relationship": { "friendChange": -3, "partnerChange": -2 }
+          }
+        },
+        {
+          "text": "Stay in and try to bluff your way through it",
+          "effects": {
+            "specialCareer": { "heat": 10, "burnout": 6, "notoriety": 4 },
+            "health": { "mental": -4 },
+            "career": { "loseJob": true }
+          }
+        }
+      ]
+    },
+    {
+      "id": "proposal_pressure",
+      "category": "relationships",
+      "tags": ["romance", "family", "social"],
+      "title": "The Future Stops Being Abstract",
+      "text": "The relationship has matured enough that vague promises no longer feel honest. The question is no longer whether you care, but how much structure you are willing to put around it.",
+      "minAge": 22,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["relationships.hasPartner==true", "relationships.partnerStage==committed", "relationships.partnerBond>=80"],
+      "choices": [
+        {
+          "text": "Lean into commitment",
+          "effects": {
+            "relationship": { "setPartnerStage": "engaged", "partnerChange": 4, "commitmentAlignmentChange": 5 }
+          }
+        },
+        {
+          "text": "Slow it down and keep talking",
+          "effects": {
+            "relationship": { "partnerChange": -2, "commitmentAlignmentChange": -3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pregnancy_discovery",
+      "category": "health",
+      "tags": ["family", "health", "romance"],
+      "title": "A Test Changes the Year",
+      "text": "A private possibility becomes a concrete fact, and suddenly the year has a different horizon than it did a week ago.",
+      "minAge": 18,
+      "maxAge": 45,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["family.isPregnant==true", "family.postpartumYearsRemaining==0"],
+      "choices": [
+        {
+          "text": "Get organized early",
+          "effects": {
+            "health": { "mental": 1 },
+            "finance": { "cashDelta": -300, "financialStressDelta": 1 }
+          }
+        },
+        {
+          "text": "Try to pretend life is unchanged",
+          "effects": {
+            "health": { "mental": -2 },
+            "relationship": { "partnerChange": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cohabitation_friction",
+      "category": "relationships",
+      "tags": ["family", "romance", "cost"],
+      "title": "Shared Space Reveals New Fault Lines",
+      "text": "Living together turns little habits into a daily referendum on patience, money, and how much compromise each of you really meant.",
+      "minAge": 20,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 2,
+      "requirements": ["relationships.cohabiting==true", "relationships.hasPartner==true"],
+      "choices": [
+        {
+          "text": "Talk through it before it hardens",
+          "effects": {
+            "relationship": { "partnerChange": 3, "commitmentAlignmentChange": 4 }
+          }
+        },
+        {
+          "text": "Keep swallowing the irritation",
+          "effects": {
+            "relationship": { "partnerChange": -3, "commitmentAlignmentChange": -2 },
+            "health": { "mental": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "newborn_cost_shock",
+      "category": "finance",
+      "tags": ["family", "cost", "health"],
+      "title": "The Baby Budget Is Not Theoretical Anymore",
+      "text": "What looked manageable in rough math starts arriving as a steady stream of small costs, interrupted sleep, and constant recalculation.",
+      "minAge": 18,
+      "maxAge": 90,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["family.infantCount>=1"],
+      "choices": [
+        {
+          "text": "Cut harder elsewhere and absorb it",
+          "effects": {
+            "finance": { "cashDelta": -450, "financialStressDelta": 2 },
+            "health": { "mental": -1 }
+          }
+        },
+        {
+          "text": "Spend for stability where you can",
+          "effects": {
+            "finance": { "cashDelta": -900, "financialStressDelta": -1 },
+            "relationship": { "partnerChange": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "postpartum_strain",
+      "category": "health",
+      "tags": ["family", "health", "romance"],
+      "title": "Recovery Lags Behind Responsibility",
+      "text": "The world treats the crisis as over because the birth already happened, but your body and mind are still catching up to what was demanded of them.",
+      "minAge": 18,
+      "maxAge": 50,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["family.postpartumYearsRemaining>=1"],
+      "choices": [
+        {
+          "text": "Ask for more help",
+          "effects": {
+            "health": { "mental": 2 },
+            "relationship": { "partnerChange": 2 }
+          }
+        },
+        {
+          "text": "Keep carrying it quietly",
+          "effects": {
+            "health": { "mental": -3, "physical": -1 },
+            "relationship": { "partnerChange": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "lunch_table_freeze",
+      "category": "general",
+      "tags": ["school", "social"],
+      "title": "Nowhere to Sit",
+      "text": "Lunch feels longer when every table looks full before you get there, and everybody seems to notice where you land.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 10,
+      "cooldownYears": 1,
+      "requirements": ["career.status==student"],
+      "choices": [
+        {
+          "text": "Slide toward someone familiar and make it less awkward",
+          "effects": {
+            "education": { "schoolBelonging": 6, "teacherSupport": 1 },
+            "relationship": { "friendChange": 2 }
+          }
+        },
+        {
+          "text": "Eat fast, keep your head down, and disappear",
+          "effects": {
+            "education": { "schoolBelonging": -4, "reputationRisk": -2, "attendancePressure": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rumor_gets_legs",
+      "category": "education",
+      "tags": ["school", "social", "risk"],
+      "title": "A Rumor Starts Moving",
+      "text": "Something small gets repeated enough times at school that it starts shaping how people look at you before you can explain it.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student", "education.reputationRisk>=34"],
+      "choices": [
+        {
+          "text": "Address it early and stay steady",
+          "effects": {
+            "education": { "reputationRisk": -6, "teacherSupport": 2 },
+            "relationship": { "friendChange": -1 }
+          }
+        },
+        {
+          "text": "Avoid people until it burns out",
+          "effects": {
+            "education": { "attendancePressure": 6, "schoolBelonging": -5 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "teacher_stays_late",
+      "category": "education",
+      "tags": ["school", "routine"],
+      "title": "A Teacher Stays Late for You",
+      "text": "One teacher notices you slipping and offers extra help after school without making a scene out of it.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 9,
+      "cooldownYears": 1,
+      "requirements": ["career.status==student", "education.teacherSupport<60", "education.schoolStanding<72"],
+      "choices": [
+        {
+          "text": "Take the help and show up",
+          "effects": {
+            "education": { "schoolStanding": 5, "teacherSupport": 8, "attendancePressure": -4 }
+          }
+        },
+        {
+          "text": "Say thanks and keep pretending it is fine",
+          "effects": {
+            "education": { "engagement": -3, "teacherSupport": -5 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "activity_tryout_window",
+      "category": "general",
+      "tags": ["school", "social", "routine"],
+      "title": "Tryout Window",
+      "text": "A school activity is taking new people, and trying out could change how visible and connected you feel for the rest of the year.",
+      "minAge": 14,
+      "maxAge": 17,
+      "weight": 10,
+      "cooldownYears": 1,
+      "requirements": ["career.status==student"],
+      "choices": [
+        {
+          "text": "Show up even if it feels awkward",
+          "effects": {
+            "education": { "activityMomentum": 8, "schoolBelonging": 7, "reputationRisk": -2 }
+          }
+        },
+        {
+          "text": "Talk yourself out of it",
+          "effects": {
+            "education": { "schoolBelonging": -3, "engagement": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "low_cost_trip_offer",
+      "category": "finance",
+      "tags": ["school", "social", "money"],
+      "title": "Cheap by Other People’s Standards",
+      "text": "A school outing is called affordable by everyone else, but the cost still lands heavy on your side of life.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student"],
+      "choices": [
+        {
+          "text": "Find the money and go anyway",
+          "effects": {
+            "finance": { "cashDelta": -120, "financialStressDelta": 2 },
+            "education": { "schoolBelonging": 4 }
+          }
+        },
+        {
+          "text": "Stay back and act like you did not care",
+          "effects": {
+            "education": { "schoolBelonging": -5, "reputationRisk": 3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "first_real_fail",
+      "category": "education",
+      "tags": ["school", "routine"],
+      "title": "The First Grade That Feels Real",
+      "text": "A bad result lands hard enough that you cannot dismiss it as one unlucky week anymore.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 9,
+      "cooldownYears": 1,
+      "requirements": ["career.status==student", "education.schoolStanding<62"],
+      "choices": [
+        {
+          "text": "Ask how to recover before it gets worse",
+          "effects": {
+            "education": { "schoolStanding": 4, "teacherSupport": 5, "reputationRisk": -2 }
+          }
+        },
+        {
+          "text": "Act like it did not matter",
+          "effects": {
+            "education": { "schoolStanding": -3, "attendancePressure": 5 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "friend_group_fracture",
+      "category": "relationships",
+      "tags": ["school", "social"],
+      "title": "Your Group Splits in Two",
+      "text": "A fight inside your circle drags into school, and suddenly where you stand feels like a public decision.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 8,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student", "relationships.friendCount>=1"],
+      "choices": [
+        {
+          "text": "Pick a side and protect one bond",
+          "effects": {
+            "relationship": { "friendChange": -2 },
+            "education": { "schoolBelonging": -4, "reputationRisk": 4 }
+          }
+        },
+        {
+          "text": "Stay neutral and absorb the weirdness",
+          "effects": {
+            "education": { "reputationRisk": -2, "teacherSupport": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "adult_reentry_signal",
+      "category": "education",
+      "tags": ["school", "routine", "health"],
+      "title": "Someone Notices You Are Fading",
+      "text": "An adult at school quietly checks in because you have become easier to miss than you should be.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student", "education.schoolBelonging<40"],
+      "choices": [
+        {
+          "text": "Take the opening and let them help",
+          "effects": {
+            "education": { "teacherSupport": 10, "attendancePressure": -6, "schoolBelonging": 3 }
+          }
+        },
+        {
+          "text": "Brush it off and keep drifting",
+          "effects": {
+            "education": { "teacherSupport": -4, "attendancePressure": 3 },
+            "health": { "mental": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "activity_reentry",
+      "category": "education",
+      "tags": ["school", "social", "routine"],
+      "title": "An Easy Way Back In Appears",
+      "text": "A low-stakes chance to rejoin something after school opens up right when you were starting to drift too far from people.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student", "education.activityMomentum<32", "education.schoolBelonging<46"],
+      "choices": [
+        {
+          "text": "Take it and rebuild a rhythm",
+          "effects": {
+            "education": { "activityMomentum": 9, "schoolBelonging": 8, "reputationRisk": -3 }
+          }
+        },
+        {
+          "text": "Let the chance pass",
+          "effects": {
+            "education": { "engagement": -4, "schoolBelonging": -4 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "public_recognition_moment",
+      "category": "education",
+      "tags": ["school", "social", "career"],
+      "title": "Your Name Gets Said Out Loud",
+      "text": "A teacher or advisor publicly recognizes your effort, and for once attention at school feels like a door instead of a threat.",
+      "minAge": 15,
+      "maxAge": 18,
+      "weight": 7,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student", "education.schoolStanding>=68", "education.schoolBelonging>=52"],
+      "choices": [
+        {
+          "text": "Lean into it and stay visible",
+          "effects": {
+            "education": { "teacherSupport": 5, "schoolBelonging": 4, "reputationRisk": -3 }
+          }
+        },
+        {
+          "text": "Acknowledge it and keep moving",
+          "effects": {
+            "education": { "schoolStanding": 1, "activityMomentum": 2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rumor_documented_support",
+      "category": "education",
+      "tags": ["school", "social", "recovery"],
+      "title": "An Adult Helps Kill the Story",
+      "text": "A staff member offers to document what happened and cut the rumor off before it hardens into your identity.",
+      "minAge": 14,
+      "maxAge": 18,
+      "weight": 6,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student", "education.reputationRisk>=48", "education.teacherSupport>=50"],
+      "choices": [
+        {
+          "text": "Let them intervene quietly",
+          "effects": {
+            "education": { "reputationRisk": -8, "teacherSupport": 4, "schoolBelonging": 2 }
+          }
+        },
+        {
+          "text": "Handle it yourself online",
+          "effects": {
+            "education": { "reputationRisk": 6, "schoolBelonging": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "scholarship_recommendation_push",
+      "category": "education",
+      "tags": ["school", "career"],
+      "title": "Recommendation Window",
+      "text": "A teacher tells you there is still time to convert your work into real opportunity if you are willing to ask for the recommendation directly.",
+      "minAge": 16,
+      "maxAge": 18,
+      "weight": 6,
+      "cooldownYears": 2,
+      "requirements": ["career.status==student", "education.schoolStanding>=72", "education.teacherSupport>=60"],
+      "choices": [
+        {
+          "text": "Ask for the recommendation and follow through",
+          "effects": {
+            "education": { "teacherSupport": 4, "hasScholarship": true }
+          }
+        },
+        {
+          "text": "Tell yourself you will do it later",
+          "effects": {
+            "education": { "teacherSupport": -1, "activityMomentum": 1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "home_repair_cascade",
+      "category": "finance",
+      "tags": ["money", "housing", "maintenance"],
+      "title": "The House Wants Something Again",
+      "text": "A repair lands with the familiar adult feeling that ownership is mostly a series of problems arriving in sequence.",
+      "minAge": 32,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["assets.ownsHome==true"],
+      "choices": [
+        {
+          "text": "Fix it properly before it spreads",
+          "effects": {
+            "finance": { "cashDelta": -3200, "financialStressDelta": 4 },
+            "housing": { "stabilityDelta": 4 }
+          }
+        },
+        {
+          "text": "Patch it and buy time",
+          "effects": {
+            "finance": { "cashDelta": -900, "financialStressDelta": 6 },
+            "housing": { "stabilityDelta": -6 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "insurance_renewal_jump",
+      "category": "finance",
+      "tags": ["money", "housing", "maintenance"],
+      "title": "Insurance Renewal Shock",
+      "text": "A yearly insurance notice arrives and reminds you that keeping a stable life can still get more expensive without asking permission.",
+      "minAge": 30,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 3,
+      "requirements": ["assets.ownsHome==true", "finance.financialStress>=18"],
+      "choices": [
+        {
+          "text": "Absorb it and tighten the budget",
+          "effects": {
+            "finance": { "livingCostDelta": 1400, "financialStressDelta": 4 },
+            "health": { "mental": -1 }
+          }
+        },
+        {
+          "text": "Raise the deductible and hope for a quiet year",
+          "effects": {
+            "finance": { "livingCostDelta": 500, "financialStressDelta": 2 },
+            "housing": { "stabilityDelta": -3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "child_growing_away",
+      "category": "relationships",
+      "tags": ["family", "social", "drift"],
+      "title": "You Hear Less Than You Used To",
+      "text": "One of your children is still in your life, but more of what matters now seems to happen somewhere you are not included.",
+      "minAge": 36,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 3,
+      "requirements": ["family.childCount>=1"],
+      "choices": [
+        {
+          "text": "Make intentional time even if it costs you",
+          "effects": {
+            "relationship": { "partnerChange": 2, "friendChange": 1 },
+            "finance": { "discretionaryCostDelta": 900 }
+          }
+        },
+        {
+          "text": "Keep telling yourself they know you care",
+          "effects": {
+            "relationship": { "partnerChange": -2 },
+            "health": { "mental": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "partner_values_shift",
+      "category": "relationships",
+      "tags": ["family", "relationships", "drift"],
+      "title": "You Two Are Not Reaching for the Same Life",
+      "text": "A conversation makes it obvious that the two of you have been calling the future by the same name while meaning different things.",
+      "minAge": 30,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["relationships.hasPartner==true", "relationships.partnerBond>=45"],
+      "choices": [
+        {
+          "text": "Have the uncomfortable talk now",
+          "effects": {
+            "relationship": { "partnerChange": 3, "commitmentAlignmentChange": 5 },
+            "health": { "mental": -1 }
+          }
+        },
+        {
+          "text": "Keep the peace and postpone it",
+          "effects": {
+            "relationship": { "partnerChange": -4, "commitmentAlignmentChange": -6 },
+            "health": { "mental": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "body_keeps_score",
+      "category": "health",
+      "tags": ["health", "routine", "midlife"],
+      "title": "Your Body Stops Accepting the Old Deal",
+      "text": "The routines that once felt survivable start producing consequences with less warning and slower recovery.",
+      "minAge": 34,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["health.stressManagement<45"],
+      "choices": [
+        {
+          "text": "Book care and change the routine",
+          "effects": {
+            "health": { "physical": 4, "stressManagement": 4, "hasPrimaryCare": true },
+            "finance": { "cashDelta": -1200 }
+          }
+        },
+        {
+          "text": "Push through like you always have",
+          "effects": {
+            "health": { "physical": -4, "mental": -2, "addCondition": "Chronic strain" },
+            "career": { "performance": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "recovery_year_resistance",
+      "category": "health",
+      "tags": ["health", "routine", "recovery"],
+      "title": "Recovery Wants a Whole Year",
+      "text": "A doctor or your own body makes the same point: pretending this is a normal year will only make the next one worse.",
+      "minAge": 40,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 4,
+      "requirements": ["health.conditionCount>=1"],
+      "choices": [
+        {
+          "text": "Scale life down long enough to recover",
+          "effects": {
+            "health": { "physical": 5, "mental": 3, "removeCondition": "Chronic strain" },
+            "career": { "performance": -2 }
+          }
+        },
+        {
+          "text": "Treat recovery like weakness and keep pace",
+          "effects": {
+            "health": { "physical": -5, "mental": -2 },
+            "career": { "performance": -3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "regional_cost_surge",
+      "category": "finance",
+      "tags": ["money", "housing", "region"],
+      "title": "Your Area Gets Harder to Afford",
+      "text": "Nothing about your life changed overnight, but the place around it did, and now ordinary stability costs more effort.",
+      "minAge": 28,
+      "maxAge": 90,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["finance.region==expensive_coastal"],
+      "choices": [
+        {
+          "text": "Absorb the squeeze and stay put",
+          "effects": {
+            "finance": { "livingCostDelta": 2200, "financialStressDelta": 5 },
+            "health": { "mental": -2 }
+          }
+        },
+        {
+          "text": "Relocate before it gets worse",
+          "effects": {
+            "finance": { "cashDelta": -1800, "setRegionPolicyID": "mountain_standard" },
+            "housing": { "stabilityDelta": -3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "factory_town_freeze",
+      "category": "career",
+      "tags": ["career", "money", "region"],
+      "title": "The Local Economy Turns Quiet",
+      "text": "Openings dry up around you, and suddenly loyalty to the local routine feels more like a gamble than a plan.",
+      "minAge": 30,
+      "maxAge": 90,
+      "weight": 6,
+      "cooldownYears": 3,
+      "requirements": ["finance.region==factory_town", "career.status!=student"],
+      "choices": [
+        {
+          "text": "Stay patient and protect what you have",
+          "effects": {
+            "career": { "performance": -1 },
+            "finance": { "financialStressDelta": 4 }
+          }
+        },
+        {
+          "text": "Start searching wider before you have to",
+          "effects": {
+            "career": { "performance": 2 },
+            "health": { "mental": -1 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "career_plateau_signal",
+      "category": "career",
+      "tags": ["career", "midlife", "routine"],
+      "title": "The Job Still Works, But It Stopped Moving",
+      "text": "You can feel the difference between stability and stagnation now, and the gap is starting to affect how you carry the rest of life.",
+      "minAge": 35,
+      "maxAge": 60,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["career.status!=student", "career.yearsWorked>=8", "career.performance>=55"],
+      "choices": [
+        {
+          "text": "Invest in a reinvention path",
+          "effects": {
+            "education": { "setStage": "adultEd", "engagement": 5, "applicationReadiness": 4 },
+            "finance": { "educationCostDelta": 1800 }
+          }
+        },
+        {
+          "text": "Keep the paycheck and dull the feeling",
+          "effects": {
+            "career": { "performance": -2 },
+            "health": { "mental": -2 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "maintenance_life_realization",
+      "category": "health",
+      "tags": ["midlife", "routine", "identity"],
+      "title": "You Notice How Much of Life Is Just Holding It Together",
+      "text": "Nothing is on fire, but more of your energy goes into maintaining the structure than feeling present inside it.",
+      "minAge": 38,
+      "maxAge": 70,
+      "weight": 7,
+      "cooldownYears": 3,
+      "requirements": ["finance.annualGrossIncome>=30000", "health.mentalWellness<58"],
+      "choices": [
+        {
+          "text": "Clear space and protect something real",
+          "effects": {
+            "health": { "mental": 4, "stressManagement": 3 },
+            "finance": { "discretionaryCostDelta": 700 }
+          }
+        },
+        {
+          "text": "Keep functioning and call that enough",
+          "effects": {
+            "health": { "mental": -3, "stressManagement": -2 },
+            "finance": { "financialStressDelta": 2 }
+          }
+        }
+      ]
+    }
+  ]
+}

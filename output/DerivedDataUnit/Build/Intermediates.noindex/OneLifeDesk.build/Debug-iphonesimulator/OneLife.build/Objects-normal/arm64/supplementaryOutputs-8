@@ -1,0 +1,23 @@
+{
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/SilentYearEngine.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/SpecialCareerCrimeSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/StoryletSystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.swiftdeps"
+  }
+}

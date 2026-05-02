@@ -1,0 +1,67 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "3213d0eefe3770051b2394d15805c43fdb373292005c14e2aabd4ac299eaae92"
+    }
+  ],
+  "containerPath" : "/Users/justinjeffery/Desktop/OneLife/OneLifeDesk.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "undefined_arch",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : true,
+      "hostTargetedPlatform" : null,
+      "platform" : "iphonesimulator",
+      "sdk" : "iphonesimulator26.4",
+      "sdkVariant" : "iphonesimulator",
+      "supportedArchitectures" : [
+        "i386",
+        "x86_64"
+      ],
+      "targetArchitecture" : "undefined_arch"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix/Build/Products",
+      "derivedDataPath" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix",
+      "indexDataStoreFolderPath" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+          "CODE_SIGNING_ALLOWED" : "NO"
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "CLANG_COVERAGE_MAPPING" : "YES",
+          "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix/Build/ProfileData",
+          "COMPILATION_CACHE_CAS_PATH" : "/Volumes/X9%20Pro/ClearCache",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

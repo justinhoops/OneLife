@@ -1,0 +1,613 @@
+2026-04-30 17:17:24.625804-0600 OneLifeUITests-Runner[21466:8705256] [Default] Running tests...
+objc[21466]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10b150310) and /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10af48398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'OneLifeUITests' started at 2026-04-30 17:17:30.858.
+Test Case '-[OneLifeUITests.OneLifeUITests testAdultCareerAndFinanceDrilldownsOpen]' started.
+    t =     0.00s Start Test at 2026-04-30 17:17:30.859
+    t =     0.18s Set Up
+    t =     0.18s     Setting device orientation to Portrait
+    t =     0.19s         Device orientation changed to Portrait
+    t =     0.31s         Wait for com.apple.springboard to idle
+    t =     0.35s Setting device orientation to Portrait
+    t =     0.36s     Wait for com.apple.springboard to idle
+    t =     0.36s Open LifeApp.OneLife
+    t =     0.36s     Launch LifeApp.OneLife
+    t =     2.45s         Setting up automation session
+    t =     2.84s         Wait for LifeApp.OneLife to idle
+    t =     4.44s Setting device orientation to Portrait
+    t =     4.45s     Wait for LifeApp.OneLife to idle
+    t =     4.46s Waiting 2.0s for "feed-tab-content" Other to exist
+    t =     5.53s     Checking `Expect predicate `existsNoRetry == 1` for object "feed-tab-content" Other`
+    t =     5.53s         Checking existence of `"feed-tab-content" Other`
+    t =     5.63s Tap "career-tab" Button
+    t =     5.63s     Wait for LifeApp.OneLife to idle
+    t =     5.63s     Find the "career-tab" Button
+    t =     5.66s     Check for interrupting elements affecting "career-tab" Button
+    t =     5.70s     Synthesize event
+    t =     6.11s     Wait for LifeApp.OneLife to idle
+    t =     6.11s Waiting 2.0s for "career-tab-content" Other to exist
+    t =     7.16s     Checking `Expect predicate `existsNoRetry == 1` for object "career-tab-content" Other`
+    t =     7.17s         Checking existence of `"career-tab-content" Other`
+    t =     7.22s Tap "career-overview-detail-button" Button
+    t =     7.22s     Wait for LifeApp.OneLife to idle
+    t =     7.22s     Find the "career-overview-detail-button" Button
+    t =     7.27s     Check for interrupting elements affecting "career-overview-detail-button" Button
+    t =     7.30s     Synthesize event
+    t =     7.59s     Wait for LifeApp.OneLife to idle
+    t =     7.61s Waiting 2.0s for "detail-sheet-careerOverview" Any to exist
+    t =     8.68s     Checking `Expect predicate `existsNoRetry == 1` for object "detail-sheet-careerOverview" Any`
+    t =     8.68s         Checking existence of `"detail-sheet-careerOverview" Any`
+    t =     8.77s Tap "planner-detail-done-button" Button
+    t =     8.77s     Wait for LifeApp.OneLife to idle
+    t =     8.77s     Find the "planner-detail-done-button" Button
+    t =     8.83s     Check for interrupting elements affecting "planner-detail-done-button" Button
+    t =     8.88s     Synthesize event
+    t =     9.19s     Wait for LifeApp.OneLife to idle
+    t =     9.96s Tap "finance-tab" Button
+    t =     9.96s     Wait for LifeApp.OneLife to idle
+    t =     9.96s     Find the "finance-tab" Button
+    t =    10.04s     Check for interrupting elements affecting "finance-tab" Button
+    t =    10.09s     Synthesize event
+    t =    10.39s     Wait for LifeApp.OneLife to idle
+    t =    10.40s Waiting 2.0s for "finance-tab-content" Other to exist
+    t =    11.47s     Checking `Expect predicate `existsNoRetry == 1` for object "finance-tab-content" Other`
+    t =    11.47s         Checking existence of `"finance-tab-content" Other`
+    t =    11.58s Tap "finance-cashflow-detail-button" Button
+    t =    11.58s     Wait for LifeApp.OneLife to idle
+    t =    11.62s     Find the "finance-cashflow-detail-button" Button
+    t =    11.69s     Check for interrupting elements affecting "finance-cashflow-detail-button" Button
+    t =    11.77s     Synthesize event
+    t =    12.19s     Wait for LifeApp.OneLife to idle
+    t =    12.89s Waiting 2.0s for "detail-sheet-financeCashflow" Any to exist
+    t =    14.73s     Checking `Expect predicate `existsNoRetry == 1` for object "detail-sheet-financeCashflow" Any`
+    t =    14.73s         Checking existence of `"detail-sheet-financeCashflow" Any`
+    t =    14.80s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testAdultCareerAndFinanceDrilldownsOpen]' passed (15.665 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testAgeUpStartsForecastBeforeEventAndDisablesPrimaryAction]' started.
+    t =     0.00s Start Test at 2026-04-30 17:17:46.525
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.02s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.03s     Wait for LifeApp.OneLife to idle
+    t =     0.04s Open LifeApp.OneLife
+    t =     0.04s     Launch LifeApp.OneLife
+    t =     0.04s         Terminate LifeApp.OneLife:21603
+    t =     1.49s         Setting up automation session
+    t =     2.57s         Wait for LifeApp.OneLife to idle
+    t =     3.90s Setting device orientation to Portrait
+    t =     3.92s     Wait for LifeApp.OneLife to idle
+    t =     3.93s Waiting 2.0s for "startup-screen" Any to exist
+    t =     5.02s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     5.02s         Checking existence of `"startup-screen" Any`
+    t =     5.08s         Capturing element debug description
+    t =     5.94s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     5.94s         Checking existence of `"startup-screen" Any`
+    t =     5.96s         Capturing element debug description
+    t =     5.96s     Checking existence of `"startup-screen" Any`
+    t =     5.97s Collecting debug information to assist test failure triage
+    t =     5.97s     Requesting snapshot of accessibility hierarchy for app with pid 21740
+    t =     5.99s Waiting 2.0s for "begin-life-button" Button to exist
+    t =     7.07s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     7.07s         Checking existence of `"begin-life-button" Button`
+    t =     7.08s         Capturing element debug description
+    t =     8.00s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     8.00s         Checking existence of `"begin-life-button" Button`
+    t =     8.01s         Capturing element debug description
+    t =     8.02s     Checking existence of `"begin-life-button" Button`
+    t =     8.03s Collecting debug information to assist test failure triage
+    t =     8.03s     Requesting snapshot of accessibility hierarchy for app with pid 21740
+    t =     8.04s Checking existence of `"forecast-continue-button" Button`
+    t =     8.05s Checking existence of `"event-choice-0" Button`
+    t =     8.07s Checking existence of `"reaction-continue-button" Button`
+    t =     8.08s Checking existence of `"year-summary-continue-button" Button`
+    t =     8.09s Checking existence of `"planner-detail-done-button" Button`
+    t =     8.10s Checking existence of `"forecast-sheet" Any`
+    t =     8.11s Checking existence of `"event-sheet" Any`
+    t =     8.12s Checking existence of `"reaction-sheet" Any`
+    t =     8.13s Checking existence of `"year-summary-sheet" Any`
+    t =     8.14s Waiting 1.0s for "age-up-button" Button to exist
+    t =     9.14s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =     9.14s         Checking existence of `"age-up-button" Button`
+    t =     9.15s         Capturing element debug description
+    t =     9.16s     Checking existence of `"age-up-button" Button`
+    t =     9.17s Collecting debug information to assist test failure triage
+    t =     9.17s     Requesting snapshot of accessibility hierarchy for app with pid 21740
+    t =     9.19s Waiting 2.0s for "age-up-button" Button to exist
+    t =    10.26s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =    10.26s         Checking existence of `"age-up-button" Button`
+    t =    10.27s         Capturing element debug description
+    t =    11.19s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =    11.19s         Checking existence of `"age-up-button" Button`
+    t =    11.21s         Capturing element debug description
+    t =    11.21s     Checking existence of `"age-up-button" Button`
+    t =    11.22s Collecting debug information to assist test failure triage
+    t =    11.22s     Requesting snapshot of accessibility hierarchy for app with pid 21740
+/Users/justinjeffery/Desktop/OneLife/OneLifeUITests/OneLifeUITests.swift:159: error: -[OneLifeUITests.OneLifeUITests testAgeUpStartsForecastBeforeEventAndDisablesPrimaryAction] : XCTAssertTrue failed
+    t =    11.83s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testAgeUpStartsForecastBeforeEventAndDisablesPrimaryAction]' failed (12.300 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testDebugScenarioLabIsReachableFromSettings]' started.
+    t =     0.00s Start Test at 2026-04-30 17:17:58.826
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.03s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.03s     Wait for LifeApp.OneLife to idle
+    t =     0.04s Open LifeApp.OneLife
+    t =     0.04s     Launch LifeApp.OneLife
+    t =     0.04s         Terminate LifeApp.OneLife:21740
+    t =     1.48s         Setting up automation session
+    t =     2.40s         Wait for LifeApp.OneLife to idle
+    t =     3.78s Setting device orientation to Portrait
+    t =     3.80s     Wait for LifeApp.OneLife to idle
+    t =     3.81s Waiting 2.0s for "startup-screen" Any to exist
+    t =     4.88s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     4.88s         Checking existence of `"startup-screen" Any`
+    t =     4.94s         Capturing element debug description
+    t =     5.81s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     5.81s         Checking existence of `"startup-screen" Any`
+    t =     5.83s         Capturing element debug description
+    t =     5.83s     Checking existence of `"startup-screen" Any`
+    t =     5.84s Collecting debug information to assist test failure triage
+    t =     5.84s     Requesting snapshot of accessibility hierarchy for app with pid 21865
+    t =     5.86s Waiting 2.0s for "begin-life-button" Button to exist
+    t =     6.92s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     6.92s         Checking existence of `"begin-life-button" Button`
+    t =     6.93s         Capturing element debug description
+    t =     7.86s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     7.86s         Checking existence of `"begin-life-button" Button`
+    t =     7.87s         Capturing element debug description
+    t =     7.87s     Checking existence of `"begin-life-button" Button`
+    t =     7.88s Collecting debug information to assist test failure triage
+    t =     7.88s     Requesting snapshot of accessibility hierarchy for app with pid 21865
+    t =     7.89s Checking existence of `"forecast-continue-button" Button`
+    t =     7.90s Checking existence of `"event-choice-0" Button`
+    t =     7.91s Checking existence of `"reaction-continue-button" Button`
+    t =     7.92s Checking existence of `"year-summary-continue-button" Button`
+    t =     7.93s Checking existence of `"planner-detail-done-button" Button`
+    t =     7.94s Checking existence of `"forecast-sheet" Any`
+    t =     7.95s Checking existence of `"event-sheet" Any`
+    t =     7.96s Checking existence of `"reaction-sheet" Any`
+    t =     7.97s Checking existence of `"year-summary-sheet" Any`
+    t =     7.97s Waiting 1.0s for "age-up-button" Button to exist
+    t =     8.99s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =     8.99s         Checking existence of `"age-up-button" Button`
+    t =     9.00s         Capturing element debug description
+    t =     9.00s     Checking existence of `"age-up-button" Button`
+    t =     9.01s Collecting debug information to assist test failure triage
+    t =     9.01s     Requesting snapshot of accessibility hierarchy for app with pid 21865
+    t =     9.02s Tap "settings-button" Button
+    t =     9.02s     Wait for LifeApp.OneLife to idle
+    t =     9.02s     Find the "settings-button" Button
+    t =    10.04s         Find the "settings-button" Button (retry 1)
+    t =    11.06s         Find the "settings-button" Button (retry 2)
+    t =    11.08s Requesting snapshot of accessibility hierarchy for app with pid 21865
+/Users/justinjeffery/Desktop/OneLife/OneLifeUITests/OneLifeUITests.swift:118: error: -[OneLifeUITests.OneLifeUITests testDebugScenarioLabIsReachableFromSettings] : Failed to tap "settings-button" Button: No matches found for Elements matching predicate '"settings-button" IN identifiers' from input {(
+    Button, label: 'Pick a name for me',
+    Button, label: 'Continue'
+)}
+    t =    11.11s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testDebugScenarioLabIsReachableFromSettings]' failed (11.449 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoAdultCareerScenarioShowsAdultActions]' started.
+    t =     0.00s Start Test at 2026-04-30 17:18:10.276
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.02s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.04s     Wait for LifeApp.OneLife to idle
+    t =     0.05s Open LifeApp.OneLife
+    t =     0.05s     Launch LifeApp.OneLife
+    t =     0.05s         Terminate LifeApp.OneLife:21865
+    t =     1.53s         Setting up automation session
+    t =     2.37s         Wait for LifeApp.OneLife to idle
+    t =     3.87s Setting device orientation to Portrait
+    t =     3.88s     Wait for LifeApp.OneLife to idle
+    t =     3.88s Waiting 2.0s for "feed-tab-content" Other to exist
+    t =     4.96s     Checking `Expect predicate `existsNoRetry == 1` for object "feed-tab-content" Other`
+    t =     4.96s         Checking existence of `"feed-tab-content" Other`
+    t =     5.07s Tap "career-tab" Button
+    t =     5.07s     Wait for LifeApp.OneLife to idle
+    t =     5.08s     Find the "career-tab" Button
+    t =     5.13s     Check for interrupting elements affecting "career-tab" Button
+    t =     5.17s     Synthesize event
+    t =     5.48s     Wait for LifeApp.OneLife to idle
+    t =     5.48s Waiting 2.0s for "career-tab-content" Other to exist
+    t =     6.53s     Checking `Expect predicate `existsNoRetry == 1` for object "career-tab-content" Other`
+    t =     6.53s         Checking existence of `"career-tab-content" Other`
+    t =     6.59s Waiting 1.0s for "action-choice-workHard" Button to exist
+    t =     7.59s     Checking `Expect predicate `existsNoRetry == 1` for object "action-choice-workHard" Button`
+    t =     7.59s         Checking existence of `"action-choice-workHard" Button`
+    t =     7.64s     Checking existence of `"action-choice-workHard" Button`
+    t =     7.69s Waiting 1.0s for "action-choice-jobHunt" Button to exist
+    t =     8.70s     Checking `Expect predicate `existsNoRetry == 1` for object "action-choice-jobHunt" Button`
+    t =     8.70s         Checking existence of `"action-choice-jobHunt" Button`
+    t =     8.74s     Checking existence of `"action-choice-jobHunt" Button`
+    t =     8.79s Checking existence of `"startup-screen" Any`
+    t =     8.84s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoAdultCareerScenarioShowsAdultActions]' passed (9.091 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoEventPreviewShowsEventSheet]' started.
+    t =     0.00s Start Test at 2026-04-30 17:18:19.367
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.02s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.03s     Wait for LifeApp.OneLife to idle
+    t =     0.04s Open LifeApp.OneLife
+    t =     0.04s     Launch LifeApp.OneLife
+    t =     0.04s         Terminate LifeApp.OneLife:21966
+    t =     1.34s         Setting up automation session
+    t =     2.37s         Wait for LifeApp.OneLife to idle
+    t =     3.86s Setting device orientation to Portrait
+    t =     3.86s     Wait for LifeApp.OneLife to idle
+    t =     3.86s Waiting 2.0s for "event-sheet" Any to exist
+    t =     4.92s     Checking `Expect predicate `existsNoRetry == 1` for object "event-sheet" Any`
+    t =     4.92s         Checking existence of `"event-sheet" Any`
+    t =     5.02s Checking existence of `"event-choice-0" Button`
+    t =     5.05s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoEventPreviewShowsEventSheet]' passed (5.274 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoPregnancyScenarioShowsRelationshipState]' started.
+    t =     0.00s Start Test at 2026-04-30 17:18:24.642
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.02s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.03s     Wait for LifeApp.OneLife to idle
+    t =     0.03s Open LifeApp.OneLife
+    t =     0.03s     Launch LifeApp.OneLife
+    t =     0.03s         Terminate LifeApp.OneLife:22020
+    t =     1.30s         Setting up automation session
+    t =     2.26s         Wait for LifeApp.OneLife to idle
+    t =     3.77s Setting device orientation to Portrait
+    t =     3.78s     Wait for LifeApp.OneLife to idle
+    t =     3.78s Waiting 2.0s for "feed-tab-content" Other to exist
+    t =     4.84s     Checking `Expect predicate `existsNoRetry == 1` for object "feed-tab-content" Other`
+    t =     4.84s         Checking existence of `"feed-tab-content" Other`
+    t =     4.90s Tap "relationships-tab" Button
+    t =     4.90s     Wait for LifeApp.OneLife to idle
+    t =     4.90s     Find the "relationships-tab" Button
+    t =     4.92s     Check for interrupting elements affecting "relationships-tab" Button
+    t =     4.94s     Synthesize event
+    t =     4.95s         Scroll element to visible
+    t =     4.95s         Find the "relationships-tab" Button
+    t =     4.98s         Computed hit point {145, 666.33333333333326} after scrolling to visible
+    t =     5.26s     Wait for LifeApp.OneLife to idle
+    t =     5.26s Waiting 2.0s for "relationships-tab-content" Other to exist
+    t =     6.32s     Checking `Expect predicate `existsNoRetry == 1` for object "relationships-tab-content" Other`
+    t =     6.33s         Checking existence of `"relationships-tab-content" Other`
+    t =     6.38s Waiting 2.0s for "Pregnant with Owen" StaticText to exist
+    t =     7.42s     Checking `Expect predicate `existsNoRetry == 1` for object "Pregnant with Owen" StaticText`
+    t =     7.42s         Checking existence of `"Pregnant with Owen" StaticText`
+    t =     7.48s Waiting 1.0s for "action-choice-repairTension" Button to exist
+    t =     8.49s     Checking `Expect predicate `existsNoRetry == 1` for object "action-choice-repairTension" Button`
+    t =     8.49s         Checking existence of `"action-choice-repairTension" Button`
+    t =     8.54s     Checking existence of `"action-choice-repairTension" Button`
+    t =     8.57s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoPregnancyScenarioShowsRelationshipState]' passed (8.816 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoYearSummaryPreviewShowsSummarySheet]' started.
+    t =     0.00s Start Test at 2026-04-30 17:18:33.458
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.02s         Wait for LifeApp.OneLife to idle
+    t =     0.02s Setting device orientation to Portrait
+    t =     0.03s     Wait for LifeApp.OneLife to idle
+    t =     0.03s Open LifeApp.OneLife
+    t =     0.03s     Launch LifeApp.OneLife
+    t =     0.03s         Terminate LifeApp.OneLife:22058
+    t =     1.32s         Setting up automation session
+    t =     2.02s         Wait for LifeApp.OneLife to idle
+    t =     3.51s Setting device orientation to Portrait
+    t =     3.52s     Wait for LifeApp.OneLife to idle
+    t =     3.52s Waiting 2.0s for "year-summary-sheet" Any to exist
+    t =     4.58s     Checking `Expect predicate `existsNoRetry == 1` for object "year-summary-sheet" Any`
+    t =     4.58s         Checking existence of `"year-summary-sheet" Any`
+    t =     4.68s Checking existence of `"year-summary-continue-button" Button`
+    t =     4.72s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testDirectLaunchIntoYearSummaryPreviewShowsSummarySheet]' passed (4.930 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testFamilyAndHousingDrilldownsOpenFromDebugStates]' started.
+    t =     0.00s Start Test at 2026-04-30 17:18:38.388
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.02s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.03s     Wait for LifeApp.OneLife to idle
+    t =     0.03s Open LifeApp.OneLife
+    t =     0.03s     Launch LifeApp.OneLife
+    t =     0.03s         Terminate LifeApp.OneLife:22099
+    t =     1.31s         Setting up automation session
+    t =     2.08s         Wait for LifeApp.OneLife to idle
+    t =     3.57s Setting device orientation to Portrait
+    t =     3.58s     Wait for LifeApp.OneLife to idle
+    t =     3.58s Waiting 2.0s for "feed-tab-content" Other to exist
+    t =     4.64s     Checking `Expect predicate `existsNoRetry == 1` for object "feed-tab-content" Other`
+    t =     4.64s         Checking existence of `"feed-tab-content" Other`
+    t =     4.71s Tap "relationships-tab" Button
+    t =     4.71s     Wait for LifeApp.OneLife to idle
+    t =     4.71s     Find the "relationships-tab" Button
+    t =     4.75s     Check for interrupting elements affecting "relationships-tab" Button
+    t =     4.77s     Synthesize event
+    t =     4.78s         Scroll element to visible
+    t =     4.78s         Find the "relationships-tab" Button
+    t =     4.80s         Computed hit point {145, 666.33333333333326} after scrolling to visible
+    t =     5.09s     Wait for LifeApp.OneLife to idle
+    t =     5.09s Waiting 2.0s for "relationships-tab-content" Other to exist
+    t =     6.14s     Checking `Expect predicate `existsNoRetry == 1` for object "relationships-tab-content" Other`
+    t =     6.15s         Checking existence of `"relationships-tab-content" Other`
+    t =     6.20s Tap "relationships-family-detail-button" Button
+    t =     6.20s     Wait for LifeApp.OneLife to idle
+    t =     6.20s     Find the "relationships-family-detail-button" Button
+    t =     6.23s     Check for interrupting elements affecting "relationships-family-detail-button" Button
+    t =     6.26s     Synthesize event
+    t =     6.26s         Scroll element to visible
+    t =     6.26s         Find the "relationships-family-detail-button" Button
+    t =     6.29s         Computed hit point {335.5, 261.00000000000006} after scrolling to visible
+    t =     6.58s     Wait for LifeApp.OneLife to idle
+    t =     7.35s Waiting 2.0s for "detail-sheet-relationshipsFamily" Any to exist
+    t =     8.40s     Checking `Expect predicate `existsNoRetry == 1` for object "detail-sheet-relationshipsFamily" Any`
+    t =     8.41s         Checking existence of `"detail-sheet-relationshipsFamily" Any`
+    t =     8.45s Setting device orientation to Portrait
+    t =     8.45s     Wait for LifeApp.OneLife to idle
+    t =     8.46s Open LifeApp.OneLife
+    t =     8.46s     Launch LifeApp.OneLife
+    t =     8.46s         Terminate LifeApp.OneLife:22112
+    t =    10.15s         Setting up automation session
+    t =    11.65s         Wait for LifeApp.OneLife to idle
+    t =    13.53s Setting device orientation to Portrait
+    t =    13.54s     Wait for LifeApp.OneLife to idle
+    t =    13.55s Waiting 2.0s for "feed-tab-content" Other to exist
+    t =    14.61s     Checking `Expect predicate `existsNoRetry == 1` for object "feed-tab-content" Other`
+    t =    14.61s         Checking existence of `"feed-tab-content" Other`
+    t =    14.75s Tap "finance-tab" Button
+    t =    14.75s     Wait for LifeApp.OneLife to idle
+    t =    14.75s     Find the "finance-tab" Button
+    t =    14.80s     Check for interrupting elements affecting "finance-tab" Button
+    t =    14.84s     Synthesize event
+    t =    15.15s     Wait for LifeApp.OneLife to idle
+    t =    15.15s Waiting 2.0s for "finance-tab-content" Other to exist
+    t =    16.23s     Checking `Expect predicate `existsNoRetry == 1` for object "finance-tab-content" Other`
+    t =    16.23s         Checking existence of `"finance-tab-content" Other`
+    t =    16.28s Tap "life-tab" Button
+    t =    16.28s     Wait for LifeApp.OneLife to idle
+    t =    16.28s     Find the "life-tab" Button
+    t =    17.32s         Find the "life-tab" Button (retry 1)
+    t =    18.38s         Find the "life-tab" Button (retry 2)
+    t =    18.43s Requesting snapshot of accessibility hierarchy for app with pid 22134
+/Users/justinjeffery/Desktop/OneLife/OneLifeUITests/OneLifeUITests.swift:263: error: -[OneLifeUITests.OneLifeUITests testFamilyAndHousingDrilldownsOpenFromDebugStates] : Failed to tap "life-tab" Button: No matches found for Elements matching predicate '"life-tab" IN identifiers' from input {(
+    Button, identifier: 'settings-button', label: 'Open settings',
+    Button, identifier: 'age-up-button', label: 'Add',
+    Button, identifier: 'feed-tab', label: 'Feed', value: Not selected,
+    Button, identifier: 'career-tab', label: 'Career', value: Not selected,
+    Button, identifier: 'finance-tab', label: 'Finance', value: Selected,
+    Button, identifier: 'assets-tab', label: 'Assets', value: Not selected,
+    Button, identifier: 'relationships-tab', label: 'Relationships', value: Not selected,
+    Button, identifier: 'health-tab', label: 'Health', value: Not selected,
+    Button, identifier: 'activities-tab', label: 'Activities', value: Not selected,
+    Button, identifier: 'finance-cashflow-detail-button', label: 'Details',
+    Button, identifier: 'finance-investing-detail-button', label: 'Details',
+    Button, identifier: 'finance-policy-detail-button', label: 'Details',
+    Button, identifier: 'action-choice-spendForRelief', label: 'Buy Yourself A Little Relief', value: Not selected,
+    Button, identifier: 'action-choice-takeSideWork', label: 'Take Whatever Extra Work You Can Find', value: Not selected,
+    Button, identifier: 'action-choice-cutSpending', label: 'Clamp Down And Get Through It', value: Selected, Selected,
+    Button, label: 'Full History'
+)}
+    t =    18.50s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testFamilyAndHousingDrilldownsOpenFromDebugStates]' failed (18.762 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testForecastThenEventThenReactionFlowAppearsInOrder]' started.
+    t =     0.00s Start Test at 2026-04-30 17:18:57.151
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.03s         Wait for LifeApp.OneLife to idle
+    t =     0.04s Setting device orientation to Portrait
+    t =     0.05s     Wait for LifeApp.OneLife to idle
+    t =     0.09s Open LifeApp.OneLife
+    t =     0.09s     Launch LifeApp.OneLife
+    t =     0.09s         Terminate LifeApp.OneLife:22134
+    t =     1.61s         Setting up automation session
+    t =     2.82s         Wait for LifeApp.OneLife to idle
+    t =     4.40s Setting device orientation to Portrait
+    t =     4.41s     Wait for LifeApp.OneLife to idle
+    t =     4.41s Waiting 2.0s for "startup-screen" Any to exist
+    t =     5.48s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     5.48s         Checking existence of `"startup-screen" Any`
+    t =     5.53s         Capturing element debug description
+    t =     6.42s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     6.42s         Checking existence of `"startup-screen" Any`
+    t =     6.44s         Capturing element debug description
+    t =     6.44s     Checking existence of `"startup-screen" Any`
+    t =     6.45s Collecting debug information to assist test failure triage
+    t =     6.45s     Requesting snapshot of accessibility hierarchy for app with pid 22187
+    t =     6.46s Waiting 2.0s for "begin-life-button" Button to exist
+    t =     7.52s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     7.52s         Checking existence of `"begin-life-button" Button`
+    t =     7.52s         Capturing element debug description
+    t =     8.47s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     8.47s         Checking existence of `"begin-life-button" Button`
+    t =     8.47s         Capturing element debug description
+    t =     8.48s     Checking existence of `"begin-life-button" Button`
+    t =     8.48s Collecting debug information to assist test failure triage
+    t =     8.48s     Requesting snapshot of accessibility hierarchy for app with pid 22187
+    t =     8.49s Checking existence of `"forecast-continue-button" Button`
+    t =     8.50s Checking existence of `"event-choice-0" Button`
+    t =     8.51s Checking existence of `"reaction-continue-button" Button`
+    t =     8.52s Checking existence of `"year-summary-continue-button" Button`
+    t =     8.53s Checking existence of `"planner-detail-done-button" Button`
+    t =     8.53s Checking existence of `"forecast-sheet" Any`
+    t =     8.54s Checking existence of `"event-sheet" Any`
+    t =     8.55s Checking existence of `"reaction-sheet" Any`
+    t =     8.55s Checking existence of `"year-summary-sheet" Any`
+    t =     8.56s Waiting 1.0s for "age-up-button" Button to exist
+    t =     9.57s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =     9.57s         Checking existence of `"age-up-button" Button`
+    t =     9.58s         Capturing element debug description
+    t =     9.58s     Checking existence of `"age-up-button" Button`
+    t =     9.59s Collecting debug information to assist test failure triage
+    t =     9.59s     Requesting snapshot of accessibility hierarchy for app with pid 22187
+    t =     9.61s Tap "age-up-button" Button
+    t =     9.61s     Wait for LifeApp.OneLife to idle
+    t =     9.61s     Find the "age-up-button" Button
+    t =    10.62s         Find the "age-up-button" Button (retry 1)
+    t =    11.64s         Find the "age-up-button" Button (retry 2)
+    t =    11.66s Requesting snapshot of accessibility hierarchy for app with pid 22187
+/Users/justinjeffery/Desktop/OneLife/OneLifeUITests/OneLifeUITests.swift:173: error: -[OneLifeUITests.OneLifeUITests testForecastThenEventThenReactionFlowAppearsInOrder] : Failed to tap "age-up-button" Button: No matches found for Elements matching predicate '"age-up-button" IN identifiers' from input {(
+    Button, label: 'Pick a name for me',
+    Button, label: 'Continue'
+)}
+    t =    11.67s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testForecastThenEventThenReactionFlowAppearsInOrder]' failed (11.893 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testLargeContentSizeStillKeepsPlannerReachable]' started.
+    t =     0.00s Start Test at 2026-04-30 17:19:09.046
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.02s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.03s     Wait for LifeApp.OneLife to idle
+    t =     0.04s Open LifeApp.OneLife
+    t =     0.04s     Launch LifeApp.OneLife
+    t =     0.04s         Terminate LifeApp.OneLife:22187
+    t =     1.32s         Setting up automation session
+    t =     3.17s         Wait for LifeApp.OneLife to idle
+    t =     4.89s Setting device orientation to Portrait
+    t =     4.90s     Wait for LifeApp.OneLife to idle
+    t =     4.90s Waiting 2.0s for "startup-screen" Any to exist
+    t =     5.95s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     5.95s         Checking existence of `"startup-screen" Any`
+    t =     6.01s         Capturing element debug description
+    t =     6.90s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     6.91s         Checking existence of `"startup-screen" Any`
+    t =     6.92s         Capturing element debug description
+    t =     6.92s     Checking existence of `"startup-screen" Any`
+    t =     6.93s Collecting debug information to assist test failure triage
+    t =     6.93s     Requesting snapshot of accessibility hierarchy for app with pid 22227
+    t =     6.95s Waiting 2.0s for "begin-life-button" Button to exist
+    t =     8.01s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     8.01s         Checking existence of `"begin-life-button" Button`
+    t =     8.03s         Capturing element debug description
+    t =     8.95s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     8.95s         Checking existence of `"begin-life-button" Button`
+    t =     8.96s         Capturing element debug description
+    t =     8.96s     Checking existence of `"begin-life-button" Button`
+    t =     8.97s Collecting debug information to assist test failure triage
+    t =     8.97s     Requesting snapshot of accessibility hierarchy for app with pid 22227
+    t =     8.98s Checking existence of `"forecast-continue-button" Button`
+    t =     8.98s Checking existence of `"event-choice-0" Button`
+    t =     8.99s Checking existence of `"reaction-continue-button" Button`
+    t =     8.99s Checking existence of `"year-summary-continue-button" Button`
+    t =     8.99s Checking existence of `"planner-detail-done-button" Button`
+    t =     9.00s Checking existence of `"forecast-sheet" Any`
+    t =     9.00s Checking existence of `"event-sheet" Any`
+    t =     9.01s Checking existence of `"reaction-sheet" Any`
+    t =     9.01s Checking existence of `"year-summary-sheet" Any`
+    t =     9.02s Waiting 1.0s for "age-up-button" Button to exist
+    t =    10.03s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =    10.03s         Checking existence of `"age-up-button" Button`
+    t =    10.04s         Capturing element debug description
+    t =    10.04s     Checking existence of `"age-up-button" Button`
+    t =    10.05s Collecting debug information to assist test failure triage
+    t =    10.05s     Requesting snapshot of accessibility hierarchy for app with pid 22227
+    t =    10.07s Waiting 3.0s for "age-up-button" Button to exist
+    t =    11.11s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =    11.11s         Checking existence of `"age-up-button" Button`
+    t =    11.13s         Capturing element debug description
+    t =    12.16s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =    12.16s         Checking existence of `"age-up-button" Button`
+    t =    12.17s         Capturing element debug description
+    t =    13.07s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =    13.07s         Checking existence of `"age-up-button" Button`
+    t =    13.08s         Capturing element debug description
+    t =    13.08s     Checking existence of `"age-up-button" Button`
+    t =    13.10s Collecting debug information to assist test failure triage
+    t =    13.10s     Requesting snapshot of accessibility hierarchy for app with pid 22227
+/Users/justinjeffery/Desktop/OneLife/OneLifeUITests/OneLifeUITests.swift:277: error: -[OneLifeUITests.OneLifeUITests testLargeContentSizeStillKeepsPlannerReachable] : XCTAssertTrue failed
+    t =    13.11s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testLargeContentSizeStillKeepsPlannerReachable]' failed (13.327 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testLaunchPerformance]' started.
+    t =     0.00s Start Test at 2026-04-30 17:19:22.373
+    t =     0.02s Set Up
+    t =     0.03s     Setting device orientation to Portrait
+    t =     0.03s         Wait for LifeApp.OneLife to idle
+    t =     0.04s Open LifeApp.OneLife
+    t =     0.04s     Launch LifeApp.OneLife
+    t =     0.04s         Terminate LifeApp.OneLife:22227
+    t =     1.76s         Setting up automation session
+    t =     3.28s         Wait for LifeApp.OneLife to idle
+    t =     6.21s Open LifeApp.OneLife
+    t =     6.21s     Launch LifeApp.OneLife
+    t =     6.21s         Terminate LifeApp.OneLife:22264
+    t =     7.52s         Setting up automation session
+    t =     8.76s         Wait for LifeApp.OneLife to idle
+    t =    11.07s Open LifeApp.OneLife
+    t =    11.07s     Launch LifeApp.OneLife
+    t =    11.07s         Terminate LifeApp.OneLife:22283
+    t =    12.35s         Setting up automation session
+    t =    13.14s         Wait for LifeApp.OneLife to idle
+    t =    15.57s Open LifeApp.OneLife
+    t =    15.57s     Launch LifeApp.OneLife
+    t =    15.57s         Terminate LifeApp.OneLife:22302
+    t =    16.84s         Setting up automation session
+    t =    17.70s         Wait for LifeApp.OneLife to idle
+    t =    19.83s Open LifeApp.OneLife
+    t =    19.83s     Launch LifeApp.OneLife
+    t =    19.83s         Terminate LifeApp.OneLife:22329
+    t =    21.34s         Setting up automation session
+    t =    22.65s         Wait for LifeApp.OneLife to idle
+    t =    24.89s Open LifeApp.OneLife
+    t =    24.89s     Launch LifeApp.OneLife
+    t =    24.89s         Terminate LifeApp.OneLife:22346
+    t =    26.19s         Setting up automation session
+    t =    27.28s         Wait for LifeApp.OneLife to idle
+/Users/justinjeffery/Desktop/OneLife/OneLifeUITests/OneLifeUITests.swift:106: Test Case '-[OneLifeUITests.OneLifeUITests testLaunchPerformance]' measured [Duration (AppLaunch), s] average: 1.713, relative standard deviation: 16.256%, values: [1.896756, 1.531159, 1.375490, 2.155852, 1.607938], performanceMetricID:com.apple.dt.XCTMetric_ApplicationLaunch-AppLaunch.duration, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+    t =    29.41s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITests testLaunchPerformance]' passed (29.661 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITests testLaunchShowsPlannerShell]' started.
+    t =     0.00s Start Test at 2026-04-30 17:19:52.035
+    t =     0.02s Set Up
+    t =     0.02s     Setting device orientation to Portrait
+    t =     0.03s         Wait for LifeApp.OneLife to idle
+    t =     0.03s Setting device orientation to Portrait
+    t =     0.04s     Wait for LifeApp.OneLife to idle
+    t =     0.04s Open LifeApp.OneLife
+    t =     0.04s     Launch LifeApp.OneLife
+    t =     0.04s         Terminate LifeApp.OneLife:22370
+    t =     1.74s         Setting up automation session
+    t =     3.45s         Wait for LifeApp.OneLife to idle
+    t =     5.20s Setting device orientation to Portrait
+    t =     5.20s     Wait for LifeApp.OneLife to idle
+    t =     5.21s Waiting 2.0s for "startup-screen" Any to exist
+    t =     6.27s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     6.27s         Checking existence of `"startup-screen" Any`
+    t =     6.33s         Capturing element debug description
+    t =     7.22s     Checking `Expect predicate `existsNoRetry == 1` for object "startup-screen" Any`
+    t =     7.22s         Checking existence of `"startup-screen" Any`
+    t =     7.23s         Capturing element debug description
+    t =     7.23s     Checking existence of `"startup-screen" Any`
+    t =     7.24s Collecting debug information to assist test failure triage
+    t =     7.24s     Requesting snapshot of accessibility hierarchy for app with pid 22390
+    t =     7.26s Waiting 2.0s for "begin-life-button" Button to exist
+    t =     8.32s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     8.32s         Checking existence of `"begin-life-button" Button`
+    t =     8.33s         Capturing element debug description
+    t =     9.27s     Checking `Expect predicate `existsNoRetry == 1` for object "begin-life-button" Button`
+    t =     9.27s         Checking existence of `"begin-life-button" Button`
+    t =     9.28s         Capturing element debug description
+    t =     9.28s     Checking existence of `"begin-life-button" Button`
+    t =     9.30s Collecting debug information to assist test failure triage
+    t =     9.30s     Requesting snapshot of accessibility hierarchy for app with pid 22390
+    t =     9.31s Checking existence of `"forecast-continue-button" Button`
+    t =     9.32s Checking existence of `"event-choice-0" Button`
+    t =     9.33s Checking existence of `"reaction-continue-button" Button`
+    t =     9.34s Checking existence of `"year-summary-continue-button" Button`
+    t =     9.35s Checking existence of `"planner-detail-done-button" Button`
+    t =     9.36s Checking existence of `"forecast-sheet" Any`
+    t =     9.37s Checking existence of `"event-sheet" Any`
+    t =     9.39s Checking existence of `"reaction-sheet" Any`
+    t =     9.40s Checking existence of `"year-summary-sheet" Any`
+    t =     9.41s Waiting 1.0s for "age-up-button" Button to exist
+    t =    10.41s     Checking `Expect predicate `existsNoRetry == 1` for object "age-up-button" Button`
+    t =    10.41s         Checking existence of `"age-up-button" Button`
+    t =    10.42s         Capturing element debug description
+    t =    10.43s     Checking existence of `"age-up-button" Button`
+    t =    10.44s Collecting debug information to assist test failure triage
+    t =    10.44s     Requesting snapshot of accessibility hierarchy for app with pid 22390
+    t =    10.45s Waiting 3.0s for "feed-tab" Button to exist
+    t =    11.52s     Checking `Expect predicate `existsNoRetry == 1` for object "feed-tab" Button`
+    t =    11.52s         Checking existence of `"feed-tab" Button`
+    t =    11.53s         Capturing element debug description

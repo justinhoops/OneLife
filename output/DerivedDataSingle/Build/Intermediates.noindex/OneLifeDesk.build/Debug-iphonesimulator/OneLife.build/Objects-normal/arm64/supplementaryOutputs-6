@@ -1,0 +1,23 @@
+{
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/OneLifeBaseApp.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Persistence.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/OriginSystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.swiftdeps"
+  }
+}

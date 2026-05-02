@@ -1,0 +1,23 @@
+{
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/DebugTestingCoordinator.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/DomainCacheArtifacts.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/DomainEffectApplier.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexActivation/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.swiftdeps"
+  }
+}

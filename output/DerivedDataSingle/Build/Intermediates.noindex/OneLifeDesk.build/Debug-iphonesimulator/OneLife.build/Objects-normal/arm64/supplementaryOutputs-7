@@ -1,0 +1,23 @@
+{
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/PolicySystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/ProgressCoreSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/RelationshipFamilyHealthAssetSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataSingle/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.swiftdeps"
+  }
+}

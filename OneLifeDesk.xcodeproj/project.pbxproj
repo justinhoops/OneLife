@@ -1,0 +1,728 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		0E8FF6492F386F7600C04A6F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0E8FF6332F386F7300C04A6F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0E8FF63A2F386F7300C04A6F;
+			remoteInfo = OneLife;
+		};
+		0E8FF6532F386F7600C04A6F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0E8FF6332F386F7300C04A6F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0E8FF63A2F386F7300C04A6F;
+			remoteInfo = OneLife;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXBuildFile section */
+		A10000012F386F7600C04A6F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000012F386F7600C04A6F /* ContentView.swift */; };
+		A10000022F386F7600C04A6F /* DebugTestingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000022F386F7600C04A6F /* DebugTestingCoordinator.swift */; };
+		A10000032F386F7600C04A6F /* DomainCacheArtifacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000032F386F7600C04A6F /* DomainCacheArtifacts.swift */; };
+		A10000042F386F7600C04A6F /* DomainEffectApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000042F386F7600C04A6F /* DomainEffectApplier.swift */; };
+		A10000052F386F7600C04A6F /* EventEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000052F386F7600C04A6F /* EventEngine.swift */; };
+		A10000062F386F7600C04A6F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000062F386F7600C04A6F /* Models.swift */; };
+		A10000072F386F7600C04A6F /* OneLifeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000072F386F7600C04A6F /* OneLifeApp.swift */; };
+		A10000082F386F7600C04A6F /* OneLifeBaseApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000082F386F7600C04A6F /* OneLifeBaseApp.swift */; };
+		A10000092F386F7600C04A6F /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000092F386F7600C04A6F /* Persistence.swift */; };
+		A100000A2F386F7600C04A6F /* WorldSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000A2F386F7600C04A6F /* WorldSnapshot.swift */; };
+		A100000B2F386F7600C04A6F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A200000B2F386F7600C04A6F /* Assets.xcassets */; };
+		A100000C2F386F7600C04A6F /* SampleEvents.json in Resources */ = {isa = PBXBuildFile; fileRef = A200000C2F386F7600C04A6F /* SampleEvents.json */; };
+		A100000D2F386F7600C04A6F /* OneLifeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000D2F386F7600C04A6F /* OneLifeTests.swift */; };
+		A100000E2F386F7600C04A6F /* OneLifeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000E2F386F7600C04A6F /* OneLifeUITests.swift */; };
+		A100000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift */; };
+		A10000102F386F7600C04A6F /* NarrativeArcSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000102F386F7600C04A6F /* NarrativeArcSystem.swift */; };
+		A10000112F386F7600C04A6F /* OriginSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000112F386F7600C04A6F /* OriginSystem.swift */; };
+		A10000122F386F7600C04A6F /* PolicySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000122F386F7600C04A6F /* PolicySystem.swift */; };
+		A10000132F386F7600C04A6F /* StoryletSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000132F386F7600C04A6F /* StoryletSystem.swift */; };
+		A10000142F386F7600C04A6F /* EducationCareerSystems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000142F386F7600C04A6F /* EducationCareerSystems.swift */; };
+		A10000152F386F7600C04A6F /* SpecialCareerCrimeSystems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000152F386F7600C04A6F /* SpecialCareerCrimeSystems.swift */; };
+		A10000162F386F7600C04A6F /* FinanceInvestmentSystems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000162F386F7600C04A6F /* FinanceInvestmentSystems.swift */; };
+		A10000172F386F7600C04A6F /* RelationshipFamilyHealthAssetSystems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000172F386F7600C04A6F /* RelationshipFamilyHealthAssetSystems.swift */; };
+		A10000182F386F7600C04A6F /* ProgressCoreSystems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000182F386F7600C04A6F /* ProgressCoreSystems.swift */; };
+		A10000192F386F7600C04A6F /* LifeSimulationOrchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000192F386F7600C04A6F /* LifeSimulationOrchestrator.swift */; };
+		A100001A2F386F7600C04A6F /* CharacterCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001A2F386F7600C04A6F /* CharacterCreationView.swift */; };
+		A100001B2F386F7600C04A6F /* ContinuityThreadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001B2F386F7600C04A6F /* ContinuityThreadEngine.swift */; };
+		A100001C2F386F7600C04A6F /* SilentYearEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001C2F386F7600C04A6F /* SilentYearEngine.swift */; };
+		A100001D2F386F7600C04A6F /* NarrativeToneResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */; };
+		A100001E2F386F7600C04A6F /* EchoFlavorResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001E2F386F7600C04A6F /* EchoFlavorResolver.swift */; };
+		A100001F2F386F7600C04A6F /* InteractionCardCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001F2F386F7600C04A6F /* InteractionCardCoordinator.swift */; };
+		A10000202F386F7600C04A6F /* FeedbackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000202F386F7600C04A6F /* FeedbackCoordinator.swift */; };
+		A10000212F386F7600C04A6F /* WorldAutonomySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000212F386F7600C04A6F /* WorldAutonomySystem.swift */; };
+		A10000222F386F7600C04A6F /* NPCAutonomySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000222F386F7600C04A6F /* NPCAutonomySystem.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0E8FF63B2F386F7300C04A6F /* OneLife.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OneLife.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E8FF6482F386F7600C04A6F /* OneLifeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OneLifeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E8FF6522F386F7600C04A6F /* OneLifeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OneLifeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000012F386F7600C04A6F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A20000022F386F7600C04A6F /* DebugTestingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugTestingCoordinator.swift; sourceTree = "<group>"; };
+		A20000032F386F7600C04A6F /* DomainCacheArtifacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainCacheArtifacts.swift; sourceTree = "<group>"; };
+		A20000042F386F7600C04A6F /* DomainEffectApplier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainEffectApplier.swift; sourceTree = "<group>"; };
+		A20000052F386F7600C04A6F /* EventEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventEngine.swift; sourceTree = "<group>"; };
+		A20000062F386F7600C04A6F /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A20000072F386F7600C04A6F /* OneLifeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeApp.swift; sourceTree = "<group>"; };
+		A20000082F386F7600C04A6F /* OneLifeBaseApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeBaseApp.swift; sourceTree = "<group>"; };
+		A20000092F386F7600C04A6F /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
+		A200000A2F386F7600C04A6F /* WorldSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldSnapshot.swift; sourceTree = "<group>"; };
+		A200000B2F386F7600C04A6F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A200000C2F386F7600C04A6F /* SampleEvents.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = SampleEvents.json; sourceTree = "<group>"; };
+		A200000D2F386F7600C04A6F /* OneLifeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeTests.swift; sourceTree = "<group>"; };
+		A200000E2F386F7600C04A6F /* OneLifeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeUITests.swift; sourceTree = "<group>"; };
+		A200000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		A20000102F386F7600C04A6F /* NarrativeArcSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/NarrativeArcSystem.swift; sourceTree = "<group>"; };
+		A20000112F386F7600C04A6F /* OriginSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/OriginSystem.swift; sourceTree = "<group>"; };
+		A20000122F386F7600C04A6F /* PolicySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/PolicySystem.swift; sourceTree = "<group>"; };
+		A20000132F386F7600C04A6F /* StoryletSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/StoryletSystem.swift; sourceTree = "<group>"; };
+		A20000142F386F7600C04A6F /* EducationCareerSystems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/EducationCareerSystems.swift; sourceTree = "<group>"; };
+		A20000152F386F7600C04A6F /* SpecialCareerCrimeSystems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/SpecialCareerCrimeSystems.swift; sourceTree = "<group>"; };
+		A20000162F386F7600C04A6F /* FinanceInvestmentSystems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/FinanceInvestmentSystems.swift; sourceTree = "<group>"; };
+		A20000172F386F7600C04A6F /* RelationshipFamilyHealthAssetSystems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/RelationshipFamilyHealthAssetSystems.swift; sourceTree = "<group>"; };
+		A20000182F386F7600C04A6F /* ProgressCoreSystems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/ProgressCoreSystems.swift; sourceTree = "<group>"; };
+		A20000192F386F7600C04A6F /* LifeSimulationOrchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/LifeSimulationOrchestrator.swift; sourceTree = "<group>"; };
+		A200001A2F386F7600C04A6F /* CharacterCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterCreationView.swift; sourceTree = "<group>"; };
+		A200001B2F386F7600C04A6F /* ContinuityThreadEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuityThreadEngine.swift; sourceTree = "<group>"; };
+		A200001C2F386F7600C04A6F /* SilentYearEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilentYearEngine.swift; sourceTree = "<group>"; };
+		A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrativeToneResolver.swift; sourceTree = "<group>"; };
+		A200001E2F386F7600C04A6F /* EchoFlavorResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchoFlavorResolver.swift; sourceTree = "<group>"; };
+		A200001F2F386F7600C04A6F /* InteractionCardCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionCardCoordinator.swift; sourceTree = "<group>"; };
+		A20000202F386F7600C04A6F /* FeedbackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackCoordinator.swift; sourceTree = "<group>"; };
+		A20000212F386F7600C04A6F /* WorldAutonomySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/WorldAutonomySystem.swift; sourceTree = "<group>"; };
+		A20000222F386F7600C04A6F /* NPCAutonomySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/NPCAutonomySystem.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0E8FF63D2F386F7300C04A6F /* OneLife */ = {
+			isa = PBXGroup;
+			children = (
+				A200000B2F386F7600C04A6F /* Assets.xcassets */,
+				A200001A2F386F7600C04A6F /* CharacterCreationView.swift */,
+				A20000012F386F7600C04A6F /* ContentView.swift */,
+				A200001B2F386F7600C04A6F /* ContinuityThreadEngine.swift */,
+				A20000022F386F7600C04A6F /* DebugTestingCoordinator.swift */,
+				A20000032F386F7600C04A6F /* DomainCacheArtifacts.swift */,
+				A20000042F386F7600C04A6F /* DomainEffectApplier.swift */,
+				A200001E2F386F7600C04A6F /* EchoFlavorResolver.swift */,
+				A20000052F386F7600C04A6F /* EventEngine.swift */,
+				A20000202F386F7600C04A6F /* FeedbackCoordinator.swift */,
+				A200001F2F386F7600C04A6F /* InteractionCardCoordinator.swift */,
+				A20000192F386F7600C04A6F /* LifeSimulationOrchestrator.swift */,
+				A20000062F386F7600C04A6F /* Models.swift */,
+				A20000102F386F7600C04A6F /* NarrativeArcSystem.swift */,
+				A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */,
+				A20000072F386F7600C04A6F /* OneLifeApp.swift */,
+				A20000082F386F7600C04A6F /* OneLifeBaseApp.swift */,
+				A20000112F386F7600C04A6F /* OriginSystem.swift */,
+				A20000222F386F7600C04A6F /* NPCAutonomySystem.swift */,
+				A20000092F386F7600C04A6F /* Persistence.swift */,
+				A20000122F386F7600C04A6F /* PolicySystem.swift */,
+				A20000182F386F7600C04A6F /* ProgressCoreSystems.swift */,
+				A200000C2F386F7600C04A6F /* SampleEvents.json */,
+				A20000172F386F7600C04A6F /* RelationshipFamilyHealthAssetSystems.swift */,
+				A200001C2F386F7600C04A6F /* SilentYearEngine.swift */,
+				A20000152F386F7600C04A6F /* SpecialCareerCrimeSystems.swift */,
+				A20000132F386F7600C04A6F /* StoryletSystem.swift */,
+				A20000142F386F7600C04A6F /* EducationCareerSystems.swift */,
+				A20000162F386F7600C04A6F /* FinanceInvestmentSystems.swift */,
+				A20000212F386F7600C04A6F /* WorldAutonomySystem.swift */,
+				A200000A2F386F7600C04A6F /* WorldSnapshot.swift */,
+			);
+			path = OneLife;
+			sourceTree = "<group>";
+		};
+		0E8FF64B2F386F7600C04A6F /* OneLifeTests */ = {
+			isa = PBXGroup;
+			children = (
+				A200000D2F386F7600C04A6F /* OneLifeTests.swift */,
+			);
+			path = OneLifeTests;
+			sourceTree = "<group>";
+		};
+		0E8FF6552F386F7600C04A6F /* OneLifeUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A200000E2F386F7600C04A6F /* OneLifeUITests.swift */,
+				A200000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift */,
+			);
+			path = OneLifeUITests;
+			sourceTree = "<group>";
+		};
+		0E8FF6322F386F7300C04A6F = {
+			isa = PBXGroup;
+			children = (
+				0E8FF63D2F386F7300C04A6F /* OneLife */,
+				0E8FF64B2F386F7600C04A6F /* OneLifeTests */,
+				0E8FF6552F386F7600C04A6F /* OneLifeUITests */,
+				0E8FF63C2F386F7300C04A6F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0E8FF63C2F386F7300C04A6F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0E8FF63B2F386F7300C04A6F /* OneLife.app */,
+				0E8FF6482F386F7600C04A6F /* OneLifeTests.xctest */,
+				0E8FF6522F386F7600C04A6F /* OneLifeUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0E8FF6382F386F7300C04A6F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E8FF6452F386F7600C04A6F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E8FF64F2F386F7600C04A6F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		0E8FF63A2F386F7300C04A6F /* OneLife */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E8FF65C2F386F7600C04A6F /* Build configuration list for PBXNativeTarget "OneLife" */;
+			buildPhases = (
+				0E8FF6372F386F7300C04A6F /* Sources */,
+				0E8FF6382F386F7300C04A6F /* Frameworks */,
+				0E8FF6392F386F7300C04A6F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OneLife;
+			packageProductDependencies = (
+			);
+			productName = OneLife;
+			productReference = 0E8FF63B2F386F7300C04A6F /* OneLife.app */;
+			productType = "com.apple.product-type.application";
+		};
+		0E8FF6472F386F7600C04A6F /* OneLifeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E8FF65F2F386F7600C04A6F /* Build configuration list for PBXNativeTarget "OneLifeTests" */;
+			buildPhases = (
+				0E8FF6442F386F7600C04A6F /* Sources */,
+				0E8FF6452F386F7600C04A6F /* Frameworks */,
+				0E8FF6462F386F7600C04A6F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0E8FF64A2F386F7600C04A6F /* PBXTargetDependency */,
+			);
+			name = OneLifeTests;
+			packageProductDependencies = (
+			);
+			productName = OneLifeTests;
+			productReference = 0E8FF6482F386F7600C04A6F /* OneLifeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		0E8FF6512F386F7600C04A6F /* OneLifeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E8FF6622F386F7600C04A6F /* Build configuration list for PBXNativeTarget "OneLifeUITests" */;
+			buildPhases = (
+				0E8FF64E2F386F7600C04A6F /* Sources */,
+				0E8FF64F2F386F7600C04A6F /* Frameworks */,
+				0E8FF6502F386F7600C04A6F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0E8FF6542F386F7600C04A6F /* PBXTargetDependency */,
+			);
+			name = OneLifeUITests;
+			packageProductDependencies = (
+			);
+			productName = OneLifeUITests;
+			productReference = 0E8FF6522F386F7600C04A6F /* OneLifeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0E8FF6332F386F7300C04A6F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					0E8FF63A2F386F7300C04A6F = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					0E8FF6472F386F7600C04A6F = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 0E8FF63A2F386F7300C04A6F;
+					};
+					0E8FF6512F386F7600C04A6F = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 0E8FF63A2F386F7300C04A6F;
+					};
+				};
+			};
+			buildConfigurationList = 0E8FF6362F386F7300C04A6F /* Build configuration list for PBXProject "OneLife" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 0E8FF6322F386F7300C04A6F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0E8FF63C2F386F7300C04A6F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0E8FF63A2F386F7300C04A6F /* OneLife */,
+				0E8FF6472F386F7600C04A6F /* OneLifeTests */,
+				0E8FF6512F386F7600C04A6F /* OneLifeUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0E8FF6392F386F7300C04A6F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000B2F386F7600C04A6F /* Assets.xcassets in Resources */,
+				A100000C2F386F7600C04A6F /* SampleEvents.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E8FF6462F386F7600C04A6F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E8FF6502F386F7600C04A6F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0E8FF6372F386F7300C04A6F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000012F386F7600C04A6F /* ContentView.swift in Sources */,
+				A100001A2F386F7600C04A6F /* CharacterCreationView.swift in Sources */,
+				A100001B2F386F7600C04A6F /* ContinuityThreadEngine.swift in Sources */,
+				A10000022F386F7600C04A6F /* DebugTestingCoordinator.swift in Sources */,
+				A10000032F386F7600C04A6F /* DomainCacheArtifacts.swift in Sources */,
+				A10000042F386F7600C04A6F /* DomainEffectApplier.swift in Sources */,
+				A100001E2F386F7600C04A6F /* EchoFlavorResolver.swift in Sources */,
+				A10000052F386F7600C04A6F /* EventEngine.swift in Sources */,
+				A10000202F386F7600C04A6F /* FeedbackCoordinator.swift in Sources */,
+				A100001F2F386F7600C04A6F /* InteractionCardCoordinator.swift in Sources */,
+				A10000192F386F7600C04A6F /* LifeSimulationOrchestrator.swift in Sources */,
+				A10000062F386F7600C04A6F /* Models.swift in Sources */,
+				A10000102F386F7600C04A6F /* NarrativeArcSystem.swift in Sources */,
+				A100001D2F386F7600C04A6F /* NarrativeToneResolver.swift in Sources */,
+				A10000072F386F7600C04A6F /* OneLifeApp.swift in Sources */,
+				A10000082F386F7600C04A6F /* OneLifeBaseApp.swift in Sources */,
+				A10000112F386F7600C04A6F /* OriginSystem.swift in Sources */,
+				A10000092F386F7600C04A6F /* Persistence.swift in Sources */,
+				A10000122F386F7600C04A6F /* PolicySystem.swift in Sources */,
+				A10000182F386F7600C04A6F /* ProgressCoreSystems.swift in Sources */,
+				A10000172F386F7600C04A6F /* RelationshipFamilyHealthAssetSystems.swift in Sources */,
+				A100001C2F386F7600C04A6F /* SilentYearEngine.swift in Sources */,
+				A10000152F386F7600C04A6F /* SpecialCareerCrimeSystems.swift in Sources */,
+				A10000132F386F7600C04A6F /* StoryletSystem.swift in Sources */,
+				A10000142F386F7600C04A6F /* EducationCareerSystems.swift in Sources */,
+				A10000162F386F7600C04A6F /* FinanceInvestmentSystems.swift in Sources */,
+				A10000222F386F7600C04A6F /* NPCAutonomySystem.swift in Sources */,
+				A10000212F386F7600C04A6F /* WorldAutonomySystem.swift in Sources */,
+				A100000A2F386F7600C04A6F /* WorldSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E8FF6442F386F7600C04A6F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000D2F386F7600C04A6F /* OneLifeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0E8FF64E2F386F7600C04A6F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000E2F386F7600C04A6F /* OneLifeUITests.swift in Sources */,
+				A100000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0E8FF64A2F386F7600C04A6F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0E8FF63A2F386F7300C04A6F /* OneLife */;
+			targetProxy = 0E8FF6492F386F7600C04A6F /* PBXContainerItemProxy */;
+		};
+		0E8FF6542F386F7600C04A6F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0E8FF63A2F386F7300C04A6F /* OneLife */;
+			targetProxy = 0E8FF6532F386F7600C04A6F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0E8FF65A2F386F7600C04A6F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+					SDKROOT = iphoneos;
+					SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+					SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		0E8FF65B2F386F7600C04A6F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+					SDKROOT = iphoneos;
+					SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+					SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		0E8FF65D2F386F7600C04A6F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.simulation-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = LifeApp.OneLife;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0E8FF65E2F386F7600C04A6F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.simulation-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = LifeApp.OneLife;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0E8FF6602F386F7600C04A6F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = LifeApp.OneLifeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OneLife.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OneLife";
+			};
+			name = Debug;
+		};
+		0E8FF6612F386F7600C04A6F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = LifeApp.OneLifeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OneLife.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OneLife";
+			};
+			name = Release;
+		};
+		0E8FF6632F386F7600C04A6F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = LifeApp.OneLifeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = OneLife;
+			};
+			name = Debug;
+		};
+		0E8FF6642F386F7600C04A6F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PH3Q39RH2H;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = LifeApp.OneLifeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = OneLife;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0E8FF6362F386F7300C04A6F /* Build configuration list for PBXProject "OneLife" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E8FF65A2F386F7600C04A6F /* Debug */,
+				0E8FF65B2F386F7600C04A6F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0E8FF65C2F386F7600C04A6F /* Build configuration list for PBXNativeTarget "OneLife" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E8FF65D2F386F7600C04A6F /* Debug */,
+				0E8FF65E2F386F7600C04A6F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0E8FF65F2F386F7600C04A6F /* Build configuration list for PBXNativeTarget "OneLifeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E8FF6602F386F7600C04A6F /* Debug */,
+				0E8FF6612F386F7600C04A6F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0E8FF6622F386F7600C04A6F /* Build configuration list for PBXNativeTarget "OneLifeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E8FF6632F386F7600C04A6F /* Debug */,
+				0E8FF6642F386F7600C04A6F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0E8FF6332F386F7300C04A6F /* Project object */;
+}

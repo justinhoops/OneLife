@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>1DE1BF72-2133-453B-87F5-F92E39C1870E</key>
+		<dict>
+			<key>auxiliaryLogUniqueIdentifier</key>
+			<string>3B612164-2760-4BF6-B51A-A37805C2DF09</string>
+			<key>auxiliaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>2</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>7</integer>
+			</dict>
+			<key>className</key>
+			<string>IDESchemeActionsInvocationRecord</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>com.apple.dt.unit.cocoaUnitTest</string>
+			<key>fileName</key>
+			<string>Test-OneLife-2026.04.05_12-25-47--0600.xcresult</string>
+			<key>hasAuxiliaryLog</key>
+			<true/>
+			<key>hasCoverageData</key>
+			<true/>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>3</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>7</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>OneLife project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>OneLife</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Test OneLife</string>
+			<key>timeStartedRecording</key>
+			<real>797106347.59244394</real>
+			<key>timeStoppedRecording</key>
+			<real>797106366.837116</real>
+			<key>title</key>
+			<string>Test OneLife</string>
+			<key>uniqueIdentifier</key>
+			<string>1DE1BF72-2133-453B-87F5-F92E39C1870E</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

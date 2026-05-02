@@ -1,0 +1,23 @@
+{
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/EchoFlavorResolver.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/EventEngine.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/LifeSimulationOrchestrator.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataRegularCareersNoSign/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.swiftdeps"
+  }
+}

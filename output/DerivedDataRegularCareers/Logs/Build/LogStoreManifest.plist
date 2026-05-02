@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>1166946A-CA6B-4AA0-80F5-5DF4404BE4DE</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>1166946A-CA6B-4AA0-80F5-5DF4404BE4DE.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>23</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>11</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>OneLifeDesk project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>OneLife</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Testing project OneLifeDesk with scheme OneLife</string>
+			<key>timeStartedRecording</key>
+			<real>798841951.89573896</real>
+			<key>timeStoppedRecording</key>
+			<real>798841999.04659104</real>
+			<key>title</key>
+			<string>Testing project OneLifeDesk with scheme OneLife</string>
+			<key>uniqueIdentifier</key>
+			<string>1166946A-CA6B-4AA0-80F5-5DF4404BE4DE</string>
+		</dict>
+		<key>FB941F90-F42C-4CCA-A74D-821EE25DFD64</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>FB941F90-F42C-4CCA-A74D-821EE25DFD64.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>23</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>7</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>OneLifeDesk project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>OneLife</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Testing project OneLifeDesk with scheme OneLife</string>
+			<key>timeStartedRecording</key>
+			<real>798842008.04198396</real>
+			<key>timeStoppedRecording</key>
+			<real>798842026.19700396</real>
+			<key>title</key>
+			<string>Testing project OneLifeDesk with scheme OneLife</string>
+			<key>uniqueIdentifier</key>
+			<string>FB941F90-F42C-4CCA-A74D-821EE25DFD64</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

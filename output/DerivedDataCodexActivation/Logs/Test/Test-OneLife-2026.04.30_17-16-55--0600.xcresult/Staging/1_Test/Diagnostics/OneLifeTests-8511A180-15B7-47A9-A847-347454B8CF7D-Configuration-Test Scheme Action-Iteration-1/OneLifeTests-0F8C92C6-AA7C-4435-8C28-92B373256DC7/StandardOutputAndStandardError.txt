@@ -1,0 +1,326 @@
+◇ Test run started.
+↳ Testing Library Version: 1743
+↳ Target Platform: arm64-apple-ios13.0-simulator
+◇ Suite OneLifeTests started.
+◇ Test outcomeAggregatorHighlightsTopProblemAndOpportunity() started.
+◇ Test persistenceLoadsEnvelopeFromPrimarySave() started.
+◇ Test scheduledEventProducesForecastThenEventThenAftermathStack() started.
+◇ Test teenStudentYearProducesLowCostsAndSmallTaxRate() started.
+◇ Test contentPackBalancesAllPrimaryDomains() started.
+◇ Test millionaireMilestoneCountsHomeEquity() started.
+◇ Test climberIdentityGeneratesPromotionDoor() started.
+◇ Test careerProfilesDivergeUnderSameAdultYear() started.
+◇ Test dueScheduledEventOutranksRandomEventAtChapterStart() started.
+◇ Test previewStartIncludesNarrativeArcCandidates() started.
+◇ Test runSchemeActivatesCrimeTrack() started.
+◇ Test adultSurplusCanMoveIntoIndexFunds() started.
+◇ Test actionPreviewsUseUpdatedCrossDomainLanguage() started.
+◇ Test eventPackChoicesStayCappedAndGlanceable() started.
+◇ Test repeatedRiskActivityBuildsPushback() started.
+◇ Test familySystemCanResolveThirdTrimesterToBirth() started.
+◇ Test scholarshipNeedsStandingAndActivityMomentum() started.
+◇ Test recoveryActionReducesHealthPressureAcrossYearAdvance() started.
+◇ Test debugScenarioSeedsAdultCareerWithFullTimeActions() started.
+◇ Test interactionCardCoordinatorPreservesQueueOrder() started.
+◇ Test adultCareerDebugScenarioAdvanceYearProducesStableSummaryEnvelope() started.
+◇ Test lateGameSummaryAddsNarrativePressureSignals() started.
+◇ Test joinActivityBuildsMomentumAndSocialCarryover() started.
+◇ Test sellToCoverRaisesCashByLiquidatingHoldings() started.
+◇ Test specialCareerQualificationUsesRegularCareerExperience() started.
+◇ Test localArcGeneratorReflectsFinancialStrainContext() started.
+◇ Test eventEngineCanSurfaceAdultUnemploymentPressureBeat() started.
+◇ Test persistenceRecoversFromBackupWhenPrimaryIsCorrupted() started.
+◇ Test homeownerOnlyLateEventRequiresOwnedHome() started.
+◇ Test leanOnMentorBuildsAdultCoverWithoutTouchingFinance() started.
+◇ Test echoFlavorResolverPrependsPastChoiceMemory() started.
+◇ Test ownedHomePaysMortgageAndBuildsEquityAcrossYears() started.
+◇ Test eventEngineHandlesLargeSyntheticPack() started.
+◇ Test orchestratorSkipsAssetSystemForTeenYears() started.
+◇ Test financeDependentCostReflectsPregnancyAndChildren() started.
+◇ Test adultShortfallRollsIntoCreditDebtInsteadOfSoftLocking() started.
+◇ Test educationYearUsesSupportAndSocialFragility() started.
+◇ Test encodedStateDoesNotWriteLegacyMoneyField() started.
+◇ Test teenEducationScenarioKeepsReactionSummaryAndResolutionOrdering() started.
+◇ Test educationActivityMomentumClampsIntoValidRange() started.
+◇ Test ageUpBuildsBoundedInteractionDeck() started.
+◇ Test buyingStarterHomeCreatesMortgageAndOwnerOccupiedHousing() started.
+◇ Test familySystemActivationHibernatesWhenNoPartnerOrChildrenExist() started.
+◇ Test persistenceLoadsLegacyRawStateFromPrimaryPath() started.
+◇ Test traitAndCareerBonusesAccumulateInFinanceCash() started.
+◇ Test millionaireMilestoneCountsInvestedWealth() started.
+◇ Test crimeSystemActionClampsLegacyCrimeStateSafely() started.
+◇ Test legacyEducationStateDecodesNewSchoolClimateDefaults() started.
+◇ Test bundledEventPackIncludesAdultPressureEvents() started.
+◇ Test persistenceLoadsLegacyRawStateFromLegacyFile() started.
+◇ Test viewModelSurfacesSaveFailureWithoutCrashing() started.
+◇ Test causeTrailCapsYearSummaryReasons() started.
+◇ Test healthDrivenShortfallCanCreateMedicalDebt() started.
+◇ Test systemRegistryHibernatesAgeBoundDomains() started.
+◇ Test bankruptcyResetsEligibleDebtAndWipesInvestments() started.
+◇ Test continuityMilestonesFireOnceAtAge18And20() started.
+◇ Test activatingPreviewAddsChapterPressureHistory() started.
+◇ Test feedOverviewBuildsContinuityHubFromYearSummaryAndCarryover() started.
+◇ Test legacySaveWithoutFinanceDecodesWithLegacyMoneyFallback() started.
+◇ Test legacySaveWithoutNarrativeArcsDecodesWithEmptyNarrativeState() started.
+◇ Test millionaireMilestoneReadsFinanceCash() started.
+◇ Test discussFutureCanAdvanceCommittedPartnerIntoMarriage() started.
+◇ Test stockLossesHitPortfolioAndRaiseStress() started.
+◇ Test orchestratorPublishesLatestWorldSnapshotAfterAdvanceYear() started.
+◇ Test activitySystemAppliesImmediateEffectsAndHistory() started.
+◇ Test milestoneConflictCreatesFuturePressure() started.
+◇ Test debugScenarioCoordinatorIsDeterministic() started.
+◇ Test interactionCardPayloadCaseSentinelCoversAllCases() started.
+◇ Test familyPlanningIntentChangesConceptionChance() started.
+◇ Test debugTimingSnapshotIsPopulatedWithoutChangingOutcome() started.
+◇ Test savingForDownPaymentMovesCashIntoHouseFund() started.
+◇ Test activitiesOverviewSurfacesImmediateLoop() started.
+◇ Test legacySaveWithoutConsequenceStateDecodesWithEmptyConsequences() started.
+◇ Test financeSystemReturnsPressureEffectsInsteadOfMutatingOtherDomains() started.
+◇ Test relationshipActionBuildsReputationAndRumorWeights() started.
+◇ Test forecastUsesScheduledCallbackContext() started.
+◇ Test educationSystemCanGraduateTeenIntoAdultReadiness() started.
+◇ Test ageCheckpointsAppearAcrossTeenTransition() started.
+◇ Test burnoutReducesEntertainmentOutcomeQuality() started.
+◇ Test actionPreviewTagsAreCappedForTradeoffScanning() started.
+◇ Test advanceYearWithLargerSyntheticStateKeepsHistoryBounded() started.
+◇ Test repeatedProtectEnergyBuildsCaretakerIdentity() started.
+◇ Test activeCrimeYearCanForceLayLowOrExitWithoutCrashing() started.
+◇ Test takeOvertimeCreatesMoneyHealthAndRelationshipTradeoff() started.
+◇ Test yearlySummaryCarriesFocusTradeoffAndNextYearPressure() started.
+◇ Test ageUpRiskPreviewStaysGlanceableAndQualitative() started.
+◇ Test financeEffectMutatesFinanceDomainWithoutPlayerMoneySync() started.
+◇ Test activitySystemBlocksUnderageViceActivity() started.
+◇ Test persistencePrunesHistoryToBudget() started.
+◇ Test unemployedAdultCanGoNegativeAndStressRises() started.
+◇ Test agingUpFromDetailReturnsPlayerToOriginatingTab() started.
+◇ Test teenStudentUsesEducationFirstOverview() started.
+◇ Test persistenceFailsWhenPrimaryAndBackupAreCorrupted() started.
+◇ Test systemRegistryReadsActivationFromWorldSnapshot() started.
+◇ Test persistenceResetRemovesAllArtifacts() started.
+◇ Test invalidRemoteArcPayloadFallsBackToLocalGenerator() started.
+◇ Test persistenceRoundTripsRepresentativeStateAcrossDomains() started.
+◇ Test beginYearChapterCreatesForecastWithoutAdvancingAge() started.
+◇ Test minimumPaymentsKeepsDebtAliveAndRaisesPressure() started.
+◇ Test unemployedAdultAutoLandsBestQualifiedRegularRole() started.
+◇ Test resolvingYearChapterAdvancesAgeOnceAndClearsAfterCloseout() started.
+◇ Test yearSummaryBuildsMoneyInsightWithCauses() started.
+◇ Test delayedFinanceChoiceSchedulesFollowUpEventForNextYear() started.
+◇ Test adultFinanceActionsSwitchToInvestmentChoicesOnceStable() started.
+◇ Test balanceHarnessKeepsMillionairesLateAndRare() started.
+◇ Test protectSleepReturnsEducationReliefThroughActionSystem() started.
+◇ Test eventApplicationRoutesCashThroughFinanceOnly() started.
+◇ Test highHeatCrimeYearCanTriggerForcedExitAndDownstreamDamage() started.
+◇ Test yearlySummaryCapturesSpilloversAndCheckpoint() started.
+◇ Test regularWorkAccumulatesExperienceWithoutCareerAction() started.
+◇ Test retrainingRequiresDoorBeforePivot() started.
+◇ Test indexFundsCompoundWithoutTurningIntoLiquidCash() started.
+◇ Test legacyCrimeTrackMigratesIntoCrimeState() started.
+◇ Test legacyCareerStateDecodesWithEmptyExperience() started.
+◇ Test smallHustleAddsCashButCostsRecovery() started.
+◇ Test strongTeenPerformanceCanRouteIntoUniversityWithScholarship() started.
+◇ Test dismissingFinalCardReturnsPlayerToOriginTabAndOffersDetailReturn() started.
+◇ Test legacySaveWithoutChapterFieldsDecodesSafely() started.
+◇ Test financeSnapshotPathMatchesLegacyContextPath() started.
+◇ Test yearlyTickSurfacesRumorIntoCareerSummary() started.
+◇ Test relationshipsOverviewSurfacesStrain() started.
+◇ Test entertainmentTrackCanProduceBreakoutAndZeroPayoutYears() started.
+◇ Test delinquentOwnershipCanEndInForeclosure() started.
+◇ Test debugScenarioSeedsPregnancyAndModalPreviewStates() started.
+◇ Test heavyDebtBlocksCompoundingEligibility() started.
+◇ Test teenEducationActionsAffectSchoolClimate() started.
+◇ Test storyletWeightsIncludeActiveNarrativeArcPressure() started.
+◇ Test housingDeficitDebugScenarioSurfacesProblemAndFollowThroughCards() started.
+◇ Test repairTensionReducesRelationshipDebt() started.
+◇ Test fullTimeWorkerBuildsPositiveCashflow() started.
+◇ Test healthOverviewSurfacesActiveConditions() started.
+◇ Test actionSystemAppliesChosenActionsAndClearsQueue() started.
+◇ Test chaseSpotlightActivatesEntertainmentTrack() started.
+◇ Test balanceHarnessProducesReadableAggregateReport() started.
+◇ Test eventEngineLookupReturnsInjectedEventByIdentifier() started.
+◇ Test weakRelationshipDoesNotAutoAdvanceToMarriage() started.
+◇ Test worldSnapshotBuildsDerivedCachesForAllDomains() started.
+◇ Test financeOverviewSurfacesDeficitPressure() started.
+◇ Test millionaireMilestoneStaysLockedBeforeThirty() started.
+◇ Test regularCareerIncomeFlowsPassivelyIntoFinance() started.
+◇ Test weakUniversityYearCanCreateDebtWithoutBreakingCashImmediately() started.
+◇ Test beginYearChapterBuildsStakesAndStrongerFocusForecast() started.
+◇ Test housingAndPolicyInfluenceYearlyCosts() started.
+◇ Test takeExtraShiftsPaysCashButHitsEducationAndRecovery() started.
+◇ Test yearlyArcEvaluationCanPivotWhenLifeMovesOffPrimaryPattern() started.
+◇ Test artifactStoreInvalidatesWhenSituationChanges() started.
+◇ Test feedbackSettingsPersistAcrossViewModelReload() started.
+◇ Test investmentAccessRequiresCompoundingFoundation() started.
+✔ Test teenStudentYearProducesLowCostsAndSmallTaxRate() passed after 0.017 seconds.
+✔ Test outcomeAggregatorHighlightsTopProblemAndOpportunity() passed after 0.017 seconds.
+✔ Test contentPackBalancesAllPrimaryDomains() passed after 0.017 seconds.
+✔ Test scheduledEventProducesForecastThenEventThenAftermathStack() passed after 0.017 seconds.
+✔ Test millionaireMilestoneCountsHomeEquity() passed after 0.017 seconds.
+✔ Test persistenceLoadsEnvelopeFromPrimarySave() passed after 0.022 seconds.
+✔ Test dueScheduledEventOutranksRandomEventAtChapterStart() passed after 0.022 seconds.
+✘ Test climberIdentityGeneratesPromotionDoor() recorded an issue at OneLifeTests.swift:3284:9: Expectation failed: (career.activeOpportunityDoor == .internalPromotionTrack → false) || (career.level > 4 → false)
+✘ Test climberIdentityGeneratesPromotionDoor() failed after 0.038 seconds with 1 issue.
+✔ Test careerProfilesDivergeUnderSameAdultYear() passed after 0.038 seconds.
+✔ Test runSchemeActivatesCrimeTrack() passed after 0.038 seconds.
+✔ Test previewStartIncludesNarrativeArcCandidates() passed after 0.038 seconds.
+✔ Test adultSurplusCanMoveIntoIndexFunds() passed after 0.038 seconds.
+✔ Test actionPreviewsUseUpdatedCrossDomainLanguage() passed after 0.044 seconds.
+✔ Test eventPackChoicesStayCappedAndGlanceable() passed after 0.047 seconds.
+✔ Test repeatedRiskActivityBuildsPushback() passed after 0.048 seconds.
+✔ Test scholarshipNeedsStandingAndActivityMomentum() passed after 0.048 seconds.
+✔ Test debugScenarioSeedsAdultCareerWithFullTimeActions() passed after 0.048 seconds.
+✔ Test familySystemCanResolveThirdTrimesterToBirth() passed after 0.049 seconds.
+✔ Test recoveryActionReducesHealthPressureAcrossYearAdvance() passed after 0.050 seconds.
+✔ Test interactionCardCoordinatorPreservesQueueOrder() passed after 0.050 seconds.
+✔ Test adultCareerDebugScenarioAdvanceYearProducesStableSummaryEnvelope() passed after 0.052 seconds.
+✔ Test joinActivityBuildsMomentumAndSocialCarryover() passed after 0.052 seconds.
+✔ Test sellToCoverRaisesCashByLiquidatingHoldings() passed after 0.052 seconds.
+✔ Test localArcGeneratorReflectsFinancialStrainContext() passed after 0.058 seconds.
+✔ Test eventEngineCanSurfaceAdultUnemploymentPressureBeat() passed after 0.058 seconds.
+✔ Test persistenceRecoversFromBackupWhenPrimaryIsCorrupted() passed after 0.063 seconds.
+✔ Test echoFlavorResolverPrependsPastChoiceMemory() passed after 0.065 seconds.
+✔ Test lateGameSummaryAddsNarrativePressureSignals() passed after 0.065 seconds.
+✔ Test homeownerOnlyLateEventRequiresOwnedHome() passed after 0.065 seconds.
+OneLife performance warning: event pack contains 400 events. Consider indexing before growing further.
+✔ Test eventEngineHandlesLargeSyntheticPack() passed after 0.067 seconds.
+✔ Test ownedHomePaysMortgageAndBuildsEquityAcrossYears() passed after 0.067 seconds.
+✔ Test specialCareerQualificationUsesRegularCareerExperience() passed after 0.068 seconds.
+✔ Test leanOnMentorBuildsAdultCoverWithoutTouchingFinance() passed after 0.067 seconds.
+✔ Test financeDependentCostReflectsPregnancyAndChildren() passed after 0.067 seconds.
+✔ Test orchestratorSkipsAssetSystemForTeenYears() passed after 0.073 seconds.
+✔ Test adultShortfallRollsIntoCreditDebtInsteadOfSoftLocking() passed after 0.073 seconds.
+✔ Test teenEducationScenarioKeepsReactionSummaryAndResolutionOrdering() passed after 0.074 seconds.
+✔ Test encodedStateDoesNotWriteLegacyMoneyField() passed after 0.075 seconds.
+✔ Test ageUpBuildsBoundedInteractionDeck() passed after 0.079 seconds.
+✔ Test educationActivityMomentumClampsIntoValidRange() passed after 0.079 seconds.
+✔ Test buyingStarterHomeCreatesMortgageAndOwnerOccupiedHousing() passed after 0.079 seconds.
+✔ Test familySystemActivationHibernatesWhenNoPartnerOrChildrenExist() passed after 0.079 seconds.
+✔ Test persistenceLoadsLegacyRawStateFromPrimaryPath() passed after 0.080 seconds.
+✔ Test traitAndCareerBonusesAccumulateInFinanceCash() passed after 0.081 seconds.
+✔ Test legacyEducationStateDecodesNewSchoolClimateDefaults() passed after 0.082 seconds.
+✔ Test millionaireMilestoneCountsInvestedWealth() passed after 0.082 seconds.
+✔ Test persistenceLoadsLegacyRawStateFromLegacyFile() passed after 0.083 seconds.
+✔ Test educationYearUsesSupportAndSocialFragility() passed after 0.083 seconds.
+✔ Test bundledEventPackIncludesAdultPressureEvents() passed after 0.086 seconds.
+✔ Test bankruptcyResetsEligibleDebtAndWipesInvestments() passed after 0.086 seconds.
+✔ Test crimeSystemActionClampsLegacyCrimeStateSafely() passed after 0.086 seconds.
+✔ Test continuityMilestonesFireOnceAtAge18And20() passed after 0.086 seconds.
+✔ Test healthDrivenShortfallCanCreateMedicalDebt() passed after 0.086 seconds.
+✔ Test viewModelSurfacesSaveFailureWithoutCrashing() passed after 0.093 seconds.
+✘ Test feedOverviewBuildsContinuityHubFromYearSummaryAndCarryover() recorded an issue at OneLifeTests.swift:361:9: Expectation failed: (overview.continuity?.status → "Coming back later") == "Still active"
+✘ Test feedOverviewBuildsContinuityHubFromYearSummaryAndCarryover() failed after 0.102 seconds with 1 issue.
+✔ Test activatingPreviewAddsChapterPressureHistory() passed after 0.103 seconds.
+✔ Test stockLossesHitPortfolioAndRaiseStress() passed after 0.101 seconds.
+✔ Test orchestratorPublishesLatestWorldSnapshotAfterAdvanceYear() passed after 0.104 seconds.
+✔ Test activitySystemAppliesImmediateEffectsAndHistory() passed after 0.102 seconds.
+✘ Test legacySaveWithoutFinanceDecodesWithLegacyMoneyFallback() recorded an issue at OneLifeTests.swift:618:6: Caught error: DecodingError.keyNotFound: Key 'addiction' not found in keyed decoding container. Path: healthProfile. Debug description: No value associated with key CodingKeys(stringValue: "addiction", intValue: nil) ("addiction").
+✘ Test legacySaveWithoutFinanceDecodesWithLegacyMoneyFallback() failed after 0.106 seconds with 1 issue.
+✔ Test causeTrailCapsYearSummaryReasons() passed after 0.110 seconds.
+✔ Test debugScenarioCoordinatorIsDeterministic() passed after 0.109 seconds.
+✔ Test systemRegistryHibernatesAgeBoundDomains() passed after 0.111 seconds.
+✔ Test familyPlanningIntentChangesConceptionChance() passed after 0.109 seconds.
+✔ Test discussFutureCanAdvanceCommittedPartnerIntoMarriage() passed after 0.111 seconds.
+✔ Test activitiesOverviewSurfacesImmediateLoop() passed after 0.114 seconds.
+✔ Test millionaireMilestoneReadsFinanceCash() passed after 0.116 seconds.
+✘ Test forecastUsesScheduledCallbackContext() recorded an issue at OneLifeTests.swift:2986:9: Expectation failed: (forecast?.anticipationTitle → "Likely opening") == "Delayed bill fallout"
+✘ Test forecastUsesScheduledCallbackContext() recorded an issue at OneLifeTests.swift:2987:9: Expectation failed: (forecast?.anticipationDetail → "Nothing is easy, but there is still room to convert pressure into stability before it hardens into a worse pattern. The bill you pushed off is back.") == "The bill you pushed off is back."
+✔ Test relationshipActionBuildsReputationAndRumorWeights() passed after 0.114 seconds.
+✘ Test legacySaveWithoutConsequenceStateDecodesWithEmptyConsequences() recorded an issue at OneLifeTests.swift:2843:6: Caught error: DecodingError.keyNotFound: Key 'addiction' not found in keyed decoding container. Path: healthProfile. Debug description: No value associated with key CodingKeys(stringValue: "addiction", intValue: nil) ("addiction").
+✔ Test milestoneConflictCreatesFuturePressure() passed after 0.115 seconds.
+✔ Test savingForDownPaymentMovesCashIntoHouseFund() passed after 0.114 seconds.
+✘ Test legacySaveWithoutConsequenceStateDecodesWithEmptyConsequences() failed after 0.115 seconds with 1 issue.
+✘ Test forecastUsesScheduledCallbackContext() failed after 0.114 seconds with 2 issues.
+✘ Test debugTimingSnapshotIsPopulatedWithoutChangingOutcome() recorded an issue at OneLifeTests.swift:1666:9: Expectation failed: (stateA → GameState(player: OneLife.Player(name: "Player", age: 15, traits: [OneLife.PersonalityTrait.lucky], happiness: 60, smarts: 56, looks: 52, health: 55), trajectory: OneLife.TrajectoryState(lifePhase: OneLife.LifePhase.adolescence, direction: OneLife.TrajectoryDirection.stable, socioeconomicPressure: 50, familyStability: 45, educationalAccess: 46, socialCapital: 44, neighborhoodSafety: 52, resilience: 50, momentum: 47, setbackPressure: 0, luckWindow: 2, opportunityVisibility: 42), education: OneLife.EducationState(pathway: OneLife.EducationPathway.student, stage: OneLife.EducationStage.secondary, academicTrack: OneLife.AcademicTrack.general, schoolStanding: 59, engagement: 55, attendancePressure: 17, activityMomentum: 20, schoolBelonging: 43, reputationRisk: 22, teacherSupport: 46, applicationReadiness: 15, campusFit: 50, burnoutRisk: 26, disciplineRecord: 76, mentorSupport: 33, peerPressure: 26, yearsInStage: 1, studyFocus: nil, credentials: [], hasScholarship: false), career: OneLife.CareerState(status: OneLife.CareerStatus.fullTime, profile: OneLife.CareerProfile.stableAdmin, workIdentity: OneLife.WorkIdentity.unsettled, roleID: Optional("office_assistant"), level: 3, annualIncome: 23734, performance: 52, yearsWorked: 1, unemployedYears: 0, burnout: 22, schedulePressure: 27, relationshipSpillover: 19, jobSecurity: 68, managerFriction: 38, scheduleControl: 56, retrainingProgress: 0, retrainingTargetProfile: nil, activeOpportunityDoor: nil, opportunityDoorYearsRemaining: 0, ambitionYears: 0, protectiveYears: 0, hustleYears: 0, driftYears: 0, careerExperience: [OneLife.CareerExperienceTag.admin: 1]), specialCareer: OneLife.SpecialCareerState(track: OneLife.SpecialCareerTrack.inactive, sector: OneLife.BusinessSector.general, advisors: [], tier: 0, fame: 0, audience: 0, heat: 0, notoriety: 0, burnout: 0, yearsActive: 0, lastPayout: 0, equityOwned: 1.0, boardPressure: 0, capitalUnderManagement: 0), crime: OneLife.CrimeState(status: OneLife.CrimeStatus.inactive, roleTier: 0, heat: 0, notoriety: 0, burnout: 0, crewID: nil, loyalty: 0, territoryPressure: 0, yearsActive: 0, lastPayout: 0), finance: OneLife.FinanceState(cashOnHand: 14202, studentDebt: 0, creditDebt: 0, medicalDebt: 0, investedBalance: 0, indexFundBalance: 0, stockPortfolioBalance: 0, costBasis: 0, lastYearInvestmentDelta: 0, investmentRiskProfile: OneLife.InvestmentRiskProfile.defensive, homeDownPaymentSavings: 0, homeEquity: 0, lastYearHomeValueDelta: 0, lastYearMortgagePrincipalPaid: 0, housingDebtBurden: 0, annualGrossIncome: 23734, annualNetIncome: 20649, annualLivingCost: 5400, annualEducationCost: 570, annualDependentCost: 0, annualDiscretionaryCost: 802, annualTotalExpenses: 6772, annualDebtPayments: 0, effectiveTaxRate: 13, financialStress: 6, debtPressureBand: OneLife.DebtPressureBand.clear, debtDelinquencyRisk: 0, recentDebtReliefYears: 0, debtStrategy: OneLife.DebtPaymentStrategy.standard, consecutiveDeficitYears: 0, stabilityStreakYears: 0, wealthVelocity: 13877, lifestyleCreep: 0, majorSetbackCount: 0, peakWealth: 14202, compoundingYears: 0, currentRegionPolicyID: Optional("mountain_standard"), lastYearBalanceDelta: 13877), relationships: OneLife.RelationshipState(friends: [], romanticPartner: nil, ambientContacts: [OneLife.AmbientContact(id: "guardian", name: "Renee", role: OneLife.AmbientContactRole.guardian, bond: 69, reliability: 70, cadence: OneLife.AmbientContactCadence.frequent, lastInteractionAge: Optional(15), memoryFlags: []), OneLife.AmbientContact(id: "friend", name: "Maya", role: OneLife.AmbientContactRole.friend, bond: 35, reliability: 55, cadence: OneLife.AmbientContactCadence.frequent, lastInteractionAge: Optional(15), memoryFlags: [])], socialCapital: 0, publicReputation: 45, privateReputation: 50, activeRumorHeat: 6, knownForTags: [], recentSocialHit: nil, recentSocialLift: nil, tensions: [], futureAlignment: OneLife.FutureAlignmentState(cohabitationReadiness: 50, familyReadiness: 50, retrainingReadiness: 50, homeReadiness: 50, activeConflictHeadline: nil)), family: OneLife.FamilyState(children: [], pregnancy: nil, pregnancyIntent: OneLife.PregnancyIntent.chance, postpartumYearsRemaining: 0), healthProfile: OneLife.HealthState(physicalWellness: 57, mentalWellness: 53, addiction: 0, habits: OneLife.LifestyleHabits(exercise: 50, nutrition: 50, stressManagement: 45), activeConditions: [], hasPrimaryCare: false), assets: OneLife.AssetState(homeownershipTrackActive: false, targetHomeValue: 0, primaryResidence: nil, firearms: [], vehicles: [], jewelry: [], aviation: [], marine: []), housing: OneLife.HousingState(livingArrangement: OneLife.LivingArrangement.familyHome, housingCostBand: 25, housingStability: 68, hasRoommate: false), progress: OneLife.ProgressState(unlockedMilestones: [OneLife.MilestoneUnlock(id: OneLife.MilestoneID.firstJob, unlockedAtAge: 15)], unlockedLifePaths: [OneLife.LifePathUnlock(id: OneLife.LifePathID.scholar, unlockedAtAge: 15)], currentLifePath: Optional(OneLife.LifePathID.scholar), finalLifePath: nil, legacyScore: 23), narrativeArcs: OneLife.NarrativeArcState(candidates: [OneLife.NarrativeArcCandidate(seed: OneLife.NarrativeArcSeed(id: "arc_luck_restlessness", title: "Lucky Break, Unsettled Core", theme: OneLife.ArcTheme.luckVsRestlessness, primaryDomains: [OneLife.ArcDomain.career, OneLife.ArcDomain.finance, OneLife.ArcDomain.identity], influence: OneLife.ArcInfluenceProfile(eventTagWeights: ["career": 8, "chance": 14, "money": 7, "social": 4], moodBias: [OneLife.ArcMoodTone.hopeful, OneLife.ArcMoodTone.restless, OneLife.ArcMoodTone.exposed], riskFlags: ["waste", "overconfidence", "drift"], opportunityFlags: ["opening", "unexpected_help", "fast_move"], pivotMetadata: OneLife.ArcPivotMetadata(chapterTrigger: Optional("luck_turn"), pivotThreshold: 57, collapseThreshold: 35, minimumYearsBetweenPivots: 2))), generationScore: 100), OneLife.NarrativeArcCandidate(seed: OneLife.NarrativeArcSeed(id: "arc_stability_sacrifice", title: "Stability Bought Slowly", theme: OneLife.ArcTheme.stabilityVsSacrifice, primaryDomains: [OneLife.ArcDomain.finance, OneLife.ArcDomain.family, OneLife.ArcDomain.relationships], influence: OneLife.ArcInfluenceProfile(eventTagWeights: ["cost": 8, "routine": 8, "family": 9, "money": 10], moodBias: [OneLife.ArcMoodTone.steady, OneLife.ArcMoodTone.guarded, OneLife.ArcMoodTone.tense], riskFlags: ["overload", "self_denial", "resentment"], opportunityFlags: ["provider_role", "home_base", "earned_security"], pivotMetadata: OneLife.ArcPivotMetadata(chapterTrigger: Optional("commitment"), pivotThreshold: 58, collapseThreshold: 40, minimumYearsBetweenPivots: 3))), generationScore: 69), OneLife.NarrativeArcCandidate(seed: OneLife.NarrativeArcSeed(id: "arc_academic_pressure", title: "High Promise Under Pressure", theme: OneLife.ArcTheme.ambitionVsPressure, primaryDomains: [OneLife.ArcDomain.education, OneLife.ArcDomain.career, OneLife.ArcDomain.health], influence: OneLife.ArcInfluenceProfile(eventTagWeights: ["routine": 8, "school": 14, "career": 10, "health": 5], moodBias: [OneLife.ArcMoodTone.focused, OneLife.ArcMoodTone.tense, OneLife.ArcMoodTone.exposed], riskFlags: ["burnout", "expectation", "slip"], opportunityFlags: ["recognition", "mentor", "breakthrough"], pivotMetadata: OneLife.ArcPivotMetadata(chapterTrigger: Optional("early_adulthood"), pivotThreshold: 60, collapseThreshold: 40, minimumYearsBetweenPivots: 2))), generationScore: 55)], primaryArcID: Optional("arc_luck_restlessness"), secondaryArcID: Optional("arc_stability_sacrifice"), lastPivotAge: nil, suppressedArcIDs: [], currentMoodTone: Optional(OneLife.ArcMoodTone.hopeful), arcAlignmentScores: ["arc_stability_sacrifice": 48, "arc_academic_pressure": 64, "arc_luck_restlessness": 93]), consequences: OneLife.ConsequenceState(narrativeFlags: [:], pressureByDomain: [:], scheduledEvents: []), activities: OneLife.ActivityState(currentYearAge: 15, currentYearActivities: [], currentYearCounts: [:], previousYearCounts: [:], yearlyStreaks: [:], lifetimeCounts: [:], identityWeights: [:], socialMomentum: 0, recoveryBalance: 0, riskLoad: 0), currentEra: OneLife.WorldEra.stable, eraYearsRemaining: 10, activeYearChapter: nil, pendingActions: [], history: [OneLife.HistoryEntry(id: 2E1A67C7-DDAA-4144-B001-8A42D607092C, age: 15, title: "Age 15", text: "Age 15 brought your first real taste of independence pressure. Money, image, and future direction started sticking to each other.", tags: [OneLife.HistoryDomainTag.progress, OneLife.HistoryDomainTag.education, OneLife.HistoryDomainTag.relationships]), OneLife.HistoryEntry(id: 201F3A7B-9A02-4B17-865D-100DDBEEDB59, age: 15, title: "Age 15", text: "You didn\'t reach out. They didn\'t reach out. That\'s how it goes.", tags: [OneLife.HistoryDomainTag.lifeEvent]), OneLife.HistoryEntry(id: 000E40FD-FBC4-4F10-99A6-A4C4897CD4B7, age: 15, title: "Milestone", text: "You reached First Job, adding 15 legacy points.", tags: [OneLife.HistoryDomainTag.progress]), OneLife.HistoryEntry(id: 84ABA032-AE49-4093-91D1-9466B75ACD63, age: 15, title: "Life Path", text: "The pattern is clear: you keep going back to learning. The credentials are stacking. This is a scholar\'s life.", tags: [OneLife.HistoryDomainTag.progress, OneLife.HistoryDomainTag.lifeEvent]), OneLife.HistoryEntry(id: 2A6C4897-142E-4CA2-8F59-7D8E460589AB, age: 15, title: "Finance", text: "A strong annual surplus of $13877 gave you room to breathe.", tags: [OneLife.HistoryDomainTag.finance]), OneLife.HistoryEntry(id: 3038FBF2-9EC0-4564-84D2-BA565896DBC5, age: 15, title: "Career", text: "Your Office Assistant role is still carrying the year, but the way it presses on your life is getting harder to ignore.", tags: [OneLife.HistoryDomainTag.career])], lastEventYearById: [:], startupState: OneLife.StartupState.active, originProfile: nil, openingSummary: nil, isGameOver: false, hasUsedCrisisBuyBack: false, childhoodDossier: nil)) == (stateB → GameState(player: OneLife.Player(name: "Player", age: 15, traits: [OneLife.PersonalityTrait.lucky], happiness: 60, smarts: 56, looks: 52, health: 55), trajectory: OneLife.TrajectoryState(lifePhase: OneLife.LifePhase.adolescence, direction: OneLife.TrajectoryDirection.stable, socioeconomicPressure: 50, familyStability: 45, educationalAccess: 46, socialCapital: 44, neighborhoodSafety: 52, resilience: 50, momentum: 47, setbackPressure: 0, luckWindow: 2, opportunityVisibility: 42), education: OneLife.EducationState(pathway: OneLife.EducationPathway.student, stage: OneLife.EducationStage.secondary, academicTrack: OneLife.AcademicTrack.general, schoolStanding: 59, engagement: 55, attendancePressure: 17, activityMomentum: 20, schoolBelonging: 43, reputationRisk: 22, teacherSupport: 46, applicationReadiness: 15, campusFit: 50, burnoutRisk: 26, disciplineRecord: 76, mentorSupport: 33, peerPressure: 26, yearsInStage: 1, studyFocus: nil, credentials: [], hasScholarship: false), career: OneLife.CareerState(status: OneLife.CareerStatus.fullTime, profile: OneLife.CareerProfile.stableAdmin, workIdentity: OneLife.WorkIdentity.unsettled, roleID: Optional("office_assistant"), level: 3, annualIncome: 23734, performance: 52, yearsWorked: 1, unemployedYears: 0, burnout: 22, schedulePressure: 27, relationshipSpillover: 19, jobSecurity: 68, managerFriction: 38, scheduleControl: 56, retrainingProgress: 0, retrainingTargetProfile: nil, activeOpportunityDoor: nil, opportunityDoorYearsRemaining: 0, ambitionYears: 0, protectiveYears: 0, hustleYears: 0, driftYears: 0, careerExperience: [OneLife.CareerExperienceTag.admin: 1]), specialCareer: OneLife.SpecialCareerState(track: OneLife.SpecialCareerTrack.inactive, sector: OneLife.BusinessSector.general, advisors: [], tier: 0, fame: 0, audience: 0, heat: 0, notoriety: 0, burnout: 0, yearsActive: 0, lastPayout: 0, equityOwned: 1.0, boardPressure: 0, capitalUnderManagement: 0), crime: OneLife.CrimeState(status: OneLife.CrimeStatus.inactive, roleTier: 0, heat: 0, notoriety: 0, burnout: 0, crewID: nil, loyalty: 0, territoryPressure: 0, yearsActive: 0, lastPayout: 0), finance: OneLife.FinanceState(cashOnHand: 14202, studentDebt: 0, creditDebt: 0, medicalDebt: 0, investedBalance: 0, indexFundBalance: 0, stockPortfolioBalance: 0, costBasis: 0, lastYearInvestmentDelta: 0, investmentRiskProfile: OneLife.InvestmentRiskProfile.defensive, homeDownPaymentSavings: 0, homeEquity: 0, lastYearHomeValueDelta: 0, lastYearMortgagePrincipalPaid: 0, housingDebtBurden: 0, annualGrossIncome: 23734, annualNetIncome: 20649, annualLivingCost: 5400, annualEducationCost: 570, annualDependentCost: 0, annualDiscretionaryCost: 802, annualTotalExpenses: 6772, annualDebtPayments: 0, effectiveTaxRate: 13, financialStress: 6, debtPressureBand: OneLife.DebtPressureBand.clear, debtDelinquencyRisk: 0, recentDebtReliefYears: 0, debtStrategy: OneLife.DebtPaymentStrategy.standard, consecutiveDeficitYears: 0, stabilityStreakYears: 0, wealthVelocity: 13877, lifestyleCreep: 0, majorSetbackCount: 0, peakWealth: 14202, compoundingYears: 0, currentRegionPolicyID: Optional("mountain_standard"), lastYearBalanceDelta: 13877), relationships: OneLife.RelationshipState(friends: [], romanticPartner: nil, ambientContacts: [OneLife.AmbientContact(id: "guardian", name: "Renee", role: OneLife.AmbientContactRole.guardian, bond: 69, reliability: 70, cadence: OneLife.AmbientContactCadence.frequent, lastInteractionAge: Optional(15), memoryFlags: []), OneLife.AmbientContact(id: "friend", name: "Maya", role: OneLife.AmbientContactRole.friend, bond: 35, reliability: 55, cadence: OneLife.AmbientContactCadence.frequent, lastInteractionAge: Optional(15), memoryFlags: [])], socialCapital: 0, publicReputation: 45, privateReputation: 50, activeRumorHeat: 6, knownForTags: [], recentSocialHit: nil, recentSocialLift: nil, tensions: [], futureAlignment: OneLife.FutureAlignmentState(cohabitationReadiness: 50, familyReadiness: 50, retrainingReadiness: 50, homeReadiness: 50, activeConflictHeadline: nil)), family: OneLife.FamilyState(children: [], pregnancy: nil, pregnancyIntent: OneLife.PregnancyIntent.chance, postpartumYearsRemaining: 0), healthProfile: OneLife.HealthState(physicalWellness: 57, mentalWellness: 53, addiction: 0, habits: OneLife.LifestyleHabits(exercise: 50, nutrition: 50, stressManagement: 45), activeConditions: [], hasPrimaryCare: false), assets: OneLife.AssetState(homeownershipTrackActive: false, targetHomeValue: 0, primaryResidence: nil, firearms: [], vehicles: [], jewelry: [], aviation: [], marine: []), housing: OneLife.HousingState(livingArrangement: OneLife.LivingArrangement.familyHome, housingCostBand: 25, housingStability: 68, hasRoommate: false), progress: OneLife.ProgressState(unlockedMilestones: [OneLife.MilestoneUnlock(id: OneLife.MilestoneID.firstJob, unlockedAtAge: 15)], unlockedLifePaths: [OneLife.LifePathUnlock(id: OneLife.LifePathID.scholar, unlockedAtAge: 15)], currentLifePath: Optional(OneLife.LifePathID.scholar), finalLifePath: nil, legacyScore: 23), narrativeArcs: OneLife.NarrativeArcState(candidates: [OneLife.NarrativeArcCandidate(seed: OneLife.NarrativeArcSeed(id: "arc_luck_restlessness", title: "Lucky Break, Unsettled Core", theme: OneLife.ArcTheme.luckVsRestlessness, primaryDomains: [OneLife.ArcDomain.career, OneLife.ArcDomain.finance, OneLife.ArcDomain.identity], influence: OneLife.ArcInfluenceProfile(eventTagWeights: ["career": 8, "chance": 14, "money": 7, "social": 4], moodBias: [OneLife.ArcMoodTone.hopeful, OneLife.ArcMoodTone.restless, OneLife.ArcMoodTone.exposed], riskFlags: ["waste", "overconfidence", "drift"], opportunityFlags: ["opening", "unexpected_help", "fast_move"], pivotMetadata: OneLife.ArcPivotMetadata(chapterTrigger: Optional("luck_turn"), pivotThreshold: 57, collapseThreshold: 35, minimumYearsBetweenPivots: 2))), generationScore: 100), OneLife.NarrativeArcCandidate(seed: OneLife.NarrativeArcSeed(id: "arc_stability_sacrifice", title: "Stability Bought Slowly", theme: OneLife.ArcTheme.stabilityVsSacrifice, primaryDomains: [OneLife.ArcDomain.finance, OneLife.ArcDomain.family, OneLife.ArcDomain.relationships], influence: OneLife.ArcInfluenceProfile(eventTagWeights: ["cost": 8, "money": 10, "family": 9, "routine": 8], moodBias: [OneLife.ArcMoodTone.steady, OneLife.ArcMoodTone.guarded, OneLife.ArcMoodTone.tense], riskFlags: ["overload", "self_denial", "resentment"], opportunityFlags: ["provider_role", "home_base", "earned_security"], pivotMetadata: OneLife.ArcPivotMetadata(chapterTrigger: Optional("commitment"), pivotThreshold: 58, collapseThreshold: 40, minimumYearsBetweenPivots: 3))), generationScore: 69), OneLife.NarrativeArcCandidate(seed: OneLife.NarrativeArcSeed(id: "arc_academic_pressure", title: "High Promise Under Pressure", theme: OneLife.ArcTheme.ambitionVsPressure, primaryDomains: [OneLife.ArcDomain.education, OneLife.ArcDomain.career, OneLife.ArcDomain.health], influence: OneLife.ArcInfluenceProfile(eventTagWeights: ["routine": 8, "health": 5, "career": 10, "school": 14], moodBias: [OneLife.ArcMoodTone.focused, OneLife.ArcMoodTone.tense, OneLife.ArcMoodTone.exposed], riskFlags: ["burnout", "expectation", "slip"], opportunityFlags: ["recognition", "mentor", "breakthrough"], pivotMetadata: OneLife.ArcPivotMetadata(chapterTrigger: Optional("early_adulthood"), pivotThreshold: 60, collapseThreshold: 40, minimumYearsBetweenPivots: 2))), generationScore: 55)], primaryArcID: Optional("arc_luck_restlessness"), secondaryArcID: Optional("arc_stability_sacrifice"), lastPivotAge: nil, suppressedArcIDs: [], currentMoodTone: Optional(OneLife.ArcMoodTone.hopeful), arcAlignmentScores: ["arc_academic_pressure": 64, "arc_stability_sacrifice": 48, "arc_luck_restlessness": 93]), consequences: OneLife.ConsequenceState(narrativeFlags: [:], pressureByDomain: [:], scheduledEvents: []), activities: OneLife.ActivityState(currentYearAge: 15, currentYearActivities: [], currentYearCounts: [:], previousYearCounts: [:], yearlyStreaks: [:], lifetimeCounts: [:], identityWeights: [:], socialMomentum: 0, recoveryBalance: 0, riskLoad: 0), currentEra: OneLife.WorldEra.stable, eraYearsRemaining: 10, activeYearChapter: nil, pendingActions: [], history: [OneLife.HistoryEntry(id: 8784ABA8-3AFB-4A45-B4BD-07231D19DC69, age: 15, title: "Age 15", text: "Age 15 brought your first real taste of independence pressure. Money, image, and future direction started sticking to each other.", tags: [OneLife.HistoryDomainTag.progress, OneLife.HistoryDomainTag.education, OneLife.HistoryDomainTag.relationships]), OneLife.HistoryEntry(id: 9AC58E90-D6E5-49D5-AA48-118CA924657D, age: 15, title: "Age 15", text: "Another year of being fine, technically.", tags: [OneLife.HistoryDomainTag.lifeEvent]), OneLife.HistoryEntry(id: F5AAC079-C37C-465A-A0D7-F968D9D225BC, age: 15, title: "Milestone", text: "You reached First Job, adding 15 legacy points.", tags: [OneLife.HistoryDomainTag.progress]), OneLife.HistoryEntry(id: 9C09303A-A1B3-4A23-B253-16BB70B2D350, age: 15, title: "Life Path", text: "The pattern is clear: you keep going back to learning. The credentials are stacking. This is a scholar\'s life.", tags: [OneLife.HistoryDomainTag.progress, OneLife.HistoryDomainTag.lifeEvent]), OneLife.HistoryEntry(id: 8D57875C-FC73-4EE6-9929-22075B31C3C9, age: 15, title: "Finance", text: "A strong annual surplus of $13877 gave you room to breathe.", tags: [OneLife.HistoryDomainTag.finance]), OneLife.HistoryEntry(id: B01BA443-3D31-453B-AF54-6D8FB8DBD003, age: 15, title: "Career", text: "Your Office Assistant role is still carrying the year, but the way it presses on your life is getting harder to ignore.", tags: [OneLife.HistoryDomainTag.career])], lastEventYearById: [:], startupState: OneLife.StartupState.active, originProfile: nil, openingSummary: nil, isGameOver: false, hasUsedCrisisBuyBack: false, childhoodDossier: nil))
+✘ Test debugTimingSnapshotIsPopulatedWithoutChangingOutcome() failed after 0.288 seconds with 1 issue.
+✔ Test interactionCardPayloadCaseSentinelCoversAllCases() passed after 0.288 seconds.
+✔ Test repeatedProtectEnergyBuildsCaretakerIdentity() passed after 0.289 seconds.
+✔ Test advanceYearWithLargerSyntheticStateKeepsHistoryBounded() passed after 0.289 seconds.
+✘ Test activeCrimeYearCanForceLayLowOrExitWithoutCrashing() recorded an issue at OneLifeTests.swift:2722:9: Expectation failed: !((result.notes → []).isEmpty → true → true)
+✘ Test activeCrimeYearCanForceLayLowOrExitWithoutCrashing() failed after 0.290 seconds with 1 issue.
+✔ Test ageUpRiskPreviewStaysGlanceableAndQualitative() passed after 0.295 seconds.
+✘ Test yearlySummaryCarriesFocusTradeoffAndNextYearPressure() recorded an issue at OneLifeTests.swift:3144:9: Expectation failed: (summary.mainTradeoff?.detail.contains("became the bill") → false) == true
+✘ Test yearlySummaryCarriesFocusTradeoffAndNextYearPressure() failed after 0.296 seconds with 1 issue.
+✔ Test financeEffectMutatesFinanceDomainWithoutPlayerMoneySync() passed after 0.296 seconds.
+✔ Test takeOvertimeCreatesMoneyHealthAndRelationshipTradeoff() passed after 0.296 seconds.
+✔ Test activitySystemBlocksUnderageViceActivity() passed after 0.296 seconds.
+✘ Test unemployedAdultCanGoNegativeAndStressRises() recorded an issue at OneLifeTests.swift:285:9: Expectation failed: (finance.cashOnHand → 0) < 0
+✔ Test persistencePrunesHistoryToBudget() passed after 0.298 seconds.
+✘ Test unemployedAdultCanGoNegativeAndStressRises() failed after 0.298 seconds with 1 issue.
+✔ Test agingUpFromDetailReturnsPlayerToOriginatingTab() passed after 0.332 seconds.
+✔ Test teenStudentUsesEducationFirstOverview() passed after 0.336 seconds.
+✔ Test persistenceFailsWhenPrimaryAndBackupAreCorrupted() passed after 0.338 seconds.
+✔ Test systemRegistryReadsActivationFromWorldSnapshot() passed after 0.338 seconds.
+✔ Test persistenceResetRemovesAllArtifacts() passed after 0.340 seconds.
+✔ Test invalidRemoteArcPayloadFallsBackToLocalGenerator() passed after 0.342 seconds.
+✘ Test persistenceRoundTripsRepresentativeStateAcrossDomains() recorded an issue at OneLifeTests.swift:1601:9: Expectation failed: (loadResult.state → GameState(player: OneLife.Player(name: "Morgan", age: 28, traits: [OneLife.PersonalityTrait.disciplined, OneLife.PersonalityTrait.lucky], happiness: 58, smarts: 56, looks: 52, health: 60), trajectory: OneLife.TrajectoryState(lifePhase: OneLife.LifePhase.adolescence, direction: OneLife.TrajectoryDirection.stable, socioeconomicPressure: 50, familyStability: 50, educationalAccess: 50, socialCapital: 50, neighborhoodSafety: 50, resilience: 50, momentum: 50, setbackPressure: 0, luckWindow: 0, opportunityVisibility: 45), education: OneLife.EducationState(pathway: OneLife.EducationPathway.student, stage: OneLife.EducationStage.secondary, academicTrack: OneLife.AcademicTrack.general, schoolStanding: 56, engagement: 55, attendancePressure: 18, activityMomentum: 20, schoolBelonging: 48, reputationRisk: 22, teacherSupport: 44, applicationReadiness: 24, campusFit: 50, burnoutRisk: 18, disciplineRecord: 76, mentorSupport: 32, peerPressure: 26, yearsInStage: 0, studyFocus: nil, credentials: [], hasScholarship: false), career: OneLife.CareerState(status: OneLife.CareerStatus.fullTime, profile: OneLife.CareerProfile.stableAdmin, workIdentity: OneLife.WorkIdentity.unsettled, roleID: Optional("office_assistant"), level: 0, annualIncome: 24000, performance: 52, yearsWorked: 0, unemployedYears: 0, burnout: 18, schedulePressure: 22, relationshipSpillover: 16, jobSecurity: 52, managerFriction: 34, scheduleControl: 50, retrainingProgress: 0, retrainingTargetProfile: nil, activeOpportunityDoor: nil, opportunityDoorYearsRemaining: 0, ambitionYears: 0, protectiveYears: 0, hustleYears: 0, driftYears: 0, careerExperience: [:]), specialCareer: OneLife.SpecialCareerState(track: OneLife.SpecialCareerTrack.inactive, sector: OneLife.BusinessSector.general, advisors: [], tier: 0, fame: 0, audience: 0, heat: 0, notoriety: 0, burnout: 0, yearsActive: 0, lastPayout: 0, equityOwned: 1.0, boardPressure: 0, capitalUnderManagement: 0), crime: OneLife.CrimeState(status: OneLife.CrimeStatus.inactive, roleTier: 0, heat: 0, notoriety: 0, burnout: 0, crewID: nil, loyalty: 0, territoryPressure: 0, yearsActive: 0, lastPayout: 0), finance: OneLife.FinanceState(cashOnHand: 8400, studentDebt: 0, creditDebt: 0, medicalDebt: 0, investedBalance: 0, indexFundBalance: 0, stockPortfolioBalance: 0, costBasis: 0, lastYearInvestmentDelta: 0, investmentRiskProfile: OneLife.InvestmentRiskProfile.defensive, homeDownPaymentSavings: 0, homeEquity: 0, lastYearHomeValueDelta: 0, lastYearMortgagePrincipalPaid: 0, housingDebtBurden: 0, annualGrossIncome: 0, annualNetIncome: 0, annualLivingCost: 0, annualEducationCost: 0, annualDependentCost: 0, annualDiscretionaryCost: 0, annualTotalExpenses: 0, annualDebtPayments: 0, effectiveTaxRate: 0, financialStress: 18, debtPressureBand: OneLife.DebtPressureBand.clear, debtDelinquencyRisk: 0, recentDebtReliefYears: 0, debtStrategy: OneLife.DebtPaymentStrategy.standard, consecutiveDeficitYears: 0, stabilityStreakYears: 0, wealthVelocity: 0, lifestyleCreep: 0, majorSetbackCount: 0, peakWealth: 8400, compoundingYears: 0, currentRegionPolicyID: nil, lastYearBalanceDelta: 0), relationships: OneLife.RelationshipState(friends: [OneLife.Relationship(id: 28F706FC-ABA8-47C2-872F-E19E22514832, name: "Riley", type: OneLife.RelationshipType.friend, status: OneLife.RelationshipStatus.active, bond: 72, yearsKnown: 6, stage: OneLife.RelationshipStage.dating, isCohabiting: false, commitmentAlignment: 50, influence: 10, profession: nil, personality: OneLife.NPCPersonality.loyal, hiddenNeedLevel: 0, hiddenResentment: 0)], romanticPartner: Optional(OneLife.Relationship(id: E109C106-0A03-46AE-9ECE-E81C22B50ADF, name: "Taylor", type: OneLife.RelationshipType.romantic, status: OneLife.RelationshipStatus.active, bond: 91, yearsKnown: 6, stage: OneLife.RelationshipStage.married, isCohabiting: true, commitmentAlignment: 82, influence: 10, profession: nil, personality: OneLife.NPCPersonality.loyal, hiddenNeedLevel: 0, hiddenResentment: 0)), ambientContacts: [], socialCapital: 0, publicReputation: 50, privateReputation: 50, activeRumorHeat: 10, knownForTags: [], recentSocialHit: nil, recentSocialLift: nil, tensions: [], futureAlignment: OneLife.FutureAlignmentState(cohabitationReadiness: 50, familyReadiness: 50, retrainingReadiness: 50, homeReadiness: 50, activeConflictHeadline: nil)), family: OneLife.FamilyState(children: [OneLife.ChildRecord(id: CA3B3D1B-0DC5-4F4D-BD1A-69C4653AD3A6, name: "Noah", age: 2, livesAtHome: true, otherParentName: "Taylor", supportLoad: 60)], pregnancy: nil, pregnancyIntent: OneLife.PregnancyIntent.chance, postpartumYearsRemaining: 0), healthProfile: OneLife.HealthState(physicalWellness: 60, mentalWellness: 55, addiction: 0, habits: OneLife.LifestyleHabits(exercise: 50, nutrition: 50, stressManagement: 45), activeConditions: [OneLife.HealthCondition(id: 0F91144A-13CC-43C1-9BE7-FC6B4356809C, name: "Burnout", severity: 22)], hasPrimaryCare: false), assets: OneLife.AssetState(homeownershipTrackActive: true, targetHomeValue: 180000, primaryResidence: Optional(OneLife.PrimaryResidenceState(homeValue: 180000, mortgagePrincipal: 125000, monthlyMortgageCost: 980, mortgageRatePercent: 6, remainingMortgageYears: 28, equity: 55000, downPaymentPaid: 32000, maintenanceReserve: 2000, status: OneLife.PrimaryResidenceStatus.current, yearsOwned: 0, upgrades: [])), firearms: [], vehicles: [], jewelry: [], aviation: [], marine: []), housing: OneLife.HousingState(livingArrangement: OneLife.LivingArrangement.familyHome, housingCostBand: 25, housingStability: 68, hasRoommate: false), progress: OneLife.ProgressState(unlockedMilestones: [], unlockedLifePaths: [], currentLifePath: nil, finalLifePath: nil, legacyScore: 42), narrativeArcs: OneLife.NarrativeArcState(candidates: [], primaryArcID: nil, secondaryArcID: nil, lastPivotAge: nil, suppressedArcIDs: [], currentMoodTone: nil, arcAlignmentScores: [:]), consequences: OneLife.ConsequenceState(narrativeFlags: [:], pressureByDomain: [:], scheduledEvents: []), activities: OneLife.ActivityState(currentYearAge: 14, currentYearActivities: [], currentYearCounts: [:], previousYearCounts: [:], yearlyStreaks: [:], lifetimeCounts: [:], identityWeights: [:], socialMomentum: 0, recoveryBalance: 0, riskLoad: 0), currentEra: OneLife.WorldEra.stable, eraYearsRemaining: 10, activeYearChapter: nil, pendingActions: [], history: [OneLife.HistoryEntry(id: 6DF06E2E-1443-4798-8AC1-33C614057D32, age: 28, title: "Milestone", text: "Test history", tags: [])], lastEventYearById: [:], startupState: OneLife.StartupState.active, originProfile: Optional(OneLife.OriginProfile(startMode: OneLife.StartMode.template, templateID: Optional(OneLife.OriginTemplateID.academicPromise), householdPressure: "Moderate", schoolStanding: "Excellent", socialSupport: "Steady", starterTraitBias: [OneLife.PersonalityTrait.disciplined], startingCashBand: "$500-$900", focusTags: ["career"], openingEventSeed: ["school"], homeSummary: "Home summary", schoolSummary: "School summary", selfSummary: "Self summary", signalHighlights: ["Focused"])), openingSummary: nil, isGameOver: false, hasUsedCrisisBuyBack: false, childhoodDossier: nil)) == (state → GameState(player: OneLife.Player(name: "Morgan", age: 28, traits: [OneLife.PersonalityTrait.disciplined, OneLife.PersonalityTrait.lucky], happiness: 58, smarts: 56, looks: 52, health: 60), trajectory: OneLife.TrajectoryState(lifePhase: OneLife.LifePhase.adolescence, direction: OneLife.TrajectoryDirection.stable, socioeconomicPressure: 50, familyStability: 50, educationalAccess: 50, socialCapital: 50, neighborhoodSafety: 50, resilience: 50, momentum: 50, setbackPressure: 0, luckWindow: 0, opportunityVisibility: 45), education: OneLife.EducationState(pathway: OneLife.EducationPathway.student, stage: OneLife.EducationStage.secondary, academicTrack: OneLife.AcademicTrack.general, schoolStanding: 56, engagement: 55, attendancePressure: 18, activityMomentum: 20, schoolBelonging: 48, reputationRisk: 22, teacherSupport: 44, applicationReadiness: 24, campusFit: 50, burnoutRisk: 18, disciplineRecord: 76, mentorSupport: 32, peerPressure: 26, yearsInStage: 0, studyFocus: nil, credentials: [], hasScholarship: false), career: OneLife.CareerState(status: OneLife.CareerStatus.fullTime, profile: OneLife.CareerProfile.stableAdmin, workIdentity: OneLife.WorkIdentity.unsettled, roleID: Optional("office_assistant"), level: 0, annualIncome: 24000, performance: 52, yearsWorked: 0, unemployedYears: 0, burnout: 18, schedulePressure: 22, relationshipSpillover: 16, jobSecurity: 52, managerFriction: 34, scheduleControl: 50, retrainingProgress: 0, retrainingTargetProfile: nil, activeOpportunityDoor: nil, opportunityDoorYearsRemaining: 0, ambitionYears: 0, protectiveYears: 0, hustleYears: 0, driftYears: 0, careerExperience: [:]), specialCareer: OneLife.SpecialCareerState(track: OneLife.SpecialCareerTrack.inactive, sector: OneLife.BusinessSector.general, advisors: [], tier: 0, fame: 0, audience: 0, heat: 0, notoriety: 0, burnout: 0, yearsActive: 0, lastPayout: 0, equityOwned: 1.0, boardPressure: 0, capitalUnderManagement: 0), crime: OneLife.CrimeState(status: OneLife.CrimeStatus.inactive, roleTier: 0, heat: 0, notoriety: 0, burnout: 0, crewID: nil, loyalty: 0, territoryPressure: 0, yearsActive: 0, lastPayout: 0), finance: OneLife.FinanceState(cashOnHand: 8400, studentDebt: 0, creditDebt: 0, medicalDebt: 0, investedBalance: 0, indexFundBalance: 0, stockPortfolioBalance: 0, costBasis: 0, lastYearInvestmentDelta: 0, investmentRiskProfile: OneLife.InvestmentRiskProfile.defensive, homeDownPaymentSavings: 0, homeEquity: 0, lastYearHomeValueDelta: 0, lastYearMortgagePrincipalPaid: 0, housingDebtBurden: 0, annualGrossIncome: 0, annualNetIncome: 0, annualLivingCost: 0, annualEducationCost: 0, annualDependentCost: 0, annualDiscretionaryCost: 0, annualTotalExpenses: 0, annualDebtPayments: 0, effectiveTaxRate: 0, financialStress: 18, debtPressureBand: OneLife.DebtPressureBand.clear, debtDelinquencyRisk: 0, recentDebtReliefYears: 0, debtStrategy: OneLife.DebtPaymentStrategy.standard, consecutiveDeficitYears: 0, stabilityStreakYears: 0, wealthVelocity: 0, lifestyleCreep: 0, majorSetbackCount: 0, peakWealth: 250, compoundingYears: 0, currentRegionPolicyID: nil, lastYearBalanceDelta: 0), relationships: OneLife.RelationshipState(friends: [OneLife.Relationship(id: 28F706FC-ABA8-47C2-872F-E19E22514832, name: "Riley", type: OneLife.RelationshipType.friend, status: OneLife.RelationshipStatus.active, bond: 72, yearsKnown: 6, stage: OneLife.RelationshipStage.dating, isCohabiting: false, commitmentAlignment: 50, influence: 10, profession: nil, personality: OneLife.NPCPersonality.loyal, hiddenNeedLevel: 0, hiddenResentment: 0)], romanticPartner: Optional(OneLife.Relationship(id: E109C106-0A03-46AE-9ECE-E81C22B50ADF, name: "Taylor", type: OneLife.RelationshipType.romantic, status: OneLife.RelationshipStatus.active, bond: 91, yearsKnown: 6, stage: OneLife.RelationshipStage.married, isCohabiting: true, commitmentAlignment: 82, influence: 10, profession: nil, personality: OneLife.NPCPersonality.loyal, hiddenNeedLevel: 0, hiddenResentment: 0)), ambientContacts: [], socialCapital: 0, publicReputation: 50, privateReputation: 50, activeRumorHeat: 10, knownForTags: [], recentSocialHit: nil, recentSocialLift: nil, tensions: [], futureAlignment: OneLife.FutureAlignmentState(cohabitationReadiness: 50, familyReadiness: 50, retrainingReadiness: 50, homeReadiness: 50, activeConflictHeadline: nil)), family: OneLife.FamilyState(children: [OneLife.ChildRecord(id: CA3B3D1B-0DC5-4F4D-BD1A-69C4653AD3A6, name: "Noah", age: 2, livesAtHome: true, otherParentName: "Taylor", supportLoad: 60)], pregnancy: nil, pregnancyIntent: OneLife.PregnancyIntent.chance, postpartumYearsRemaining: 0), healthProfile: OneLife.HealthState(physicalWellness: 60, mentalWellness: 55, addiction: 0, habits: OneLife.LifestyleHabits(exercise: 50, nutrition: 50, stressManagement: 45), activeConditions: [OneLife.HealthCondition(id: 0F91144A-13CC-43C1-9BE7-FC6B4356809C, name: "Burnout", severity: 22)], hasPrimaryCare: false), assets: OneLife.AssetState(homeownershipTrackActive: true, targetHomeValue: 180000, primaryResidence: Optional(OneLife.PrimaryResidenceState(homeValue: 180000, mortgagePrincipal: 125000, monthlyMortgageCost: 980, mortgageRatePercent: 6, remainingMortgageYears: 28, equity: 55000, downPaymentPaid: 32000, maintenanceReserve: 2000, status: OneLife.PrimaryResidenceStatus.current, yearsOwned: 0, upgrades: [])), firearms: [], vehicles: [], jewelry: [], aviation: [], marine: []), housing: OneLife.HousingState(livingArrangement: OneLife.LivingArrangement.familyHome, housingCostBand: 25, housingStability: 68, hasRoommate: false), progress: OneLife.ProgressState(unlockedMilestones: [], unlockedLifePaths: [], currentLifePath: nil, finalLifePath: nil, legacyScore: 42), narrativeArcs: OneLife.NarrativeArcState(candidates: [], primaryArcID: nil, secondaryArcID: nil, lastPivotAge: nil, suppressedArcIDs: [], currentMoodTone: nil, arcAlignmentScores: [:]), consequences: OneLife.ConsequenceState(narrativeFlags: [:], pressureByDomain: [:], scheduledEvents: []), activities: OneLife.ActivityState(currentYearAge: 14, currentYearActivities: [], currentYearCounts: [:], previousYearCounts: [:], yearlyStreaks: [:], lifetimeCounts: [:], identityWeights: [:], socialMomentum: 0, recoveryBalance: 0, riskLoad: 0), currentEra: OneLife.WorldEra.stable, eraYearsRemaining: 10, activeYearChapter: nil, pendingActions: [], history: [OneLife.HistoryEntry(id: 6DF06E2E-1443-4798-8AC1-33C614057D32, age: 28, title: "Milestone", text: "Test history", tags: [])], lastEventYearById: [:], startupState: OneLife.StartupState.active, originProfile: Optional(OneLife.OriginProfile(startMode: OneLife.StartMode.template, templateID: Optional(OneLife.OriginTemplateID.academicPromise), householdPressure: "Moderate", schoolStanding: "Excellent", socialSupport: "Steady", starterTraitBias: [OneLife.PersonalityTrait.disciplined], startingCashBand: "$500-$900", focusTags: ["career"], openingEventSeed: ["school"], homeSummary: "Home summary", schoolSummary: "School summary", selfSummary: "Self summary", signalHighlights: ["Focused"])), openingSummary: nil, isGameOver: false, hasUsedCrisisBuyBack: false, childhoodDossier: nil))
+✘ Test persistenceRoundTripsRepresentativeStateAcrossDomains() failed after 1.466 seconds with 1 issue.
+✘ Test minimumPaymentsKeepsDebtAliveAndRaisesPressure() recorded an issue at OneLifeTests.swift:2028:9: Expectation failed: (finance.debtPressureBand == .heavy → false) || (finance.debtPressureBand == .crushing → false)
+✔ Test beginYearChapterCreatesForecastWithoutAdvancingAge() passed after 1.470 seconds.
+✔ Test unemployedAdultAutoLandsBestQualifiedRegularRole() passed after 1.470 seconds.
+✘ Test minimumPaymentsKeepsDebtAliveAndRaisesPressure() failed after 1.470 seconds with 1 issue.
+✔ Test resolvingYearChapterAdvancesAgeOnceAndClearsAfterCloseout() passed after 1.471 seconds.
+✔ Test yearSummaryBuildsMoneyInsightWithCauses() passed after 1.474 seconds.
+✔ Test delayedFinanceChoiceSchedulesFollowUpEventForNextYear() passed after 1.476 seconds.
+✘ Test balanceHarnessKeepsMillionairesLateAndRare() recorded an issue at OneLifeTests.swift:2072:9: Expectation failed: (report.summaries.filter(\.millionaireMilestone).count → 180) < 12
+✘ Test balanceHarnessKeepsMillionairesLateAndRare() failed after 2.091 seconds with 1 issue.
+✔ Test adultFinanceActionsSwitchToInvestmentChoicesOnceStable() passed after 2.096 seconds.
+✔ Test actionPreviewTagsAreCappedForTradeoffScanning() passed after 2.102 seconds.
+✘ Test burnoutReducesEntertainmentOutcomeQuality() recorded an issue at OneLifeTests.swift:966:9: Expectation failed: (burnedOutState.specialCareer.lastPayout → 9600) < (restedState.specialCareer.lastPayout → 1340)
+✘ Test burnoutReducesEntertainmentOutcomeQuality() failed after 2.102 seconds with 1 issue.
+✔ Test financeSystemReturnsPressureEffectsInsteadOfMutatingOtherDomains() passed after 2.109 seconds.
+✔ Test ageCheckpointsAppearAcrossTeenTransition() passed after 2.109 seconds.
+✘ Test legacySaveWithoutNarrativeArcsDecodesWithEmptyNarrativeState() recorded an issue at OneLifeTests.swift:700:6: Caught error: DecodingError.keyNotFound: Key 'addiction' not found in keyed decoding container. Path: healthProfile. Debug description: No value associated with key CodingKeys(stringValue: "addiction", intValue: nil) ("addiction").
+✔ Test educationSystemCanGraduateTeenIntoAdultReadiness() passed after 2.109 seconds.
+✔ Test indexFundsCompoundWithoutTurningIntoLiquidCash() passed after 2.100 seconds.
+✔ Test retrainingRequiresDoorBeforePivot() passed after 2.100 seconds.
+✘ Test legacyCrimeTrackMigratesIntoCrimeState() recorded an issue at OneLifeTests.swift:659:6: Caught error: DecodingError.keyNotFound: Key 'addiction' not found in keyed decoding container. Path: healthProfile. Debug description: No value associated with key CodingKeys(stringValue: "addiction", intValue: nil) ("addiction").
+✘ Test legacySaveWithoutNarrativeArcsDecodesWithEmptyNarrativeState() failed after 2.111 seconds with 1 issue.
+✘ Test entertainmentTrackCanProduceBreakoutAndZeroPayoutYears() recorded an issue at OneLifeTests.swift:917:9: Expectation failed: (breakoutState.specialCareer.lastPayout → 1340) >= (4_000 → 4000)
+✘ Test entertainmentTrackCanProduceBreakoutAndZeroPayoutYears() recorded an issue at OneLifeTests.swift:918:9: Expectation failed: ((breakoutResult.financeEffects?.cashDelta ?? 0) → 1340) >= (4_000 → 4000)
+✔ Test legacyCareerStateDecodesWithEmptyExperience() passed after 2.115 seconds.
+✔ Test strongTeenPerformanceCanRouteIntoUniversityWithScholarship() passed after 2.115 seconds.
+✔ Test financeSnapshotPathMatchesLegacyContextPath() passed after 2.114 seconds.
+✔ Test delinquentOwnershipCanEndInForeclosure() passed after 2.114 seconds.
+✔ Test dismissingFinalCardReturnsPlayerToOriginTabAndOffersDetailReturn() passed after 2.115 seconds.
+✘ Test legacyCrimeTrackMigratesIntoCrimeState() failed after 2.116 seconds with 1 issue.
+✔ Test smallHustleAddsCashButCostsRecovery() passed after 2.115 seconds.
+✔ Test relationshipsOverviewSurfacesStrain() passed after 2.115 seconds.
+✘ Test entertainmentTrackCanProduceBreakoutAndZeroPayoutYears() failed after 2.116 seconds with 2 issues.
+✔ Test yearlyTickSurfacesRumorIntoCareerSummary() passed after 2.121 seconds.
+✘ Test legacySaveWithoutChapterFieldsDecodesSafely() recorded an issue at OneLifeTests.swift:3035:6: Caught error: DecodingError.keyNotFound: Key 'addiction' not found in keyed decoding container. Path: healthProfile. Debug description: No value associated with key CodingKeys(stringValue: "addiction", intValue: nil) ("addiction").
+✘ Test legacySaveWithoutChapterFieldsDecodesSafely() failed after 2.121 seconds with 1 issue.
+✔ Test heavyDebtBlocksCompoundingEligibility() passed after 2.120 seconds.
+✔ Test debugScenarioSeedsPregnancyAndModalPreviewStates() passed after 2.120 seconds.
+✔ Test teenEducationActionsAffectSchoolClimate() passed after 2.120 seconds.
+✔ Test storyletWeightsIncludeActiveNarrativeArcPressure() passed after 2.120 seconds.
+✔ Test housingDeficitDebugScenarioSurfacesProblemAndFollowThroughCards() passed after 2.121 seconds.
+✔ Test chaseSpotlightActivatesEntertainmentTrack() passed after 2.121 seconds.
+✔ Test fullTimeWorkerBuildsPositiveCashflow() passed after 2.121 seconds.
+✘ Test balanceHarnessProducesReadableAggregateReport() recorded an issue at OneLifeTests.swift:2063:9: Expectation failed: (report.rate { $0.becameHomeowner } → 0.75) <= 0.25
+✘ Test balanceHarnessProducesReadableAggregateReport() recorded an issue at OneLifeTests.swift:2064:9: Expectation failed: (report.rate { $0.millionaireMilestone } → 0.75) <= 0.05
+✘ Test balanceHarnessProducesReadableAggregateReport() failed after 3.675 seconds with 2 issues.
+✔ Test repairTensionReducesRelationshipDebt() passed after 3.675 seconds.
+✔ Test actionSystemAppliesChosenActionsAndClearsQueue() passed after 3.676 seconds.
+✔ Test healthOverviewSurfacesActiveConditions() passed after 3.681 seconds.
+✔ Test weakRelationshipDoesNotAutoAdvanceToMarriage() passed after 3.681 seconds.
+✔ Test financeOverviewSurfacesDeficitPressure() passed after 3.685 seconds.
+✔ Test worldSnapshotBuildsDerivedCachesForAllDomains() passed after 3.685 seconds.
+✔ Test eventEngineLookupReturnsInjectedEventByIdentifier() passed after 3.685 seconds.
+✔ Test millionaireMilestoneStaysLockedBeforeThirty() passed after 3.685 seconds.
+✘ Test beginYearChapterBuildsStakesAndStrongerFocusForecast() recorded an issue at OneLifeTests.swift:3081:9: Expectation failed: (focusedForecast?.focusDetail.contains("more visible") → false) == true
+✘ Test beginYearChapterBuildsStakesAndStrongerFocusForecast() recorded an issue at OneLifeTests.swift:3096:9: Expectation failed: (reactiveForecast?.focusDetail.contains("react more than it will follow a plan") → false) == true
+✘ Test beginYearChapterBuildsStakesAndStrongerFocusForecast() failed after 3.689 seconds with 2 issues.
+✔ Test housingAndPolicyInfluenceYearlyCosts() passed after 3.690 seconds.
+✔ Test yearlyArcEvaluationCanPivotWhenLifeMovesOffPrimaryPattern() passed after 3.690 seconds.
+✔ Test regularCareerIncomeFlowsPassivelyIntoFinance() passed after 3.690 seconds.
+✔ Test weakUniversityYearCanCreateDebtWithoutBreakingCashImmediately() passed after 3.690 seconds.
+✔ Test takeExtraShiftsPaysCashButHitsEducationAndRecovery() passed after 3.690 seconds.
+✔ Test artifactStoreInvalidatesWhenSituationChanges() passed after 3.690 seconds.
+✔ Test investmentAccessRequiresCompoundingFoundation() passed after 3.691 seconds.
+✔ Test feedbackSettingsPersistAcrossViewModelReload() passed after 3.700 seconds.
+✔ Test regularWorkAccumulatesExperienceWithoutCareerAction() passed after 3.703 seconds.
+✔ Test yearlySummaryCapturesSpilloversAndCheckpoint() passed after 3.704 seconds.
+✔ Test highHeatCrimeYearCanTriggerForcedExitAndDownstreamDamage() passed after 3.712 seconds.
+✔ Test eventApplicationRoutesCashThroughFinanceOnly() passed after 3.713 seconds.
+✔ Test protectSleepReturnsEducationReliefThroughActionSystem() passed after 3.704 seconds.
+✘ Suite OneLifeTests failed after 3.718 seconds with 23 issues.
+✘ Test run with 148 tests in 1 suite failed after 3.720 seconds with 23 issues.

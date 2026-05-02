@@ -1,0 +1,80 @@
+2026-04-30 17:17:49.235156-0600 OneLifeUITests-Runner[21745:8709026] [Default] Running tests...
+objc[21745]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1096d0310) and /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1095fc398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'OneLifeUITestsLaunchTests' started at 2026-04-30 17:17:53.494.
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' started.
+    t =     0.00s Setting device orientation to Portrait
+    t =     0.03s     Device orientation changed to Portrait
+    t =     0.04s     Wait for com.apple.springboard to idle
+    t =     0.11s Setting appearance mode to Light
+    t =     0.15s     Wait for com.apple.springboard to idle
+    t =     0.26s Start Test at 2026-04-30 17:17:53.754
+    t =     0.49s Set Up
+    t =     0.54s Open LifeApp.OneLife
+    t =     0.54s     Launch LifeApp.OneLife
+    t =     4.76s         Setting up automation session
+    t =     4.79s         Wait for LifeApp.OneLife to idle
+    t =     5.80s Find the Target Application 'LifeApp.OneLife'
+    t =     6.08s Added attachment named 'Launch Screen'
+    t =     6.08s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' passed (6.334 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' started.
+    t =     0.00s Setting device orientation to Landscape Right
+    t =     0.01s     Device orientation changed to Landscape Right
+    t =     0.08s     Interface orientation changed to Landscape Left
+    t =     0.08s     Wait for LifeApp.OneLife to idle
+    t =     0.38s Setting appearance mode to Light
+    t =     0.40s     Wait for LifeApp.OneLife to idle
+    t =     0.42s Start Test at 2026-04-30 17:18:00.249
+    t =     0.44s Set Up
+    t =     0.44s Open LifeApp.OneLife
+    t =     0.44s     Launch LifeApp.OneLife
+    t =     0.44s         Terminate LifeApp.OneLife:21815
+    t =     0.92s             Interface orientation changed to Portrait
+    t =     3.07s         Interface orientation changed to Landscape Left
+    t =     3.07s         Setting up automation session
+    t =     4.03s         Wait for LifeApp.OneLife to idle
+    t =     5.41s Find the Target Application 'LifeApp.OneLife'
+    t =     5.58s Added attachment named 'Launch Screen'
+    t =     5.58s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' passed (8.081 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' started.
+    t =     0.00s Setting device orientation to Portrait
+    t =     0.01s     Device orientation changed to Portrait
+    t =     0.04s     Interface orientation changed to Portrait
+    t =     0.05s     Wait for LifeApp.OneLife to idle
+    t =     0.06s Setting appearance mode to Dark
+    t =     0.08s     Wait for LifeApp.OneLife to idle
+    t =     0.38s Start Test at 2026-04-30 17:18:08.289
+    t =     0.41s Set Up
+    t =     0.41s Open LifeApp.OneLife
+    t =     0.41s     Launch LifeApp.OneLife
+    t =     0.43s         Terminate LifeApp.OneLife:21890
+    t =     3.29s         Setting up automation session
+    t =     3.32s         Wait for LifeApp.OneLife to idle
+    t =     4.45s Find the Target Application 'LifeApp.OneLife'
+    t =     4.78s Added attachment named 'Launch Screen'
+    t =     4.78s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' passed (5.200 seconds).
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' started.
+    t =     0.00s Setting device orientation to Landscape Right
+    t =     0.02s     Device orientation changed to Landscape Right
+    t =     0.05s     Interface orientation changed to Landscape Left
+    t =     0.05s     Wait for LifeApp.OneLife to idle
+    t =     0.38s Setting appearance mode to Dark
+    t =     0.41s     Wait for LifeApp.OneLife to idle
+    t =     0.43s Start Test at 2026-04-30 17:18:13.546
+    t =     0.45s Set Up
+    t =     0.46s Open LifeApp.OneLife
+    t =     0.46s     Launch LifeApp.OneLife
+    t =     0.46s         Terminate LifeApp.OneLife:21946
+    t =     0.61s             Interface orientation changed to Portrait
+    t =     1.68s         Setting up automation session
+    t =     1.80s             Interface orientation changed to Landscape Left
+    t =     2.85s         Wait for LifeApp.OneLife to idle
+    t =     4.34s Find the Target Application 'LifeApp.OneLife'
+    t =     4.52s Added attachment named 'Launch Screen'
+    t =     4.52s Tear Down
+Test Case '-[OneLifeUITests.OneLifeUITestsLaunchTests testLaunch]' passed (4.745 seconds).
+Test Suite 'OneLifeUITestsLaunchTests' passed at 2026-04-30 17:18:17.858.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 24.360 (24.363) seconds

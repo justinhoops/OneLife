@@ -1,0 +1,168 @@
+{
+  "source": "/Users/justinjeffery/Desktop/OneLife/OneLife/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "LifeSimBase",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 94
+        }
+      },
+      {
+        "comment": "",
+        "key": "Game Over (Health reached 0)",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 86
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age Up",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 77
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Life",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset Save",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@, Age %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 108
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cash: $%lld • Legacy: %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "Career: %@",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 128
+        }
+      },
+      {
+        "comment": "",
+        "key": "Traits",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 139
+        }
+      },
+      {
+        "comment": "",
+        "key": "Traits will emerge early in life.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": "Finance",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 157
+        }
+      },
+      {
+        "comment": "",
+        "key": "Milestones",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 192
+        }
+      },
+      {
+        "comment": "",
+        "key": "Big life milestones will show up here as your story grows.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 196
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 203
+        }
+      },
+      {
+        "comment": "",
+        "key": "History",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 320
+        }
+      },
+      {
+        "comment": "",
+        "key": "No history yet. Tap Age Up.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 324
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld: %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 329
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 385
+        }
+      },
+      {
+        "comment": "",
+        "key": "Event",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 433
+        }
+      },
+      {
+        "comment": "",
+        "key": "No event",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 428
+        }
+      }
+    ]
+  },
+  "version": 1
+}

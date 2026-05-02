@@ -1,0 +1,23 @@
+{
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/WorldAutonomySystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/WorldSnapshot.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataUnit/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Models.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/NarrativeToneResolver.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.swiftdeps"
+  },
+  "/Users/justinjeffery/Desktop/OneLife/OneLife/Simulation/Systems/NarrativeArcSystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.d",
+    "diagnostics" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.dia",
+    "object" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Desktop/OneLife/output/DerivedDataCodexFix2/Build/Intermediates.noindex/OneLifeDesk.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.swiftdeps"
+  }
+}

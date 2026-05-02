@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>219F6502-0086-4C44-9FF5-6B5E521A0425</key>
+		<dict>
+			<key>auxiliaryLogUniqueIdentifier</key>
+			<string>F6C0021C-CEAF-4351-ACBE-36D58CFC29E3</string>
+			<key>auxiliaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>10</integer>
+			</dict>
+			<key>className</key>
+			<string>IDESchemeActionsInvocationRecord</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>com.apple.dt.unit.cocoaUnitTest</string>
+			<key>fileName</key>
+			<string>Test-OneLife-2026.04.30_17-21-43--0600.xcresult</string>
+			<key>hasAuxiliaryLog</key>
+			<true/>
+			<key>hasCoverageData</key>
+			<true/>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>T</string>
+				<key>totalCodeCoverage</key>
+				<real>0.46456055083029568</real>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>18</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>10</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>OneLifeDesk project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>OneLife</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Test OneLife</string>
+			<key>timeStartedRecording</key>
+			<real>799284103.02008998</real>
+			<key>timeStoppedRecording</key>
+			<real>799284183.24756396</real>
+			<key>title</key>
+			<string>Test OneLife</string>
+			<key>uniqueIdentifier</key>
+			<string>219F6502-0086-4C44-9FF5-6B5E521A0425</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

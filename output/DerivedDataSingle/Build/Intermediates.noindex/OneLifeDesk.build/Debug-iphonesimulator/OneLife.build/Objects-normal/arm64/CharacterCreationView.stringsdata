@@ -1,0 +1,168 @@
+{
+  "source": "/Users/justinjeffery/Desktop/OneLife/OneLife/CharacterCreationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "What's your name?",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "You're 14. This is where it starts.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 176
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter a name...",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 182
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pick a name for me",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 196
+        }
+      },
+      {
+        "comment": "",
+        "key": "Where did you grow up?",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 221
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your zip code shapes your starting ceiling.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "Randomize Details",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 360
+        }
+      },
+      {
+        "comment": "",
+        "key": "What was home like?",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 301
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pick a starting template or let it be random. You can reroll the details.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 303
+        }
+      },
+      {
+        "comment": "",
+        "key": "One thing that's already true about you.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 429
+        }
+      },
+      {
+        "comment": "",
+        "key": "This shapes how you move through events. It's not everything — just the loudest part.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 432
+        }
+      },
+      {
+        "comment": "",
+        "key": "Surprise me",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 456
+        }
+      },
+      {
+        "comment": "",
+        "key": "Let the game decide. Based on your origin.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 458
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ — Age 14.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 521
+        }
+      },
+      {
+        "comment": "",
+        "key": "This is who you're starting with. The real shaping happens from here.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 523
+        }
+      },
+      {
+        "comment": "",
+        "key": "Opening",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 535
+        }
+      },
+      {
+        "comment": "",
+        "key": "Begin at 14",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 556
+        }
+      },
+      {
+        "comment": "",
+        "key": "Go back",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 569
+        }
+      },
+      {
+        "comment": "",
+        "key": "·",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 598
+        }
+      },
+      {
+        "comment": "",
+        "key": "·",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 619
+        }
+      }
+    ]
+  },
+  "version": 1
+}

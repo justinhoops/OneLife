@@ -1,0 +1,648 @@
+{
+  "source": "/Users/justinjeffery/Desktop/OneLife/OneLife/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Okay",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 2915
+        }
+      },
+      {
+        "comment": "",
+        "key": "Randomize Details",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 2964
+        }
+      },
+      {
+        "comment": "",
+        "key": "Begin at 14",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 2975
+        }
+      },
+      {
+        "comment": "",
+        "key": "OneLife",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 2989
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start with a compressed backstory, land at age 14, and let the real shaping happen from there.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 2992
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open settings",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 3197
+        }
+      },
+      {
+        "comment": "",
+        "key": "Shows debug tools and save management actions.",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 3198
+        }
+      },
+      {
+        "comment": "",
+        "key": "OneLife",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3164
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@, Age %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3167
+        }
+      },
+      {
+        "comment": "",
+        "key": "Legacy %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3171
+        }
+      },
+      {
+        "comment": "",
+        "key": "Selected",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 3224
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not selected",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 3224
+        }
+      },
+      {
+        "comment": "",
+        "key": "Switch to the %@ planner tab.",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 3225
+        }
+      },
+      {
+        "comment": "",
+        "key": "Advance one year and resolve the consequences of your current focus.",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 3403
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Ended",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 3390
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age Up",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 3390
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your recent years will land here after your next turn.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3710
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Life",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 3695
+        }
+      },
+      {
+        "comment": "",
+        "key": "Full History",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 3699
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld • %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 3716
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recommended Focus",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 3799
+        }
+      },
+      {
+        "comment": "",
+        "key": "Locked In",
+        "location": {
+          "startingColumn": 68,
+          "startingLine": 3799
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Feed",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4147
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fast read, hard choices, and the fallout that keeps following you.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4149
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4231
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year In Brief",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4235
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Forecast",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4261
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start The Year",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4276
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep Going",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4330
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fallout",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4340
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep Going",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 4353
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wrap",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4361
+        }
+      },
+      {
+        "comment": "",
+        "key": "Systemic Crisis",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 4384
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pitch Deck",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 4436
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4516
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Breakdown",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4901
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why This Changed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4867
+        }
+      },
+      {
+        "comment": "",
+        "key": "Next Year",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 4886
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4905
+        }
+      },
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4966
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feedback Pulse",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 4926
+        }
+      },
+      {
+        "comment": "",
+        "key": "Lifecycle",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 4946
+        }
+      },
+      {
+        "comment": "",
+        "key": "QA",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 4958
+        }
+      },
+      {
+        "comment": "",
+        "key": "Haptics",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4927
+        }
+      },
+      {
+        "comment": "",
+        "key": "Animation",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4933
+        }
+      },
+      {
+        "comment": "",
+        "key": "Color Emphasis",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4939
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start New Life",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4947
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset Saved Progress",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4951
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open QA Scenarios",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4959
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 4970
+        }
+      },
+      {
+        "comment": "",
+        "key": "Traits are still settling into place.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 4983
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current yearly focus",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 5040
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current focus",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5030
+        }
+      },
+      {
+        "comment": "",
+        "key": "Selected",
+        "location": {
+          "startingColumn": 80,
+          "startingLine": 5077
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not selected",
+        "location": {
+          "startingColumn": 93,
+          "startingLine": 5077
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sets your yearly focus to %@.",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 5078
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Consequences",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 5163
+        }
+      },
+      {
+        "comment": "",
+        "key": "School Climate",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 5517
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fast money is running beside your normal career and can still blow back into work, health, and relationships.",
+        "location": {
+          "startingColumn": 64,
+          "startingLine": 5586
+        }
+      },
+      {
+        "comment": "",
+        "key": "Attention-based work is opening a second career lane, but the audience and burnout numbers matter as much as income.",
+        "location": {
+          "startingColumn": 178,
+          "startingLine": 5586
+        }
+      },
+      {
+        "comment": "",
+        "key": "Regional policy, housing strain, and budget pressure all decide whether a decent income actually feels livable.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 5825
+        }
+      },
+      {
+        "comment": "",
+        "key": "Family pressure is no longer abstract. Health, money, and relationship alignment are all in the same conversation now.",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 6053
+        }
+      },
+      {
+        "comment": "",
+        "key": "Family planning stays quiet until it doesn’t. This bucket keeps the hidden load visible before it blindsides the year.",
+        "location": {
+          "startingColumn": 171,
+          "startingLine": 6053
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 6173
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • %lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 6285
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld • %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 6853
+        }
+      },
+      {
+        "comment": "",
+        "key": "Testing",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6918
+        }
+      },
+      {
+        "comment": "",
+        "key": "QA Scenario Lab",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 6879
+        }
+      },
+      {
+        "comment": "",
+        "key": "These seeded states are debug-only. They preserve the production planner layout while making hidden feature bands directly testable.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 6882
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset to Normal Start",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 6908
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Review",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 7042
+        }
+      },
+      {
+        "comment": "",
+        "key": "No year summary available.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 7025
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld Review",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6968
+        }
+      },
+      {
+        "comment": "",
+        "key": "What Changed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6972
+        }
+      },
+      {
+        "comment": "",
+        "key": "What It Touched",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 7005
+        }
+      },
+      {
+        "comment": "",
+        "key": "Coming Out Of The Year",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 7016
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue to Event",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 7033
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Event",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 7114
+        }
+      },
+      {
+        "comment": "",
+        "key": "No event",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7109
+        }
+      }
+    ]
+  },
+  "version": 1
+}
