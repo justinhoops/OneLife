@@ -1,0 +1,152 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/LifeConsoleView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 155
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "Top Pressures",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 229
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Life Pace",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 273
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Life Pace",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 264
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why: %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 296
+        }
+      },
+      {
+        "comment": "",
+        "key": "Autopilot bias",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 290
+        }
+      },
+      {
+        "comment": "",
+        "key": "Guided pick",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 290
+        }
+      },
+      {
+        "comment": "",
+        "key": "Background Pulse",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 319
+        }
+      },
+      {
+        "comment": "",
+        "key": "No background pressure is asking for attention.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 325
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assets",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 362
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ledger",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 365
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 405
+        }
+      },
+      {
+        "comment": "",
+        "key": "Actions",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 439
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ended",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 461
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age Up",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 461
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 594
+        }
+      },
+      {
+        "comment": "",
+        "key": "Details",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 617
+        }
+      }
+    ]
+  },
+  "version": 1
+}

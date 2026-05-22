@@ -13,17 +13,23 @@ final class OneLifeUITests: XCTestCase {
 
         enterPlannerShellIfNeeded(app)
 
-        XCTAssertTrue(app.buttons["feed-tab"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["home-tab"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["career-tab"].exists)
         XCTAssertTrue(app.buttons["finance-tab"].exists)
         XCTAssertTrue(app.buttons["relationships-tab"].exists)
-        XCTAssertTrue(app.buttons["health-tab"].exists)
-        XCTAssertTrue(app.buttons["life-tab"].exists)
+        XCTAssertTrue(app.buttons["body-tab"].exists)
+        XCTAssertTrue(app.buttons["history-tab"].exists)
+        XCTAssertFalse(app.buttons["feed-tab"].exists)
+        XCTAssertFalse(app.buttons["life-tab"].exists)
+        XCTAssertTrue(app.otherElements["bottom-game-bar"].exists)
+        XCTAssertTrue(app.buttons["bottom-actions-menu"].exists)
+        XCTAssertTrue(app.otherElements["bottom-domain-strip"].exists)
         XCTAssertTrue(app.buttons["age-up-button"].exists)
-        XCTAssertTrue(app.otherElements["feed-tab-content"].exists)
-        XCTAssertTrue(app.otherElements["feed-overview-header"].exists)
-        XCTAssertTrue(app.otherElements["feed-overview-audit"].exists)
-        XCTAssertTrue(app.otherElements["feed-overview-pressure"].exists)
+        XCTAssertTrue(app.buttons["open-life-feed-button"].exists)
+
+        openLifeFeed(from: app)
+        XCTAssertTrue(element("feed-tab-content", in: app).waitForExistence(timeout: 5))
+        dismissLifeFeedIfPresent(app)
     }
 
     @MainActor
@@ -32,21 +38,41 @@ final class OneLifeUITests: XCTestCase {
 
         enterPlannerShellIfNeeded(app)
 
+        app.buttons["home-tab"].tap()
+        XCTAssertTrue(app.otherElements["home-tab-content"].waitForExistence(timeout: 2))
+
         app.buttons["career-tab"].tap()
         XCTAssertTrue(app.otherElements["career-tab-content"].waitForExistence(timeout: 2) || app.otherElements["education-tab-content"].waitForExistence(timeout: 2))
 
         app.buttons["finance-tab"].tap()
         XCTAssertTrue(app.otherElements["finance-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.otherElements["assets-housing-legacy-section"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.buttons["age-up-button"].exists)
+        XCTAssertTrue(app.buttons["bottom-actions-menu"].exists)
 
         app.buttons["relationships-tab"].tap()
         XCTAssertTrue(app.otherElements["relationships-tab-content"].waitForExistence(timeout: 2))
 
-        app.buttons["health-tab"].tap()
+        app.buttons["body-tab"].tap()
         XCTAssertTrue(app.otherElements["health-tab-content"].waitForExistence(timeout: 2))
 
-        app.buttons["life-tab"].tap()
-        XCTAssertTrue(app.otherElements["life-tab-content"].waitForExistence(timeout: 2))
+        app.buttons["history-tab"].tap()
+        XCTAssertTrue(app.otherElements["history-tab-content"].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testSpecialCareerCrimeScenarioShowsCrimeInCareerTab() throws {
+        let app = launchApp(arguments: [
+            "-debug-scenario", "specialCareerCrime"
+        ])
+
+        XCTAssertTrue(app.buttons["career-tab"].waitForExistence(timeout: 5))
+        app.buttons["career-tab"].tap()
+        XCTAssertTrue(app.otherElements["career-tab-content"].waitForExistence(timeout: 5))
+        if !element("crime-career-section", in: app).waitForExistence(timeout: 2) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(element("crime-career-section", in: app).waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -58,11 +84,10 @@ final class OneLifeUITests: XCTestCase {
         app.buttons["career-tab"].tap()
         XCTAssertTrue(app.otherElements["education-tab-content"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.otherElements["education-overview-header"].exists)
-        XCTAssertTrue(app.otherElements["education-overview-audit"].exists)
-        XCTAssertTrue(app.otherElements["education-overview-pressure"].exists)
+        XCTAssertTrue(app.otherElements["work-overview-audit"].exists)
+        XCTAssertTrue(app.otherElements["work-overview-pressure"].exists)
         XCTAssertTrue(app.buttons["action-choice-studyConsistently"].exists)
         XCTAssertTrue(app.buttons["action-choice-joinClub"].exists)
-        XCTAssertTrue(app.buttons["action-choice-skipAndDrift"].exists)
         XCTAssertFalse(app.buttons["action-choice-jobHunt"].exists)
     }
 
@@ -74,9 +99,9 @@ final class OneLifeUITests: XCTestCase {
 
         app.buttons["finance-tab"].tap()
         XCTAssertTrue(app.otherElements["finance-tab-content"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts["Pocket Cash"].exists)
-        XCTAssertTrue(app.otherElements["finance-overview-audit"].exists)
-        XCTAssertTrue(app.otherElements["finance-overview-pressure"].exists)
+        XCTAssertTrue(app.staticTexts["Cash"].exists)
+        XCTAssertTrue(app.otherElements["money-overview-audit"].exists)
+        XCTAssertTrue(app.otherElements["money-overview-pressure"].exists)
         XCTAssertTrue(app.buttons["action-choice-smallHustle"].exists)
         XCTAssertTrue(app.otherElements["action-preview-strip"].exists)
     }
@@ -95,10 +120,14 @@ final class OneLifeUITests: XCTestCase {
             dismissLaunchEventIfNeeded(app)
         }
 
-        XCTAssertTrue(app.buttons["feed-tab"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["home-tab"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["career-tab"].exists)
         XCTAssertTrue(app.buttons["age-up-button"].exists)
-        XCTAssertTrue(app.otherElements["feed-tab-content"].exists)
-        XCTAssertTrue(app.otherElements["feed-overview-header"].exists)
+        XCTAssertTrue(app.buttons["open-life-feed-button"].exists)
+        openLifeFeed(from: app)
+        XCTAssertTrue(element("feed-tab-content", in: app).exists)
+        XCTAssertTrue(element("feed-overview-header", in: app).exists)
+        dismissLifeFeedIfPresent(app)
     }
 
     @MainActor
@@ -128,7 +157,7 @@ final class OneLifeUITests: XCTestCase {
             "-debug-scenario", "adultCareerFlow"
         ])
 
-        XCTAssertTrue(app.otherElements["feed-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["career-tab"].waitForExistence(timeout: 2))
         app.buttons["career-tab"].tap()
         XCTAssertTrue(app.otherElements["career-tab-content"].waitForExistence(timeout: 2))
         XCTAssertTrue(reveal(app.buttons["action-choice-workHard"], in: app))
@@ -142,7 +171,7 @@ final class OneLifeUITests: XCTestCase {
             "-debug-scenario", "pregnancyYoungFamily"
         ])
 
-        XCTAssertTrue(app.otherElements["feed-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["relationships-tab"].waitForExistence(timeout: 2))
         app.buttons["relationships-tab"].tap()
         XCTAssertTrue(app.otherElements["relationships-tab-content"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["Pregnant with Owen"].waitForExistence(timeout: 2))
@@ -211,7 +240,7 @@ final class OneLifeUITests: XCTestCase {
             "-debug-scenario", "adultCareerFlow"
         ])
 
-        XCTAssertTrue(app.otherElements["feed-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["career-tab"].waitForExistence(timeout: 2))
         app.buttons["career-tab"].tap()
         XCTAssertTrue(app.otherElements["career-tab-content"].waitForExistence(timeout: 2))
         app.buttons["career-overview-detail-button"].tap()
@@ -230,10 +259,10 @@ final class OneLifeUITests: XCTestCase {
             "-debug-scenario", "adultCareerFlow"
         ])
 
-        XCTAssertTrue(app.otherElements["feed-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["career-tab"].waitForExistence(timeout: 2))
         app.buttons["career-tab"].tap()
         XCTAssertTrue(app.otherElements["career-tab-content"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.otherElements["career-overview-pressure"].exists)
+        XCTAssertTrue(app.otherElements["work-overview-pressure"].exists)
         XCTAssertTrue(app.buttons["action-choice-workHard"].exists)
 
         app.buttons["action-choice-jobHunt"].tap()
@@ -247,7 +276,7 @@ final class OneLifeUITests: XCTestCase {
             "-debug-scenario", "pregnancyYoungFamily"
         ])
 
-        XCTAssertTrue(familyApp.otherElements["feed-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(familyApp.buttons["relationships-tab"].waitForExistence(timeout: 2))
         familyApp.buttons["relationships-tab"].tap()
         XCTAssertTrue(familyApp.otherElements["relationships-tab-content"].waitForExistence(timeout: 2))
         familyApp.buttons["relationships-family-detail-button"].tap()
@@ -257,11 +286,10 @@ final class OneLifeUITests: XCTestCase {
             "-debug-scenario", "housingDeficitFlow"
         ])
 
-        XCTAssertTrue(housingApp.otherElements["feed-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(housingApp.buttons["finance-tab"].waitForExistence(timeout: 2))
         housingApp.buttons["finance-tab"].tap()
         XCTAssertTrue(housingApp.otherElements["finance-tab-content"].waitForExistence(timeout: 2))
-        housingApp.buttons["life-tab"].tap()
-        XCTAssertTrue(housingApp.otherElements["life-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(reveal(housingApp.buttons["life-housing-detail-button"], in: housingApp))
         housingApp.buttons["life-housing-detail-button"].tap()
         XCTAssertTrue(element("detail-sheet-lifeHousing", in: housingApp).waitForExistence(timeout: 2))
     }
@@ -275,7 +303,9 @@ final class OneLifeUITests: XCTestCase {
         enterPlannerShellIfNeeded(app)
 
         XCTAssertTrue(app.buttons["age-up-button"].waitForExistence(timeout: 3))
+        openLifeFeed(from: app)
         XCTAssertTrue(app.otherElements["life-signals"].exists)
+        dismissLifeFeedIfPresent(app)
     }
 
     @MainActor
@@ -284,7 +314,7 @@ final class OneLifeUITests: XCTestCase {
             "-debug-scenario", "adultCareerFlow"
         ])
 
-        XCTAssertTrue(app.otherElements["feed-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["career-tab"].waitForExistence(timeout: 2))
         app.buttons["career-tab"].tap()
         XCTAssertTrue(app.otherElements["career-tab-content"].waitForExistence(timeout: 2))
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .dynamicType])
@@ -299,6 +329,21 @@ final class OneLifeUITests: XCTestCase {
         }
 
         dismissLaunchEventIfNeeded(app)
+    }
+
+    @MainActor
+    private func openLifeFeed(from app: XCUIApplication) {
+        XCTAssertTrue(app.buttons["open-life-feed-button"].waitForExistence(timeout: 5))
+        app.buttons["open-life-feed-button"].tap()
+        XCTAssertTrue(element("feed-tab-content", in: app).waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    private func dismissLifeFeedIfPresent(_ app: XCUIApplication) {
+        let done = app.navigationBars.buttons["Done"]
+        if done.waitForExistence(timeout: 2) {
+            done.tap()
+        }
     }
 
     @MainActor
@@ -341,6 +386,90 @@ final class OneLifeUITests: XCTestCase {
             }
 
             break
+        }
+    }
+
+    @MainActor
+    func testAdultCareerScenarioHomeShowsQuickActionsAndSystemsStrip() throws {
+        let app = launchApp(arguments: [
+            "-debug-scenario", "adultCareerFlow"
+        ])
+        enterPlannerShellIfNeeded(app)
+
+        XCTAssertTrue(element("home-tab", in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(app.otherElements["home-tab-content"].exists)
+        XCTAssertTrue(app.otherElements["home-opportunities"].exists)
+        XCTAssertTrue(app.buttons["action-choice-workHard"].exists)
+        XCTAssertTrue(element("finance-tab", in: app).exists)
+    }
+
+    @MainActor
+    func testBottomFinanceButtonSelectsFinancePanel() throws {
+        let app = launchApp(arguments: [
+            "-debug-scenario", "adultCareerFlow"
+        ])
+        enterPlannerShellIfNeeded(app)
+
+        XCTAssertTrue(app.otherElements["home-tab-content"].waitForExistence(timeout: 3))
+        app.buttons["finance-tab"].tap()
+        XCTAssertTrue(app.otherElements["finance-tab-content"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testHomeActionTapSurfacesPulseBanner() throws {
+        let app = launchApp(arguments: [
+            "-debug-scenario", "adultCareerFlow"
+        ])
+        enterPlannerShellIfNeeded(app)
+
+        XCTAssertTrue(app.buttons["home-tab"].waitForExistence(timeout: 3))
+        XCTAssertTrue(reveal(app.buttons["action-choice-workHard"], in: app))
+        app.buttons["action-choice-workHard"].tap()
+        XCTAssertTrue(app.otherElements["activity-pulse-banner"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testFinanceQuickActionSurfacesPulseAndKeepsAgeUpAvailable() throws {
+        let app = launchApp(arguments: [
+            "-debug-scenario", "adultCareerFlow"
+        ])
+        enterPlannerShellIfNeeded(app)
+
+        XCTAssertTrue(element("finance-tab", in: app).waitForExistence(timeout: 5))
+        element("finance-tab", in: app).tap()
+        XCTAssertTrue(element("quick-action-cutSpending", in: app).waitForExistence(timeout: 3))
+        element("quick-action-cutSpending", in: app).tap()
+        let pulseAppeared = element("activity-pulse-banner", in: app).waitForExistence(timeout: 3)
+        let actionMarkedDone = app.staticTexts["DONE"].waitForExistence(timeout: 1)
+        XCTAssertTrue(pulseAppeared || actionMarkedDone)
+        XCTAssertTrue(app.buttons["age-up-button"].exists)
+    }
+
+    @MainActor
+    func testHistoryTabShowsSeededJournalEntry() throws {
+        let app = launchApp(arguments: [
+            "-debug-scenario", "adultCareerFlow"
+        ])
+        enterPlannerShellIfNeeded(app)
+
+        app.buttons["history-tab"].tap()
+        XCTAssertTrue(app.otherElements["history-tab-content"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["You held onto work momentum and started looking promotable."].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testHomeUrgencyMoneyOpensCashflowDetail() throws {
+        let app = launchApp(arguments: [
+            "-debug-scenario", "adultCareerFlow"
+        ])
+        enterPlannerShellIfNeeded(app)
+
+        XCTAssertTrue(element("home-urgency-money", in: app).waitForExistence(timeout: 3))
+        element("home-urgency-money", in: app).tap()
+        XCTAssertTrue(element("detail-sheet-financeCashflow", in: app).waitForExistence(timeout: 3))
+        let done = app.navigationBars.buttons["Done"]
+        if done.waitForExistence(timeout: 1) {
+            done.tap()
         }
     }
 

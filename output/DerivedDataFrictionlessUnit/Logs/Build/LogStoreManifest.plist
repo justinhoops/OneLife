@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>93D42262-FD19-414D-A87A-51623A5CA06A</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>93D42262-FD19-414D-A87A-51623A5CA06A.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>7</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>OneLife project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>OneLife</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Testing project OneLife with scheme OneLife</string>
+			<key>timeStartedRecording</key>
+			<real>800943657.11488903</real>
+			<key>timeStoppedRecording</key>
+			<real>800943679.75483704</real>
+			<key>title</key>
+			<string>Testing project OneLife with scheme OneLife</string>
+			<key>uniqueIdentifier</key>
+			<string>93D42262-FD19-414D-A87A-51623A5CA06A</string>
+		</dict>
+		<key>CDCAFE52-DEAF-48B6-82C2-F4DCEB798F6D</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>CDCAFE52-DEAF-48B6-82C2-F4DCEB798F6D.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>7</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>OneLife project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>OneLife</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Testing project OneLife with scheme OneLife</string>
+			<key>timeStartedRecording</key>
+			<real>800943553.13503599</real>
+			<key>timeStoppedRecording</key>
+			<real>800943590.49543595</real>
+			<key>title</key>
+			<string>Testing project OneLife with scheme OneLife</string>
+			<key>uniqueIdentifier</key>
+			<string>CDCAFE52-DEAF-48B6-82C2-F4DCEB798F6D</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

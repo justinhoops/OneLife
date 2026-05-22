@@ -1,0 +1,14 @@
+2026-05-20 04:14:09 +0000: Received worker from worker provider: <XCTHTestRunner: 0xc2e115180, PID: 0, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)>
+2026-05-20 04:14:55 +0000: Worker <XCTHTestRunner: 0xc2e115180, PID: 24262, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)> finished bootstrapping
+2026-05-20 04:14:55 +0000: Parallelization enabled; test execution driven by the IDE
+2026-05-20 04:14:55 +0000: Requesting parallelizable groups from worker <XCTHTestRunner: 0xc2e115180, PID: 24262, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)>
+2026-05-20 04:14:56 +0000: Received parallelizable groups from worker <XCTHTestRunner: 0xc2e115180, PID: 24262, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)>: (
+    "<XCTTestIdentifier container [\"__SwiftTestingParallelizationPlaceholderIdentifier\"]>"
+)
+2026-05-20 04:14:56 +0000: Executing tests <XCTTestIdentifier container ["__SwiftTestingParallelizationPlaceholderIdentifier"]>; skipping tests 
+2026-05-20 04:14:56 +0000: Dispatching tests <XCTTestIdentifier container ["__SwiftTestingParallelizationPlaceholderIdentifier"]> to worker: <XCTHTestRunner: 0xc2e115180, PID: 24262, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)>
+2026-05-20 04:14:56 +0000: Scheduler finished dispatching test classes
+2026-05-20 04:14:59 +0000: Worker <XCTHTestRunner: 0xc2e115180, PID: 24262, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)> finished successfully.
+2026-05-20 04:14:59 +0000: Telling worker <XCTHTestRunner: 0xc2e115180, PID: 24262, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)> to shutdown
+2026-05-20 04:15:00 +0000: Worker <XCTHTestRunner: 0xc2e115180, PID: 24262, device: Clone 2 of iPhone 17 (EF8EAF2C-3027-402C-B4F0-A825846DE304)> finished successfully
+2026-05-20 04:15:00 +0000: Finished executing tests (cancelled: No)

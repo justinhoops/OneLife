@@ -244,6 +244,11 @@ struct ChildhoodGenerationEngine {
         case .fragileHealthStart:         interests = ["reading", "music", "creative writing"]
         case .chaoticHomeSelfReliant:     interests = ["independence", "survival skills", "self-reliance"]
         case .luckyBreak:                 interests = ["exploration", "chance", "trying new things"]
+        case .wealthyDynasty:             interests = ["finance", "leadership", "golf"]
+        case .academicLegacy:             interests = ["research", "debating", "philosophy"]
+        case .ruralEscapist:              interests = ["nature", "handiwork", "survivalism"]
+        case .techProdigy:                interests = ["coding", "gaming", "robotics"]
+        case .artisticDrifter:            interests = ["sketching", "busking", "photography"]
         }
 
         // Append aptitude-driven secondary interests
@@ -301,6 +306,36 @@ struct ChildhoodGenerationEngine {
                 "You applied to a competitive summer program as a joke and got in. Everything that followed from that summer happened because of something that started as a dare.",
                 "A stranger said something to you at eleven that you didn't fully understand until years later. When it clicked, it changed your entire frame.",
                 "Something that should have hurt you didn't. You didn't know then that near misses build a different kind of confidence than wins do."
+            ]
+        case .wealthyDynasty:
+            pool = [
+                "You overheard a private conversation about a massive acquisition when you were twelve. That was the first time you realized that the world is just a series of negotiated deals.",
+                "Your family took a private jet to a remote island. Looking down at the clouds, you felt a strange, quiet distance from the rest of the world that never quite went away.",
+                "You saw your parent handle a crisis with a single phone call. It taught you that power isn't about being loud; it's about being connected."
+            ]
+        case .academicLegacy:
+            pool = [
+                "You spent your Saturdays in the university library while your parents worked. The smell of old paper and the quiet of deep focus felt more like home than your actual house.",
+                "A Nobel laureate came to dinner when you were ten and asked for your opinion on a problem. That respect for your mind set the bar for everything after.",
+                "You realized at eleven that you could learn anything if you just found the right source. That realization made the world feel small and manageable."
+            ]
+        case .ruralEscapist:
+            pool = [
+                "You spent a whole day tracking a fox through the snow when you were nine. You didn't catch it, but the patience you learned that day became your most reliable tool.",
+                "Helping your neighbor rebuild their barn after a storm showed you that anything can be fixed if you have enough hands and enough time.",
+                "The first time you climbed the highest ridge near your house and saw how far the world went, you realized that your town was just one small piece of something much bigger."
+            ]
+        case .techProdigy:
+            pool = [
+                "You built your first simple script at age ten to automate a repetitive task. Seeing the machine do the work for you felt like a secret superpower.",
+                "An older mentor in an online forum treated you like a peer when they saw your code. That digital belonging mattered more than anything happening at school.",
+                "You stayed up all night fixing a bug that had everyone else stumped. The moment it finally ran clean was the most alive you'd ever felt."
+            ]
+        case .artisticDrifter:
+            pool = [
+                "You saw a street performer in a city you were visiting and realized that you could make a living just by being yourself and being loud about it.",
+                "A teacher told you your sketches were 'distracting,' so you started a secret mural in an abandoned lot. That defiance felt like the start of your real life.",
+                "You heard a song that perfectly matched a feeling you didn't have a word for yet. You've been trying to recreate that resonance in everything you make since."
             ]
         }
 
@@ -365,6 +400,36 @@ struct ChildhoodGenerationEngine {
                 "A few things in your early life broke your way when they easily could have gone the other direction.",
                 "Your childhood wasn't perfect, but a handful of small lucky turns gave you runway most people don't get.",
                 "You've been in situations that should have left you worse off. Somehow they didn't. That pattern started early."
+            ]
+        case .wealthyDynasty:
+            pool = [
+                "You grew up in a world of soft lighting and high walls, where 'no' was a word you mostly heard about other people.",
+                "Your family name was a heavy piece of furniture you were expected to polish every day.",
+                "Everything was provided for, which meant your only real job was to not embarrass the people providing it."
+            ]
+        case .academicLegacy:
+            pool = [
+                "The house was full of books and the assumption that you would read them all.",
+                "Standardized tests weren't a challenge in your house; they were a baseline.",
+                "You learned early that curiosity was good, but achievement was the only thing that actually counted."
+            ]
+        case .ruralEscapist:
+            pool = [
+                "You grew up where the sky was bigger than the town, and the trees knew more about you than your neighbors did.",
+                "The world was made of tangible things — wood, dirt, cold water — and you learned to trust them before you trusted people.",
+                "Life moved at the speed of the seasons, and you learned early how to wait for the right moment."
+            ]
+        case .techProdigy:
+            pool = [
+                "The first language you really understood was one that humans didn't speak to each other.",
+                "You spent your childhood in a series of glowing rooms, building worlds that were cleaner and more logical than the real one.",
+                "While other kids were playing outside, you were figuring out how to make the machine do exactly what you wanted."
+            ]
+        case .artisticDrifter:
+            pool = [
+                "You grew up in the gaps between the rules, always looking for a way to make the world look the way it felt.",
+                "Your home was a series of temporary moods and half-finished projects, and you loved the mess of it.",
+                "Structure always felt like an ill-fitting coat, and you spent your childhood trying to find a way to take it off."
             ]
         }
         if deterministic { return pool[0] }
@@ -467,6 +532,36 @@ struct ChildhoodGenerationEngine {
                 "You arrive at 14 with momentum you didn't entirely earn — which means you owe it to yourself to use it.",
                 "The runway is real. What you build on it is still entirely open.",
                 "You start with wind at your back. It won't last forever. The question is how far you get while it's there."
+            ]
+        case .wealthyDynasty:
+            pool = [
+                "You start at 14 with a safety net that most people can't even imagine. Use it well.",
+                "The resources are yours, but the reputation is still on loan. The next chapter is where you make it your own.",
+                "You arrive at 14 with every door already open. Your only job is to figure out which one to walk through."
+            ]
+        case .academicLegacy:
+            pool = [
+                "You start at 14 with the best tools money and discipline can provide. The expectation is now your baseline.",
+                "The head start is massive. Whether you use it to lead or just to hide is up to you.",
+                "You arrive at 14 already knowing how to learn. Now you just have to figure out what's worth knowing."
+            ]
+        case .ruralEscapist:
+            pool = [
+                "You start at 14 with a perspective that city kids don't have. It's your quiet advantage.",
+                "The connection to the land is real. Whether it keeps you there or gives you a base to leave from is the question.",
+                "You arrive at 14 with grit and a sense of scale. The world is big, but you know your place in it."
+            ]
+        case .techProdigy:
+            pool = [
+                "You start at 14 with a technical edge that puts you years ahead of your peers. Use the head start.",
+                "The machine is your tool. The world is just the environment you run it in.",
+                "You arrive at 14 already building the future. Now you just have to live in it."
+            ]
+        case .artisticDrifter:
+            pool = [
+                "You start at 14 with a restlessness that will either build something beautiful or burn everything down.",
+                "The creative spark is lit. Keeping it alive is the work of the next decade.",
+                "You arrive at 14 untethered and ready to move. The map is empty, and that's exactly how you like it."
             ]
         }
         if deterministic { return pool[0] }

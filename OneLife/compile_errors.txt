@@ -1,0 +1,63 @@
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:148:52: error: cannot find 'UIColor' in scope
+146 |                             .padding(.vertical, 20)
+147 |                             .background(Color.primary)
+148 |                             .foregroundStyle(Color(UIColor.systemBackground))
+    |                                                    `- error: cannot find 'UIColor' in scope
+149 |                             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+150 |                     }
+
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:171:47: error: cannot find 'UIColor' in scope
+169 |             .padding(.bottom, 20)
+170 |             .background(
+171 |                 LinearGradient(colors: [Color(UIColor.systemBackground).opacity(0), Color(UIColor.systemBackground), Color(UIColor.systemBackground)], startPoint: .top, endPoint: .bottom)
+    |                                               `- error: cannot find 'UIColor' in scope
+172 |             )
+173 |         }
+
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:171:91: error: cannot find 'UIColor' in scope
+169 |             .padding(.bottom, 20)
+170 |             .background(
+171 |                 LinearGradient(colors: [Color(UIColor.systemBackground).opacity(0), Color(UIColor.systemBackground), Color(UIColor.systemBackground)], startPoint: .top, endPoint: .bottom)
+    |                                                                                           `- error: cannot find 'UIColor' in scope
+172 |             )
+173 |         }
+
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:171:124: error: cannot find 'UIColor' in scope
+169 |             .padding(.bottom, 20)
+170 |             .background(
+171 |                 LinearGradient(colors: [Color(UIColor.systemBackground).opacity(0), Color(UIColor.systemBackground), Color(UIColor.systemBackground)], startPoint: .top, endPoint: .bottom)
+    |                                                                                                                            `- error: cannot find 'UIColor' in scope
+172 |             )
+173 |         }
+
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:192:22: error: value of type 'some View' has no member 'textInputAutocapitalization'
+190 |                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+191 |                     .autocorrectionDisabled()
+192 |                     .textInputAutocapitalization(.words)
+    |                      `- error: value of type 'some View' has no member 'textInputAutocapitalization'
+193 | 
+194 |                 Button {
+
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:192:51: error: cannot infer contextual base in reference to member 'words'
+190 |                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+191 |                     .autocorrectionDisabled()
+192 |                     .textInputAutocapitalization(.words)
+    |                                                   `- error: cannot infer contextual base in reference to member 'words'
+193 | 
+194 |                 Button {
+
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:236:33: error: cannot find 'OriginCatalog' in scope
+234 |                 ScrollView(.horizontal, showsIndicators: false) {
+235 |                     HStack(spacing: 10) {
+236 |                         ForEach(OriginCatalog.templates, id: \.id) { template in
+    |                                 `- error: cannot find 'OriginCatalog' in scope
+237 |                             Button { vm.previewTemplate(template.id) } label: {
+238 |                                 VStack(alignment: .leading, spacing: 6) {
+
+/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift:239:37: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+237 |                             Button { vm.previewTemplate(template.id) } label: {
+238 |                                 VStack(alignment: .leading, spacing: 6) {
+239 |                                     Text(template.title).font(.subheadline.weight(.semibold))
+    |                                     `- error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+240 |                                 }
+241 |                                 .foregroundStyle(vm.selectedTemplate == template.id ? Color.white : Color.primary)

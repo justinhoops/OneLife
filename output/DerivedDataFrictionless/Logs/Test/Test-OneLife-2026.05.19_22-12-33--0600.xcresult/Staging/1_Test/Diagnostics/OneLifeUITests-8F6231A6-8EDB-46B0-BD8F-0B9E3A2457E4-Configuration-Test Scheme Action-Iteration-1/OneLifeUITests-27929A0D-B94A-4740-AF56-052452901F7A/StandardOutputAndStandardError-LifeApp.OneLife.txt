@@ -1,0 +1,408 @@
+Standard output and standard error from LifeApp.OneLife with process ID 24903 beginning at 2026-05-20 04:16:21 +0000
+
+2026-05-19 22:16:24.348440-0600 OneLife[24903:7331914] [Default] Received request to exchange capabilities, remote interface capabilities are: <XCTCapabilities: 0x106a90a10>: {
+    "query runtime issue reporting" = 1;
+    "query runtime issue reporting/automation type mismatch" = 1;
+}
+2026-05-19 22:16:24.386057-0600 OneLife[24903:7331912] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:24.386361-0600 OneLife[24903:7331912] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:24.388938-0600 OneLife[24903:7331912] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:24.389071-0600 OneLife[24903:7331912] [Default] Sending animations idle reply with error: (null)
+2026-05-19 22:16:26.916567-0600 OneLife[24903:7331737] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:26.916817-0600 OneLife[24903:7331737] [Default] Sending main run loop idle reply
+2026-05-19 22:16:28.107371-0600 OneLife[24903:7331915] [Default] Received request to fetch matches for query:
+2026-05-19 22:16:28.107721-0600 OneLife[24903:7331912] [Default] Evaluating query:
+2026-05-19 22:16:28.107833-0600 OneLife[24903:7331912] [Default] Getting root element snapshot
+2026-05-19 22:16:28.108027-0600 OneLife[24903:7331912] [Default] Getting snapshot for App element pid: 24903 for query
+2026-05-19 22:16:28.109324-0600 OneLife[24903:7331912] [Default] Query requires iOS snapshot attributes .
+2026-05-19 22:16:28.111652-0600 OneLife[24903:7331912] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:28.111862-0600 OneLife[24903:7331737] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:28.111869-0600 OneLife[24903:7331912] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:28.111952-0600 OneLife[24903:7331737] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race2026-05-19 22:16:28.112123-0600 OneLife[24903:7331912] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+ to the busy flag)
+2026-05-19 22:16:28.132845-0600 OneLife[24903:7331737] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+2026-05-19 22:16:28.133422-0600 OneLife[24903:7331737] [Default] Got main window <AXUIElementRef 0x10b93f5a0> {pid=24903} {uid=[ID:3 hash:0x106a28800]}
+2026-05-19 22:16:28.133805-0600 OneLife[24903:7331737] [Default] Capturing hierarchy with attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeParent, XC_kAXXCAttributeIdentifier, XC_kAXXCAttributeAutomationType, XC_kAXXCAttributeTraits
+2026-05-19 22:16:28.134001-0600 OneLife[24903:7331737] [Default] Capturing hierarchy with parameters {
+    attributes =     (
+        5003,
+        5004,
+        5002,
+        5019,
+        5058,
+        2004
+    );
+    maxArrayCount = 2147483647;
+    maxChildren = 2147483647;
+    maxDepth = 2147483647;
+    snapshotKeyHonorModalViews = 0;
+    traverseFromParentsToChildren = 1;
+}
+2026-05-19 22:16:28.210315-0600 OneLife[24903:7331737] [Default] Snapshot attributes 5003, 5004, 5002, 5019, 5058, 2004
+2026-05-19 22:16:28.447851-0600 OneLife[24903:7331737] [Default] Got snapshot for <AXUIElementRef 0x10b93f3c0> {pid=24903} {uid=[ID:1 hash:0x0]}
+2026-05-19 22:16:28.448205-0600 OneLife[24903:7331737] [Default] Got app orientation 0
+2026-05-19 22:16:28.448301-0600 OneLife[24903:7331737] [Default] Captured accessibility snapshot data in 0.33s
+2026-05-19 22:16:28.448820-0600 OneLife[24903:7331912] [Default] Found main window: Window
+2026-05-19 22:16:28.449658-0600 OneLife[24903:7331912] [Default] ScrollView is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:28.449777-0600 OneLife[24903:7331912] [Default] Preferring automation type 14 instead of legacy element type OTHER derived from class/trait: SwiftUI.AccessibilityNode:UIResponder 1108101562369
+2026-05-19 22:16:28.449888-0600 OneLife[24903:7331912] [Default] Automation type mismatch; legacy system derived element type 9 from class SwiftUI.AccessibilityNode:UIResponder, traits 1108101562369, but AXAutomationType returned 14 which maps to 14
+2026-05-19 22:16:28.499762-0600 OneLife[24903:7331912] [Default] Image, identifier: 'list.bullet.rectangle.portrait.fill' is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:28.500094-0600 OneLife[24903:7331912] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:28.500300-0600 OneLife[24903:7331912] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:28.500475-0600 OneLife[24903:7331912] [Default] Button is not actually a child of Button, identifier: 'bottom-actions-menu', including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:28.501107-0600 OneLife[24903:7331912] [Default] Other is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:28.501734-0600 OneLife[24903:7331912] [Default] Query  found matching snapshots: {(
+    Application, pid: 24903
+)} (error: (null))
+2026-05-19 22:16:28.629230-0600 OneLife[24903:7331912] [Default] Replying to query  with results: <XCTElementQueryResults: 0x10c0aad30> (error: (null))
+2026-05-19 22:16:28.751075-0600 OneLife[24903:7331912] [Default] Received attributes request for element: App element pid: 24903. Attributes: (
+    "XC_kAXXCAttributeFrame",
+    "XC_kAXXCAttributeWindowDisplayId",
+    "XC_kAXXCAttributeWindowContextId"
+)
+2026-05-19 22:16:28.751373-0600 OneLife[24903:7331911] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:28.751497-0600 OneLife[24903:7331911] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:28.751516-0600 OneLife[24903:7331737] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:28.751592-0600 OneLife[24903:7331737] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:28.751597-0600 OneLife[24903:7331911] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:28.751682-0600 OneLife[24903:7331737] [Default] Fetching AX attributes XC_kAXXCAttributeFrame, XC_kAXXCAttributeWindowDisplayId, XC_kAXXCAttributeWindowContextId for App element pid: 24903
+2026-05-19 22:16:28.757158-0600 OneLife[24903:7331737] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:16:28.757458-0600 OneLife[24903:7331911] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeFrame" =     {
+        Height = 874;
+        Width = 402;
+        X = 0;
+        Y = 0;
+    };
+    "XC_kAXXCAttributeWindowContextId" = 1299166617;
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-05-19 22:16:28.786479-0600 OneLife[24903:7331911] [Default] Received attributes request for element: App element pid: 24903. Attributes: (
+    "XC_kAXXCAttributeWindowDisplayId"
+)
+2026-05-19 22:16:28.786693-0600 OneLife[24903:7331911] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:28.786837-0600 OneLife[24903:7331737] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:28.786865-0600 OneLife[24903:7331911] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:28.786917-0600 OneLife[24903:7331737] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:28.786965-0600 OneLife[24903:7331911] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:28.787034-0600 OneLife[24903:7331737] [Default] Fetching AX attributes XC_kAXXCAttributeWindowDisplayId for App element pid: 24903
+2026-05-19 22:16:28.787224-0600 OneLife[24903:7331737] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:16:28.813146-0600 OneLife[24903:7331911] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-05-19 22:16:30.897132-0600 OneLife[24903:7331912] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:30.897292-0600 OneLife[24903:7331912] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:30.897306-0600 OneLife[24903:7331737] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:30.897406-0600 OneLife[24903:7331737] [Default] Sending main run loop idle reply
+2026-05-19 22:16:31.228355-0600 OneLife[24903:7331910] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:31.228555-0600 OneLife[24903:7331910] [Default] Sending animations idle reply with error: (null)
+2026-05-19 22:16:31.729268-0600 OneLife[24903:7331910] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:31.729699-0600 OneLife[24903:7331910] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:31.729710-0600 OneLife[24903:7331737] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:31.729816-0600 OneLife[24903:7331737] [Default] Sending main run loop idle reply
+2026-05-19 22:16:31.732872-0600 OneLife[24903:7331910] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:31.733036-0600 OneLife[24903:7331910] [Default] Sending animations idle reply with error: (null)
+Standard output and standard error from LifeApp.OneLife with process ID 25050 beginning at 2026-05-20 04:16:37 +0000
+
+2026-05-19 22:16:40.206915-0600 OneLife[25050:7333729] [Default] Received request to exchange capabilities, remote interface capabilities are: <XCTCapabilities: 0x104695000>: {
+    "query runtime issue reporting" = 1;
+    "query runtime issue reporting/automation type mismatch" = 1;
+}
+2026-05-19 22:16:40.597714-0600 OneLife[25050:7333729] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:40.597922-0600 OneLife[25050:7333729] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:40.812128-0600 OneLife[25050:7333729] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:40.812324-0600 OneLife[25050:7333729] [Default] Sending animations idle reply with error: (null)
+2026-05-19 22:16:41.990349-0600 OneLife[25050:7333391] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:41.992640-0600 OneLife[25050:7333391] [Default] Sending main run loop idle reply
+2026-05-19 22:16:43.132701-0600 OneLife[25050:7333728] [Default] Received request to fetch matches for query:
+2026-05-19 22:16:43.132893-0600 OneLife[25050:7333720] [Default] Evaluating query:
+2026-05-19 22:16:43.132968-0600 OneLife[25050:7333720] [Default] Getting root element snapshot
+2026-05-19 22:16:43.133167-0600 OneLife[25050:7333720] [Default] Getting snapshot for App element pid: 25050 for query
+2026-05-19 22:16:43.133336-0600 OneLife[25050:7333720] [Default] Query requires iOS snapshot attributes .
+2026-05-19 22:16:43.139849-0600 OneLife[25050:7333720] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:43.140354-0600 OneLife[25050:7333720] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:43.140369-0600 OneLife[25050:7333391] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:43.140518-0600 OneLife[25050:7333391] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:43.141124-0600 OneLife[25050:7333720] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:43.148567-0600 OneLife[25050:7333391] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+2026-05-19 22:16:43.148965-0600 OneLife[25050:7333391] [Default] Got main window <AXUIElementRef 0x10995c9c0> {pid=25050} {uid=[ID:3 hash:0x104624800]}
+2026-05-19 22:16:43.149252-0600 OneLife[25050:7333391] [Default] Capturing hierarchy with attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeParent, XC_kAXXCAttributeIdentifier, XC_kAXXCAttributeAutomationType, XC_kAXXCAttributeTraits
+2026-05-19 22:16:43.149476-0600 OneLife[25050:7333391] [Default] Capturing hierarchy with parameters {
+    attributes =     (
+        5003,
+        5004,
+        5002,
+        5019,
+        5058,
+        2004
+    );
+    maxArrayCount = 2147483647;
+    maxChildren = 2147483647;
+    maxDepth = 2147483647;
+    snapshotKeyHonorModalViews = 0;
+    traverseFromParentsToChildren = 1;
+}
+2026-05-19 22:16:43.149733-0600 OneLife[25050:7333391] [Default] Snapshot attributes 5003, 5004, 5002, 5019, 5058, 2004
+2026-05-19 22:16:43.296628-0600 OneLife[25050:7333391] [Default] Got snapshot for <AXUIElementRef 0x10995c750> {pid=25050} {uid=[ID:1 hash:0x0]}
+2026-05-19 22:16:43.297023-0600 OneLife[25050:7333391] [Default] Got app orientation 0
+2026-05-19 22:16:43.297123-0600 OneLife[25050:7333391] [Default] Captured accessibility snapshot data in 0.16s
+2026-05-19 22:16:43.297450-0600 OneLife[25050:7333720] [Default] Found main window: Window
+2026-05-19 22:16:43.298223-0600 OneLife[25050:7333720] [Default] ScrollView is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:43.298357-0600 OneLife[25050:7333720] [Default] Preferring automation type 14 instead of legacy element type OTHER derived from class/trait: SwiftUI.AccessibilityNode:UIResponder 1108101562369
+2026-05-19 22:16:43.298465-0600 OneLife[25050:7333720] [Default] Automation type mismatch; legacy system derived element type 9 from class SwiftUI.AccessibilityNode:UIResponder, traits 1108101562369, but AXAutomationType returned 14 which maps to 14
+2026-05-19 22:16:43.298568-0600 OneLife[25050:7333720] [Default] Image, identifier: 'list.bullet.rectangle.portrait.fill' is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:43.298650-0600 OneLife[25050:7333720] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:43.298734-0600 OneLife[25050:7333720] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:43.298810-0600 OneLife[25050:7333720] [Default] Button is not actually a child of Button, identifier: 'bottom-actions-menu', including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:43.299251-0600 OneLife[25050:7333720] [Default] Other is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:43.299669-0600 OneLife[25050:7333720] [Default] Query  found matching snapshots: {(
+    Application, pid: 25050
+)} (error: (null))
+2026-05-19 22:16:43.300032-0600 OneLife[25050:7333720] [Default] Replying to query  with results: <XCTElementQueryResults: 0x1138edc20> (error: (null))
+2026-05-19 22:16:43.329653-0600 OneLife[25050:7333724] [Default] Received attributes request for element: App element pid: 25050. Attributes: (
+    "XC_kAXXCAttributeFrame",
+    "XC_kAXXCAttributeWindowDisplayId",
+    "XC_kAXXCAttributeWindowContextId"
+)
+2026-05-19 22:16:43.329827-0600 OneLife[25050:7333720] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:43.329945-0600 OneLife[25050:7333391] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:43.329934-0600 OneLife[25050:7333720] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:43.330005-0600 OneLife[25050:7333391] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:43.330009-0600 OneLife[25050:7333720] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:43.330077-0600 OneLife[25050:7333391] [Default] Fetching AX attributes XC_kAXXCAttributeFrame, XC_kAXXCAttributeWindowDisplayId, XC_kAXXCAttributeWindowContextId for App element pid: 25050
+2026-05-19 22:16:43.330450-0600 OneLife[25050:7333391] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:16:43.330768-0600 OneLife[25050:7333720] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeFrame" =     {
+        Height = 402;
+        Width = 874;
+        X = 0;
+        Y = 0;
+    };
+    "XC_kAXXCAttributeWindowContextId" = 1240041549;
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-05-19 22:16:43.337556-0600 OneLife[25050:7333720] [Default] Received attributes request for element: App element pid: 25050. Attributes: (
+    "XC_kAXXCAttributeWindowDisplayId"
+)
+2026-05-19 22:16:43.337805-0600 OneLife[25050:7333724] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:43.337936-0600 OneLife[25050:7333724] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:43.337941-0600 OneLife[25050:7333391] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:43.338056-0600 OneLife[25050:7333391] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:43.338120-0600 OneLife[25050:7333724] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:43.338188-0600 OneLife[25050:7333391] [Default] Fetching AX attributes XC_kAXXCAttributeWindowDisplayId for App element pid: 25050
+2026-05-19 22:16:43.338387-0600 OneLife[25050:7333391] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:16:43.338551-0600 OneLife[25050:7333724] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-05-19 22:16:45.545775-0600 OneLife[25050:7333724] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:45.546663-0600 OneLife[25050:7333724] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:45.546668-0600 OneLife[25050:7333391] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:45.546778-0600 OneLife[25050:7333391] [Default] Sending main run loop idle reply
+2026-05-19 22:16:45.593112-0600 OneLife[25050:7333720] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:45.593278-0600 OneLife[25050:7333720] [Default] Sending animations idle reply with error: (null)
+2026-05-19 22:16:46.202946-0600 OneLife[25050:7333726] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:46.203125-0600 OneLife[25050:7333726] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:46.203143-0600 OneLife[25050:7333391] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:46.203237-0600 OneLife[25050:7333391] [Default] Sending main run loop idle reply
+2026-05-19 22:16:46.416945-0600 OneLife[25050:7333726] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:46.513079-0600 OneLife[25050:7333391] [Default] Sending animations idle reply with error: (null)
+Standard output and standard error from LifeApp.OneLife with process ID 25161 beginning at 2026-05-20 04:16:53 +0000
+
+2026-05-19 22:16:55.523557-0600 OneLife[25161:7335056] [Default] Received request to exchange capabilities, remote interface capabilities are: <XCTCapabilities: 0x1022809f0>: {
+    "query runtime issue reporting" = 1;
+    "query runtime issue reporting/automation type mismatch" = 1;
+}
+2026-05-19 22:16:55.604920-0600 OneLife[25161:7335056] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:55.606465-0600 OneLife[25161:7335056] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:55.628201-0600 OneLife[25161:7335056] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:55.628420-0600 OneLife[25161:7335056] [Default] Sending animations idle reply with error: (null)
+2026-05-19 22:16:57.420146-0600 OneLife[25161:7334804] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:57.420523-0600 OneLife[25161:7334804] [Default] Sending main run loop idle reply
+2026-05-19 22:16:58.615526-0600 OneLife[25161:7335044] [Default] Received request to fetch matches for query:
+2026-05-19 22:16:58.616272-0600 OneLife[25161:7335055] [Default] Evaluating query:
+2026-05-19 22:16:58.616379-0600 OneLife[25161:7335055] [Default] Getting root element snapshot
+2026-05-19 22:16:58.616509-0600 OneLife[25161:7335055] [Default] Getting snapshot for App element pid: 25161 for query
+2026-05-19 22:16:58.616729-0600 OneLife[25161:7335055] [Default] Query requires iOS snapshot attributes .
+2026-05-19 22:16:58.616940-0600 OneLife[25161:7335055] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:58.617014-0600 OneLife[25161:7335055] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:58.617023-0600 OneLife[25161:7334804] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:58.617258-0600 OneLife[25161:7334804] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:58.617271-0600 OneLife[25161:7335055] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:58.638085-0600 OneLife[25161:7334804] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+2026-05-19 22:16:58.638642-0600 OneLife[25161:7334804] [Default] Got main window <AXUIElementRef 0x1070e9590> {pid=25161} {uid=[ID:3 hash:0x102224800]}
+2026-05-19 22:16:58.639157-0600 OneLife[25161:7334804] [Default] Capturing hierarchy with attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeParent, XC_kAXXCAttributeIdentifier, XC_kAXXCAttributeAutomationType, XC_kAXXCAttributeTraits
+2026-05-19 22:16:58.639473-0600 OneLife[25161:7334804] [Default] Capturing hierarchy with parameters {
+    attributes =     (
+        5003,
+        5004,
+        5002,
+        5019,
+        5058,
+        2004
+    );
+    maxArrayCount = 2147483647;
+    maxChildren = 2147483647;
+    maxDepth = 2147483647;
+    snapshotKeyHonorModalViews = 0;
+    traverseFromParentsToChildren = 1;
+}
+2026-05-19 22:16:58.639597-0600 OneLife[25161:7334804] [Default] Snapshot attributes 5003, 5004, 5002, 5019, 5058, 2004
+2026-05-19 22:16:58.876823-0600 OneLife[25161:7334804] [Default] Got snapshot for <AXUIElementRef 0x1070e8bd0> {pid=25161} {uid=[ID:1 hash:0x0]}
+2026-05-19 22:16:58.877156-0600 OneLife[25161:7334804] [Default] Got app orientation 0
+2026-05-19 22:16:58.877269-0600 OneLife[25161:7334804] [Default] Captured accessibility snapshot data in 0.26s
+2026-05-19 22:16:58.877689-0600 OneLife[25161:7335055] [Default] Found main window: Window
+2026-05-19 22:16:58.878593-0600 OneLife[25161:7335055] [Default] ScrollView is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:58.878810-0600 OneLife[25161:7335055] [Default] Preferring automation type 14 instead of legacy element type OTHER derived from class/trait: SwiftUI.AccessibilityNode:UIResponder 1108101562369
+2026-05-19 22:16:58.878963-0600 OneLife[25161:7335055] [Default] Automation type mismatch; legacy system derived element type 9 from class SwiftUI.AccessibilityNode:UIResponder, traits 1108101562369, but AXAutomationType returned 14 which maps to 14
+2026-05-19 22:16:58.879105-0600 OneLife[25161:7335055] [Default] Image, identifier: 'list.bullet.rectangle.portrait.fill' is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:58.879320-0600 OneLife[25161:7335055] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:58.879630-0600 OneLife[25161:7335055] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:58.879733-0600 OneLife[25161:7335055] [Default] Button is not actually a child of Button, identifier: 'bottom-actions-menu', including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:58.880426-0600 OneLife[25161:7335055] [Default] Other is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:16:58.880881-0600 OneLife[25161:7335055] [Default] Query  found matching snapshots: {(
+    Application, pid: 25161
+)} (error: (null))
+2026-05-19 22:16:58.881258-0600 OneLife[25161:7335055] [Default] Replying to query  with results: <XCTElementQueryResults: 0x1078d9cb0> (error: (null))
+2026-05-19 22:16:58.887238-0600 OneLife[25161:7335054] [Default] Received attributes request for element: App element pid: 25161. Attributes: (
+    "XC_kAXXCAttributeFrame",
+    "XC_kAXXCAttributeWindowDisplayId",
+    "XC_kAXXCAttributeWindowContextId"
+)
+2026-05-19 22:16:58.887411-0600 OneLife[25161:7335044] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:58.887557-0600 OneLife[25161:7335044] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:58.892291-0600 OneLife[25161:7334804] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:58.892630-0600 OneLife[25161:7334804] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:58.893758-0600 OneLife[25161:7334804] [Default] Fetching AX attributes XC_kAXXCAttributeFrame, XC_kAXXCAttributeWindowDisplayId, XC_kAXXCAttributeWindowContextId for App element pid: 25161
+2026-05-19 22:16:58.894306-0600 OneLife[25161:7334804] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:16:58.894576-0600 OneLife[25161:7335044] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:58.895147-0600 OneLife[25161:7335044] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeFrame" =     {
+        Height = 874;
+        Width = 402;
+        X = 0;
+        Y = 0;
+    };
+    "XC_kAXXCAttributeWindowContextId" = 301381407;
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-05-19 22:16:58.899799-0600 OneLife[25161:7335044] [Default] Received attributes request for element: App element pid: 25161. Attributes: (
+    "XC_kAXXCAttributeWindowDisplayId"
+)
+2026-05-19 22:16:58.899995-0600 OneLife[25161:7335044] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:16:58.900123-0600 OneLife[25161:7335044] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:16:58.918881-0600 OneLife[25161:7334804] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:16:58.918988-0600 OneLife[25161:7334804] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:16:58.919003-0600 OneLife[25161:7335044] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:16:58.919107-0600 OneLife[25161:7334804] [Default] Fetching AX attributes XC_kAXXCAttributeWindowDisplayId for App element pid: 25161
+2026-05-19 22:16:58.919361-0600 OneLife[25161:7334804] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:16:58.919529-0600 OneLife[25161:7335044] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+objc[25161]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x113578310) and /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x113120398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+2026-05-19 22:16:59.727275-0600 OneLife[25161:7335044] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:16:59.727500-0600 OneLife[25161:7335044] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:16:59.727882-0600 OneLife[25161:7335044] [Default] Received request to notify when animations are idle
+2026-05-19 22:16:59.727991-0600 OneLife[25161:7335044] [Default] Sending animations idle reply with error: (null)
+2026-05-19 22:16:59.829068-0600 OneLife[25161:7334804] [Default] Idle notifier run loop observer fired
+2026-05-19 22:16:59.829273-0600 OneLife[25161:7334804] [Default] Sending main run loop idle reply
+2026-05-19 22:17:01.730068-0600 OneLife[25161:7335056] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:17:01.730217-0600 OneLife[25161:7335056] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:17:01.730248-0600 OneLife[25161:7334804] [Default] Idle notifier run loop observer fired
+2026-05-19 22:17:01.730397-0600 OneLife[25161:7334804] [Default] Sending main run loop idle reply
+2026-05-19 22:17:01.913682-0600 OneLife[25161:7335056] [Default] Received request to notify when animations are idle
+2026-05-19 22:17:01.913811-0600 OneLife[25161:7335056] [Default] Sending animations idle reply with error: (null)
+Standard output and standard error from LifeApp.OneLife with process ID 25318 beginning at 2026-05-20 04:17:05 +0000
+
+2026-05-19 22:17:07.916868-0600 OneLife[25318:7336668] [Default] Received request to exchange capabilities, remote interface capabilities are: <XCTCapabilities: 0x1022a5c60>: {
+    "query runtime issue reporting" = 1;
+    "query runtime issue reporting/automation type mismatch" = 1;
+}
+2026-05-19 22:17:07.939187-0600 OneLife[25318:7336670] [Default] Received request to notify when the main run loop is idle
+2026-05-19 22:17:07.939375-0600 OneLife[25318:7336670] [Default] Idle notifier finished setting up run loop observer
+2026-05-19 22:17:07.945267-0600 OneLife[25318:7336668] [Default] Received request to notify when animations are idle
+2026-05-19 22:17:07.945422-0600 OneLife[25318:7336668] [Default] Sending animations idle reply with error: (null)
+2026-05-19 22:17:08.248139-0600 OneLife[25318:7336670] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-05-19 22:17:08.496608-0600 OneLife[25318:7336253] [Default] Idle notifier run loop observer fired
+2026-05-19 22:17:08.496773-0600 OneLife[25318:7336253] [Default] Sending main run loop idle reply
+2026-05-19 22:17:08.540077-0600 OneLife[25318:7336662] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+2026-05-19 22:17:09.519151-0600 OneLife[25318:7336662] [Default] Received request to fetch matches for query:
+2026-05-19 22:17:09.519440-0600 OneLife[25318:7336668] [Default] Evaluating query:
+2026-05-19 22:17:09.519560-0600 OneLife[25318:7336668] [Default] Getting root element snapshot
+2026-05-19 22:17:09.519736-0600 OneLife[25318:7336668] [Default] Getting snapshot for App element pid: 25318 for query
+2026-05-19 22:17:09.519944-0600 OneLife[25318:7336668] [Default] Query requires iOS snapshot attributes .
+2026-05-19 22:17:09.520182-0600 OneLife[25318:7336668] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:17:09.520279-0600 OneLife[25318:7336253] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:17:09.520269-0600 OneLife[25318:7336668] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:17:09.520447-0600 OneLife[25318:7336253] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:17:09.520757-0600 OneLife[25318:7336668] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:17:09.540341-0600 OneLife[25318:7336253] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+2026-05-19 22:17:09.540655-0600 OneLife[25318:7336253] [Default] Got main window <AXUIElementRef 0x111a659e0> {pid=25318} {uid=[ID:3 hash:0x102228800]}
+2026-05-19 22:17:09.541023-0600 OneLife[25318:7336253] [Default] Capturing hierarchy with attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeParent, XC_kAXXCAttributeIdentifier, XC_kAXXCAttributeAutomationType, XC_kAXXCAttributeTraits
+2026-05-19 22:17:09.541260-0600 OneLife[25318:7336253] [Default] Capturing hierarchy with parameters {
+    attributes =     (
+        5003,
+        5004,
+        5002,
+        5019,
+        5058,
+        2004
+    );
+    maxArrayCount = 2147483647;
+    maxChildren = 2147483647;
+    maxDepth = 2147483647;
+    snapshotKeyHonorModalViews = 0;
+    traverseFromParentsToChildren = 1;
+}
+2026-05-19 22:17:09.541381-0600 OneLife[25318:7336253] [Default] Snapshot attributes 5003, 5004, 5002, 5019, 5058, 2004
+objc[25318]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1155b4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x11345c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+2026-05-19 22:17:09.814259-0600 OneLife[25318:7336253] [Default] Got snapshot for <AXUIElementRef 0x111a65800> {pid=25318} {uid=[ID:1 hash:0x0]}
+2026-05-19 22:17:09.814534-0600 OneLife[25318:7336253] [Default] Got app orientation 0
+2026-05-19 22:17:09.814638-0600 OneLife[25318:7336253] [Default] Captured accessibility snapshot data in 0.29s
+2026-05-19 22:17:09.814937-0600 OneLife[25318:7336668] [Default] Found main window: Window
+2026-05-19 22:17:09.816005-0600 OneLife[25318:7336668] [Default] ScrollView is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:17:09.816315-0600 OneLife[25318:7336668] [Default] Preferring automation type 14 instead of legacy element type OTHER derived from class/trait: SwiftUI.AccessibilityNode:UIResponder 1108101562369
+2026-05-19 22:17:09.816463-0600 OneLife[25318:7336668] [Default] Automation type mismatch; legacy system derived element type 9 from class SwiftUI.AccessibilityNode:UIResponder, traits 1108101562369, but AXAutomationType returned 14 which maps to 14
+2026-05-19 22:17:09.816815-0600 OneLife[25318:7336668] [Default] Image, identifier: 'list.bullet.rectangle.portrait.fill' is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:17:09.817042-0600 OneLife[25318:7336668] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:17:09.817801-0600 OneLife[25318:7336668] [Default] StaticText is not actually a child of Button, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:17:09.817994-0600 OneLife[25318:7336668] [Default] Button is not actually a child of Button, identifier: 'bottom-actions-menu', including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:17:09.818548-0600 OneLife[25318:7336668] [Default] Other is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-05-19 22:17:09.819123-0600 OneLife[25318:7336668] [Default] Query  found matching snapshots: {(
+    Application, pid: 25318
+)} (error: (null))
+2026-05-19 22:17:09.820029-0600 OneLife[25318:7336668] [Default] Replying to query  with results: <XCTElementQueryResults: 0x1114d4ea0> (error: (null))
+2026-05-19 22:17:09.825950-0600 OneLife[25318:7336657] [Default] Received attributes request for element: App element pid: 25318. Attributes: (
+    "XC_kAXXCAttributeFrame",
+    "XC_kAXXCAttributeWindowDisplayId",
+    "XC_kAXXCAttributeWindowContextId"
+)
+2026-05-19 22:17:09.826139-0600 OneLife[25318:7336657] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:17:09.826232-0600 OneLife[25318:7336657] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:17:09.831756-0600 OneLife[25318:7336253] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:17:09.831910-0600 OneLife[25318:7336253] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:17:09.831956-0600 OneLife[25318:7336657] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:17:09.832073-0600 OneLife[25318:7336253] [Default] Fetching AX attributes XC_kAXXCAttributeFrame, XC_kAXXCAttributeWindowDisplayId, XC_kAXXCAttributeWindowContextId for App element pid: 25318
+2026-05-19 22:17:09.832489-0600 OneLife[25318:7336253] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:17:09.832786-0600 OneLife[25318:7336657] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeFrame" =     {
+        Height = 402;
+        Width = 874;
+        X = 0;
+        Y = 0;
+    };
+    "XC_kAXXCAttributeWindowContextId" = 535787610;
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-05-19 22:17:09.845012-0600 OneLife[25318:7336657] [Default] Received attributes request for element: App element pid: 25318. Attributes: (
+    "XC_kAXXCAttributeWindowDisplayId"
+)
+2026-05-19 22:17:09.845151-0600 OneLife[25318:7336668] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-05-19 22:17:09.845265-0600 OneLife[25318:7336253] [Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-05-19 22:17:09.845243-0600 OneLife[25318:7336668] [Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-05-19 22:17:09.845346-0600 OneLife[25318:7336253] [Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-05-19 22:17:09.845366-0600 OneLife[25318:7336668] [Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-05-19 22:17:09.845440-0600 OneLife[25318:7336253] [Default] Fetching AX attributes XC_kAXXCAttributeWindowDisplayId for App element pid: 25318
+2026-05-19 22:17:09.845673-0600 OneLife[25318:7336253] [Default] Got attributes, transferring to dictionary for return.
+2026-05-19 22:17:09.846154-0600 OneLife[25318:7336668] [Default] Replying with attribute values: {
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}

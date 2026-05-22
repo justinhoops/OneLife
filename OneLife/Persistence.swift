@@ -298,9 +298,12 @@ struct PersistenceCoordinator {
     }
 
     private func prunedState(from state: GameState) -> GameState {
-        guard state.history.count > PerformanceBudgets.maxPersistedHistoryItems else { return state }
         var copy = state
-        copy.history = Array(copy.history.prefix(PerformanceBudgets.maxPersistedHistoryItems))
+        if copy.history.count > PerformanceBudgets.maxPersistedHistoryItems {
+            copy.history = Array(copy.history.prefix(PerformanceBudgets.maxPersistedHistoryItems))
+        }
+        // Align with FinanceState decoding, which normalizes balances (including peak wealth) after load.
+        copy.finance.normalizeInvestmentBalances()
         return copy
     }
 

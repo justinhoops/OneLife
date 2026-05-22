@@ -33,7 +33,7 @@ struct RelationshipSystem {
             result: &result
         )
         if let existingPartner = relationships.romanticPartner {
-            var partner = existingPartner
+            let partner = existingPartner
             let childPressure = family.childCount > 0 ? max(1, family.childCount) : 0
             let cohabitationPressure = partner.isCohabiting ? max(0, (financialStress - 38) / 10) : 0
             let adultStressPenalty = player.age >= 18 ? max(0, (financialStress - 45) / 10) : 0

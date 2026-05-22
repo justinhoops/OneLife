@@ -1,0 +1,327 @@
+◇ Test run started.
+↳ Testing Library Version: 1743
+↳ Target Platform: arm64-apple-ios13.0-simulator
+◇ Suite OneLifeTests started.
+◇ Test localArcGeneratorReflectsFinancialStrainContext() started.
+◇ Test runSchemeActivatesCrimeTrack() started.
+◇ Test actionSystemAppliesChosenActionsAndClearsQueue() started.
+◇ Test repeatedOverworkBuildsCorrelationResidueAndHook() started.
+◇ Test adultFinanceActionsSwitchToInvestmentChoicesOnceStable() started.
+◇ Test orchestratorPublishesLatestWorldSnapshotAfterAdvanceYear() started.
+◇ Test interactionCardCoordinatorPreservesQueueOrder() started.
+◇ Test financeDependentCostReflectsPregnancyAndChildren() started.
+◇ Test dueScheduledEventOutranksRandomEventAtChapterStart() started.
+◇ Test feedbackSettingsPersistAcrossViewModelReload() started.
+◇ Test storyletWeightsIncludeActiveNarrativeArcPressure() started.
+◇ Test housingDeficitDebugScenarioSurfacesProblemAndFollowThroughCards() started.
+◇ Test financeEffectMutatesFinanceDomainWithoutPlayerMoneySync() started.
+◇ Test persistenceFailsWhenPrimaryAndBackupAreCorrupted() started.
+◇ Test legacySaveWithoutFinanceDecodesWithLegacyMoneyFallback() started.
+◇ Test ageUpForecastUsesInstantActionMemoryWithoutReapplyingAction() started.
+◇ Test educationYearUsesSupportAndSocialFragility() started.
+◇ Test persistenceLoadsEnvelopeFromPrimarySave() started.
+◇ Test contentPackBalancesAllPrimaryDomains() started.
+◇ Test millionaireMilestoneCountsHomeEquity() started.
+◇ Test burnoutReducesEntertainmentOutcomeQuality() started.
+◇ Test stockLossesHitPortfolioAndRaiseStress() started.
+◇ Test activitiesTabOverviewMatchesActivitiesTabAndLinksHealthDetails() started.
+◇ Test npcAutonomyReadsRelationshipCorrelationImpressions() started.
+◇ Test dismissingFinalCardReturnsPlayerToOriginTabAndOffersDetailReturn() started.
+◇ Test chaseSpotlightActivatesEntertainmentTrack() started.
+◇ Test scholarshipNeedsStandingAndActivityMomentum() started.
+◇ Test homeownerOnlyLateEventRequiresOwnedHome() started.
+◇ Test pendingMacroQueueSurvivesInstantApply() started.
+◇ Test entertainmentTrackCanProduceBreakoutAndZeroPayoutYears() started.
+◇ Test systemRegistryHibernatesAgeBoundDomains() started.
+◇ Test actionPreviewTagsAreCappedForTradeoffScanning() started.
+◇ Test causeTrailCapsYearSummaryReasons() started.
+◇ Test recoveryActionReducesHealthPressureAcrossYearAdvance() started.
+◇ Test interactionCardPayloadCaseSentinelCoversAllCases() started.
+◇ Test balanceHarnessProducesReadableAggregateReport() started.
+◇ Test eventEngineCanSurfaceAdultUnemploymentPressureBeat() started.
+◇ Test orchestratorSkipsAssetSystemForTeenYears() started.
+◇ Test unemployedAdultCanGoNegativeAndStressRises() started.
+◇ Test persistenceRecoversFromBackupWhenPrimaryIsCorrupted() started.
+◇ Test activitySystemBlocksUnderageViceActivity() started.
+◇ Test eventApplicationRoutesCashThroughFinanceOnly() started.
+◇ Test ownedHomePaysMortgageAndBuildsEquityAcrossYears() started.
+◇ Test adultShortfallRollsIntoCreditDebtInsteadOfSoftLocking() started.
+◇ Test delayedFinanceChoiceSchedulesFollowUpEventForNextYear() started.
+◇ Test legacyEducationStateDecodesNewSchoolClimateDefaults() started.
+◇ Test debugScenarioSeedsAdultCareerWithFullTimeActions() started.
+◇ Test financeSystemReturnsPressureEffectsInsteadOfMutatingOtherDomains() started.
+◇ Test protectSleepReturnsEducationReliefThroughActionSystem() started.
+◇ Test savingForDownPaymentMovesCashIntoHouseFund() started.
+◇ Test smallHustleAddsCashButCostsRecovery() started.
+◇ Test teenStudentYearProducesLowCostsAndSmallTaxRate() started.
+◇ Test crimeSystemActionClampsLegacyCrimeStateSafely() started.
+◇ Test millionaireMilestoneCountsInvestedWealth() started.
+◇ Test repeatedRiskActivityBuildsPushback() started.
+◇ Test takeOvertimeCreatesMoneyHealthAndRelationshipTradeoff() started.
+◇ Test systemRegistryReadsActivationFromWorldSnapshot() started.
+◇ Test adultSurplusCanMoveIntoIndexFunds() started.
+◇ Test familySystemCanResolveThirdTrimesterToBirth() started.
+◇ Test activitySystemAppliesImmediateEffectsAndHistory() started.
+◇ Test actionPreviewsUseUpdatedCrossDomainLanguage() started.
+◇ Test activatingPreviewAddsChapterPressureHistory() started.
+◇ Test discussFutureCanAdvanceCommittedPartnerIntoMarriage() started.
+◇ Test weakRelationshipDoesNotAutoAdvanceToMarriage() started.
+◇ Test heavyDebtBlocksCompoundingEligibility() started.
+◇ Test legacySaveWithoutChapterFieldsDecodesSafely() started.
+◇ Test persistenceRoundTripsRepresentativeStateAcrossDomains() started.
+◇ Test educationSystemCanGraduateTeenIntoAdultReadiness() started.
+◇ Test yearlyTickSurfacesRumorIntoCareerSummary() started.
+◇ Test ageUpRiskPreviewStaysGlanceableAndQualitative() started.
+◇ Test takeExtraShiftsPaysCashButHitsEducationAndRecovery() started.
+◇ Test ageUpBuildsBoundedInteractionDeck() started.
+◇ Test unemployedAdultAutoLandsBestQualifiedRegularRole() started.
+◇ Test regularWorkAccumulatesExperienceWithoutCareerAction() started.
+◇ Test familySystemActivationHibernatesWhenNoPartnerOrChildrenExist() started.
+◇ Test encodedStateDoesNotWriteLegacyMoneyField() started.
+◇ Test adultCareerDebugScenarioAdvanceYearProducesStableSummaryEnvelope() started.
+◇ Test persistenceResetRemovesAllArtifacts() started.
+◇ Test viewModelSurfacesSaveFailureWithoutCrashing() started.
+◇ Test leanOnMentorBuildsAdultCoverWithoutTouchingFinance() started.
+◇ Test traitAndCareerBonusesAccumulateInFinanceCash() started.
+◇ Test legacySaveWithoutConsequenceStateDecodesWithEmptyConsequences() started.
+◇ Test climberIdentityGeneratesPromotionDoor() started.
+◇ Test instantActionRecordsMemoryAndUpdatesPressureRead() started.
+◇ Test bundledEventPackIncludesAdultPressureEvents() started.
+◇ Test delinquentOwnershipCanEndInForeclosure() started.
+◇ Test milestoneConflictCreatesFuturePressure() started.
+◇ Test highHeatCrimeYearCanTriggerForcedExitAndDownstreamDamage() started.
+◇ Test persistenceLoadsLegacyRawStateFromLegacyFile() started.
+◇ Test regularCareerIncomeFlowsPassivelyIntoFinance() started.
+◇ Test outcomeAggregatorHighlightsTopProblemAndOpportunity() started.
+◇ Test systemRegistryDoesNotActivateWorldForMinors() started.
+◇ Test teenEducationScenarioKeepsReactionSummaryAndResolutionOrdering() started.
+◇ Test repairTensionReducesRelationshipDebt() started.
+◇ Test healthDrivenShortfallCanCreateMedicalDebt() started.
+◇ Test systemRegistryActivatesNPCAutonomyWhenSocialGraphExists() started.
+◇ Test echoFlavorResolverPrependsPastChoiceMemory() started.
+◇ Test sellToCoverRaisesCashByLiquidatingHoldings() started.
+◇ Test forecastUsesScheduledCallbackContext() started.
+◇ Test worldAutonomyDecrementsEraYearsRemainingOncePerAdultYear() started.
+◇ Test legacyCareerStateDecodesWithEmptyExperience() started.
+◇ Test millionaireMilestoneReadsFinanceCash() started.
+◇ Test systemRegistryActivatesWorldForStableAdultWithoutNarrativeFlags() started.
+◇ Test scheduledEventProducesForecastThenEventThenAftermathStack() started.
+◇ Test debugScenarioCoordinatorIsDeterministic() started.
+◇ Test financeOverviewSurfacesDeficitPressure() started.
+◇ Test familyPlanningIntentChangesConceptionChance() started.
+◇ Test minimumPaymentsKeepsDebtAliveAndRaisesPressure() started.
+◇ Test investmentAccessRequiresCompoundingFoundation() started.
+◇ Test beginYearChapterBuildsStakesAndStrongerFocusForecast() started.
+◇ Test educationActivityMomentumClampsIntoValidRange() started.
+◇ Test debugScenarioSeedsPregnancyAndModalPreviewStates() started.
+◇ Test strongTeenPerformanceCanRouteIntoUniversityWithScholarship() started.
+◇ Test pressureMapUsesCorrelationCauseTrailForActivePressure() started.
+◇ Test artifactStoreInvalidatesWhenSituationChanges() started.
+◇ Test relationshipActionBuildsReputationAndRumorWeights() started.
+◇ Test dormantSpecialCareerActionsNowApplyDomainEffects() started.
+◇ Test teenStudentUsesEducationFirstOverview() started.
+◇ Test relationshipsOverviewSurfacesStrain() started.
+◇ Test ageCheckpointsAppearAcrossTeenTransition() started.
+◇ Test advanceYearWithLargerSyntheticStateKeepsHistoryBounded() started.
+◇ Test invalidRemoteArcPayloadFallsBackToLocalGenerator() started.
+◇ Test worldSnapshotBuildsDerivedCachesForAllDomains() started.
+◇ Test teenEducationActionsAffectSchoolClimate() started.
+◇ Test ambientPressureNudgesStayWithinBounds() started.
+◇ Test debugTimingSnapshotIsPopulatedWithoutChangingOutcome() started.
+◇ Test housingAndPolicyInfluenceYearlyCosts() started.
+◇ Test weakUniversityYearCanCreateDebtWithoutBreakingCashImmediately() started.
+◇ Test careerProfilesDivergeUnderSameAdultYear() started.
+◇ Test feedOverviewBuildsContinuityHubFromYearSummaryAndCarryover() started.
+◇ Test financeSnapshotPathMatchesLegacyContextPath() started.
+◇ Test beginYearChapterCreatesForecastWithoutAdvancingAge() started.
+◇ Test bankruptcyResetsEligibleDebtAndWipesInvestments() started.
+◇ Test fullTimeWorkerBuildsPositiveCashflow() started.
+◇ Test persistenceLoadsLegacyRawStateFromPrimaryPath() started.
+◇ Test eventPackChoicesStayCappedAndGlanceable() started.
+◇ Test eventEngineHandlesLargeSyntheticPack() started.
+◇ Test resolvingYearChapterAdvancesAgeOnceAndClearsAfterCloseout() started.
+◇ Test yearlyArcEvaluationCanPivotWhenLifeMovesOffPrimaryPattern() started.
+◇ Test legacySaveWithoutNarrativeArcsDecodesWithEmptyNarrativeState() started.
+◇ Test eventEngineLookupReturnsInjectedEventByIdentifier() started.
+◇ Test activitiesOverviewSurfacesHealthPressureWhenConditionsDominate() started.
+◇ Test retrainingRequiresDoorBeforePivot() started.
+◇ Test previewStartIncludesNarrativeArcCandidates() started.
+◇ Test persistencePrunesHistoryToBudget() started.
+◇ Test specialCareerQualificationUsesRegularCareerExperience() started.
+◇ Test repeatedProtectEnergyBuildsCaretakerIdentity() started.
+◇ Test balanceHarnessKeepsMillionairesLateAndRare() started.
+◇ Test continuityMilestonesFireOnceAtAge18And20() started.
+◇ Test agingUpFromDetailReturnsPlayerToOriginatingTab() started.
+◇ Test yearlySummaryCarriesFocusTradeoffAndNextYearPressure() started.
+◇ Test buyingStarterHomeCreatesMortgageAndOwnerOccupiedHousing() started.
+◇ Test joinActivityBuildsMomentumAndSocialCarryover() started.
+◇ Test yearlySummaryCapturesSpilloversAndCheckpoint() started.
+◇ Test activeCrimeYearCanForceLayLowOrExitWithoutCrashing() started.
+◇ Test legacyCrimeTrackMigratesIntoCrimeState() started.
+◇ Test millionaireMilestoneStaysLockedBeforeThirty() started.
+✔ Test runSchemeActivatesCrimeTrack() passed after 0.122 seconds.
+✔ Test localArcGeneratorReflectsFinancialStrainContext() passed after 0.122 seconds.
+✔ Test financeEffectMutatesFinanceDomainWithoutPlayerMoneySync() passed after 0.123 seconds.
+◇ Test lateGameSummaryAddsNarrativePressureSignals() started.
+✔ Test orchestratorPublishesLatestWorldSnapshotAfterAdvanceYear() passed after 0.123 seconds.
+✔ Test storyletWeightsIncludeActiveNarrativeArcPressure() passed after 0.123 seconds.
+✔ Test actionSystemAppliesChosenActionsAndClearsQueue() passed after 0.124 seconds.
+✔ Test financeDependentCostReflectsPregnancyAndChildren() passed after 0.123 seconds.
+✔ Test educationYearUsesSupportAndSocialFragility() passed after 0.119 seconds.
+✔ Test dueScheduledEventOutranksRandomEventAtChapterStart() passed after 0.123 seconds.
+✔ Test millionaireMilestoneCountsHomeEquity() passed after 0.128 seconds.
+✔ Test contentPackBalancesAllPrimaryDomains() passed after 0.128 seconds.
+✔ Test stockLossesHitPortfolioAndRaiseStress() passed after 0.128 seconds.
+✔ Test activitiesTabOverviewMatchesActivitiesTabAndLinksHealthDetails() passed after 0.128 seconds.
+✔ Test burnoutReducesEntertainmentOutcomeQuality() passed after 0.128 seconds.
+✔ Test persistenceLoadsEnvelopeFromPrimarySave() passed after 0.128 seconds.
+✔ Test npcAutonomyReadsRelationshipCorrelationImpressions() passed after 0.129 seconds.
+✔ Test interactionCardCoordinatorPreservesQueueOrder() passed after 0.133 seconds.
+✔ Test legacySaveWithoutFinanceDecodesWithLegacyMoneyFallback() passed after 0.129 seconds.
+✔ Test adultFinanceActionsSwitchToInvestmentChoicesOnceStable() passed after 0.133 seconds.
+✔ Test feedbackSettingsPersistAcrossViewModelReload() passed after 0.134 seconds.
+✔ Test persistenceFailsWhenPrimaryAndBackupAreCorrupted() passed after 0.135 seconds.
+✔ Test chaseSpotlightActivatesEntertainmentTrack() passed after 0.131 seconds.
+✔ Test scholarshipNeedsStandingAndActivityMomentum() passed after 0.131 seconds.
+✔ Test repeatedOverworkBuildsCorrelationResidueAndHook() passed after 0.136 seconds.
+✔ Test entertainmentTrackCanProduceBreakoutAndZeroPayoutYears() passed after 0.126 seconds.
+✔ Test homeownerOnlyLateEventRequiresOwnedHome() passed after 0.126 seconds.
+◇ Test yearSummaryBuildsMoneyInsightWithCauses() started.
+◇ Test indexFundsCompoundWithoutTurningIntoLiquidCash() started.
+✔ Test systemRegistryHibernatesAgeBoundDomains() passed after 0.132 seconds.
+✔ Test ageUpForecastUsesInstantActionMemoryWithoutReapplyingAction() passed after 0.138 seconds.
+✔ Test housingDeficitDebugScenarioSurfacesProblemAndFollowThroughCards() passed after 0.145 seconds.
+✔ Test pendingMacroQueueSurvivesInstantApply() passed after 0.135 seconds.
+✔ Test actionPreviewTagsAreCappedForTradeoffScanning() passed after 0.152 seconds.
+✔ Test causeTrailCapsYearSummaryReasons() passed after 0.170 seconds.
+✔ Test recoveryActionReducesHealthPressureAcrossYearAdvance() passed after 0.172 seconds.
+✔ Test dismissingFinalCardReturnsPlayerToOriginTabAndOffersDetailReturn() passed after 0.195 seconds.
+✔ Test balanceHarnessProducesReadableAggregateReport() passed after 2.213 seconds.
+✔ Test interactionCardPayloadCaseSentinelCoversAllCases() passed after 2.214 seconds.
+✔ Test unemployedAdultCanGoNegativeAndStressRises() passed after 2.178 seconds.
+✔ Test orchestratorSkipsAssetSystemForTeenYears() passed after 2.215 seconds.
+✔ Test persistenceRecoversFromBackupWhenPrimaryIsCorrupted() passed after 2.185 seconds.
+✔ Test eventApplicationRoutesCashThroughFinanceOnly() passed after 2.186 seconds.
+✔ Test delayedFinanceChoiceSchedulesFollowUpEventForNextYear() passed after 2.187 seconds.
+✔ Test ownedHomePaysMortgageAndBuildsEquityAcrossYears() passed after 2.188 seconds.
+✔ Test eventEngineCanSurfaceAdultUnemploymentPressureBeat() passed after 2.224 seconds.
+✔ Test adultShortfallRollsIntoCreditDebtInsteadOfSoftLocking() passed after 2.188 seconds.
+✔ Test debugScenarioSeedsAdultCareerWithFullTimeActions() passed after 2.188 seconds.
+✔ Test financeSystemReturnsPressureEffectsInsteadOfMutatingOtherDomains() passed after 2.188 seconds.
+✔ Test savingForDownPaymentMovesCashIntoHouseFund() passed after 2.188 seconds.
+✔ Test protectSleepReturnsEducationReliefThroughActionSystem() passed after 2.178 seconds.
+✔ Test smallHustleAddsCashButCostsRecovery() passed after 2.178 seconds.
+✔ Test millionaireMilestoneCountsInvestedWealth() passed after 2.191 seconds.
+✔ Test teenStudentYearProducesLowCostsAndSmallTaxRate() passed after 2.178 seconds.
+✔ Test crimeSystemActionClampsLegacyCrimeStateSafely() passed after 2.180 seconds.
+✔ Test repeatedRiskActivityBuildsPushback() passed after 2.180 seconds.
+✔ Test systemRegistryReadsActivationFromWorldSnapshot() passed after 2.180 seconds.
+✔ Test adultSurplusCanMoveIntoIndexFunds() passed after 2.181 seconds.
+✔ Test actionPreviewsUseUpdatedCrossDomainLanguage() passed after 2.189 seconds.
+✔ Test discussFutureCanAdvanceCommittedPartnerIntoMarriage() passed after 2.187 seconds.
+✔ Test weakRelationshipDoesNotAutoAdvanceToMarriage() passed after 2.189 seconds.
+✔ Test heavyDebtBlocksCompoundingEligibility() passed after 2.187 seconds.
+✔ Test takeExtraShiftsPaysCashButHitsEducationAndRecovery() passed after 2.247 seconds.
+✔ Test persistenceRoundTripsRepresentativeStateAcrossDomains() passed after 2.248 seconds.
+✔ Test familySystemActivationHibernatesWhenNoPartnerOrChildrenExist() passed after 2.245 seconds.
+✔ Test unemployedAdultAutoLandsBestQualifiedRegularRole() passed after 2.245 seconds.
+✔ Test adultCareerDebugScenarioAdvanceYearProducesStableSummaryEnvelope() passed after 2.245 seconds.
+✔ Test encodedStateDoesNotWriteLegacyMoneyField() passed after 2.245 seconds.
+✔ Test persistenceResetRemovesAllArtifacts() passed after 2.245 seconds.
+✔ Test regularWorkAccumulatesExperienceWithoutCareerAction() passed after 2.245 seconds.
+✔ Test viewModelSurfacesSaveFailureWithoutCrashing() passed after 2.245 seconds.
+✔ Test leanOnMentorBuildsAdultCoverWithoutTouchingFinance() passed after 2.245 seconds.
+✔ Test activitySystemAppliesImmediateEffectsAndHistory() passed after 2.334 seconds.
+✔ Test ageUpBuildsBoundedInteractionDeck() passed after 2.255 seconds.
+✔ Test traitAndCareerBonusesAccumulateInFinanceCash() passed after 2.331 seconds.
+✔ Test ageUpRiskPreviewStaysGlanceableAndQualitative() passed after 2.334 seconds.
+✔ Test bundledEventPackIncludesAdultPressureEvents() passed after 2.296 seconds.
+✔ Test highHeatCrimeYearCanTriggerForcedExitAndDownstreamDamage() passed after 2.334 seconds.
+✔ Test persistenceLoadsLegacyRawStateFromLegacyFile() passed after 2.335 seconds.
+✔ Test milestoneConflictCreatesFuturePressure() passed after 2.296 seconds.
+✔ Test regularCareerIncomeFlowsPassivelyIntoFinance() passed after 2.296 seconds.
+✔ Test outcomeAggregatorHighlightsTopProblemAndOpportunity() passed after 2.297 seconds.
+✔ Test systemRegistryDoesNotActivateWorldForMinors() passed after 2.296 seconds.
+✔ Test teenEducationScenarioKeepsReactionSummaryAndResolutionOrdering() passed after 2.297 seconds.
+✔ Test repairTensionReducesRelationshipDebt() passed after 2.296 seconds.
+OneLife performance warning: event pack contains 400 events. Consider indexing before growing further.
+✔ Test delinquentOwnershipCanEndInForeclosure() passed after 2.336 seconds.
+✔ Test activatingPreviewAddsChapterPressureHistory() passed after 2.339 seconds.
+✔ Test legacySaveWithoutChapterFieldsDecodesSafely() passed after 2.255 seconds.
+✔ Test forecastUsesScheduledCallbackContext() passed after 2.421 seconds.
+✔ Test legacyCareerStateDecodesWithEmptyExperience() passed after 2.416 seconds.
+✔ Test worldAutonomyDecrementsEraYearsRemainingOncePerAdultYear() passed after 2.421 seconds.
+✔ Test healthDrivenShortfallCanCreateMedicalDebt() passed after 2.421 seconds.
+✔ Test systemRegistryActivatesWorldForStableAdultWithoutNarrativeFlags() passed after 2.416 seconds.
+✔ Test systemRegistryActivatesNPCAutonomyWhenSocialGraphExists() passed after 2.421 seconds.
+✔ Test scheduledEventProducesForecastThenEventThenAftermathStack() passed after 2.416 seconds.
+✔ Test debugScenarioCoordinatorIsDeterministic() passed after 2.416 seconds.
+✔ Test echoFlavorResolverPrependsPastChoiceMemory() passed after 2.421 seconds.
+✔ Test instantActionRecordsMemoryAndUpdatesPressureRead() passed after 2.425 seconds.
+✔ Test educationSystemCanGraduateTeenIntoAdultReadiness() passed after 2.464 seconds.
+✔ Test legacySaveWithoutConsequenceStateDecodesWithEmptyConsequences() passed after 2.461 seconds.
+✔ Test yearlyTickSurfacesRumorIntoCareerSummary() passed after 2.464 seconds.
+✔ Test familyPlanningIntentChangesConceptionChance() passed after 2.420 seconds.
+✔ Test financeOverviewSurfacesDeficitPressure() passed after 2.420 seconds.
+✔ Test minimumPaymentsKeepsDebtAliveAndRaisesPressure() passed after 2.420 seconds.
+✔ Test investmentAccessRequiresCompoundingFoundation() passed after 2.419 seconds.
+✔ Test sellToCoverRaisesCashByLiquidatingHoldings() passed after 2.421 seconds.
+✔ Test beginYearChapterBuildsStakesAndStrongerFocusForecast() passed after 2.421 seconds.
+✔ Test debugScenarioSeedsPregnancyAndModalPreviewStates() passed after 2.421 seconds.
+✔ Test educationActivityMomentumClampsIntoValidRange() passed after 2.419 seconds.
+✔ Test pressureMapUsesCorrelationCauseTrailForActivePressure() passed after 2.421 seconds.
+✔ Test relationshipActionBuildsReputationAndRumorWeights() passed after 2.419 seconds.
+✔ Test artifactStoreInvalidatesWhenSituationChanges() passed after 2.419 seconds.
+✔ Test dormantSpecialCareerActionsNowApplyDomainEffects() passed after 2.419 seconds.
+XC✔ Test strongTeenPerformanceCanRouteIntoUniversityWithScholarship() passed after 2.419 seconds.
+TestOutputBarrier✔ Test teenStudentUsesEducationFirstOverview() passed after 2.419 seconds.
+✔ Test millionaireMilestoneReadsFinanceCash() passed after 2.420 seconds.
+✔ Test relationshipsOverviewSurfacesStrain() passed after 2.585 seconds.
+✔ Test advanceYearWithLargerSyntheticStateKeepsHistoryBounded() passed after 2.582 seconds.
+✔ Test ageCheckpointsAppearAcrossTeenTransition() passed after 2.432 seconds.
+✔ Test debugTimingSnapshotIsPopulatedWithoutChangingOutcome() passed after 2.582 seconds.
+✔ Test ambientPressureNudgesStayWithinBounds() passed after 2.585 seconds.
+✔ Test invalidRemoteArcPayloadFallsBackToLocalGenerator() passed after 2.585 seconds.
+✔ Test weakUniversityYearCanCreateDebtWithoutBreakingCashImmediately() passed after 2.582 seconds.
+✔ Test financeSnapshotPathMatchesLegacyContextPath() passed after 2.586 seconds.
+✔ Test fullTimeWorkerBuildsPositiveCashflow() passed after 2.586 seconds.
+✔ Test persistenceLoadsLegacyRawStateFromPrimaryPath() passed after 2.583 seconds.
+✔ Test eventPackChoicesStayCappedAndGlanceable() passed after 2.583 seconds.
+✔ Test eventEngineHandlesLargeSyntheticPack() passed after 2.583 seconds.
+✔ Test teenEducationActionsAffectSchoolClimate() passed after 2.582 seconds.
+✔ Test beginYearChapterCreatesForecastWithoutAdvancingAge() passed after 2.582 seconds.
+✔ Test familySystemCanResolveThirdTrimesterToBirth() passed after 2.636 seconds.
+✔ Test climberIdentityGeneratesPromotionDoor() passed after 2.631 seconds.
+✔ Test housingAndPolicyInfluenceYearlyCosts() passed after 2.582 seconds.
+✔ Test bankruptcyResetsEligibleDebtAndWipesInvestments() passed after 2.583 seconds.
+✔ Test worldSnapshotBuildsDerivedCachesForAllDomains() passed after 2.582 seconds.
+✔ Test legacySaveWithoutNarrativeArcsDecodesWithEmptyNarrativeState() passed after 2.655 seconds.
+✔ Test resolvingYearChapterAdvancesAgeOnceAndClearsAfterCloseout() passed after 2.655 seconds.
+✔ Test activitiesOverviewSurfacesHealthPressureWhenConditionsDominate() passed after 2.653 seconds.
+✔ Test yearlyArcEvaluationCanPivotWhenLifeMovesOffPrimaryPattern() passed after 2.653 seconds.
+✔ Test eventEngineLookupReturnsInjectedEventByIdentifier() passed after 2.653 seconds.
+✔ Test repeatedProtectEnergyBuildsCaretakerIdentity() passed after 2.650 seconds.
+✔ Test previewStartIncludesNarrativeArcCandidates() passed after 2.653 seconds.
+✔ Test retrainingRequiresDoorBeforePivot() passed after 2.654 seconds.
+✔ Test specialCareerQualificationUsesRegularCareerExperience() passed after 2.654 seconds.
+✔ Test persistencePrunesHistoryToBudget() passed after 2.657 seconds.
+✔ Test balanceHarnessKeepsMillionairesLateAndRare() passed after 3.195 seconds.
+✔ Test continuityMilestonesFireOnceAtAge18And20() passed after 3.192 seconds.
+✔ Test agingUpFromDetailReturnsPlayerToOriginatingTab() passed after 3.228 seconds.
+✔ Test yearlySummaryCarriesFocusTradeoffAndNextYearPressure() passed after 3.228 seconds.
+✔ Test buyingStarterHomeCreatesMortgageAndOwnerOccupiedHousing() passed after 3.229 seconds.
+✔ Test joinActivityBuildsMomentumAndSocialCarryover() passed after 3.229 seconds.
+✔ Test yearlySummaryCapturesSpilloversAndCheckpoint() passed after 3.230 seconds.
+✔ Test activeCrimeYearCanForceLayLowOrExitWithoutCrashing() passed after 3.230 seconds.
+✔ Test careerProfilesDivergeUnderSameAdultYear() passed after 3.236 seconds.
+✔ Test legacyCrimeTrackMigratesIntoCrimeState() passed after 3.230 seconds.
+✔ Test activitySystemBlocksUnderageViceActivity() passed after 3.297 seconds.
+✔ Test millionaireMilestoneStaysLockedBeforeThirty() passed after 3.231 seconds.
+✔ Test lateGameSummaryAddsNarrativePressureSignals() passed after 3.231 seconds.
+✔ Test feedOverviewBuildsContinuityHubFromYearSummaryAndCarryover() passed after 3.250 seconds.
+✔ Test indexFundsCompoundWithoutTurningIntoLiquidCash() passed after 3.240 seconds.
+✔ Test legacyEducationStateDecodesNewSchoolClimateDefaults() passed after 3.334 seconds.
+✔ Test takeOvertimeCreatesMoneyHealthAndRelationshipTradeoff() passed after 3.324 seconds.
+✔ Test yearSummaryBuildsMoneyInsightWithCauses() passed after 3.269 seconds.
+✔ Suite OneLifeTests passed after 3.385 seconds.
+✔ Test run with 160 tests in 1 suite passed after 3.386 seconds.

@@ -1,0 +1,4 @@
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Logs/Test/Test-OneLife-2026.05.18_19-25-34--0600.xcresult
+

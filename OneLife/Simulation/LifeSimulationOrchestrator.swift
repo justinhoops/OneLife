@@ -7,6 +7,7 @@ final class LifeSimulationOrchestrator {
     private let traitSystem: TraitSystem
     private let storyletSystem: StoryletSystem
     private let actionSystem: ActionSystem
+    private let actionCorrelationSystem: ActionCorrelationSystem
     private let policySystem: PolicySystem
     private let trajectorySystem: TrajectorySystem
     private let educationSystem: EducationSystem
@@ -45,6 +46,7 @@ final class LifeSimulationOrchestrator {
         traitSystem: TraitSystem = TraitSystem(),
         storyletSystem: StoryletSystem = StoryletSystem(),
         actionSystem: ActionSystem = ActionSystem(),
+        actionCorrelationSystem: ActionCorrelationSystem = ActionCorrelationSystem(),
         policySystem: PolicySystem = PolicySystem(),
         trajectorySystem: TrajectorySystem = TrajectorySystem(),
         educationSystem: EducationSystem = EducationSystem(),
@@ -74,6 +76,7 @@ final class LifeSimulationOrchestrator {
         self.traitSystem = traitSystem
         self.storyletSystem = storyletSystem
         self.actionSystem = actionSystem
+        self.actionCorrelationSystem = actionCorrelationSystem
         self.policySystem = policySystem
         self.trajectorySystem = trajectorySystem
         self.educationSystem = educationSystem
@@ -148,7 +151,7 @@ final class LifeSimulationOrchestrator {
         syncAmbientContacts(in: &state)
 
         let targetAge = state.player.age + 1
-        let plannedActions = state.pendingActions
+        let plannedActions = forecastActions(for: state)
         var selectionState = state
         selectionState.player.age = targetAge
         let selectionWorld = rebuildWorldSnapshot(from: selectionState)
@@ -231,7 +234,7 @@ final class LifeSimulationOrchestrator {
         syncAmbientContacts(in: &state)
 
         let targetAge = state.player.age + 1
-        let plannedActions = state.pendingActions
+        let plannedActions = forecastActions(for: state)
         var selectionState = state
         selectionState.player.age = targetAge
         let selectionWorld = rebuildWorldSnapshot(from: selectionState)
@@ -272,7 +275,7 @@ final class LifeSimulationOrchestrator {
         if let event {
             state.activeYearChapter = chapter
             refreshGeneratedCaches(for: state)
-            return YearAdvanceOutcome(summary: nil, cards: [.event(event)])
+            return YearAdvanceOutcome(summary: nil, cards: [.forecast(forecast), .event(event)])
         }
 
         let outcome = resolvePreparedYearChapter(state: &state, chapter: &chapter, event: nil, choice: nil)
@@ -296,27 +299,35 @@ final class LifeSimulationOrchestrator {
         guard let chapter = state.activeYearChapter else { return [] }
 
         var cards: [InteractionCardPayload] = []
-        
-        // Priority 1: Interactive Event
-        if let event = chapter.eventID.flatMap(eventEngine.event(withID:)) {
+
+        // Interactive event: only while the player has not yet committed a choice for this chapter.
+        if chapter.selectedChoiceText == nil,
+           let event = chapter.eventID.flatMap(eventEngine.event(withID:)) {
             cards.append(.event(event))
-        } 
-        
+        }
+
         // Priority 2: Systemic Crisis
         if let crisis = chapter.pendingCrisis {
             cards.append(.crisis(crisis))
         }
-        
+
         // Priority 3: Pitch Decks
         if let pitch = chapter.pendingPitchDeck {
             cards.append(.pitchDeck(pitch))
         }
 
-        // Priority 4: Resolution (Game Over)
-        if state.isGameOver, let resolution = chapter.pendingResolution {
+        if let summary = chapter.pendingSummary {
+            cards.append(.yearSummary(summary))
+        }
+
+        if let consequence = chapter.pendingConsequencePreview {
+            cards.append(.consequence(consequence))
+        }
+
+        if let resolution = chapter.pendingResolution {
             cards.append(.resolution(resolution))
         }
-        
+
         return cards
     }
 
@@ -478,7 +489,10 @@ final class LifeSimulationOrchestrator {
         let action = PlayerYearAction(domain: domain, choiceID: choiceID)
         let world = rebuildWorldSnapshot(from: state)
         
-        let result = actionSystem.apply(actions: [action], state: &state, world: world)
+        let result = actionSystem.apply(actions: [action], state: &state, world: world, clearsPendingActions: false)
+        state.actionMemory.record(action: action, age: state.player.age)
+        let pressureDeltas = applyActionDrivenConsequenceAdjustments([action], to: &state.consequences)
+        actionCorrelationSystem.record(action: action, age: state.player.age, pressureDeltas: pressureDeltas, state: &state)
         
         for note in result.notes {
             state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags.isEmpty ? [.progress] : note.tags), at: 0)
@@ -507,6 +521,7 @@ final class LifeSimulationOrchestrator {
         let startingState = state
         var yearResults: [DomainYearResult] = []
         let plannedActions = chapter.plannedActions
+        let actionsToApply = state.pendingActions
         let plannedFinanceAction = plannedActions.first(where: { $0.domain == .finance })?.choiceID
 
         state.player.age = chapter.targetAge
@@ -517,15 +532,21 @@ final class LifeSimulationOrchestrator {
 
         policySystem.ensureDefaultPolicy(finance: &state.finance)
         state.consequences.softenAllPressure(by: 1)
-        applyActionDrivenConsequenceAdjustments(plannedActions, to: &state.consequences)
+        for action in actionsToApply {
+            let pressureDeltas = applyActionDrivenConsequenceAdjustments([action], to: &state.consequences)
+            actionCorrelationSystem.record(action: action, age: state.player.age, pressureDeltas: pressureDeltas, state: &state)
+        }
         var world = rebuildWorldSnapshot(from: state)
 
-        if systemRegistry.isActive(.actions, in: world) {
+        if !actionsToApply.isEmpty {
             let result = measure("Actions") {
-                actionSystem.apply(actions: plannedActions, state: &state, world: world)
+                actionSystem.apply(actions: actionsToApply, state: &state, world: world)
             }
             record(result, in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
+        }
+        if plannedActions.contains(where: { $0.choiceID == .pitchDeck }) {
+            chapter.pendingPitchDeck = buildPitchDeckInteraction(for: state)
         }
 
         if systemRegistry.isActive(.traits, in: world) {
@@ -555,12 +576,13 @@ final class LifeSimulationOrchestrator {
             }
             record(careerResult, in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
-            let specialCareerResult = measure("Special Career") {
-                specialCareerSystem.advanceYear(input: world.specialCareer, player: &state.player, career: &state.career, specialCareer: &state.specialCareer)
+            if systemRegistry.isActive(.specialCareer, in: world) {
+                let specialCareerResult = measure("Special Career") {
+                    specialCareerSystem.advanceYear(input: world.specialCareer, player: &state.player, career: &state.career, specialCareer: &state.specialCareer)
+                }
+                apply(result: specialCareerResult, to: &state)
+                record(specialCareerResult, in: &state, results: &yearResults)
             }
-            apply(result: specialCareerResult, to: &state)
-            record(specialCareerResult, in: &state, results: &yearResults)
-            
             // Trait Mutations
             let mutationNotes = traitSystem.processMutations(player: &state.player, specialCareer: state.specialCareer)
             if !mutationNotes.isEmpty {
@@ -700,6 +722,7 @@ final class LifeSimulationOrchestrator {
         syncAmbientContacts(in: &state)
         
         state.isGameOver = state.player.health <= 0 || state.healthProfile.physicalWellness <= 0 || state.finance.totalWealth < -20_000
+        updateYearlyStanceMemory(before: startingState, after: &state)
         
         latestYearSummary = yearlyOutcomeAggregator.summarize(
             before: startingState,
@@ -707,14 +730,19 @@ final class LifeSimulationOrchestrator {
             results: yearResults,
             plannedActions: plannedActions
         )
+        state.actionMemory.clearForNewAge(state.player.age)
+        state.yearlyStance.selectedStance = nil
 
         // Push summary into History Log (BitLife style)
         if let summary = latestYearSummary {
+            if let stanceOutcome = summary.yearlyStanceOutcome {
+                state.history.insert(HistoryEntry(age: state.player.age, title: stanceOutcome.title, text: stanceOutcome.detail, tags: [stanceOutcome.domain]), at: 0)
+            }
             for item in summary.headlines {
                 state.history.insert(HistoryEntry(age: state.player.age, title: item.title, text: item.detail, tags: [item.domain]), at: 0)
             }
             for item in summary.spillovers {
-                state.history.insert(HistoryEntry(age: state.player.age, title: item.title, text: item.detail, tags: [item.impactedDomain]), at: 0)
+                state.history.insert(HistoryEntry(age: state.player.age, title: item.title, text: item.detail, tags: [item.domain]), at: 0)
             }
         }
 
@@ -767,6 +795,47 @@ final class LifeSimulationOrchestrator {
         #endif
         refreshGeneratedCaches(for: state)
         return YearAdvanceOutcome(summary: latestYearSummary, cards: cards)
+    }
+
+    private func updateYearlyStanceMemory(before: GameState, after state: inout GameState) {
+        guard let stance = before.yearlyStance.selectedStance else {
+            state.yearlyStance.lastOutcomeLine = nil
+            return
+        }
+
+        let repeated = before.yearlyStance.lastCompletedStance == stance
+        state.yearlyStance.lastCompletedStance = stance
+        state.yearlyStance.repeatCount = repeated ? before.yearlyStance.repeatCount + 1 : 1
+        state.yearlyStance.lastOutcomeLine = yearlyStanceOutcomeLine(stance: stance, before: before, after: state, repeatCount: state.yearlyStance.repeatCount)
+    }
+
+    private func yearlyStanceOutcomeLine(stance: YearlyStanceID, before: GameState, after: GameState, repeatCount: Int) -> String {
+        let repeatTail = repeatCount >= 2 ? " Pattern repeated \(repeatCount)x." : ""
+        switch stance {
+        case .stabilizeMoney:
+            let cashDelta = after.finance.cashOnHand - before.finance.cashOnHand
+            let stressDelta = after.finance.financialStress - before.finance.financialStress
+            return cashDelta >= 0 || stressDelta <= 0
+                ? "Money stance helped contain the year.\(repeatTail)"
+                : "Money stance delayed pressure more than it solved it.\(repeatTail)"
+        case .protectHealth:
+            let mentalDelta = after.healthProfile.mentalWellness - before.healthProfile.mentalWellness
+            return mentalDelta >= 0
+                ? "Health stance made the year more survivable.\(repeatTail)"
+                : "Health stance could not fully offset the load.\(repeatTail)"
+        case .repairPeople:
+            let beforeBond = max(before.relationships.friends.strongestBond, before.relationships.partnerBond)
+            let afterBond = max(after.relationships.friends.strongestBond, after.relationships.partnerBond)
+            return afterBond >= beforeBond
+                ? "People stance kept support alive.\(repeatTail)"
+                : "People stance did not stop distance from building.\(repeatTail)"
+        case .pushCareer:
+            return after.career.performance >= before.career.performance
+                ? "Career stance converted effort into traction.\(repeatTail)"
+                : "Career stance raised the cost without a clean payoff.\(repeatTail)"
+        case .letYearDrift:
+            return "Drift left outside pressure with more say than intent.\(repeatTail)"
+        }
     }
 
     private func buildPitchDeckInteraction(for state: GameState) -> PitchDeckInteraction {
@@ -822,19 +891,55 @@ final class LifeSimulationOrchestrator {
         let ignoredRisk = stakes?.ignoredRisk ?? buildIgnoredRiskSignal(for: state, plannedActions: plannedActions, event: event)
         let spilloverRisk = stakes?.spilloverRisk ?? buildSpilloverRiskSignal(for: state, targetAge: targetAge, scheduledEvent: scheduledEvent)
 
+        let anticipationTitle: String
+        let anticipationDetail: String
+        if scheduledEvent != nil {
+            anticipationTitle = anticipation.title
+            anticipationDetail = anticipation.detail
+        } else {
+            anticipationTitle = "Likely opening"
+            anticipationDetail = "\(opportunity.detail) \(anticipation.detail)"
+        }
+
         return YearForecastCard(
             id: "forecast-\(targetAge)",
             age: targetAge,
             title: "Age \(targetAge) Is Taking Shape",
             subtitle: event?.title ?? "The year is already leaning somewhere.",
             focusTitle: focus.title,
-            focusDetail: "\(focus.detail) \(ignoredRisk.detail)",
+            focusDetail: "\(focus.detail) \(ignoredRisk.detail)\(synergyContextLine(for: plannedActions))",
             pressureLabel: "Main pressure",
-            pressureDetail: "\(pressure.detail) \(spilloverRisk.detail)",
-            anticipationTitle: "Likely opening",
-            anticipationDetail: "\(opportunity.detail) \(anticipation.detail)",
+            pressureDetail: "\(pressure.detail) \(spilloverRisk.detail)\(whyNowContextLine(for: state, domain: pressure.domain))",
+            anticipationTitle: anticipationTitle,
+            anticipationDetail: anticipationDetail,
             tone: pressure.tone
         )
+    }
+
+    private func whyNowContextLine(for state: GameState, domain: HistoryDomainTag) -> String {
+        let key = pressureKey(for: domain)
+        if let cause = state.correlationLedger.pressureCauseLine(for: key, limit: 1) {
+            return " Why now: \(cause)."
+        }
+        if let scheduled = state.consequences.scheduledEvents.sorted(by: { $0.dueAge < $1.dueAge }).first {
+            return " Why now: \(scheduled.title ?? "a past choice") is coming back."
+        }
+        if let action = state.actionMemory.latestAction {
+            return " Why now: \(ActionChoiceCatalog.definition(for: action.choiceID).title) is still shaping the read."
+        }
+        return ""
+    }
+
+    private func pressureKey(for domain: HistoryDomainTag) -> String {
+        switch domain {
+        case .education: return "education"
+        case .career: return "career"
+        case .finance: return "finance"
+        case .relationships: return "relationships"
+        case .health: return "health"
+        case .housing: return "housing"
+        default: return "progress"
+        }
     }
 
     private func buildReactionCards(
@@ -847,9 +952,11 @@ final class LifeSimulationOrchestrator {
         stakes: TurnStakesSnapshot?
     ) -> [YearReactionCard] {
         var cards: [YearReactionCard] = []
+        let rememberedActions = before.actionMemory.actionsThisAge
+        let chapterActions = after.activeYearChapter?.plannedActions ?? rememberedActions
         let focusChoiceID = choice.flatMap {
-            choiceIDFor(choice: $0, in: after.activeYearChapter?.plannedActions ?? before.pendingActions)
-        } ?? before.pendingActions.first?.choiceID ?? .rest
+            choiceIDFor(choice: $0, in: chapterActions)
+        } ?? chapterActions.first?.choiceID ?? .rest
         let focusDefinition = ActionChoiceCatalog.definition(for: focusChoiceID)
         if let contact = preferredAmbientContact(for: after, event: event), choice != nil {
             cards.append(
@@ -978,7 +1085,16 @@ final class LifeSimulationOrchestrator {
         let unresolvedLine = summary?.nextYearPressure.map { "Still active: \($0.detail)" }
         let detail: String
         if state.isGameOver {
-            detail = "Your body finally gave out under the weight of the years behind you."
+            let definingPattern = (state.progress.finalLifePath ?? state.progress.currentLifePath)?.rawValue
+                .replacingOccurrences(of: "_", with: " ")
+                .capitalized ?? "Unfinished"
+            let strongestDomainKey = state.consequences.pressureByDomain.max(by: { $0.value < $1.value })?.key
+            let strongestDomain = strongestDomainKey.map { dominantPressureLabel(for: $0) } ?? "Life pressure"
+            let carriedForward = state.progress.unlockedMilestones.last?.id.rawValue
+                ?? state.yearlyStance.lastCompletedStance?.title
+                ?? "the years you survived"
+            let identityLine = state.currentIdentityPattern.map { " Identity pattern: \($0.title). \($0.legacyLine)" } ?? ""
+            detail = "Legacy estimate: \(max(1, state.player.age / 10)) points. Defining pattern: \(definingPattern). Hardest domain: \(strongestDomain). Carried forward: \(carriedForward).\(identityLine)"
         } else if let dominantConsequence {
             detail = [
                 "What changed: \(dominantConsequence.title). \(dominantConsequence.detail)",
@@ -1181,9 +1297,9 @@ final class LifeSimulationOrchestrator {
         guard let action = plannedActions.first else {
             return TurnStakesSignal(
                 id: "focus-unscripted",
-                label: "Chosen focus",
-                title: "Go In Unscripted",
-                detail: "No yearly focus is locked in, so the year will be shaped more by existing pressure than by deliberate direction.",
+                label: "Intent read",
+                title: "No Clear Pattern",
+                detail: "No lived action stood out this year, so the forecast is reading pressure more than intent.",
                 domain: .progress,
                 tone: .neutral
             )
@@ -1192,9 +1308,9 @@ final class LifeSimulationOrchestrator {
         let definition = ActionChoiceCatalog.definition(for: action.choiceID)
         return TurnStakesSignal(
             id: "focus-\(action.choiceID.rawValue)",
-            label: "Chosen focus",
+            label: "Intent read",
             title: definition.title,
-            detail: "\(definition.identityLine) This is the one stance the year will amplify most clearly.",
+            detail: "\(definition.identityLine) The pressure read treats this as one signal inside a larger pattern.",
             domain: dominantHistoryDomain(for: action.domain.rawValue),
             tone: .neutral
         )
@@ -1254,7 +1370,7 @@ final class LifeSimulationOrchestrator {
                 id: "risk-drift",
                 label: "If ignored",
                 title: "Drift gets a vote",
-                detail: "Without a committed focus, the event pressure of the year is more likely to choose the problem for you.",
+                detail: "Without a clear recent action, the next event is more likely to follow the strongest pressure already on the board.",
                 domain: .progress,
                 tone: .warning
             )
@@ -1264,7 +1380,7 @@ final class LifeSimulationOrchestrator {
         return TurnStakesSignal(
             id: "risk-\(action.choiceID.rawValue)",
             label: "If ignored",
-            title: "This focus can still miss",
+            title: "This action can still miss",
             detail: "If \(definition.title.lowercased()) does not hold, the cost is most likely to show up in \(dominantHistoryDomain(for: action.domain.rawValue).rawValue). \(event.map { "\($0.title) is likely to hit that weak spot early." } ?? "")",
             domain: dominantHistoryDomain(for: action.domain.rawValue),
             tone: .warning
@@ -1428,6 +1544,18 @@ final class LifeSimulationOrchestrator {
         plannedActions.first?.choiceID
     }
 
+    private func forecastActions(for state: GameState) -> [PlayerYearAction] {
+        // Committed (macro) choices win per domain; instant taps this age fill gaps for event-weight synergy.
+        var byDomain: [ActionDomain: PlayerYearAction] = [:]
+        for action in state.actionMemory.actionsThisAge {
+            byDomain[action.domain] = action
+        }
+        for action in state.pendingActions {
+            byDomain[action.domain] = action
+        }
+        return ActionDomain.allCases.compactMap { byDomain[$0] }
+    }
+
     private func append(_ result: DomainYearResult, to state: inout GameState) {
         guard !result.notes.isEmpty else { return }
         for note in result.notes.reversed() {
@@ -1441,8 +1569,112 @@ final class LifeSimulationOrchestrator {
 
     private func record(_ result: DomainYearResult, in state: inout GameState, results: inout [DomainYearResult]) {
         results.append(result)
-        result.events.forEach { eventEngine.registerDynamicEvent($0) }
-        append(result, to: &state)
+        var modifiedResult = result
+        var autoResolvedTexts: [String] = []
+
+        for event in result.events {
+            // Friction Budget: Auto-resolve routine events
+            if event.severity == .routine {
+                if let firstChoice = event.choices.first {
+                    applyEventChoice(firstChoice, event: event, state: &state)
+                    autoResolvedTexts.append("• **\(event.title)**: \(event.text) (You chose: \(firstChoice.text))")
+                }
+            } else {
+                eventEngine.registerDynamicEvent(event)
+            }
+        }
+        
+        if !autoResolvedTexts.isEmpty {
+            let digestNote = DomainNote(
+                title: "Minor Events Digest",
+                text: autoResolvedTexts.joined(separator: "\n\n"),
+                tags: [.lifeEvent, .relationships]
+            )
+            modifiedResult.notes.append(digestNote)
+        }
+        
+        append(modifiedResult, to: &state)
+    }
+
+    private func applyEventChoice(_ choice: EventChoice, event: GameEvent, state: inout GameState) {
+        effectApplier.applyCoreEffects(choice.effects.core, to: &state.player)
+
+        if let educationEffects = choice.effects.education {
+            educationSystem.apply(effect: educationEffects, education: &state.education)
+        }
+
+        if let careerEffects = choice.effects.career {
+            careerSystem.apply(effect: careerEffects, player: &state.player, career: &state.career, finance: &state.finance)
+        }
+
+        if let specialCareerEffects = choice.effects.specialCareer {
+            effectApplier.apply(
+                result: DomainYearResult(specialCareerEffects: specialCareerEffects),
+                to: &state,
+                trajectorySystem: trajectorySystem,
+                educationSystem: educationSystem,
+                careerSystem: careerSystem,
+                specialCareerSystem: specialCareerSystem,
+                crimeSystem: crimeSystem,
+                financeSystem: financeSystem,
+                relationshipSystem: relationshipSystem,
+                healthSystem: healthSystem,
+                housingSystem: housingSystem
+            )
+        }
+
+        if let crimeEffects = choice.effects.crime {
+            effectApplier.apply(
+                result: DomainYearResult(crimeEffects: crimeEffects),
+                to: &state,
+                trajectorySystem: trajectorySystem,
+                educationSystem: educationSystem,
+                careerSystem: careerSystem,
+                specialCareerSystem: specialCareerSystem,
+                crimeSystem: crimeSystem,
+                financeSystem: financeSystem,
+                relationshipSystem: relationshipSystem,
+                healthSystem: healthSystem,
+                housingSystem: housingSystem
+            )
+        }
+
+        if let financeEffects = choice.effects.finance {
+            financeSystem.apply(effect: financeEffects, finance: &state.finance, player: &state.player)
+        }
+
+        if let relationshipEffects = choice.effects.relationship {
+            relationshipSystem.apply(effect: relationshipEffects, to: &state.relationships)
+        }
+
+        if let healthEffects = choice.effects.health {
+            healthSystem.apply(effect: healthEffects, player: &state.player, health: &state.healthProfile)
+        }
+
+        if let housingEffects = choice.effects.housing {
+            housingSystem.apply(effect: housingEffects, housing: &state.housing)
+        }
+
+        if let assetEffects = choice.effects.assets {
+            effectApplier.applyAssetEffects(assetEffects, to: &state.assets)
+        }
+
+        if let consequenceEffects = choice.effects.consequence {
+            applyConsequenceEffects(consequenceEffects, event: event, choice: choice, to: &state)
+        } else if let firstFollowUpID = event.followUpEventIDs.first {
+            state.consequences.scheduledEvents.append(
+                ScheduledConsequenceEvent(
+                    eventID: firstFollowUpID,
+                    dueAge: state.player.age + 1,
+                    title: event.title,
+                    detail: "Last year's choice in \(event.title) is still unfolding.",
+                    sourceEventID: event.id,
+                    sourceEventTitle: event.title,
+                    sourceChoiceText: choice.text,
+                    callbackFramingText: "What you decided in \(event.title) is still echoing into the next year."
+                )
+            )
+        }
     }
 
     private func apply(result: DomainYearResult, to state: inout GameState) {
@@ -1591,43 +1823,53 @@ final class LifeSimulationOrchestrator {
         }
     }
 
-    private func applyActionDrivenConsequenceAdjustments(_ actions: [PlayerYearAction], to consequences: inout ConsequenceState) {
+    @discardableResult
+    private func applyActionDrivenConsequenceAdjustments(_ actions: [PlayerYearAction], to consequences: inout ConsequenceState) -> [String: Int] {
+        var deltas: [String: Int] = [:]
+
+        func adjust(_ domain: String, _ delta: Int) {
+            consequences.adjustPressure(domain: domain, delta: delta)
+            deltas[domain, default: 0] += delta
+        }
+
         for action in actions {
             switch action.choiceID {
             case .buildEmergencyFund, .cutSpending, .saveForDownPayment, .buildMaintenanceReserve:
-                consequences.adjustPressure(domain: "finance", delta: -6)
+                adjust("finance", -6)
             case .spendForRelief, .spendToCope:
-                consequences.adjustPressure(domain: "finance", delta: 4)
+                adjust("finance", 4)
             case .takeExtraShifts, .takeSideWork, .smallHustle:
-                consequences.adjustPressure(domain: "finance", delta: -3)
-                consequences.adjustPressure(domain: "health", delta: 4)
+                adjust("finance", -3)
+                adjust("health", 4)
             case .rest, .protectSleep, .seeDoctor:
-                consequences.adjustPressure(domain: "health", delta: -8)
+                adjust("health", -8)
             case .pushThrough:
-                consequences.adjustPressure(domain: "health", delta: 7)
-                consequences.adjustPressure(domain: "career", delta: 2)
+                adjust("health", 7)
+                adjust("career", 2)
             case .repairTension, .strengthenBond, .discussFuture:
-                consequences.adjustPressure(domain: "relationships", delta: -8)
+                adjust("relationships", -8)
             case .keepDistance, .stayInvisible:
-                consequences.adjustPressure(domain: "relationships", delta: 5)
+                adjust("relationships", 5)
             case .workHard, .network, .retrain, .chaseSpotlight, .studyConsistently, .buildPortfolio:
-                consequences.adjustPressure(domain: "career", delta: 4)
-                consequences.adjustPressure(domain: "health", delta: 2)
+                adjust("career", 4)
+                adjust("health", 2)
             case .protectYourEnergy:
-                consequences.adjustPressure(domain: "career", delta: -1)
-                consequences.adjustPressure(domain: "health", delta: -6)
-                consequences.adjustPressure(domain: "relationships", delta: -3)
+                adjust("career", -1)
+                adjust("health", -6)
+                adjust("relationships", -3)
             case .coast, .layLow:
-                consequences.adjustPressure(domain: "career", delta: -2)
+                adjust("career", -2)
             case .takeOvertime:
-                consequences.adjustPressure(domain: "finance", delta: -4)
-                consequences.adjustPressure(domain: "relationships", delta: 6)
+                adjust("finance", -4)
+                adjust("relationships", 6)
             case .jobHunt:
-                consequences.adjustPressure(domain: "career", delta: -5)
+                adjust("career", -5)
             default:
                 break
             }
         }
+
+        return deltas
     }
 
     private func applyConsequenceEffects(_ effects: ConsequenceEffects, event: GameEvent, choice: EventChoice, to state: inout GameState) {
@@ -1695,6 +1937,11 @@ final class LifeSimulationOrchestrator {
         }
         for (tag, weight) in world.state.activities.preferredEventWeights() {
             weights[tag, default: 0] += weight
+        }
+        if let pattern = world.state.currentIdentityPattern {
+            for (tag, weight) in pattern.eventWeights {
+                weights[tag, default: 0] += weight
+            }
         }
         return weights
     }
@@ -1795,5 +2042,55 @@ final class LifeSimulationOrchestrator {
         }
 
         return tags
+    }
+
+    private func synergyContextLine(for plannedActions: [PlayerYearAction]) -> String {
+        guard plannedActions.count >= 2 else { return "" }
+        let first = ActionChoiceCatalog.definition(for: plannedActions[0].choiceID).title
+        let second = ActionChoiceCatalog.definition(for: plannedActions[1].choiceID).title
+        return " Mix thread: \(first) plus \(second) is bending which headline finds you."
+    }
+
+    /// Lightweight pressure nudges so the map moves between Age Ups without a full yearly sim.
+    func applyAmbientPressureSync(state: inout GameState) {
+        AmbientPressureSync.applyNudges(to: &state)
+    }
+}
+
+enum AmbientPressureSync {
+    static func applyNudges(to state: inout GameState) {
+        if state.finance.financialStress >= 45 {
+            state.consequences.adjustPressure(domain: "finance", delta: 1)
+        } else if state.finance.financialStress <= 18, state.finance.cashOnHand >= 8_000 {
+            state.consequences.adjustPressure(domain: "finance", delta: -1)
+        }
+
+        if state.player.health < 42 {
+            state.consequences.adjustPressure(domain: "health", delta: 1)
+        } else if state.player.health >= 72, state.healthProfile.activeConditions.isEmpty {
+            state.consequences.adjustPressure(domain: "health", delta: -1)
+        }
+
+        if state.career.status == .unemployed || state.career.jobSecurity < 38 {
+            state.consequences.adjustPressure(domain: "career", delta: 1)
+        }
+
+        if state.crime.heat >= 42 {
+            state.consequences.adjustPressure(domain: "career", delta: 1)
+        }
+
+        let strained = (state.relationships.friends + state.relationships.romanticPartners).filter { $0.status == .strained }.count
+        if strained >= 2 || state.relationships.partnerBond < 40 {
+            state.consequences.adjustPressure(domain: "relationships", delta: 1)
+        }
+
+        if educationPressure(state) {
+            state.consequences.adjustPressure(domain: "education", delta: 1)
+        }
+    }
+
+    private static func educationPressure(_ state: GameState) -> Bool {
+        guard state.player.age < 22 else { return false }
+        return state.education.stage != .inactive && (state.education.burnoutRisk >= 52 || state.education.attendancePressure >= 52)
     }
 }

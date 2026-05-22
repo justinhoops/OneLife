@@ -172,20 +172,64 @@ struct TraitDomainSnapshot: Equatable {
 struct WorldSnapshot: Equatable {
     var state: GameState
     var cache: WorldCache
-    var trajectory: TrajectoryDomainSnapshot
-    var education: EducationDomainSnapshot
-    var career: CareerDomainSnapshot
-    var specialCareer: SpecialCareerDomainSnapshot
-    var crime: CrimeDomainSnapshot
-    var finance: FinanceDomainSnapshot
-    var investment: InvestmentDomainSnapshot
-    var relationships: RelationshipDomainSnapshot
-    var family: FamilyDomainSnapshot
-    var health: HealthDomainSnapshot
-    var housing: HousingDomainSnapshot
-    var assets: AssetDomainSnapshot
-    var progress: ProgressDomainSnapshot
-    var traits: TraitDomainSnapshot
+    var educationPolicySupport: Int
+    var healthcarePressure: Int
+
+    var trajectory: TrajectoryDomainSnapshot {
+        TrajectoryDomainSnapshot(world: cache, player: state.player, trajectory: state.trajectory, education: state.education, career: state.career, finance: state.finance, relationships: state.relationships, family: state.family, health: state.healthProfile, housing: state.housing, originProfile: state.originProfile, childhoodDossier: state.childhoodDossier)
+    }
+
+    var education: EducationDomainSnapshot {
+        EducationDomainSnapshot(world: cache, player: state.player, education: state.education, career: state.career, finance: state.finance, relationships: state.relationships, health: state.healthProfile, policySupport: educationPolicySupport)
+    }
+
+    var career: CareerDomainSnapshot {
+        CareerDomainSnapshot(world: cache, player: state.player, education: state.education, career: state.career, health: state.healthProfile, relationships: state.relationships, childhoodDossier: state.childhoodDossier)
+    }
+
+    var specialCareer: SpecialCareerDomainSnapshot {
+        SpecialCareerDomainSnapshot(world: cache, player: state.player, career: state.career, specialCareer: state.specialCareer, finance: state.finance, health: state.healthProfile, relationships: state.relationships, housing: state.housing)
+    }
+
+    var crime: CrimeDomainSnapshot {
+        CrimeDomainSnapshot(world: cache, player: state.player, career: state.career, crime: state.crime, finance: state.finance, health: state.healthProfile, relationships: state.relationships, housing: state.housing)
+    }
+
+    var finance: FinanceDomainSnapshot {
+        FinanceDomainSnapshot(world: cache, player: state.player, finance: state.finance, career: state.career, education: state.education, health: state.healthProfile, relationships: state.relationships, family: state.family, housing: state.housing, assets: state.assets)
+    }
+
+    var investment: InvestmentDomainSnapshot {
+        InvestmentDomainSnapshot(world: cache, player: state.player, finance: state.finance, career: state.career, assets: state.assets)
+    }
+
+    var relationships: RelationshipDomainSnapshot {
+        RelationshipDomainSnapshot(world: cache, player: state.player, relationships: state.relationships, family: state.family, health: state.healthProfile, housing: state.housing, financialStress: state.finance.financialStress)
+    }
+
+    var family: FamilyDomainSnapshot {
+        FamilyDomainSnapshot(world: cache, player: state.player, relationships: state.relationships, family: state.family, health: state.healthProfile, finance: state.finance)
+    }
+
+    var health: HealthDomainSnapshot {
+        HealthDomainSnapshot(world: cache, player: state.player, career: state.career, relationships: state.relationships, housing: state.housing, health: state.healthProfile, healthcarePressure: healthcarePressure)
+    }
+
+    var housing: HousingDomainSnapshot {
+        HousingDomainSnapshot(world: cache, player: state.player, housing: state.housing, finance: state.finance, assets: state.assets)
+    }
+
+    var assets: AssetDomainSnapshot {
+        AssetDomainSnapshot(world: cache, player: state.player, career: state.career, finance: state.finance, assets: state.assets, housing: state.housing)
+    }
+
+    var progress: ProgressDomainSnapshot {
+        ProgressDomainSnapshot(world: cache, state: state)
+    }
+
+    var traits: TraitDomainSnapshot {
+        TraitDomainSnapshot(world: cache, player: state.player, finance: state.finance)
+    }
 }
 
 struct WorldSnapshotBuilder {
@@ -222,139 +266,11 @@ struct WorldSnapshotBuilder {
             situationID: situationID(for: state, criticalStatuses: criticalStatuses)
         )
 
-        let education = EducationDomainSnapshot(
-            world: cache,
-            player: state.player,
-            education: state.education,
-            career: state.career,
-            finance: state.finance,
-            relationships: state.relationships,
-            health: state.healthProfile,
-            policySupport: policySystem.educationSupport(for: state.finance)
-        )
-        let trajectory = TrajectoryDomainSnapshot(
-            world: cache,
-            player: state.player,
-            trajectory: state.trajectory,
-            education: state.education,
-            career: state.career,
-            finance: state.finance,
-            relationships: state.relationships,
-            family: state.family,
-            health: state.healthProfile,
-            housing: state.housing,
-            originProfile: state.originProfile,
-            childhoodDossier: state.childhoodDossier
-        )
-        let career = CareerDomainSnapshot(
-            world: cache,
-            player: state.player,
-            education: state.education,
-            career: state.career,
-            health: state.healthProfile,
-            relationships: state.relationships,
-            childhoodDossier: state.childhoodDossier
-        )
-        let specialCareer = SpecialCareerDomainSnapshot(
-            world: cache,
-            player: state.player,
-            career: state.career,
-            specialCareer: state.specialCareer,
-            finance: state.finance,
-            health: state.healthProfile,
-            relationships: state.relationships,
-            housing: state.housing
-        )
-        let crime = CrimeDomainSnapshot(
-            world: cache,
-            player: state.player,
-            career: state.career,
-            crime: state.crime,
-            finance: state.finance,
-            health: state.healthProfile,
-            relationships: state.relationships,
-            housing: state.housing
-        )
-        let finance = FinanceDomainSnapshot(
-            world: cache,
-            player: state.player,
-            finance: state.finance,
-            career: state.career,
-            education: state.education,
-            health: state.healthProfile,
-            relationships: state.relationships,
-            family: state.family,
-            housing: state.housing,
-            assets: state.assets
-        )
-        let investment = InvestmentDomainSnapshot(
-            world: cache,
-            player: state.player,
-            finance: state.finance,
-            career: state.career,
-            assets: state.assets
-        )
-        let relationships = RelationshipDomainSnapshot(
-            world: cache,
-            player: state.player,
-            relationships: state.relationships,
-            family: state.family,
-            health: state.healthProfile,
-            housing: state.housing,
-            financialStress: state.finance.financialStress
-        )
-        let family = FamilyDomainSnapshot(
-            world: cache,
-            player: state.player,
-            relationships: state.relationships,
-            family: state.family,
-            health: state.healthProfile,
-            finance: state.finance
-        )
-        let health = HealthDomainSnapshot(
-            world: cache,
-            player: state.player,
-            career: state.career,
-            relationships: state.relationships,
-            housing: state.housing,
-            health: state.healthProfile,
-            healthcarePressure: policySystem.healthcarePressure(for: state.finance)
-        )
-        let housing = HousingDomainSnapshot(
-            world: cache,
-            player: state.player,
-            housing: state.housing,
-            finance: state.finance,
-            assets: state.assets
-        )
-        let assets = AssetDomainSnapshot(
-            world: cache,
-            player: state.player,
-            career: state.career,
-            finance: state.finance,
-            assets: state.assets,
-            housing: state.housing
-        )
-        let progress = ProgressDomainSnapshot(world: cache, state: state)
-        let traits = TraitDomainSnapshot(world: cache, player: state.player, finance: state.finance)
-
         return WorldSnapshot(
             state: state,
             cache: cache,
-            trajectory: trajectory,
-            education: education,
-            career: career,
-            specialCareer: specialCareer,
-            crime: crime,
-            finance: finance,
-            investment: investment,
-            relationships: relationships,
-            family: family,
-            health: health,
-            housing: housing,
-            assets: assets,
-            progress: progress,
-            traits: traits
+            educationPolicySupport: policySystem.educationSupport(for: state.finance),
+            healthcarePressure: policySystem.healthcarePressure(for: state.finance)
         )
     }
 

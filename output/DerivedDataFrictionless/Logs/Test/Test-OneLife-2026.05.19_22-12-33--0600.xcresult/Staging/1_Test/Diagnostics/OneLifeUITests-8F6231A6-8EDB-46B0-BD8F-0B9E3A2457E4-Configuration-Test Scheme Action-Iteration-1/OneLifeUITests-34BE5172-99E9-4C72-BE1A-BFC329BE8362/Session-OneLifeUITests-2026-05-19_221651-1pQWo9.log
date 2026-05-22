@@ -1,0 +1,113 @@
+Xcode version: 26.4 (17E192)
+22:16:51.644 xcodebuild[23243:7311128] Beginning test session OneLifeUITests-CC19BDE3-FA63-4530-9D4D-B900C798C293 at 2026-05-19 22:16:51.644 on target <DVTiPhoneSimulator: 0xc30b7e300> {
+		SimDevice: Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Shutdown)
+} (26.4 (23E244))
+22:16:51.644 xcodebuild[23243:7311128] 	/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild
+test
+-project
+OneLife.xcodeproj
+-scheme
+OneLife
+-destination
+platform=iOS Simulator,name=iPhone 17
+-derivedDataPath
+output/DerivedDataFrictionless
+22:16:51.645 xcodebuild[23243:7311128] Test standard output and standard error is at /Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Logs/Test/Test-OneLife-2026.05.19_22-12-33--0600.xcresult/Staging/1_Test/Diagnostics/OneLifeUITests-8F6231A6-8EDB-46B0-BD8F-0B9E3A2457E4-Configuration-Test Scheme Action-Iteration-1/OneLifeUITests-34BE5172-99E9-4C72-BE1A-BFC329BE8362/StandardOutputAndStandardError.txt
+22:16:53.391 xcodebuild[23243:7311128] 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+22:16:53.395 xcodebuild[23243:7311128] 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F: Received sim device notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booting)";
+    "last_booted_at" = "2026-05-20 04:16:53 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+22:16:53.404 xcodebuild[23243:7311128] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booting)";
+    "last_booted_at" = "2026-05-20 04:16:53 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+22:16:53.405 xcodebuild[23243:7311128] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booting)";
+    "last_booted_at" = "2026-05-20 04:16:53 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+22:16:53.405 xcodebuild[23243:7311128] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booting)";
+    "last_booted_at" = "2026-05-20 04:16:53 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+22:16:54.200 xcodebuild[23243:7311128] 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+22:16:54.210 xcodebuild[23243:7311128] 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F: Received sim device notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+22:16:54.211 xcodebuild[23243:7311128] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+22:16:54.212 xcodebuild[23243:7311128] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+22:16:54.212 xcodebuild[23243:7311128] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 3 of iPhone 17 (3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F, iOS 26.4, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+22:16:54.412 xcodebuild[23243:7323544] 📱<DVTiPhoneSimulator (0xc30b7e300), Clone 3 of iPhone 17, unknown class, 26.4 (23E244), 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F> claim LaunchSessionClaim_0xc2e7f1800 on simulator was issued, 2 claims exist.
+22:16:54.416 xcodebuild[23243:7311128] Setting up test runner session
+22:16:54.416 xcodebuild[23243:7311128] Registering/updating daemon-based crash report observer for process names (
+    xctest,
+    debugserver,
+    FrontBoard,
+    assertiond,
+    runningboardd,
+    SpringBoard,
+    testmanagerd,
+    backboardd,
+    DTServiceHub,
+    OneLife,
+    "OneLifeUITests-Runner",
+    OneLifeUITests
+)
+22:16:54.424 xcodebuild[23243:7331262] Sim Clone 3 of iPhone 17: Unregistering for sim device notification with token 5
+22:16:54.424 xcodebuild[23243:7331262] Calling -[SimDevice getenv:error:] for TESTMANAGERD_SIM_SOCK
+22:16:54.941 xcodebuild[23243:7331262] Sim Clone 3 of iPhone 17 has testmanagerd socket at /private/var/tmp/com.apple.launchd.lLTtvpafAX/com.apple.testmanagerd.unix-domain.socket
+22:16:54.941 xcodebuild[23243:7331262] Validating test connection socket path (/private/var/tmp/com.apple.launchd.lLTtvpafAX/com.apple.testmanagerd.unix-domain.socket)
+22:16:54.941 xcodebuild[23243:7331262] Constructing transport for test connection socket
+22:16:54.941 xcodebuild[23243:7331262] Connected socket 76 to testmanagerd for Sim Clone 3 of iPhone 17
+22:16:54.942 xcodebuild[23243:7331262] Received connection for test runner session
+22:16:54.942 xcodebuild[23243:7331262] Listening for proxy connection request from the test bundle
+22:16:54.942 xcodebuild[23243:7331262] Initiating session with identifier: CC19BDE3-FA63-4530-9D4D-B900C798C293
+22:16:54.958 xcodebuild[23243:7311128] Test runner session acquired connection.
+22:17:09.104 xcodebuild[23243:7331262] Got reply to session initiation request with identifier CC19BDE3-FA63-4530-9D4D-B900C798C293 (error: (null))
+22:17:10.611 xcodebuild[23243:7311128] Finished requesting crash reports. Continuing with testing.
+22:17:10.614 xcodebuild[23243:7311128] Launch session started.
+22:17:10.617 xcodebuild[23243:7334815] 📱<DVTiPhoneSimulator (0xc30b7e300), Clone 3 of iPhone 17, unknown class, 26.4 (23E244), 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F> claim LaunchSessionClaim_0xc2e7f1800 on simulator was issued, 2 claims exist.
+22:17:10.620 xcodebuild[23243:7333060] 📱<DVTiPhoneSimulator (0xc30b7e300), Clone 3 of iPhone 17, unknown class, 26.4 (23E244), 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F> claim LaunchSessionClaim_0xc2e7f1800 on simulator was issued, 2 claims exist.
+22:17:10.620 xcodebuild[23243:7333060] 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F: Registered for sim device notification, got token 8
+22:17:10.620 xcodebuild[23243:7331262] 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F: Unregistering for sim device notification with token 8
+22:17:10.625 xcodebuild[23243:7333060] 3CCECF76-6F1A-42AB-8AFC-2064A6C2DA4F: Installing app at path: /Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Build/Products/Debug-iphonesimulator/OneLifeUITests-Runner.app and options: {
+    SkipWatchAppInstall = 1;
+}
+22:17:13.979 xcodebuild[23243:7311128] Test operation failure: Error Domain=XCTHTestOperationCoordinatorErrorDomain Code=9 "Testing was canceled" UserInfo={NSLocalizedDescription=Testing was canceled}
+22:17:13.979 xcodebuild[23243:7311128] _finishWithError:Error Domain=XCTHTestOperationCoordinatorErrorDomain Code=9 "Testing was canceled" UserInfo={NSLocalizedDescription=Testing was canceled}
+22:17:13.979 xcodebuild[23243:7311128] Current state: testRunnerLaunchSessionHasFinishedReceivingData: NO, delegateBlockQueue.count: 0
+22:17:13.980 xcodebuild[23243:7311128] <XCTHTestOperationCoordinator: 0xc2e7f1b00>: _considerFlushingDelegateBlockQueue - nothing to flush

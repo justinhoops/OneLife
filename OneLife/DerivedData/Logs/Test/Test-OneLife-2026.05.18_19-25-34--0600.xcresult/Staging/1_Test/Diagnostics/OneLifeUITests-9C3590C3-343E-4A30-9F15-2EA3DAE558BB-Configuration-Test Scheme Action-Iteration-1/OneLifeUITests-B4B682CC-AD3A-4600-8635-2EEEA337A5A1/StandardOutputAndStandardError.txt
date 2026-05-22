@@ -1,0 +1,9 @@
+2026-05-18 19:26:59.372482-0600 OneLifeUITests-Runner[95349:6433571] [Default] Running tests...
+objc[95349]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10b6b4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10b0e0398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+Test Suite 'OneLifeUITests' started at 2026-05-18 19:27:09.654.
+Test Case '-[OneLifeUITests.OneLifeUITests testAdultCareerAndFinanceDrilldownsOpen]' started.
+    t =     0.00s Start Test at 2026-05-18 19:27:09.656
+    t =    60.09s Set Up
+    t =    60.09s     Setting device orientation to Portrait
+    t =    90.13s         Device orientation changed to Portrait
+    t =    90.24s         Wait for com.apple.springboard to idle

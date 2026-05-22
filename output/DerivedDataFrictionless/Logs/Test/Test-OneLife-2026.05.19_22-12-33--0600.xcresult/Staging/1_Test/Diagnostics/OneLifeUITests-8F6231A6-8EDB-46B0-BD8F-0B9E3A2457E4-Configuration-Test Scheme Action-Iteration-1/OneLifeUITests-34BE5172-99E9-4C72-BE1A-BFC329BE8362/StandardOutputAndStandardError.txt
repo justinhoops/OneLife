@@ -1,0 +1,4 @@
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Logs/Test/Test-OneLife-2026.05.19_22-12-33--0600.xcresult
+

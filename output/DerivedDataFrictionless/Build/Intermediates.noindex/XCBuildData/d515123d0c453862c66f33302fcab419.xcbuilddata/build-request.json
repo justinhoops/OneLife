@@ -1,0 +1,79 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildAndRun"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "ec6a500a1f8177a8b2851984d2396fb6527b3c58a881b36792b2c9f50c7d1952"
+    },
+    {
+      "guid" : "ec6a500a1f8177a8b2851984d2396fb6450886f02ed8689f388dce33e16f418a"
+    },
+    {
+      "guid" : "ec6a500a1f8177a8b2851984d2396fb6db373292005c14e2aabd4ac299eaae92"
+    }
+  ],
+  "containerPath" : "/Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "arm64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "hostTargetedPlatform" : null,
+      "platform" : "iphonesimulator",
+      "sdk" : "iphonesimulator26.4",
+      "sdkVariant" : "iphonesimulator",
+      "supportedArchitectures" : [
+        "arm64"
+      ],
+      "targetArchitecture" : "arm64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Build/Products",
+      "derivedDataPath" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless",
+      "indexDataStoreFolderPath" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ASSETCATALOG_FILTER_FOR_DEVICE_MODEL" : "iPhone18,3",
+          "ASSETCATALOG_FILTER_FOR_DEVICE_OS_VERSION" : "26.4",
+          "ASSETCATALOG_FILTER_FOR_THINNING_DEVICE_CONFIGURATION" : "iPhone18,3",
+          "BUILD_ACTIVE_RESOURCES_ONLY" : "YES",
+          "CLANG_COVERAGE_MAPPING" : "YES",
+          "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionless/Build/ProfileData",
+          "COMPILATION_CACHE_CAS_PATH" : "/Volumes/X9%20Pro/ClearCache",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES",
+          "TARGET_DEVICE_IDENTIFIER" : "3E9D8AC3-CB67-45CC-BAF5-D411DA5F19DD",
+          "TARGET_DEVICE_MODEL" : "iPhone18,3",
+          "TARGET_DEVICE_OS_VERSION" : "26.4",
+          "TARGET_DEVICE_PLATFORM_NAME" : "iphonesimulator"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "test",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

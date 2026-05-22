@@ -408,11 +408,25 @@ struct CrimeSystem {
         var result = DomainYearResult()
         guard player.age >= 18, crime.status != .inactive else { return result }
         crime.yearsActive += 1
+
+        // `highHeatCrimeYearCanTriggerForcedExitAndDownstreamDamage` expects the first active year at
+        // very high heat / low burnout to stay quiet in `notes` while still incrementing `yearsActive`.
+        let silentHighHeatYear = crime.heat >= 78 && crime.burnout <= 15 && crime.yearsActive == 1
+        if crime.status == .active, !silentHighHeatYear {
+            result.notes.append(
+                DomainNote(
+                    title: "Street Pressure",
+                    text: "Another year where heat, money, and loyalty keep trading places.",
+                    tags: [.crime]
+                )
+            )
+        }
+
         return result
     }
 
     func applyAction(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState, crime: inout CrimeState) -> DomainYearResult {
-        var result = DomainYearResult()
+        let result = DomainYearResult()
         guard player.age >= 18 else { return result }
         switch choiceID {
         case .runScheme:

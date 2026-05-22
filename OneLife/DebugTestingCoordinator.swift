@@ -86,7 +86,6 @@ struct DebugTestingConfiguration: Equatable {
     static var inactive: DebugTestingConfiguration { DebugTestingConfiguration() }
 
     static func fromProcessInfo() -> DebugTestingConfiguration {
-        #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
         guard let scenarioFlagIndex = arguments.firstIndex(of: "-debug-scenario"),
               arguments.indices.contains(scenarioFlagIndex + 1),
@@ -102,9 +101,6 @@ struct DebugTestingConfiguration: Equatable {
         }
 
         return DebugTestingConfiguration(scenarioID: scenarioID, modal: modal)
-        #else
-        return .inactive
-        #endif
     }
 }
 

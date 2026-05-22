@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests-primary.dia",
+    "emit-module-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests-primary-emit-module.dia",
+    "pch" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests-primary.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLifeTests/OneLifeTests.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataFrictionlessUnit/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLifeTests.build/Objects-normal/arm64/OneLifeTests~partial.swiftmodule"
+  }
+}

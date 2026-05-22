@@ -1,5 +1,11 @@
 import Foundation
 
+enum CharacterCreationStep: Int, CaseIterable, Codable {
+    case name     = 0
+    case origin   = 1
+    case trait    = 2
+}
+
 // MARK: - Core Game Models
 
 struct Player: Codable, Equatable {
@@ -356,6 +362,174 @@ enum ActionDomain: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum YearlyStanceID: String, Codable, CaseIterable, Identifiable {
+    case stabilizeMoney
+    case protectHealth
+    case repairPeople
+    case pushCareer
+    case letYearDrift
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .stabilizeMoney: return "Stabilize Money"
+        case .protectHealth: return "Protect Health"
+        case .repairPeople: return "Repair People"
+        case .pushCareer: return "Push Career"
+        case .letYearDrift: return "Let The Year Drift"
+        }
+    }
+
+    var domain: ActionDomain? {
+        switch self {
+        case .stabilizeMoney: return .finance
+        case .protectHealth: return .health
+        case .repairPeople: return .relationships
+        case .pushCareer: return .career
+        case .letYearDrift: return nil
+        }
+    }
+
+    func preferredAction(for state: GameState) -> ActionChoiceID? {
+        switch self {
+        case .stabilizeMoney:
+            if state.finance.creditDebt + state.finance.medicalDebt + state.finance.studentDebt > 2_500 { return .minimumPayments }
+            return state.finance.cashOnHand < 1_500 ? .smallHustle : .cutSpending
+        case .protectHealth:
+            return state.healthProfile.mentalWellness < 48 ? .protectSleep : .rest
+        case .repairPeople:
+            if state.relationships.activeTensionCount > 0 || (state.relationships.hasPartner && state.relationships.partnerBond < 55) { return .repairTension }
+            return state.relationships.friends.isEmpty ? .findYourCrowd : .reachOut
+        case .pushCareer:
+            return state.career.status == .unemployed ? .jobHunt : .workHard
+        case .letYearDrift:
+            return nil
+        }
+    }
+}
+
+struct YearlyStanceMemory: Codable, Equatable {
+    var selectedStance: YearlyStanceID? = nil
+    var lastCompletedStance: YearlyStanceID? = nil
+    var repeatCount: Int = 0
+    var lastOutcomeLine: String? = nil
+}
+
+enum PlayerPattern: String, Codable, CaseIterable, Identifiable {
+    case overworker
+    case drifter
+    case caregiver
+    case riskChaser
+    case stabilizer
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .overworker: return "Overworker"
+        case .drifter: return "Drifter"
+        case .caregiver: return "Caregiver"
+        case .riskChaser: return "Risk Chaser"
+        case .stabilizer: return "Stabilizer"
+        }
+    }
+
+    var legacyLine: String {
+        switch self {
+        case .overworker: return "You kept trying to outwork the damage."
+        case .drifter: return "You survived by letting years pass around you."
+        case .caregiver: return "You kept spending yourself on other people."
+        case .riskChaser: return "You reached for doors that could cut both ways."
+        case .stabilizer: return "You kept choosing the smaller, steadier repair."
+        }
+    }
+
+    var eventWeights: [String: Int] {
+        switch self {
+        case .overworker: return ["career": 5, "burnout": 4, "routine": 2]
+        case .drifter: return ["routine": 4, "health": 2, "social": 2]
+        case .caregiver: return ["family": 5, "social": 4, "health": 2]
+        case .riskChaser: return ["risk": 6, "money": 3, "career": 2]
+        case .stabilizer: return ["routine": 5, "money": 3, "health": 2]
+        }
+    }
+
+    static func resolve(from state: GameState) -> PlayerPattern? {
+        let counts = state.correlationLedger.actionCounts
+        let scored: [(PlayerPattern, Int)] = [
+            (.overworker, score(counts, [.workHard, .takeOvertime, .takeExtraShifts, .smallHustle])),
+            (.drifter, score(counts, [.coast, .skipAndDrift, .spendToCope, .spendForRelief])),
+            (.caregiver, score(counts, [.repairTension, .reachOut, .protectYourEnergy, .rest])),
+            (.riskChaser, score(counts, [.dayTrade, .runScheme, .exploitLeverage, .chaseSpotlight, .compete, .intenseTraining])),
+            (.stabilizer, score(counts, [.cutSpending, .payDownDebt, .minimumPayments, .studyConsistently, .lockInRoutine]))
+        ]
+
+        let stancePattern: PlayerPattern?
+        if state.yearlyStance.repeatCount >= 3 {
+            switch state.yearlyStance.lastCompletedStance {
+            case .pushCareer: stancePattern = .overworker
+            case .letYearDrift: stancePattern = .drifter
+            case .repairPeople: stancePattern = .caregiver
+            case .stabilizeMoney: stancePattern = .stabilizer
+            case .protectHealth, .none: stancePattern = nil
+            }
+        } else {
+            stancePattern = nil
+        }
+
+        if let stancePattern,
+           scored.first(where: { $0.0 == stancePattern })?.1 ?? 0 >= 1 {
+            return stancePattern
+        }
+
+        return scored.max { lhs, rhs in
+            if lhs.1 == rhs.1 {
+                return lhs.0.rawValue < rhs.0.rawValue
+            }
+            return lhs.1 < rhs.1
+        }.flatMap { $0.1 >= 3 ? $0.0 : nil }
+    }
+
+    private static func score(_ counts: [String: Int], _ choices: [ActionChoiceID]) -> Int {
+        choices.reduce(0) { partial, choice in
+            partial + counts[choice.rawValue, default: 0]
+        }
+    }
+}
+
+struct MVPOnboardingState: Codable, Equatable {
+    var startAge: Int? = nil
+    var completed: Bool = false
+    var endedByMajorMoment: Bool = false
+
+    mutating func activate(at age: Int) {
+        startAge = age
+        completed = false
+        endedByMajorMoment = false
+    }
+
+    mutating func advance(afterAge age: Int, hadMajorMoment: Bool) {
+        guard let startAge, !completed else { return }
+        if hadMajorMoment {
+            completed = true
+            endedByMajorMoment = true
+        } else if age - startAge >= 3 {
+            completed = true
+        }
+    }
+
+    func isActive(at age: Int) -> Bool {
+        guard let startAge, !completed else { return false }
+        return age - startAge < 3
+    }
+
+    func elapsedYears(at age: Int) -> Int {
+        guard let startAge else { return 0 }
+        return max(0, age - startAge)
+    }
+}
+
 enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case studyHard
     case studyConsistently
@@ -467,11 +641,208 @@ struct PlayerYearAction: Codable, Equatable, Identifiable {
     var id: String { domain.rawValue }
 }
 
+struct ActionMemoryEntry: Codable, Equatable, Identifiable {
+    var age: Int
+    var domain: ActionDomain
+    var choiceID: ActionChoiceID
+
+    var id: String { "\(age)-\(domain.rawValue)-\(choiceID.rawValue)" }
+}
+
+struct ActionMemoryState: Codable, Equatable {
+    var currentAge: Int? = nil
+    var recentActions: [ActionMemoryEntry] = []
+    var lastActionByDomain: [String: ActionChoiceID] = [:]
+
+    var latestAction: PlayerYearAction? {
+        recentActions.last.map { PlayerYearAction(domain: $0.domain, choiceID: $0.choiceID) }
+    }
+
+    var actionsThisAge: [PlayerYearAction] {
+        recentActions.map { PlayerYearAction(domain: $0.domain, choiceID: $0.choiceID) }
+    }
+
+    func lastAction(for domain: ActionDomain) -> ActionChoiceID? {
+        lastActionByDomain[domain.rawValue]
+    }
+
+    mutating func record(action: PlayerYearAction, age: Int) {
+        if currentAge != age {
+            currentAge = age
+            recentActions = []
+        }
+
+        recentActions.removeAll { $0.domain == action.domain }
+        recentActions.append(ActionMemoryEntry(age: age, domain: action.domain, choiceID: action.choiceID))
+        lastActionByDomain[action.domain.rawValue] = action.choiceID
+
+        if recentActions.count > 6 {
+            recentActions = Array(recentActions.suffix(6))
+        }
+    }
+
+    mutating func clearForNewAge(_ age: Int) {
+        currentAge = age
+        recentActions = []
+    }
+}
+
+struct QuickActionMemoryState: Codable, Equatable {
+    var currentAge: Int? = nil
+    var completedThisAge: [ActionMemoryEntry] = []
+    var maxActionsPerAge: Int = 3
+
+    var countThisAge: Int { completedThisAge.count }
+
+    mutating func rolloverIfNeeded(age: Int) {
+        if currentAge != age {
+            currentAge = age
+            completedThisAge = []
+        }
+    }
+
+    mutating func canPerform(_ action: PlayerYearAction, age: Int) -> Bool {
+        rolloverIfNeeded(age: age)
+        return !completedThisAge.contains { $0.domain == action.domain && $0.choiceID == action.choiceID }
+            && completedThisAge.count < maxActionsPerAge
+    }
+
+    mutating func blockReason(for action: PlayerYearAction, age: Int) -> String? {
+        rolloverIfNeeded(age: age)
+        if completedThisAge.contains(where: { $0.domain == action.domain && $0.choiceID == action.choiceID }) {
+            return "Already done this year."
+        }
+        if completedThisAge.count >= maxActionsPerAge {
+            return "Quick actions are used up for this year."
+        }
+        return nil
+    }
+
+    mutating func record(_ action: PlayerYearAction, age: Int) {
+        rolloverIfNeeded(age: age)
+        guard !completedThisAge.contains(where: { $0.domain == action.domain && $0.choiceID == action.choiceID }) else { return }
+        completedThisAge.append(ActionMemoryEntry(age: age, domain: action.domain, choiceID: action.choiceID))
+    }
+
+    mutating func clearForNewAge(_ age: Int) {
+        currentAge = age
+        completedThisAge = []
+    }
+}
+
+struct PressureCause: Codable, Equatable, Identifiable {
+    var id: String = UUID().uuidString
+    var domain: String
+    var label: String
+    var delta: Int
+    var age: Int
+    var sourceAction: ActionChoiceID?
+}
+
+struct CorrelationHook: Codable, Equatable, Identifiable {
+    var id: String = UUID().uuidString
+    var tag: String
+    var domain: String
+    var dueAge: Int
+    var strength: Int
+    var sourceAction: ActionChoiceID?
+}
+
+struct CorrelationLedger: Codable, Equatable {
+    var actionCounts: [String: Int] = [:]
+    var domainResidue: [String: Int] = [:]
+    var pressureCauses: [PressureCause] = []
+    var npcImpressions: [String: [String: Int]] = [:]
+    var unresolvedHooks: [CorrelationHook] = []
+
+    mutating func recordAction(_ action: PlayerYearAction) -> Int {
+        let key = action.choiceID.rawValue
+        actionCounts[key, default: 0] += 1
+        return actionCounts[key, default: 0]
+    }
+
+    mutating func adjustResidue(domain: String, delta: Int) {
+        guard delta != 0 else { return }
+        domainResidue[domain] = (domainResidue[domain, default: 0] + delta).clamped(to: -100...100)
+        if domainResidue[domain] == 0 {
+            domainResidue.removeValue(forKey: domain)
+        }
+    }
+
+    mutating func recordPressureCause(domain: String, label: String, delta: Int, age: Int, sourceAction: ActionChoiceID?) {
+        guard delta != 0 else { return }
+        pressureCauses.append(
+            PressureCause(
+                domain: domain,
+                label: label,
+                delta: delta,
+                age: age,
+                sourceAction: sourceAction
+            )
+        )
+        if pressureCauses.count > 30 {
+            pressureCauses = Array(pressureCauses.suffix(30))
+        }
+    }
+
+    mutating func adjustNPCImpression(id: String, key: String, delta: Int) {
+        guard delta != 0 else { return }
+        var impressions = npcImpressions[id, default: [:]]
+        impressions[key] = (impressions[key, default: 0] + delta).clamped(to: -100...100)
+        npcImpressions[id] = impressions.filter { $0.value != 0 }
+        if npcImpressions[id]?.isEmpty == true {
+            npcImpressions.removeValue(forKey: id)
+        }
+    }
+
+    mutating func upsertHook(tag: String, domain: String, dueAge: Int, strength: Int, sourceAction: ActionChoiceID?) {
+        if let index = unresolvedHooks.firstIndex(where: { $0.tag == tag && $0.domain == domain && $0.sourceAction == sourceAction }) {
+            unresolvedHooks[index].dueAge = min(unresolvedHooks[index].dueAge, dueAge)
+            unresolvedHooks[index].strength = max(unresolvedHooks[index].strength, strength)
+        } else {
+            unresolvedHooks.append(
+                CorrelationHook(
+                    tag: tag,
+                    domain: domain,
+                    dueAge: dueAge,
+                    strength: strength,
+                    sourceAction: sourceAction
+                )
+            )
+        }
+        if unresolvedHooks.count > 20 {
+            unresolvedHooks = Array(unresolvedHooks.suffix(20))
+        }
+    }
+
+    func pressureCauseLine(for domain: String, limit: Int = 2) -> String? {
+        let causes = pressureCauses
+            .filter { $0.domain == domain }
+            .sorted { lhs, rhs in
+                if lhs.age == rhs.age {
+                    return abs(lhs.delta) > abs(rhs.delta)
+                }
+                return lhs.age > rhs.age
+            }
+            .prefix(limit)
+            .map { "\($0.label) \($0.delta > 0 ? "+" : "")\($0.delta)" }
+        guard !causes.isEmpty else { return nil }
+        return causes.joined(separator: ", ")
+    }
+}
+
 enum ActionFrictionLevel: String, Codable, Equatable {
     case none
     case resistance // Harder to press, visual jitter
     case warning // Red pulse, heavy haptics
     case locked // Cannot be selected due to state
+}
+
+enum ActionResolutionTier: String, Codable, Equatable, CaseIterable {
+    /// BitLife-style tap: resolves immediately via `applyImmediateAction`.
+    case instant
+    /// Macro intent: queued in `pendingActions` and applied when the year resolves on Age Up.
+    case committed
 }
 
 struct ActionChoiceDefinition: Equatable {
@@ -662,6 +1033,21 @@ enum ActionChoiceCatalog {
         }
     }
 
+    static func baseResolutionTier(for choiceID: ActionChoiceID) -> ActionResolutionTier {
+        switch choiceID {
+        case .smallHustle, .takeSideWork, .takeExtraShifts, .rest, .protectSleep, .pushThrough,
+             .reachOut, .joinClub, .findYourCrowd, .keepDistance, .seeDoctor, .cutSpending,
+             .layLow, .spendForRelief:
+            return .instant
+        default:
+            return .committed
+        }
+    }
+
+    static func resolutionTier(for choiceID: ActionChoiceID) -> ActionResolutionTier {
+        baseResolutionTier(for: choiceID)
+    }
+
     static func preferredEventWeights(for actions: [PlayerYearAction]) -> [String: Int] {
         var weights: [String: Int] = [:]
         for action in actions {
@@ -670,6 +1056,138 @@ enum ActionChoiceCatalog {
             }
         }
         return weights
+    }
+}
+
+enum QuickActionCatalog {
+    static func choices(for domain: ActionDomain, state: GameState) -> [ActionChoiceID] {
+        registry(for: state).availableQuick(for: domain)
+    }
+
+    static func title(for choiceID: ActionChoiceID) -> String {
+        DomainActionRegistry.quickActionTitle(for: choiceID)
+    }
+
+    private static func registry(for state: GameState) -> DomainActionRegistry {
+        let isTeen = state.player.age <= 17
+        let isStudent = state.player.age <= 22 && (state.education.pathway == .student || state.education.pathway == .training)
+        let reserve = max(2_500, state.finance.annualNetIncome / 4)
+        return DomainActionRegistry(
+            context: DomainActionContext(
+                state: state,
+                isTeenExperience: isTeen,
+                isStudentLifeExperience: isStudent,
+                canAccessInvesting: state.player.age >= 18 && state.finance.isEligibleToCompound(emergencyReserve: reserve),
+                investmentEmergencyReserve: reserve
+            )
+        )
+    }
+}
+
+extension ActionChoiceDefinition {
+    var resolutionTier: ActionResolutionTier {
+        ActionChoiceCatalog.resolutionTier(for: choiceID)
+    }
+}
+
+struct ActionCorrelationSystem {
+    func record(action: PlayerYearAction, age: Int, pressureDeltas: [String: Int], state: inout GameState) {
+        let count = state.correlationLedger.recordAction(action)
+        let label = pressureCauseLabel(for: action.choiceID)
+
+        for (domain, delta) in pressureDeltas {
+            state.correlationLedger.adjustResidue(domain: domain, delta: delta)
+            state.correlationLedger.recordPressureCause(
+                domain: domain,
+                label: label,
+                delta: delta,
+                age: age,
+                sourceAction: action.choiceID
+            )
+        }
+
+        recordPatternHook(for: action, count: count, age: age, state: &state)
+        recordNPCImpressions(for: action, state: &state)
+    }
+
+    private func recordPatternHook(for action: PlayerYearAction, count: Int, age: Int, state: inout GameState) {
+        guard count >= 2 else { return }
+
+        switch action.choiceID {
+        case .takeExtraShifts, .takeSideWork, .takeOvertime, .smallHustle:
+            state.correlationLedger.upsertHook(tag: "overwork", domain: "health", dueAge: age + 1, strength: min(20, count * 4), sourceAction: action.choiceID)
+        case .rest, .protectSleep, .seeDoctor:
+            state.correlationLedger.upsertHook(tag: "recovery", domain: "health", dueAge: age + 1, strength: min(20, count * 4), sourceAction: action.choiceID)
+        case .spendForRelief, .spendToCope:
+            state.correlationLedger.upsertHook(tag: "coping_spend", domain: "finance", dueAge: age + 1, strength: min(20, count * 4), sourceAction: action.choiceID)
+        case .reachOut, .joinClub, .findYourCrowd, .repairTension, .strengthenBond:
+            state.correlationLedger.upsertHook(tag: "reachable", domain: "relationships", dueAge: age + 1, strength: min(20, count * 4), sourceAction: action.choiceID)
+        case .keepDistance, .stayInvisible, .layLow, .coast:
+            state.correlationLedger.upsertHook(tag: "withdrawal", domain: "relationships", dueAge: age + 1, strength: min(20, count * 4), sourceAction: action.choiceID)
+        default:
+            break
+        }
+    }
+
+    private func recordNPCImpressions(for action: PlayerYearAction, state: inout GameState) {
+        let impressions = npcImpressionDeltas(for: action.choiceID)
+        guard !impressions.isEmpty else { return }
+
+        var ids: [String] = state.relationships.friends.map { $0.id.uuidString }
+        if let partner = state.relationships.romanticPartner {
+            ids.append(partner.id.uuidString)
+        }
+
+        for id in ids {
+            for (key, delta) in impressions {
+                state.correlationLedger.adjustNPCImpression(id: id, key: key, delta: delta)
+            }
+        }
+    }
+
+    private func npcImpressionDeltas(for choiceID: ActionChoiceID) -> [String: Int] {
+        switch choiceID {
+        case .reachOut, .joinClub, .findYourCrowd, .repairTension, .strengthenBond:
+            return ["reachable": 2, "absent": -1]
+        case .keepDistance, .stayInvisible, .layLow, .coast:
+            return ["absent": 2]
+        case .takeExtraShifts, .takeSideWork, .takeOvertime, .workHard:
+            return ["overworked": 2]
+        case .protectYourEnergy, .rest, .protectSleep:
+            return ["available": 1, "overworked": -1]
+        default:
+            return [:]
+        }
+    }
+
+    private func pressureCauseLabel(for choiceID: ActionChoiceID) -> String {
+        switch choiceID {
+        case .protectSleep: return "Sleep"
+        case .rest: return "Rest"
+        case .seeDoctor: return "Care"
+        case .takeExtraShifts: return "Extra shifts"
+        case .takeSideWork: return "Side work"
+        case .smallHustle: return "Small hustle"
+        case .takeOvertime: return "Overtime"
+        case .cutSpending: return "Cut spending"
+        case .buildEmergencyFund: return "Emergency fund"
+        case .spendForRelief: return "Relief spend"
+        case .spendToCope: return "Coping spend"
+        case .pushThrough: return "Push through"
+        case .repairTension: return "Repair"
+        case .strengthenBond: return "Bond"
+        case .discussFuture: return "Future talk"
+        case .keepDistance: return "Distance"
+        case .stayInvisible: return "Invisible"
+        case .workHard: return "Work hard"
+        case .network: return "Network"
+        case .retrain: return "Retrain"
+        case .protectYourEnergy: return "Protect energy"
+        case .coast: return "Coast"
+        case .layLow: return "Lay low"
+        case .jobHunt: return "Job hunt"
+        default: return ActionChoiceCatalog.definition(for: choiceID).title
+        }
     }
 }
 
@@ -752,6 +1270,7 @@ struct ActiveYearChapter: Codable, Equatable {
     var plannedActions: [PlayerYearAction]
     var forecast: YearForecastCard
     var stakes: TurnStakesSnapshot? = nil
+    var pendingEventIDs: [String] = []
     var eventID: String? = nil
     var selectedChoiceText: String? = nil
     var reactionCards: [YearReactionCard] = []
@@ -761,6 +1280,7 @@ struct ActiveYearChapter: Codable, Equatable {
     var dominantUnresolvedConsequence: ConsequencePreview? = nil
     var pendingResolution: ResolutionPreview? = nil
     var pendingCrisis: CrisisInteraction? = nil
+    var pendingPitchDeck: PitchDeckInteraction? = nil
     var resolutionCardIndex: Int = 0
 }
 
@@ -943,6 +1463,7 @@ struct GameState: Codable, Equatable {
     var narrativeArcs: NarrativeArcState = NarrativeArcState()
     var consequences: ConsequenceState = ConsequenceState()
     var activities: ActivityState = ActivityState()
+    var correlationLedger: CorrelationLedger = CorrelationLedger()
     
     // Macro Autonomy
     var currentEra: WorldEra = .stable
@@ -950,6 +1471,11 @@ struct GameState: Codable, Equatable {
 
     var activeYearChapter: ActiveYearChapter? = nil
     var pendingActions: [PlayerYearAction] = []
+    var actionMemory: ActionMemoryState = ActionMemoryState()
+    var quickActionMemory: QuickActionMemoryState = QuickActionMemoryState()
+    var suggestedPlayerAction: SuggestedPlayerAction? = nil
+    var yearlyStance: YearlyStanceMemory = YearlyStanceMemory()
+    var mvpOnboarding: MVPOnboardingState = MVPOnboardingState()
     var history: [HistoryEntry] = []
     var lastEventYearById: [String: Int] = [:]
     var startupState: StartupState = .choosingOrigin
@@ -977,10 +1503,16 @@ struct GameState: Codable, Equatable {
         case narrativeArcs
         case consequences
         case activities
+        case correlationLedger
         case currentEra
         case eraYearsRemaining
         case activeYearChapter
         case pendingActions
+        case actionMemory
+        case quickActionMemory
+        case suggestedPlayerAction
+        case yearlyStance
+        case mvpOnboarding
         case history
         case lastEventYearById
         case startupState
@@ -1016,12 +1548,18 @@ struct GameState: Codable, Equatable {
         narrativeArcs = try container.decodeIfPresent(NarrativeArcState.self, forKey: .narrativeArcs) ?? NarrativeArcState()
         consequences = try container.decodeIfPresent(ConsequenceState.self, forKey: .consequences) ?? ConsequenceState()
         activities = try container.decodeIfPresent(ActivityState.self, forKey: .activities) ?? ActivityState(currentYearAge: player.age)
+        correlationLedger = try container.decodeIfPresent(CorrelationLedger.self, forKey: .correlationLedger) ?? CorrelationLedger()
 
         currentEra = try container.decodeIfPresent(WorldEra.self, forKey: .currentEra) ?? .stable
         eraYearsRemaining = try container.decodeIfPresent(Int.self, forKey: .eraYearsRemaining) ?? 10
 
         activeYearChapter = try container.decodeIfPresent(ActiveYearChapter.self, forKey: .activeYearChapter)
         pendingActions = try container.decodeIfPresent([PlayerYearAction].self, forKey: .pendingActions) ?? []
+        actionMemory = try container.decodeIfPresent(ActionMemoryState.self, forKey: .actionMemory) ?? ActionMemoryState()
+        quickActionMemory = try container.decodeIfPresent(QuickActionMemoryState.self, forKey: .quickActionMemory) ?? QuickActionMemoryState()
+        suggestedPlayerAction = try container.decodeIfPresent(SuggestedPlayerAction.self, forKey: .suggestedPlayerAction)
+        yearlyStance = try container.decodeIfPresent(YearlyStanceMemory.self, forKey: .yearlyStance) ?? YearlyStanceMemory()
+        mvpOnboarding = try container.decodeIfPresent(MVPOnboardingState.self, forKey: .mvpOnboarding) ?? MVPOnboardingState()
         history = try container.decodeIfPresent([HistoryEntry].self, forKey: .history) ?? []
         lastEventYearById = try container.decodeIfPresent([String: Int].self, forKey: .lastEventYearById) ?? [:]
         startupState = try container.decodeIfPresent(StartupState.self, forKey: .startupState) ?? (player.traits.isEmpty ? .choosingOrigin : .active)
@@ -1049,6 +1587,10 @@ struct GameState: Codable, Equatable {
     /// to calibrate prose register. Never stored — always computed.
     var narrativeTone: NarrativeTone {
         NarrativeToneResolver().resolve(for: self)
+    }
+
+    var currentIdentityPattern: PlayerPattern? {
+        PlayerPattern.resolve(from: self)
     }
 }
 
@@ -2089,6 +2631,7 @@ struct YearlyOutcomeSummary: Codable, Equatable {
     var focusOutcome: YearlyOutcomeItem? = nil
     var mainTradeoff: YearlyOutcomeItem? = nil
     var nextYearPressure: YearlyOutcomeItem? = nil
+    var yearlyStanceOutcome: YearlyOutcomeItem? = nil
 }
 
 struct ConsequencePreview: Codable, Equatable, Identifiable {
@@ -3616,6 +4159,10 @@ struct Relationship: Codable, Identifiable, Equatable {
     var personality: NPCPersonality = .loyal
     var hiddenNeedLevel: Int = 0 // 0-100, triggers autonomous asks
     var hiddenResentment: Int = 0 // 0-100, triggers shifts or breakups
+    
+    // Scheduled Autonomy
+    var nextAutonomyYear: Int? = nil
+    var currentGoal: String? = nil
 
     static func == (lhs: Relationship, rhs: Relationship) -> Bool {
         lhs.name == rhs.name &&
@@ -3625,7 +4172,9 @@ struct Relationship: Codable, Identifiable, Equatable {
         lhs.yearsKnown == rhs.yearsKnown &&
         lhs.stage == rhs.stage &&
         lhs.isCohabiting == rhs.isCohabiting &&
-        lhs.commitmentAlignment == rhs.commitmentAlignment
+        lhs.commitmentAlignment == rhs.commitmentAlignment &&
+        lhs.nextAutonomyYear == rhs.nextAutonomyYear &&
+        lhs.currentGoal == rhs.currentGoal
     }
 }
 
@@ -3860,6 +4409,33 @@ struct HealthState: Codable, Equatable {
     var habits: LifestyleHabits = LifestyleHabits()
     var activeConditions: [HealthCondition] = []
     var hasPrimaryCare: Bool = false
+
+    init(
+        physicalWellness: Int = 60,
+        mentalWellness: Int = 55,
+        addiction: Int = 0,
+        habits: LifestyleHabits = LifestyleHabits(),
+        activeConditions: [HealthCondition] = [],
+        hasPrimaryCare: Bool = false
+    ) {
+        self.physicalWellness = physicalWellness
+        self.mentalWellness = mentalWellness
+        self.addiction = addiction
+        self.habits = habits
+        self.activeConditions = activeConditions
+        self.hasPrimaryCare = hasPrimaryCare
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        physicalWellness = try container.decodeIfPresent(Int.self, forKey: .physicalWellness) ?? 60
+        mentalWellness = try container.decodeIfPresent(Int.self, forKey: .mentalWellness) ?? 55
+        addiction = try container.decodeIfPresent(Int.self, forKey: .addiction) ?? 0
+        habits = try container.decodeIfPresent(LifestyleHabits.self, forKey: .habits) ?? LifestyleHabits()
+        activeConditions = try container.decodeIfPresent([HealthCondition].self, forKey: .activeConditions) ?? []
+        hasPrimaryCare = try container.decodeIfPresent(Bool.self, forKey: .hasPrimaryCare) ?? false
+        clamp()
+    }
 
     mutating func clamp() {
         physicalWellness = physicalWellness.clamped(to: 0...100)
@@ -4790,7 +5366,8 @@ struct HousingEffects: Codable, Equatable {
 
 struct PerformanceBudgets {
     static let maxRenderedHistoryItems = 3
-    static let maxPersistedHistoryItems = 240
+    /// Headroom for macro/NPC autonomy notes appended in the same tick as headline inserts.
+    static let maxPersistedHistoryItems = 280
     static let eventPackWarningThreshold = 250
     static let saveSizeWarningBytes = 180_000
 }

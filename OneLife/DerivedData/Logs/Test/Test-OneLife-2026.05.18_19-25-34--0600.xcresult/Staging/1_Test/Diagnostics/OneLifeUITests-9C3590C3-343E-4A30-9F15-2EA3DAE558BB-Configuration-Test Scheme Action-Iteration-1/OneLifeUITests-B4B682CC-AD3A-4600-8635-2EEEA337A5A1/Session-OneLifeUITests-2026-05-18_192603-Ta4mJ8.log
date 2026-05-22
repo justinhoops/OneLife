@@ -1,0 +1,680 @@
+Xcode version: 26.4 (17E192)
+19:26:03.086 xcodebuild[94569:6425748] Beginning test session OneLifeUITests-E9809C7D-18EF-4619-838D-1824DD9B48C1 at 2026-05-18 19:26:03.086 on target <DVTiPhoneSimulator: 0xc8ac25900> {
+		SimDevice: Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Shutdown)
+} (26.4 (23E244))
+19:26:03.086 xcodebuild[94569:6425748] 	/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild
+test
+-project
+OneLife.xcodeproj
+-scheme
+OneLife
+-destination
+platform=iOS Simulator,name=iPhone 17 Pro
+-derivedDataPath
+OneLife/DerivedData
+CODE_SIGNING_ALLOWED=NO
+19:26:03.087 xcodebuild[94569:6425748] Test standard output and standard error is at /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Logs/Test/Test-OneLife-2026.05.18_19-25-34--0600.xcresult/Staging/1_Test/Diagnostics/OneLifeUITests-9C3590C3-343E-4A30-9F15-2EA3DAE558BB-Configuration-Test Scheme Action-Iteration-1/OneLifeUITests-B4B682CC-AD3A-4600-8635-2EEEA337A5A1/StandardOutputAndStandardError.txt
+19:26:03.246 xcodebuild[94569:6425748] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+19:26:03.246 xcodebuild[94569:6425748] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Received sim device notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Booting)";
+    "last_booted_at" = "2026-05-19 01:26:03 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+19:26:03.246 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Booting)";
+    "last_booted_at" = "2026-05-19 01:26:03 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+19:26:03.247 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Booting)";
+    "last_booted_at" = "2026-05-19 01:26:03 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+19:26:03.557 xcodebuild[94569:6425748] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+19:26:03.557 xcodebuild[94569:6425748] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Received sim device notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+19:26:03.558 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+19:26:03.558 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+19:26:03.558 xcodebuild[94569:6426179] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> claim LaunchSessionClaim_0xc88818f00 on simulator was issued, 2 claims exist.
+19:26:03.564 xcodebuild[94569:6425748] Setting up test runner session
+19:26:03.565 xcodebuild[94569:6425788] Sim Clone 1 of iPhone 17 Pro: Unregistering for sim device notification with token 5
+19:26:03.565 xcodebuild[94569:6425788] Calling -[SimDevice getenv:error:] for TESTMANAGERD_SIM_SOCK
+19:26:03.565 xcodebuild[94569:6425748] Registering/updating daemon-based crash report observer for process names (
+    xctest,
+    debugserver,
+    FrontBoard,
+    assertiond,
+    runningboardd,
+    SpringBoard,
+    testmanagerd,
+    backboardd,
+    DTServiceHub,
+    OneLife,
+    "OneLifeUITests-Runner",
+    OneLifeUITests
+)
+19:26:03.756 xcodebuild[94569:6425788] Sim Clone 1 of iPhone 17 Pro has testmanagerd socket at /private/var/tmp/com.apple.launchd.Brjwy4LrDk/com.apple.testmanagerd.unix-domain.socket
+19:26:03.756 xcodebuild[94569:6425788] Validating test connection socket path (/private/var/tmp/com.apple.launchd.Brjwy4LrDk/com.apple.testmanagerd.unix-domain.socket)
+19:26:03.756 xcodebuild[94569:6425788] Constructing transport for test connection socket
+19:26:03.756 xcodebuild[94569:6425788] Connected socket 40 to testmanagerd for Sim Clone 1 of iPhone 17 Pro
+19:26:03.756 xcodebuild[94569:6425788] Received connection for test runner session
+19:26:03.757 xcodebuild[94569:6425788] Listening for proxy connection request from the test bundle
+19:26:03.757 xcodebuild[94569:6425748] Test runner session acquired connection.
+19:26:03.757 xcodebuild[94569:6425788] Initiating session with identifier: E9809C7D-18EF-4619-838D-1824DD9B48C1
+19:26:06.560 xcodebuild[94569:6426905] Got reply to session initiation request with identifier E9809C7D-18EF-4619-838D-1824DD9B48C1 (error: (null))
+19:26:07.533 xcodebuild[94569:6425748] Finished requesting crash reports. Continuing with testing.
+19:26:07.535 xcodebuild[94569:6425748] Launch session started.
+19:26:07.540 xcodebuild[94569:6426179] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> claim LaunchSessionClaim_0xc88818f00 on simulator was issued, 2 claims exist.
+19:26:07.543 xcodebuild[94569:6425789] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> claim LaunchSessionClaim_0xc88818f00 on simulator was issued, 2 claims exist.
+19:26:07.543 xcodebuild[94569:6425789] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Registered for sim device notification, got token 8
+19:26:07.543 xcodebuild[94569:6426179] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Unregistering for sim device notification with token 8
+19:26:07.564 xcodebuild[94569:6426179] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Installing app at path: /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLifeUITests-Runner.app and options: {
+    SkipWatchAppInstall = 1;
+}
+19:26:42.522 xcodebuild[94569:6426179] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Installed app at path: /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLifeUITests-Runner.app and options: {
+    SkipWatchAppInstall = 1;
+}
+19:26:42.524 xcodebuild[94569:6426179] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Launching app with identifier: LifeApp.OneLifeUITests.xctrunner and options: {
+    "activate_suspended" = 1;
+    arguments =     (
+    );
+    environment =     {
+        "APP_DISTRIBUTOR_ID_OVERRIDE" = "com.apple.AppStore";
+        "CA_ASSERT_MAIN_THREAD_TRANSACTIONS" = 0;
+        "CA_DEBUG_TRANSACTIONS" = 0;
+        "DYLD_FRAMEWORK_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks";
+        "DYLD_INSERT_LIBRARIES" = "/usr/lib/libRPAC.dylib:/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/usr/lib/libMainThreadChecker.dylib:/usr/lib/libRPAC.dylib";
+        "DYLD_LIBRARY_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib";
+        "LLVM_PROFILE_FILE" = "/var/folders/px/6gyvc02d4bl3cjr_nmqwp4f40000gn/T/LifeApp.OneLifeUITests.xctrunner/1711FB31-D463-4D0C-A0ED-3ECC9AEBD0D1-94569-0000062DDD2CA262/46FD8E40-8520-428F-9370-36C0274DA3A8-%p%c.profraw";
+        NSApplicationQuitWithoutSuddenTermination = YES;
+        NSUnbufferedIO = YES;
+        "OS_ACTIVITY_DT_MODE" = YES;
+        "PERFC_ENABLE_EXTENDED_DIAGNOSTIC_FORMAT" = 1;
+        "PERFC_ENABLE_PROFILE_MODE" = 1;
+        "PERFC_RESET_INSERT_LIBRARIES" = 1;
+        "PERFC_SUPPRESS_SYSTEM_REPORTS" = 1;
+        "RUN_DESTINATION_DEVICE_NAME" = "Clone 1 of iPhone 17 Pro";
+        "RUN_DESTINATION_DEVICE_PLATFORM_IDENTIFIER" = "com.apple.platform.iphonesimulator";
+        "RUN_DESTINATION_DEVICE_UDID" = "E8B6BC0F-E421-447C-9C63-FAFE962C60B4";
+        "SQLITE_ENABLE_THREAD_ASSERTIONS" = 1;
+        "SWIFT_BACKTRACE" = "enable=no";
+        TERM = dumb;
+        "XCODE_SCHEME_NAME" = OneLife;
+        "XCODE_TEST_PLAN_NAME" = OneLife;
+        XCTestBundleInjectPath = "/usr/lib/libRPAC.dylib:/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/usr/lib/libMainThreadChecker.dylib:/usr/lib/libRPAC.dylib";
+        XCTestBundlePath = "PlugIns/OneLifeUITests.xctest";
+        XCTestConfigurationFilePath = "";
+        XCTestSessionIdentifier = "E9809C7D-18EF-4619-838D-1824DD9B48C1";
+        "__XCODE_BUILT_PRODUCTS_DIR_PATHS" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+        "__XPC_DYLD_FRAMEWORK_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+        "__XPC_DYLD_LIBRARY_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+        "__XPC_LLVM_PROFILE_FILE" = "/var/folders/px/6gyvc02d4bl3cjr_nmqwp4f40000gn/T/LifeApp.OneLifeUITests.xctrunner/1711FB31-D463-4D0C-A0ED-3ECC9AEBD0D1-94569-0000062DDD2CA262/46FD8E40-8520-428F-9370-36C0274DA3A8-%p%c.profraw";
+    };
+    stderr = "/dev/ttys002";
+    stdout = "/dev/ttys002";
+    "terminate_running_process" = 1;
+    "wait_for_debugger" = 1;
+}
+19:26:56.308 xcodebuild[94569:6425789] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Launched app with identifier: LifeApp.OneLifeUITests.xctrunner (pid = 95349)
+19:26:56.317 xcodebuild[94569:6425789] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> tracking pid 95349
+19:26:56.318 xcodebuild[94569:6425789] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> checking to see if pid 95349 is valid: kill(pid, 0) = 0 (YES, it's still running)
+19:26:56.327 xcodebuild[94569:6433573] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Registered for sim device notification, got token 10
+19:26:56.327 xcodebuild[94569:6433576] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Unregistering for sim device notification with token 10
+19:26:58.941 xcodebuild[94569:6425748] Test process runnable PID is 95349.
+19:26:58.941 xcodebuild[94569:6425789] XCTHTestOperationStateMachine: Transitioning from state Initial to AcquiredPID
+2026-05-18 19:26:59.372482-0600 OneLifeUITests-Runner[95349:6433571] [Default] Running tests...
+19:26:59.753 xcodebuild[94569:6425789] Handling proxy channel request from test runner
+19:26:59.752 OneLifeUITests-Runner[95349:6433571] Creating future for 'requesting test configuration' with timeout 600.00
+19:26:59.752 OneLifeUITests-Runner[95349:6433571] Notifying test runner ready
+19:26:59.758 xcodebuild[94569:6425789] Test runner is ready with capabilities: <XCTCapabilities: 0xc89d8cc30>: {
+    "delayed attachment transfer" = 1;
+    "fetch all test identifiers" = 2;
+    "ubiquitous test identifiers" = 1;
+}
+19:26:59.763 xcodebuild[94569:6425748] Test runner session successfully initiated.
+19:26:59.763 xcodebuild[94569:6425748] Authorizing test process ID 95349
+19:26:59.763 xcodebuild[94569:6426179] XCTHTestOperationStateMachine: Transitioning from state AcquiredPID to ReportedReady
+19:26:59.752 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10705e550> entering wait loop for 600.00s with expectations: `requesting test configuration`
+19:26:59.769 xcodebuild[94569:6425748] Got authorization response from test daemon: Success
+19:26:59.770 xcodebuild[94569:6425748] Registering/updating daemon-based crash report observer for process names (
+    xctest,
+    debugserver,
+    FrontBoard,
+    assertiond,
+    runningboardd,
+    SpringBoard,
+    testmanagerd,
+    backboardd,
+    DTServiceHub,
+    OneLife,
+    "OneLifeUITests-Runner",
+    OneLifeUITests
+)
+19:26:59.772 xcodebuild[94569:6425748] Telling test runner to start executing tests.
+19:26:59.772 OneLifeUITests-Runner[95349:6433898] Received test runner ready reply. Waiting for request to start running tests.
+19:26:59.772 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10705e550>
+19:26:59.773 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f4340> completed after 0.021s
+19:26:59.773 OneLifeUITests-Runner[95349:6433898] _IDE_startExecutingTestPlanWithProtocolVersion:36
+19:26:59.773 OneLifeUITests-Runner[95349:6433571] cleaning up requesting test configuration
+19:26:59.773 OneLifeUITests-Runner[95349:6433571] Loading test bundle at: file:///Users/justinjeffery/Library/Developer/XCTestDevices/E8B6BC0F-E421-447C-9C63-FAFE962C60B4/data/Containers/Bundle/Application/1E04602A-70A0-4451-9255-BCEED2A22A56/OneLifeUITests-Runner.app/PlugIns/OneLifeUITests.xctest/
+19:26:59.798 OneLifeUITests-Runner[95349:6433571] Finished loading test bundle
+19:26:59.799 OneLifeUITests-Runner[95349:6433571] Interop: not enabled, so skipping install
+19:26:59.799 OneLifeUITests-Runner[95349:6433571] Registering in-process symbolication service with image names: OneLife, OneLifeUITests, OneLifeTests, OneLifeUITests-Runner
+19:26:59.799 OneLifeUITests-Runner[95349:6433571] Running tests with active test configuration: <XCTestConfiguration: 0x1073ac480>
+	                  testBundleURL:file:///Users/justinjeffery/Library/Developer/XCTestDevices/E8B6BC0F-E421-447C-9C63-FAFE962C60B4/data/Containers/Bundle/Application/1E04602A-70A0-4451-9255-BCEED2A22A56/OneLifeUITests-Runner.app/PlugIns/OneLifeUITests.xctest/
+	         testBundleRelativePath:PlugIns/OneLifeUITests.xctest
+	              productModuleName:OneLifeUITests
+	                  testSelection:<XCTTestSelection: 0x10705f630>
+	            identifiersToRun:(null)
+	            identifiersToSkip:
+	            tagsToRun:(null)
+	            tagsToSkip:<XCTTagSelection: 0x1073d5760>
+	            mode:and
+	            tags:{(
+)}
+	  includeXCTests:NO
+
+
+	             reportResultsToIDE:YES
+	               testsDrivenByIDE:YES
+	inProcessParallelizationEnabled:YES
+	              sessionIdentifier:E9809C7D-18EF-4619-838D-1824DD9B48C1
+	      disablePerformanceMetrics:NO
+	treatMissingBaselinesAsFailures:NO
+	                baselineFileURL:(null)
+	       baselineFileRelativePath:(null)
+	          targetApplicationPath:/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app
+	      targetApplicationBundleID:LifeApp.OneLife
+	 testApplicationDependencies:
+{
+    "LifeApp.OneLife" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app";
+    "LifeApp.OneLifeUITests.xctrunner" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLifeUITests-Runner.app";
+}
+	 bundleIDsForCrashReportEmphasis:
+{(
+    "LifeApp.OneLifeTests",
+    "LifeApp.OneLifeUITests",
+    "LifeApp.OneLife"
+)}
+	 testApplicationUserOverrides:(null)
+	     targetApplicationArguments:
+	   targetApplicationEnvironment:
+{
+    "APP_DISTRIBUTOR_ID_OVERRIDE" = "com.apple.AppStore";
+    "DYLD_FRAMEWORK_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+    "DYLD_LIBRARY_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+    "XCODE_SCHEME_NAME" = OneLife;
+    "XCODE_TEST_PLAN_NAME" = OneLife;
+    "__XCODE_BUILT_PRODUCTS_DIR_PATHS" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+    "__XPC_DYLD_FRAMEWORK_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+    "__XPC_DYLD_LIBRARY_PATH" = "/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator";
+}
+	                  reportActivities:YES
+	          testsMustRunOnMainThread:YES
+	            initializeForUITesting:YES
+	            traceCollectionEnabled:(null)
+	 enablePerformanceTestsDiagnostics:(null)
+	 aggregateStatisticsBeforeCrash:
+{
+    XCSuiteRecordsKey =     {
+    };
+}
+	        automationFrameworkPath:/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework
+	                     emitOSLogs:NO
+	       systemAttachmentLifetime:deleteOnSuccess
+	         userAttachmentLifetime:deleteOnSuccess
+	   preferredScreenCaptureFormat:screenRecording
+	   gatherLocalizableStringsData:NO
+	          testExecutionOrdering:alphabetical
+	    randomExecutionOrderingSeed:(null)
+	               repetitionPolicy:<XCTRepetitionPolicy: 0x1073d56e0>
+	            mode:None
+	            maximumIterations:1
+	            repeatInNewRunnerProcess:NO
+
+	       runtimeDiagnosticsPolicy:<XCTRuntimeDiagnosticsPolicy: 0x10705e9d0>
+	            otherRuntimeIssuesDetectionPolicy:<XCTRuntimeIssueDetectionPolicy: 0x1073d5700>
+	            detectionEnabled:YES
+	            severity:warning
+
+	            threadPerformanceCheckerRuntimeIssueDetectionPolicy:<XCTRuntimeIssueDetectionPolicy: 0x1073d5700>
+	            detectionEnabled:YES
+	            severity:warning
+
+	            mainThreadCheckerDetectionPolicy:<XCTRuntimeIssueDetectionPolicy: 0x1073d5700>
+	            detectionEnabled:YES
+	            severity:warning
+
+	            checkedAllocations:disabled
+
+	            testTimeoutsEnabled:NO
+	              leaksCheckingMode:off
+	 defaultTestExecutionTimeAllowance:600
+	 maximumTestExecutionTimeAllowance:0
+	                IDECapabilities:<XCTCapabilities: 0x1072c1140>: {
+    "XCTIssue capability" = 1;
+    "daemon container sandbox extension" = 1;
+    "delayed attachment transfer" = 1;
+    "expected failure test capability" = 1;
+    "in-process test parallelization capability" = 1;
+    "request diagnostics for specific devices" = 1;
+    "runner plan" = 1;
+    "skipped suite capability" = 1;
+    "skipped test capability" = 1;
+    "test case run configurations" = 1;
+    "test iterations" = 2;
+    "test timeout capability" = 1;
+    traits = 1;
+    "ubiquitous test identifiers" = 1;
+    "unified issue recorded" = 1;
+}
+	        symbolicationImageNames:OneLife, OneLifeUITests, OneLifeTests, OneLifeUITests-Runner
+	         applicationBundleInfos:
+{
+    "LifeApp.OneLife" = "<XCTApplicationBundleInfo localizations:[en] infoDictionary:[UISupportedInterfaceOrientations~ipad: (\n    UIInterfaceOrientationPortrait,\n    UIInterfaceOrientationPortraitUpsideDown,\n    UIInterfaceOrientationLandscapeLeft,\n    UIInterfaceOrientationLandscapeRight\n), UISupportedInterfaceOrientations~iphone: (\n    UIInterfaceOrientationPortrait,\n    UIInterfaceOrientationLandscapeLeft,\n    UIInterfaceOrientationLandscapeRight\n)]>";
+    "LifeApp.OneLifeUITests.xctrunner" = "<XCTApplicationBundleInfo localizations:[en] infoDictionary:[UISupportedInterfaceOrientations~ipad: (\n    UIInterfaceOrientationPortrait,\n    UIInterfaceOrientationPortraitUpsideDown,\n    UIInterfaceOrientationLandscapeLeft,\n    UIInterfaceOrientationLandscapeRight\n), UISupportedInterfaceOrientations: (\n    UIInterfaceOrientationPortrait,\n    UIInterfaceOrientationLandscapeLeft,\n    UIInterfaceOrientationLandscapeRight\n)]>";
+}
+
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10705ebe0> entering wait loop for 600.00s with expectations: `requesting ready for testing`
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10705ebe0>
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f4740> completed after 0.000s
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] cleaning up requesting ready for testing
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10705e310> entering wait loop for 600.00s with expectations: `IDE proxy`
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10705e310>
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f4880> completed after 0.000s
+19:26:59.800 OneLifeUITests-Runner[95349:6433571] cleaning up IDE proxy
+19:26:59.801 OneLifeUITests-Runner[95349:6433571] Initializing for UI testing.
+19:26:59.802 OneLifeUITests-Runner[95349:6433571] Linked XCTAutomationSupport.framework from /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework/XCTAutomationSupport, built with Xcode 2640(17E186), modified on Tuesday, March 17, 2026 at 1:15:00 AM Mountain Daylight Time, bundle version: 24833
+19:26:59.803 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x107300e40> entering wait loop for 60.00s with expectations: `initiating daemon session`
+19:26:59.803 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x107300e40>
+19:26:59.803 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f4a80> completed after 0.000s
+19:26:59.803 OneLifeUITests-Runner[95349:6433571] cleaning up initiating daemon session
+19:26:59.803 OneLifeUITests-Runner[95349:6433571] Creating future for 'enabling automation mode' with timeout 60.00
+19:26:59.803 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x107303c30> entering wait loop for 60.00s with expectations: `enabling automation mode`
+19:26:59.806 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x107303c30>
+19:26:59.806 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f4c40> completed after 0.003s
+19:26:59.806 OneLifeUITests-Runner[95349:6433571] cleaning up enabling automation mode
+19:26:59.806 OneLifeUITests-Runner[95349:6433571] Creating future for 'loading Accessibility' with timeout 70.00
+19:26:59.806 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a034270> entering wait loop for 70.00s with expectations: `loading Accessibility`
+objc[95349]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10b6b4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10b0e0398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+19:27:09.012 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a034270>
+19:27:09.012 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f4d80> completed after 9.206s
+19:27:09.012 OneLifeUITests-Runner[95349:6433571] cleaning up loading Accessibility
+19:27:09.012 OneLifeUITests-Runner[95349:6433571] Creating future for 'enabling localized string gathering' with timeout 70.00
+19:27:09.013 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b3a50> entering wait loop for 70.00s with expectations: `enabling localized string gathering`
+19:27:09.025 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b3a50>
+19:27:09.025 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f5b00> completed after 0.013s
+19:27:09.026 OneLifeUITests-Runner[95349:6433571] cleaning up enabling localized string gathering
+19:27:09.025 OneLifeUITests-Runner[95349:6433897] -[XCTRunnerDaemonSession(XCTMessagingRole_UIApplicationStateUpdating) _XCT_applicationDidUpdateState:] LifeApp.OneLifeUITests.xctrunner@/Users/justinjeffery/Library/Developer/XCTestDevices/E8B6BC0F-E421-447C-9C63-FAFE962C60B4/data/Containers/Bundle/Application/1E04602A-70A0-4451-9255-BCEED2A22A56/OneLifeUITests-Runner.app processName: OneLifeUITests- pid: 95349 state: running background
+19:27:09.027 OneLifeUITests-Runner[95349:6433571] Creating future for 'setting AX timeout to 60.00s' with timeout 65.00
+19:27:09.027 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b2af0> entering wait loop for 65.00s with expectations: `setting AX timeout to 60.00s`
+19:27:09.027 OneLifeUITests-Runner[95349:6433571] [AM:0] Processing state snapshot LifeApp.OneLifeUITests.xctrunner@/Users/justinjeffery/Library/Developer/XCTestDevices/E8B6BC0F-E421-447C-9C63-FAFE962C60B4/data/Containers/Bundle/Application/1E04602A-70A0-4451-9255-BCEED2A22A56/OneLifeUITests-Runner.app processName: OneLifeUITests- pid: 95349 state: running background
+19:27:09.028 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b2af0>
+19:27:09.028 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f4d80> completed after 0.001s
+19:27:09.028 OneLifeUITests-Runner[95349:6433571] cleaning up setting AX timeout to 60.00s
+19:27:09.028 OneLifeUITests-Runner[95349:6433571] Creating future for 'registering for kAXUserTestingNotification' with timeout 65.00
+19:27:09.029 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b3030> entering wait loop for 65.00s with expectations: `registering for kAXUserTestingNotification`
+19:27:09.029 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b3030>
+19:27:09.029 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f5ac0> completed after 0.001s
+19:27:09.029 OneLifeUITests-Runner[95349:6433571] cleaning up registering for kAXUserTestingNotification
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] Creating future for 'registering for kAXAlertNotification' with timeout 65.00
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b3ea0> entering wait loop for 65.00s with expectations: `registering for kAXAlertNotification`
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b3ea0>
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f5f00> completed after 0.000s
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] cleaning up registering for kAXAlertNotification
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] Creating future for 'registering for kAXPidStatusChangedNotification' with timeout 65.00
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b3540> entering wait loop for 65.00s with expectations: `registering for kAXPidStatusChangedNotification`
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b3540>
+19:27:09.030 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f6040> completed after 0.000s
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] cleaning up registering for kAXPidStatusChangedNotification
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] Creating future for 'registering for AXNotification 3031' with timeout 65.00
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b3720> entering wait loop for 65.00s with expectations: `registering for AXNotification 3031`
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b3720>
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f60c0> completed after 0.000s
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] cleaning up registering for AXNotification 3031
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] Creating future for 'requesting background assertion for test process' with timeout 30.00
+19:27:09.031 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b3210> entering wait loop for 30.00s with expectations: `requesting background assertion for test process`
+19:27:09.032 OneLifeUITests-Runner[95349:6433898] Got reply for background assertion for 95349, acquired: YES.
+19:27:09.032 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b3210>
+19:27:09.032 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f61c0> completed after 0.001s
+19:27:09.032 OneLifeUITests-Runner[95349:6433571] cleaning up requesting background assertion for test process
+19:27:09.032 OneLifeUITests-Runner[95349:6433571] Test runner is already executing in the background.
+19:27:09.032 OneLifeUITests-Runner[95349:6433571] Done initializing for UI testing.
+19:27:09.033 xcodebuild[94569:6425748] Test runner began initialization for UI testing.
+19:27:09.037 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'hasFinished' of <XCTFuture: 0x107338720> to be '1': fulfill=NO
+19:27:09.037 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'hasFinished' of <XCTFuture: 0x107338720> to be '1': fulfill=NO
+19:27:09.038 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a2b34e0> entering wait loop for 590.34s with expectations: `Expect value of 'hasFinished' of <XCTFuture: 0x107338720> to be '1'`
+19:27:09.071 OneLifeUITests-Runner[95349:6433897] Returning result XCTWaiterResultCompleted for asynchronous waiter <XCTWaiter: 0x1073004b0>
+19:27:09.071 OneLifeUITests-Runner[95349:6433897] Wait <XCTWaiterWait: 0x1073f4500> completed after 9.298s
+19:27:09.072 OneLifeUITests-Runner[95349:6433897] cleaning up preparing execution worker
+19:27:09.073 OneLifeUITests-Runner[95349:6433897] KVO change: checked status of Expect value of 'hasFinished' of <XCTFuture: 0x107338720> to be '1': fulfill=YES
+19:27:09.073 OneLifeUITests-Runner[95349:6433897] Test driver received request to enumerate tests with options: XCTTestEnumerationOptions(includeAllTestIdentifiers: false, includeParallelizableTestIdentifierGroups: true
+19:27:09.073 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a2b34e0>
+19:27:09.073 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f6480> completed after 0.036s
+19:27:09.073 OneLifeUITests-Runner[95349:6433571] cleaning up Expect value of 'hasFinished' of <XCTFuture: 0x107338720> to be '1'
+19:27:09.074 OneLifeUITests-Runner[95349:6433571] cleaning up Expect value of 'hasFinished' of <XCTFuture: 0x107338720> to be '1'
+19:27:09.074 OneLifeUITests-Runner[95349:6433571] Secondary wait on future result returned XCTWaiterResultCompleted
+19:27:09.083 xcodebuild[94569:6425748] Test runner started executing tests.
+19:27:09.074 OneLifeUITests-Runner[95349:6433571] Entering test execution event loop
+19:27:09.084 xcodebuild[94569:6426179] XCTHTestOperationStateMachine: Transitioning from state ReportedReady to ExecutingTests
+19:27:09.326 OneLifeUITests-Runner[95349:6433902] Handling AXNotification 3031
+19:27:09.619 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a037db0> entering indefinite wait loop for expectations: `XCTAsyncEnumerateWithWaiter(<XCTest.SwiftTestingExecutionExtension: 0x10a373980>)`
+19:27:09.619 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a037db0>
+19:27:09.619 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f7740> completed after 0.000s
+19:27:09.619 OneLifeUITests-Runner[95349:6433571] cleaning up XCTAsyncEnumerateWithWaiter(<XCTest.SwiftTestingExecutionExtension: 0x10a373980>)
+19:27:09.619 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a037db0> entering indefinite wait loop for expectations: `XCTAsyncEnumerateWithWaiter(<XCTTestRunSession: 0x10a2c9620>)`
+19:27:09.620 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a037db0>
+19:27:09.620 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f7600> completed after 0.000s
+19:27:09.620 OneLifeUITests-Runner[95349:6433571] cleaning up XCTAsyncEnumerateWithWaiter(<XCTTestRunSession: 0x10a2c9620>)
+19:27:09.628 OneLifeUITests-Runner[95349:6433898] LOCAL HARNESS CI STATE: none
+19:27:09.628 OneLifeUITests-Runner[95349:6433898] Test driver received request to execute test identifiers <XCTTestIdentifier container, class ["OneLifeUITests"]> and skip test identifiers 
+19:27:09.652 OneLifeUITests-Runner[95349:6433571] Setting a new interop record handler: Optional(XCTestCore.XCTestInteropRecordHandler())
+19:27:09.652 OneLifeUITests-Runner[95349:6433571] -[XCTRunnerIDESession(_XCTestObservationInternal) testBundleWillStart:]
+19:27:09.654 OneLifeUITests-Runner[95349:6433571] -[XCTRunnerIDESession(_XCTestObservationInternal) testSuiteWillStart:]
+19:27:09.655 xcodebuild[94569:6425748] _XCT_testSuiteWithIdentifier:<XCTTestIdentifier container, class ["OneLifeUITests"]> didStartAt:2026-05-19 01:27:09 +0000 traits:(null)
+19:27:09.657 xcodebuild[94569:6425748] Nothing to delete
+Test Suite 'OneLifeUITests' started at 2026-05-18 19:27:09.654.
+Test Case '-[OneLifeUITests.OneLifeUITests testAdultCareerAndFinanceDrilldownsOpen]' started.
+19:27:09.655 OneLifeUITests-Runner[95349:6433571] -[XCTRuntimeIssueDetectionManager runtimeIssueDetectionEnabled] runtimeIssueDetectionEnabled based on XCTDisableRuntimeIssues and runtime diagnostics policies: YES
+19:27:09.667 xcodebuild[94569:6425748] Nothing to delete
+    t =     0.00s Start Test at 2026-05-18 19:27:09.656
+19:27:09.656 OneLifeUITests-Runner[95349:6433571] -[XCTRunnerIDESession(_XCTestObservationInternal) testCaseWillStart:] OneLifeUITests.OneLifeUITests testAdultCareerAndFinanceDrilldownsOpen
+19:27:09.667 xcodebuild[94569:6425748] _XCT_testCaseDidStartWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]>testCaseRunConfiguration:<XCTestCaseRunConfiguration: 0xc888bf920>traits:(null)
+19:27:09.668 xcodebuild[94569:6425748] Test case did start: <XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]>
+19:27:09.668 xcodebuild[94569:6425748] Nothing to delete
+19:27:09.656 OneLifeUITests-Runner[95349:6433571] <XCTContext: 0x10a286030> started activity <XCActivityRecord: 0x10a2b71e0> 2026-05-19 01:27:09 +0000: Start Test at 2026-05-18 19:27:09.656
+19:27:09.668 xcodebuild[94569:6425748] _XCT_testCaseWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]> willStartActivity:<XCActivityRecord: 0xc887ee680> 2026-05-19 01:27:09 +0000: Start Test at 2026-05-18 19:27:09.656
+19:27:09.669 xcodebuild[94569:6425748] Nothing to delete
+19:27:09.657 OneLifeUITests-Runner[95349:6433571] Creating future for 'requesting to start screen recording' with timeout 30.00
+19:27:09.658 OneLifeUITests-Runner[95349:6433571] Starting diagnostic screen recording.
+19:27:09.658 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a0344b0> entering wait loop for 30.00s with expectations: `requesting to start screen recording`
+19:27:09.678 xcodebuild[94569:6425748] Nothing to delete
+19:27:09.679 xcodebuild[94569:6425748] Nothing to delete
+19:27:10.823 OneLifeUITests-Runner[95349:6433898] Handling kAXPidStatusChangedNotification
+19:27:10.823 OneLifeUITests-Runner[95349:6433898] Got kAXPidStatusChangedNotification for pid 95344: active
+19:27:10.862 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95344, caching
+19:27:21.751 OneLifeUITests-Runner[95349:6433897] Handling kAXPidStatusChangedNotification
+19:27:21.752 OneLifeUITests-Runner[95349:6433897] Got kAXPidStatusChangedNotification for pid 95343: active
+19:27:21.849 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95343, caching
+19:27:32.852 OneLifeUITests-Runner[95349:6433895] Handling kAXPidStatusChangedNotification
+19:27:32.853 OneLifeUITests-Runner[95349:6433895] Got kAXPidStatusChangedNotification for pid 95343: active
+19:27:32.857 OneLifeUITests-Runner[95349:6433895] Handling kAXPidStatusChangedNotification
+19:27:32.858 OneLifeUITests-Runner[95349:6433895] Got kAXPidStatusChangedNotification for pid 95343: active
+19:27:32.955 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95343, caching
+19:27:32.955 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95343, caching
+19:27:35.140 OneLifeUITests-Runner[95349:6433901] Handling AXNotification 3031
+19:27:39.675 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a0344b0> reporting timed out failure with requesting to start screen recording
+19:27:39.676 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultTimedOut for synchronous waiter <XCTWaiter: 0x10a0344b0>
+19:27:39.676 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f6940> completed after 30.018s
+19:27:39.676 OneLifeUITests-Runner[95349:6433571] cleaning up requesting to start screen recording
+19:27:39.678 OneLifeUITests-Runner[95349:6433571] Creating future for 'getting screen identifiers' with timeout 30.00
+19:27:39.679 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a036820> entering wait loop for 30.00s with expectations: `getting screen identifiers`
+19:27:39.679 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a036820>
+19:27:39.679 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f6b40> completed after 0.000s
+19:27:39.679 OneLifeUITests-Runner[95349:6433571] cleaning up getting screen identifiers
+19:27:39.683 OneLifeUITests-Runner[95349:6433571] Using system-provided user default for systemScreenshotUniformTypeIdentifier 'public.jpeg'
+19:27:39.683 OneLifeUITests-Runner[95349:6433571] Using system-provided user default for systemScreenshotCompressionQuality '0.700000'
+19:27:39.683 OneLifeUITests-Runner[95349:6433571] Request screenshot: screenID '1', encoding 'Encoding(uniformTypeIdentifier: public.jpeg, compressionQuality: 0.700000)'
+19:27:39.684 OneLifeUITests-Runner[95349:6433571] Creating future for 'requesting screenshot' with timeout 30.00
+19:27:39.688 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a036580> entering wait loop for 30.00s with expectations: `requesting screenshot`
+19:27:41.050 OneLifeUITests-Runner[95349:6433895] Handling kAXPidStatusChangedNotification
+19:27:41.053 OneLifeUITests-Runner[95349:6433895] Got kAXPidStatusChangedNotification for pid 95324: active
+19:27:41.132 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95324, caching
+19:27:42.039 OneLifeUITests-Runner[95349:6433895] Handling kAXPidStatusChangedNotification
+19:27:42.039 OneLifeUITests-Runner[95349:6433895] Got kAXPidStatusChangedNotification for pid 95717: active
+19:27:42.068 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95717, caching
+19:27:48.806 OneLifeUITests-Runner[95349:6433901] Handling kAXPidStatusChangedNotification
+19:27:48.806 OneLifeUITests-Runner[95349:6433901] Got kAXPidStatusChangedNotification for pid 95343: active
+19:27:48.902 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95343, caching
+19:27:59.043 OneLifeUITests-Runner[95349:6433901] Handling kAXPidStatusChangedNotification
+19:27:59.043 OneLifeUITests-Runner[95349:6433901] Got kAXPidStatusChangedNotification for pid 94917: active
+19:27:59.138 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 94917, caching
+19:27:59.254 OneLifeUITests-Runner[95349:6433901] Handling kAXPidStatusChangedNotification
+19:27:59.254 OneLifeUITests-Runner[95349:6433901] Got kAXPidStatusChangedNotification for pid 95324: active
+19:27:59.363 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95324, caching
+19:28:01.839 OneLifeUITests-Runner[95349:6433901] Handling kAXPidStatusChangedNotification
+19:28:01.839 OneLifeUITests-Runner[95349:6433901] Got kAXPidStatusChangedNotification for pid 95044: active
+19:28:01.865 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95044, caching
+19:28:02.427 OneLifeUITests-Runner[95349:6433895] Handling kAXPidStatusChangedNotification
+19:28:02.427 OneLifeUITests-Runner[95349:6433895] Got kAXPidStatusChangedNotification for pid 95744: active
+19:28:02.517 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95744, caching
+19:28:04.973 OneLifeUITests-Runner[95349:6433895] Handling kAXPidStatusChangedNotification
+19:28:04.974 OneLifeUITests-Runner[95349:6433895] Got kAXPidStatusChangedNotification for pid 95283: active
+19:28:05.044 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95283, caching
+19:28:07.768 OneLifeUITests-Runner[95349:6433895] Handling kAXPidStatusChangedNotification
+19:28:07.768 OneLifeUITests-Runner[95349:6433895] Got kAXPidStatusChangedNotification for pid 95344: active
+19:28:07.865 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95344, caching
+19:28:09.726 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a036580> reporting timed out failure with requesting screenshot
+19:28:09.727 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultTimedOut for synchronous waiter <XCTWaiter: 0x10a036580>
+19:28:09.727 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f7e80> completed after 30.039s
+19:28:09.728 OneLifeUITests-Runner[95349:6433571] cleaning up requesting screenshot
+19:28:09.733 OneLifeUITests-Runner[95349:6433571] <XCTContext: 0x10a286030> finished activity <XCActivityRecord: 0x10a2b71e0> 2026-05-19 01:27:09 +0000: Start Test at 2026-05-18 19:27:09.656 (60.0753s)
+    t =    60.09s Set Up
+    t =    60.09s     Setting device orientation to Portrait
+19:28:09.764 xcodebuild[94569:6425748] _XCT_testCaseWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]> didFinishActivity:<XCActivityRecord: 0xc887ef6b0> 2026-05-19 01:27:09 +0000: Start Test at 2026-05-18 19:27:09.656 (60.0753s)
+19:28:09.772 xcodebuild[94569:6425748] Nothing to delete
+19:28:09.742 OneLifeUITests-Runner[95349:6433571] <XCTContext: 0x10a286030> started activity <XCActivityRecord: 0x10a2b71e0> 2026-05-19 01:28:09 +0000: Set Up
+19:28:09.773 xcodebuild[94569:6425748] _XCT_testCaseWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]> willStartActivity:<XCActivityRecord: 0xc86a889a0> 2026-05-19 01:28:09 +0000: Set Up
+19:28:09.776 xcodebuild[94569:6425748] Nothing to delete
+19:28:09.745 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a036970> entering indefinite wait loop for expectations: `failable invocation block completion`
+19:28:09.745 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a036970>
+19:28:09.745 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f6cc0> completed after 0.000s
+19:28:09.745 OneLifeUITests-Runner[95349:6433571] cleaning up failable invocation block completion
+19:28:09.749 OneLifeUITests-Runner[95349:6433571] <XCTContext: 0x1072a4e60> started activity <XCActivityRecord: 0x10a2b6df0> 2026-05-19 01:28:09 +0000: Setting device orientation to Portrait
+19:28:09.776 xcodebuild[94569:6425748] _XCT_testCaseWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]> willStartActivity:<XCActivityRecord: 0xc86a88a10> 2026-05-19 01:28:09 +0000: Setting device orientation to Portrait
+19:28:09.776 xcodebuild[94569:6425748] Nothing to delete
+19:28:09.749 OneLifeUITests-Runner[95349:6433571] Creating future for 'getting screen identifiers' with timeout 30.00
+19:28:09.749 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a034720> entering wait loop for 30.00s with expectations: `getting screen identifiers`
+19:28:09.749 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a034720>
+19:28:09.750 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f6e40> completed after 0.000s
+19:28:09.750 OneLifeUITests-Runner[95349:6433571] cleaning up getting screen identifiers
+19:28:09.757 OneLifeUITests-Runner[95349:6433571] Request screenshot: screenID '1', encoding 'Encoding(uniformTypeIdentifier: public.jpeg, compressionQuality: 0.700000)'
+19:28:09.757 OneLifeUITests-Runner[95349:6433571] Creating future for 'requesting screenshot' with timeout 30.00
+19:28:09.758 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a036340> entering wait loop for 30.00s with expectations: `requesting screenshot`
+19:28:38.568 OneLifeUITests-Runner[95349:6439819] Handling kAXPidStatusChangedNotification
+19:28:38.571 OneLifeUITests-Runner[95349:6439819] Got kAXPidStatusChangedNotification for pid 95344: active
+19:28:38.662 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95344, caching
+19:28:39.778 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a036340> reporting timed out failure with requesting screenshot
+19:28:39.778 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultTimedOut for synchronous waiter <XCTWaiter: 0x10a036340>
+19:28:39.778 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f6f40> completed after 30.020s
+19:28:39.778 OneLifeUITests-Runner[95349:6433571] cleaning up requesting screenshot
+19:28:39.778 OneLifeUITests-Runner[95349:6433571] Creating future for 'setting device orientation to Portrait' with timeout 30.00
+19:28:39.778 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a034720> entering wait loop for 30.00s with expectations: `setting device orientation to Portrait`
+19:28:39.789 OneLifeUITests-Runner[95349:6433571] <XCTContext: 0x1072a4e60> started activity <XCActivityRecord: 0x10a2b6ae0> 2026-05-19 01:28:39 +0000: Device orientation changed to Portrait
+    t =    90.13s         Device orientation changed to Portrait
+19:28:39.792 xcodebuild[94569:6425748] _XCT_testCaseWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]> willStartActivity:<XCActivityRecord: 0xc86a88a80> 2026-05-19 01:28:39 +0000: Device orientation changed to Portrait
+19:28:39.793 xcodebuild[94569:6425748] Nothing to delete
+19:28:39.791 OneLifeUITests-Runner[95349:6433571] <XCTContext: 0x1072a4e60> finished activity <XCActivityRecord: 0x10a2b6ae0> 2026-05-19 01:28:39 +0000: Device orientation changed to Portrait (0.00181496s)
+19:28:39.793 xcodebuild[94569:6425748] _XCT_testCaseWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]> didFinishActivity:<XCActivityRecord: 0xc86a88af0> 2026-05-19 01:28:39 +0000: Device orientation changed to Portrait (0.00181496s)
+19:28:39.793 xcodebuild[94569:6425748] Nothing to delete
+19:28:39.792 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a034720>
+19:28:39.793 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f51c0> completed after 0.014s
+19:28:39.793 OneLifeUITests-Runner[95349:6433571] cleaning up setting device orientation to Portrait
+19:28:39.793 OneLifeUITests-Runner[95349:6433571] Creating future for 'fetching attributes 'XC_kAXXCAttributeSystemAppApplication' for Device system-wide element' with timeout 65.00
+19:28:39.793 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a035fb0> entering wait loop for 65.00s with expectations: `fetching attributes 'XC_kAXXCAttributeSystemAppApplication' for Device system-wide element`
+19:28:39.803 OneLifeUITests-Runner[95349:6433901] Got attribute fetch response with values {
+    "XC_kAXXCAttributeSystemAppApplication" = "AX element pid: 94994, elementOrHash.elementID: 0.1";
+}, error: (null)
+19:28:39.804 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a035fb0>
+19:28:39.804 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x1073f5000> completed after 0.011s
+19:28:39.804 OneLifeUITests-Runner[95349:6433571] cleaning up fetching attributes 'XC_kAXXCAttributeSystemAppApplication' for Device system-wide element
+19:28:39.804 OneLifeUITests-Runner[95349:6433571] Creating future for 'fetching attributes 'XC_kAXXCAttributeFocusedApplications' for AX element pid: 94994, elementOrHash.elementID: 0.1' with timeout 65.00
+19:28:39.805 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a035ec0> entering wait loop for 65.00s with expectations: `fetching attributes 'XC_kAXXCAttributeFocusedApplications' for AX element pid: 94994, elementOrHash.elementID: 0.1`
+19:28:39.871 OneLifeUITests-Runner[95349:6439819] Got attribute fetch response with values {
+    "XC_kAXXCAttributeFocusedApplications" =     (
+        "AX element pid: 94994, elementOrHash.elementID: 0.1"
+    );
+}, error: (null)
+19:28:39.871 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a035ec0>
+19:28:39.872 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x107063880> completed after 0.067s
+19:28:39.872 OneLifeUITests-Runner[95349:6433571] cleaning up fetching attributes 'XC_kAXXCAttributeFocusedApplications' for AX element pid: 94994, elementOrHash.elementID: 0.1
+19:28:39.872 OneLifeUITests-Runner[95349:6433571] Active application elements: (
+    "AX element pid: 94994, elementOrHash.elementID: 0.1"
+)
+19:28:39.872 OneLifeUITests-Runner[95349:6433571] Creating future for 'looking up application specifier for pid 94994' with timeout 30.00
+19:28:39.872 OneLifeUITests-Runner[95349:6433571] Requesting application specifier for pid 94994
+19:28:39.872 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x10a035d40> entering wait loop for 30.00s with expectations: `looking up application specifier for pid 94994`
+19:28:39.874 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x10a035d40>
+19:28:39.875 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x107063840> completed after 0.002s
+19:28:39.875 OneLifeUITests-Runner[95349:6433571] cleaning up looking up application specifier for pid 94994
+19:28:39.875 OneLifeUITests-Runner[95349:6433571] App specifier for pid 94994: <XCUIApplicationSpecifier: 0x10a2cb0a0> { com.apple.springboard }
+19:28:39.875 OneLifeUITests-Runner[95349:6433571] Error (com.apple.dt.xctest.ui-testing.error) 10100, userInfo keys: (null): Unknown application: 'com.apple.springboard'
+19:28:39.875 OneLifeUITests-Runner[95349:6433571] Error (com.apple.dt.xctest.ui-testing.error) 10100, userInfo keys: (null): Unknown application: 'com.apple.springboard'
+19:28:39.875 OneLifeUITests-Runner[95349:6433571] XCUIApplicationImplDepot: Creating XCUIApplicationImpl for identifier: com.apple.springboard
+19:28:39.877 OneLifeUITests-Runner[95349:6433571] updating com.apple.springboard crashBehavior to 1
+19:28:39.880 OneLifeUITests-Runner[95349:6439819] -[XCTRunnerDaemonSession(XCTMessagingRole_UIApplicationStateUpdating) _XCT_applicationDidUpdateState:] com.apple.springboard@/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/SpringBoard.app processName: SpringBoard pid: 94994 state: running foreground
+19:28:39.881 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=NO
+19:28:39.882 OneLifeUITests-Runner[95349:6439819] -[XCTRunnerDaemonSession(XCTMessagingRole_UIApplicationStateUpdating) _XCT_applicationDidUpdateState:] com.apple.springboard@/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/SpringBoard.app processName: SpringBoard pid: 94994 state: running foreground
+19:28:39.885 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=NO
+19:28:39.886 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x117a285d0> entering wait loop for 60.00s with expectations: `Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1'`
+19:28:39.886 OneLifeUITests-Runner[95349:6433571] [AM:0] Processing state snapshot com.apple.springboard@/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/SpringBoard.app processName: SpringBoard pid: 94994 state: running foreground
+19:28:39.886 OneLifeUITests-Runner[95349:6433571] <XCUIApplicationImpl: 0x10a100180 com.apple.springboard> changing currentProcess from (null) to com.apple.springboard (pid:0)
+19:28:39.887 OneLifeUITests-Runner[95349:6433901] -[XCTRunnerDaemonSession(XCTMessagingRole_UIApplicationStateUpdating) _XCT_applicationDidUpdateState:] com.apple.springboard@/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/SpringBoard.app processName: SpringBoard pid: 94994 state: running foreground
+19:28:39.888 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=NO
+19:28:39.888 OneLifeUITests-Runner[95349:6433571] Setting pid for 0x10a20dc00 0 -> 94994
+19:28:39.888 OneLifeUITests-Runner[95349:6433571] Done setting pid for <XCUIApplicationImpl: 0x10a100180 com.apple.springboard> to 94994
+19:28:39.888 OneLifeUITests-Runner[95349:6439819] com.apple.springboard (pid:0) pid 0 -> 94994
+19:28:39.888 OneLifeUITests-Runner[95349:6439819] com.apple.springboard (pid:0) checking for cached AX loaded value using pid 94994
+19:28:39.888 OneLifeUITests-Runner[95349:6433901] Monitor: set com.apple.springboard (pid:94994) for pid 94994
+19:28:39.889 OneLifeUITests-Runner[95349:6440497] com.apple.springboard (pid:94994) application state Unknown (0) -> Running Foreground (4)
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] App state updated for <XCUIApplicationImpl: 0x10a100180 com.apple.springboard>: Running Foreground (4)
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] [AM:0] Processing state snapshot com.apple.springboard@/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/SpringBoard.app processName: SpringBoard pid: 94994 state: running foreground
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] Done setting pid for <XCUIApplicationImpl: 0x10a100180 com.apple.springboard> to 94994
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.889 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] App state updated for <XCUIApplicationImpl: 0x10a100180 com.apple.springboard>: Running Foreground (4)
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] [AM:0] Processing state snapshot com.apple.springboard@/Library/Developer/CoreSimulator/Volumes/iOS_23E244/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreServices/SpringBoard.app processName: SpringBoard pid: 94994 state: running foreground
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] Done setting pid for <XCUIApplicationImpl: 0x10a100180 com.apple.springboard> to 94994
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] App state updated for <XCUIApplicationImpl: 0x10a100180 com.apple.springboard>: Running Foreground (4)
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] KVO change: checked status of Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1': fulfill=YES
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x117a285d0>
+19:28:39.890 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x10a100300> completed after 0.005s
+19:28:39.891 OneLifeUITests-Runner[95349:6433571] cleaning up Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1'
+19:28:39.891 OneLifeUITests-Runner[95349:6433571] cleaning up Expect value of 'isApplicationStateKnown' of Application 'com.apple.springboard' to be '1'
+19:28:39.891 OneLifeUITests-Runner[95349:6433571] <XCTContext: 0x1072a4e60> started activity <XCActivityRecord: 0x10a2b6ae0> 2026-05-19 01:28:39 +0000: Wait for com.apple.springboard to idle
+    t =    90.24s         Wait for com.apple.springboard to idle
+19:28:39.892 xcodebuild[94569:6425748] _XCT_testCaseWithIdentifier:<XCTTestIdentifier leaf, method, swift ["OneLifeUITests", "testAdultCareerAndFinanceDrilldownsOpen"]> willStartActivity:<XCActivityRecord: 0xc86a88a80> 2026-05-19 01:28:39 +0000: Wait for com.apple.springboard to idle
+19:28:39.892 xcodebuild[94569:6425748] Nothing to delete
+19:28:39.891 OneLifeUITests-Runner[95349:6433571] Creating future for 'getting screen identifiers' with timeout 30.00
+19:28:39.892 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x117a28210> entering wait loop for 30.00s with expectations: `getting screen identifiers`
+19:28:39.892 OneLifeUITests-Runner[95349:6433571] Returning result XCTWaiterResultCompleted for synchronous waiter <XCTWaiter: 0x117a28210>
+19:28:39.892 OneLifeUITests-Runner[95349:6433571] Wait <XCTWaiterWait: 0x10a100080> completed after 0.000s
+19:28:39.892 OneLifeUITests-Runner[95349:6433571] cleaning up getting screen identifiers
+19:28:39.892 OneLifeUITests-Runner[95349:6433571] Request screenshot: screenID '1', encoding 'Encoding(uniformTypeIdentifier: public.jpeg, compressionQuality: 0.700000)'
+19:28:39.892 OneLifeUITests-Runner[95349:6433571] Creating future for 'requesting screenshot' with timeout 30.00
+19:28:39.892 OneLifeUITests-Runner[95349:6433571] <XCTWaiter: 0x117a282d0> entering wait loop for 30.00s with expectations: `requesting screenshot`
+19:28:44.466 OneLifeUITests-Runner[95349:6440497] Handling kAXPidStatusChangedNotification
+19:28:44.472 OneLifeUITests-Runner[95349:6440497] Got kAXPidStatusChangedNotification for pid 95306: active
+19:28:44.477 OneLifeUITests-Runner[95349:6440497] Handling kAXPidStatusChangedNotification
+19:28:44.477 OneLifeUITests-Runner[95349:6440497] Got kAXPidStatusChangedNotification for pid 95335: active
+19:28:44.492 OneLifeUITests-Runner[95349:6440498] Handling kAXPidStatusChangedNotification
+19:28:44.492 OneLifeUITests-Runner[95349:6440498] Got kAXPidStatusChangedNotification for pid 95322: active
+19:28:44.521 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95306, caching
+19:28:44.526 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95335, caching
+19:28:44.526 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95322, caching
+19:28:44.549 OneLifeUITests-Runner[95349:6439819] Handling kAXPidStatusChangedNotification
+19:28:44.550 OneLifeUITests-Runner[95349:6439819] Got kAXPidStatusChangedNotification for pid 95006: active
+19:28:44.640 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95006, caching
+19:28:49.984 OneLifeUITests-Runner[95349:6440498] Handling kAXPidStatusChangedNotification
+19:28:49.984 OneLifeUITests-Runner[95349:6440498] Got kAXPidStatusChangedNotification for pid 95099: active
+19:28:50.069 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95099, caching
+19:28:50.430 OneLifeUITests-Runner[95349:6440498] Handling kAXPidStatusChangedNotification
+19:28:50.430 OneLifeUITests-Runner[95349:6440498] Got kAXPidStatusChangedNotification for pid 95275: active
+19:28:50.503 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95275, caching
+19:28:51.687 OneLifeUITests-Runner[95349:6440497] Handling kAXPidStatusChangedNotification
+19:28:51.687 OneLifeUITests-Runner[95349:6440497] Got kAXPidStatusChangedNotification for pid 96011: active
+19:28:51.715 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 96011, caching
+19:28:53.521 OneLifeUITests-Runner[95349:6433901] Handling kAXPidStatusChangedNotification
+19:28:53.521 OneLifeUITests-Runner[95349:6433901] Got kAXPidStatusChangedNotification for pid 95280: active
+19:28:53.591 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95280, caching
+19:28:58.808 OneLifeUITests-Runner[95349:6440497] Handling kAXPidStatusChangedNotification
+19:28:58.808 OneLifeUITests-Runner[95349:6440497] Got kAXPidStatusChangedNotification for pid 94808: active
+19:28:58.829 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 94808, caching
+19:28:59.180 OneLifeUITests-Runner[95349:6440497] Handling kAXPidStatusChangedNotification
+19:28:59.181 OneLifeUITests-Runner[95349:6440497] Got kAXPidStatusChangedNotification for pid 95180: active
+19:28:59.262 OneLifeUITests-Runner[95349:6433571] No application process found matching pid 95180, caching
+19:29:05.497 xcodebuild[94569:6425748] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+19:29:05.497 xcodebuild[94569:6425748] E8B6BC0F-E421-447C-9C63-FAFE962C60B4: Received sim device notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+19:29:05.498 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+19:29:05.498 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+19:29:05.498 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+19:29:05.498 xcodebuild[94569:6425748] /Users/justinjeffery/Library/Developer/XCTestDevices: Received sim device set notification: {
+    device = "Clone 1 of iPhone 17 Pro (E8B6BC0F-E421-447C-9C63-FAFE962C60B4, iOS 26.4, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+19:29:05.944 OneLifeUITests-Runner[95349:6433901] Handling kAXPidStatusChangedNotification
+19:29:05.944 OneLifeUITests-Runner[95349:6433901] Got kAXPidStatusChangedNotification for pid 94981: active
+19:29:06.408 xcodebuild[94569:6425748] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> got death notice for pid 95349 (exit code: (null), signal: 15), removing from SimulatorSessionMap
+19:29:06.410 xcodebuild[94569:6425748] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> claim LaunchSessionClaim_0xc88818f00 on simulator was relinquished, 1 claims remain.
+19:29:06.410 xcodebuild[94569:6425748] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> claim LaunchSessionClaim_0xc88818f00 on simulator was relinquished, 1 claims remain.
+19:29:06.410 xcodebuild[94569:6425748] 📱<DVTiPhoneSimulator (0xc8ac25900), Clone 1 of iPhone 17 Pro, unknown class, 26.4 (23E244), E8B6BC0F-E421-447C-9C63-FAFE962C60B4> claim LaunchSessionClaim_0xc88818f00 on simulator was relinquished, 1 claims remain.
+19:29:06.410 xcodebuild[94569:6425748] Launch session expired.
+19:29:06.411 xcodebuild[94569:6438039] XCTHTestOperationStateMachine: Transitioning from state ExecutingTests to PendingFinalization
+19:29:06.673 xcodebuild[94569:6425748] <XCTHTestOperationCoordinator: 0xc88819200> finished receiving data from testing launch session
+19:29:06.673 xcodebuild[94569:6425748] <XCTHTestOperationCoordinator: 0xc88819200>: _considerFlushingDelegateBlockQueue - nothing to flush
+19:29:06.673 xcodebuild[94569:6425748] Nothing to delete
+19:29:06.915 xcodebuild[94569:6433576] Closing socket 40 to testmanagerd for Sim Clone 1 of iPhone 17 Pro
+19:29:06.916 xcodebuild[94569:6445572] <XCTTestRunnerSession: 0xc87a58b90> lost its connection.
+19:29:06.916 xcodebuild[94569:6425748] Lost connection to test process
+19:29:06.925 xcodebuild[94569:6425748] Received AttachmentFutureMetadata(attachmentUUID: 98EECCC3-C767-4818-83E6-F984A2BA4732, dataContainerRelativeAttachmentPath: Attachments/98EECCC3-C767-4818-83E6-F984A2BA4732, dataContainerURLPrefix: file:///Users/justinjeffery/Library/Developer/XCTestDevices/E8B6BC0F-E421-447C-9C63-FAFE962C60B4/data/Containers/Data/InternalDaemon/60658C04-B6DF-4006-95B5-1BD4E6D43978/, hostLocalURLOfFinalizedAttachment: (null), uniformTypeIdentifierString: public.mpeg-4, finalizationState: .completed, userName: mobile, additionalMetadata: {
+    initialDeviceOrientation = 0;
+    initialInterfaceOrientation = 0;
+    scale = 3;
+}
+19:29:06.926 xcodebuild[94569:6425748] Nothing to delete
+19:29:06.940 xcodebuild[94569:6425748] Nothing to delete
+19:29:06.940 xcodebuild[94569:6425748] <XCTHTestOperationCoordinator: 0xc88819200> is flushing delegate queue, count: 0

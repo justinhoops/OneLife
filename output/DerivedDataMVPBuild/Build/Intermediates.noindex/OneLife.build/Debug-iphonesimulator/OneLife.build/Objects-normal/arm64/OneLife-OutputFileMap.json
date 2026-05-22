@@ -1,0 +1,319 @@
+{
+  "" : {
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-primary.dia",
+    "emit-module-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-primary-emit-module.dia",
+    "pch" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-primary.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/ContentView.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/ContinuityThreadEngine.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/DebugTestingCoordinator.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/DomainCacheArtifacts.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/DomainEffectApplier.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainEffectApplier~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/EchoFlavorResolver.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EchoFlavorResolver~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/EventEngine.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EventEngine~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/FeedbackCoordinator.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FeedbackCoordinator~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/InteractionCardCoordinator.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/InteractionCardCoordinator~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/LifeConsoleView.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Models.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Models~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/NarrativeToneResolver.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeToneResolver~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/OneLifeApp.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeApp~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/OneLifeBaseApp.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLifeBaseApp~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Persistence.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/Persistence~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/SilentYearEngine.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SilentYearEngine~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/LifeSimulationOrchestrator.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeSimulationOrchestrator~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/EducationCareerSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/EducationCareerSystems~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/FinanceInvestmentSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/FinanceInvestmentSystems~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/NPCAutonomySystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NPCAutonomySystem~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/NarrativeArcSystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/NarrativeArcSystem~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/OriginSystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OriginSystem~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/PolicySystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/PolicySystem~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/ProgressCoreSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ProgressCoreSystems~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/RelationshipFamilyHealthAssetSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/RelationshipFamilyHealthAssetSystems~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/SpecialCareerCrimeSystems.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/SpecialCareerCrimeSystems~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/StoryletSystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/StoryletSystem~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/Simulation/Systems/WorldAutonomySystem.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldAutonomySystem~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/WorldSnapshot.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/WorldSnapshot~partial.swiftmodule"
+  },
+  "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/justinjeffery/Developer/OneLife/output/DerivedDataMVPBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}

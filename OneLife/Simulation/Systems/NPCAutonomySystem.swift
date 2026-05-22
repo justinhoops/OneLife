@@ -6,15 +6,25 @@ struct NPCAutonomySystem {
         
         // 1. Process Romantic Partner
         if var partner = state.relationships.romanticPartner {
-            let events = processAutonomy(for: &partner, type: .romantic, player: state.player, state: state)
-            generatedEvents.append(contentsOf: events)
+            if shouldProcessAutonomy(for: partner, currentAge: state.player.age) {
+                let events = processAutonomy(for: &partner, type: .romantic, player: state.player, state: state)
+                generatedEvents.append(contentsOf: events)
+                if !events.isEmpty {
+                    state.consequences.narrativeFlags["npc_autonomy_pulse", default: 0] = 1
+                }
+            }
             state.relationships.romanticPartner = partner
         }
         
-        // 2. Process Friends
+        // 2. Process Friends (Only those scheduled for this year)
         for i in 0..<state.relationships.friends.count {
-            let events = processAutonomy(for: &state.relationships.friends[i], type: .friend, player: state.player, state: state)
-            generatedEvents.append(contentsOf: events)
+            if shouldProcessAutonomy(for: state.relationships.friends[i], currentAge: state.player.age) {
+                let events = processAutonomy(for: &state.relationships.friends[i], type: .friend, player: state.player, state: state)
+                generatedEvents.append(contentsOf: events)
+                if !events.isEmpty {
+                    state.consequences.narrativeFlags["npc_autonomy_pulse", default: 0] = 1
+                }
+            }
         }
 
         // 3. System Interventions (Cross-Domain)
@@ -61,68 +71,112 @@ struct NPCAutonomySystem {
         return nil
     }
     
+    private func shouldProcessAutonomy(for npc: Relationship, currentAge: Int) -> Bool {
+        guard let nextYear = npc.nextAutonomyYear else { return true }
+        return currentAge >= nextYear
+    }
+
     private func processAutonomy(for npc: inout Relationship, type: RelationshipType, player: Player, state: GameState) -> [GameEvent] {
         var events: [GameEvent] = []
         
         // Age hidden states
-        npc.hiddenNeedLevel += Int.random(in: 2...8)
-        if npc.bond < 40 { npc.hiddenResentment += Int.random(in: 1...5) }
+        let yearsPassed = state.player.age - (npc.nextAutonomyYear.map { $0 - 3 } ?? state.player.age) // Approximation since last check
+        let yearsToSimulate = max(1, yearsPassed)
         
-        // Roll for Autonomous Action
-        let actionRoll = Int.random(in: 0...100)
+        npc.hiddenNeedLevel += Int.random(in: 2...8) * yearsToSimulate
+        if npc.bond < 40 { npc.hiddenResentment += Int.random(in: 1...5) * yearsToSimulate }
+        applyCorrelationImpressions(to: &npc, state: state)
+        
+        // Assign Goal if none exists
+        if npc.currentGoal == nil {
+            npc.currentGoal = assignGoal(for: npc)
+        }
+        
+        // Schedule next check (1 to 4 years based on personality/tension)
+        npc.nextAutonomyYear = state.player.age + Int.random(in: 1...4)
         
         // Check Correlation: Did we help them before?
         let helpedKey = "helped_\(npc.id)"
         let hasHelped = state.consequences.narrativeFlags[helpedKey, default: 0] > 0
         
-        if hasHelped && actionRoll > 85 && type == .friend {
+        if hasHelped && type == .friend {
             events.append(makeGratitudeEvent(for: npc))
+            npc.nextAutonomyYear = state.player.age + 5 // Back off after gratitude
             return events // Gratitude replaces other actions this year
         }
 
         // The Grapevine: Does this NPC know about our 'heat'?
         let grapevineHeat = state.relationships.activeRumorHeat
-        if grapevineHeat >= 50 && actionRoll > 75 {
+        if grapevineHeat >= 50 && Int.random(in: 0...100) > 60 {
             events.append(makeGrapevineConfrontation(for: npc))
+            npc.nextAutonomyYear = state.player.age + 2 // Immediate follow-up
             return events
         }
 
-        // Thresholds based on personality
-        switch npc.personality {
-        case .needy:
-            if npc.hiddenNeedLevel >= 60 && actionRoll > 70 {
+        // Goal-oriented action
+        switch npc.currentGoal {
+        case "borrow_money":
+            if npc.hiddenNeedLevel >= 50 {
                 events.append(makeFinancialAsk(for: npc))
                 npc.hiddenNeedLevel = 0
+                npc.currentGoal = assignGoal(for: npc)
             }
-        case .unstable:
-            if npc.hiddenResentment >= 50 && actionRoll > 80 {
+        case "start_drama":
+            if npc.hiddenResentment >= 40 {
                 events.append(makeConflictEvent(for: npc))
                 npc.hiddenResentment /= 2
+                npc.currentGoal = assignGoal(for: npc)
             }
-        case .ambitious:
-            if actionRoll > 90 {
-                events.append(makeOpportunityAsk(for: npc))
-            }
-        case .selfish:
-            if npc.hiddenResentment >= 40 && actionRoll > 75 {
+        case "pitch_opportunity":
+            events.append(makeOpportunityAsk(for: npc))
+            npc.currentGoal = assignGoal(for: npc)
+        case "betray":
+            if npc.hiddenResentment >= 30 {
                 events.append(makeBetrayalEvent(for: npc))
+                npc.currentGoal = assignGoal(for: npc)
             }
-        case .generous:
-            if actionRoll > 85 && type == .friend {
+        case "reconnect":
+            if type == .friend {
                 events.append(makeSocialInvite(for: npc))
+                npc.currentGoal = assignGoal(for: npc)
+            }
+        case "move_in":
+            if type == .romantic && state.player.age >= 20 && state.relationships.partnerBond >= 75 && !state.relationships.hasCohabitingPartner {
+                events.append(makeMoveInAsk(for: npc))
+                npc.currentGoal = assignGoal(for: npc)
             }
         default:
-            break
-        }
-        
-        // Relationship Milestones (Autonomous)
-        if type == .romantic && state.player.age >= 20 {
-            if state.relationships.partnerBond >= 75 && !state.relationships.hasCohabitingPartner && actionRoll > 92 {
-                events.append(makeMoveInAsk(for: npc))
-            }
+            npc.currentGoal = assignGoal(for: npc)
         }
         
         return events
+    }
+
+    private func applyCorrelationImpressions(to npc: inout Relationship, state: GameState) {
+        let impressions = state.correlationLedger.npcImpressions[npc.id.uuidString, default: [:]]
+        let reachable = impressions["reachable", default: 0] + impressions["available", default: 0]
+        let unavailable = impressions["absent", default: 0] + impressions["overworked", default: 0]
+
+        if reachable > 0 {
+            npc.hiddenNeedLevel = max(0, npc.hiddenNeedLevel - min(10, reachable * 2))
+            npc.hiddenResentment = max(0, npc.hiddenResentment - min(10, reachable * 2))
+        }
+
+        if unavailable > 0 {
+            npc.hiddenNeedLevel = min(100, npc.hiddenNeedLevel + min(12, unavailable * 2))
+            npc.hiddenResentment = min(100, npc.hiddenResentment + min(12, unavailable * 2))
+        }
+    }
+    
+    private func assignGoal(for npc: Relationship) -> String {
+        switch npc.personality {
+        case .needy: return "borrow_money"
+        case .unstable: return "start_drama"
+        case .ambitious: return "pitch_opportunity"
+        case .selfish: return npc.bond < 40 ? "betray" : "borrow_money"
+        case .generous: return "reconnect"
+        case .loyal: return "reconnect"
+        }
     }
     
     private func makeGratitudeEvent(for npc: Relationship) -> GameEvent {

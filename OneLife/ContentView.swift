@@ -4,12 +4,75 @@ import Combine
 import UIKit
 #endif
 
+// MARK: - Premium surfaces (adapts light / dark)
+
+private enum OLTheme {
+    static func cardFill(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.17) : Color.white.opacity(0.94)
+    }
+
+    static func cardStroke(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)
+    }
+
+    static func cardShadowOpacity(_ scheme: ColorScheme) -> Double {
+        scheme == .dark ? 0.5 : 0.08
+    }
+
+    static func subtleFill(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05)
+    }
+}
+
+private enum HeaderOccupationCopy {
+    static func specialCareer(_ track: SpecialCareerTrack) -> (title: String, symbol: String) {
+        switch track {
+        case .inactive:
+            return ("", "briefcase.fill")
+        case .entertainment:
+            return ("Entertainment", "star.fill")
+        case .crime:
+            return ("Street Career", "flame.fill")
+        case .founder:
+            return ("Founder", "rocket.fill")
+        case .athlete:
+            return ("Athlete", "figure.run")
+        case .shadowOperative:
+            return ("Operative", "eye.fill")
+        case .trader:
+            return ("Trader", "chart.line.uptrend.xyaxis")
+        case .ventureCapitalist:
+            return ("Venture", "dollarsign.arrow.circlepath")
+        case .corporateRaider:
+            return ("Corporate Raider", "building.columns.fill")
+        }
+    }
+}
+
 struct PlannerInsight: Identifiable, Hashable {
     let title: String
     let value: String
     let tone: PlannerTone
 
     var id: String { title }
+}
+
+struct YearlyStanceChip: Identifiable, Hashable {
+    let id: YearlyStanceID
+    let title: String
+    let detail: String
+    let tone: PlannerTone
+    let isSelected: Bool
+}
+
+struct RecommendedActionChip: Identifiable, Hashable {
+    let id: String
+    let domain: ActionDomain
+    let choiceID: ActionChoiceID
+    let title: String
+    let relief: String
+    let cost: String
+    let tone: PlannerTone
 }
 
 struct OverviewSignal: Identifiable, Hashable {
@@ -118,6 +181,22 @@ enum FeedbackIntensitySetting: String, CaseIterable, Identifiable {
     }
 }
 
+enum AutoLifePace: String, CaseIterable, Identifiable {
+    case manual
+    case guided
+    case autopilot
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .manual: return "Manual"
+        case .guided: return "Guided"
+        case .autopilot: return "Autopilot"
+        }
+    }
+}
+
 enum ColorEmphasisSetting: String, CaseIterable, Identifiable {
     case full
     case softened
@@ -140,6 +219,14 @@ enum ColorEmphasisSetting: String, CaseIterable, Identifiable {
         case .muted: return 0.68
         }
     }
+}
+
+struct BackgroundPulseItem: Identifiable, Hashable {
+    let title: String
+    let detail: String
+    let tone: PlannerTone
+
+    var id: String { "\(title)-\(detail)" }
 }
 
 enum ChangeInsightTopic: String, CaseIterable, Identifiable, Hashable {
@@ -237,18 +324,16 @@ private enum ContinuityLanguage {
 
     static func pressureTitle(for domain: GameViewModel.Tab, showingEducation: Bool) -> String {
         switch domain {
-        case .career:
+        case .home:
+            return "Wellness & Activity Is Active"
+        case .occupation:
             return showingEducation ? "School Pressure Is Active" : "Work Stability Is Active"
-        case .finance:
-            return "Money Pressure Is Active"
+        case .assets:
+            return "Financial Inventory Is Active"
         case .relationships:
             return "Relationship Pressure Is Active"
-        case .health:
-            return "Recovery Pressure Is Active"
-        case .assets:
-            return "Inventory Is Active"
-        case .feed, .activities:
-            return "Pressure Is Active"
+        case .history:
+            return "Your Story Log Is Open"
         }
     }
 
@@ -280,7 +365,7 @@ final class GameViewModel: ObservableObject {
     }
 
     enum Tab: String, CaseIterable, Identifiable {
-        case home, occupation, assets, relationships, activities
+        case home, occupation, assets, relationships, history
 
         var id: String { rawValue }
 
@@ -290,18 +375,44 @@ final class GameViewModel: ObservableObject {
             case .occupation: return "Occupation"
             case .assets: return "Assets"
             case .relationships: return "Relationships"
-            case .activities: return "Activities"
+            case .history: return "History"
             }
         }
 
         var symbol: String {
             switch self {
-            case .home: return "house.fill"
+            case .home: return "figure.play"
             case .occupation: return "briefcase.fill"
-            case .assets: return "bag.fill"
-            case .relationships: return "person.2.fill"
-            case .activities: return "list.bullet.circle.fill"
+            case .assets: return "dollarsign.circle.fill"
+            case .relationships: return "heart.fill"
+            case .history: return "scroll.fill"
             }
+        }
+
+        /// Matches `OneLifeUITests` dock button identifiers (`career-tab`, `finance-tab`, …).
+        var uiTestTabIdentifier: String {
+            switch self {
+            case .home: return "home-tab"
+            case .occupation: return "career-tab"
+            case .assets: return "finance-tab"
+            case .relationships: return "relationships-tab"
+            case .history: return "history-tab"
+            }
+        }
+    }
+
+    func navShortTitle(for tab: Tab) -> String {
+        switch tab {
+        case .home:
+            return "Life"
+        case .occupation:
+            return showingEducationAsPrimaryTab ? "School" : "Jobs"
+        case .assets:
+            return "Cash"
+        case .relationships:
+            return "Love"
+        case .history:
+            return "Log"
         }
     }
 
@@ -312,7 +423,7 @@ final class GameViewModel: ObservableObject {
     @Published var presentedCard: InteractionCardPayload?
     @Published var microBeatOverlay: String? = nil
     @Published var actionFrictionJitter: Bool = false
-    @Published var selectedTab: Tab = .feed {
+    @Published var selectedTab: Tab = .home {
         didSet {
             guard oldValue != selectedTab else { return }
             if returnPrompt?.tab != selectedTab {
@@ -321,6 +432,8 @@ final class GameViewModel: ObservableObject {
         }
     }
     @Published var showingSettings: Bool = false
+    @Published var autoLifePace: AutoLifePace = .guided
+    @Published private(set) var autopilotYearsAdvanced: Int = 0
     @Published var selectedStartMode: StartMode = .quickStart
     @Published var selectedTemplate: OriginTemplateID = .stableHomeAverageMeans
     @Published var persistenceBanner: String?
@@ -416,9 +529,11 @@ final class GameViewModel: ObservableObject {
         case .noSave:
             self.state = GameState()
             self.originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
+            self.beginLife()
         case .failed(let primaryError, let errors, let timingSnapshot):
             self.state = GameState()
             self.originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
+            self.beginLife()
             self.lastTimingSnapshot = timingSnapshot
             self.persistenceAlert = PersistenceAlertContext(
                 title: "Couldn't Recover Saved Progress",
@@ -428,7 +543,6 @@ final class GameViewModel: ObservableObject {
         refreshDerivedState()
         restoreActiveChapterIfNeeded()
 
-        #if DEBUG
         if let scenarioID = debugConfiguration.scenarioID {
             applyDebugPayload(
                 debugTestingCoordinator.payload(for: scenarioID),
@@ -437,12 +551,12 @@ final class GameViewModel: ObservableObject {
                 shouldSave: true
             )
         }
-        #endif
     }
 
     func newLife() {
         state = GameState()
         originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
+        autoLifePace = .guided
         selectedStartMode = .quickStart
         selectedTemplate = .stableHomeAverageMeans
         // Reset character creation state
@@ -467,17 +581,66 @@ final class GameViewModel: ObservableObject {
 
     func ageUp() {
         guard !state.isGameOver else { return }
+        if autoLifePace == .autopilot {
+            runAutopilot()
+            return
+        }
         activityPulse = nil
+        autopilotYearsAdvanced = 0
         captureReturnOrigin()
-        applyFeedback(feedbackCoordinator.ageUpResponse(for: state.narrativeTone))
-        
+        AppFeedback.impact(.medium)
+        applyGuidedPlanIfNeeded()
+
         let outcome = orchestrator.beginYearChapter(state: &state)
         if let summary = outcome.summary {
             latestYearSummary = summary
         }
+        updateFirstLifeOnboarding(after: outcome)
         present(cards: outcome.cards)
         refreshDerivedState()
         save()
+    }
+
+    func recommendedYearlyStance() -> YearlyStanceID {
+        switch dominantFeedDomain() {
+        case .finance:
+            return .stabilizeMoney
+        case .health:
+            return .protectHealth
+        case .relationships:
+            return .repairPeople
+        case .career, .education:
+            return .pushCareer
+        case .crime:
+            return .protectHealth
+        }
+    }
+
+    func guidedRecommendation() -> RecommendedActionChip? {
+        let pair = homeQuickActionChips().first
+        guard let pair else { return nil }
+        let definition = ActionChoiceCatalog.definition(for: pair.choiceID)
+        let tradeoff = actionTradeoffLine(for: pair.choiceID)
+        return RecommendedActionChip(
+            id: "guided-\(pair.domain.rawValue)-\(pair.choiceID.rawValue)",
+            domain: pair.domain,
+            choiceID: pair.choiceID,
+            title: definition.title,
+            relief: tradeoff.relief,
+            cost: whyActionMatters(pair.choiceID, domain: pair.domain),
+            tone: definition.baseFriction == .warning || definition.baseFriction == .resistance ? .warning : .neutral
+        )
+    }
+
+    func applyGuidedRecommendation() {
+        let stance = recommendedYearlyStance()
+        if state.yearlyStance.selectedStance == nil {
+            setYearlyStance(stance)
+        }
+        if let recommendation = guidedRecommendation(),
+           selectedAction(for: recommendation.domain) != recommendation.choiceID {
+            setAction(recommendation.choiceID, for: recommendation.domain)
+        }
     }
 
     func choose(_ choice: EventChoice) {
@@ -500,6 +663,107 @@ final class GameViewModel: ObservableObject {
         orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
         refreshDerivedState()
         save()
+    }
+
+    private func applyGuidedPlanIfNeeded() {
+        guard autoLifePace == .guided else { return }
+        // Guided mode recommends the next move, but waits for the player to confirm it.
+    }
+
+    private func runAutopilot(maxYears: Int = 8) {
+        guard !state.isGameOver, presentedCard == nil, state.activeYearChapter == nil else { return }
+        activityPulse = nil
+        autopilotYearsAdvanced = 0
+        captureReturnOrigin()
+        AppFeedback.impact(.medium)
+
+        for _ in 0..<maxYears {
+            let before = state
+            applyAutopilotPlan()
+            let outcome = orchestrator.beginYearChapter(state: &state)
+            if let summary = outcome.summary {
+                latestYearSummary = summary
+            }
+            autopilotYearsAdvanced += max(0, state.player.age - before.player.age)
+            updateFirstLifeOnboarding(after: outcome)
+            refreshDerivedState()
+
+            if shouldStopAutopilot(before: before, outcome: outcome) {
+                present(cards: outcome.cards)
+                save()
+                return
+            }
+        }
+
+        activityPulse = ActivityPulse(
+            title: "Autopilot Paused",
+            detail: autopilotYearsAdvanced <= 1 ? "One quiet year resolved in the background." : "\(autopilotYearsAdvanced) quiet years resolved in the background.",
+            tone: .neutral
+        )
+        showTransientActivityPulse()
+        save()
+    }
+
+    private func applyAutopilotPlan() {
+        let stance = recommendedYearlyStance()
+        state.yearlyStance.selectedStance = stance
+        if let domain = stance.domain,
+           let choice = stance.preferredAction(for: state),
+           actionChoices(for: domain).contains(choice) {
+            state.pendingActions.removeAll { $0.domain == domain }
+            state.pendingActions.append(PlayerYearAction(domain: domain, choiceID: choice))
+        } else if let recommendation = guidedRecommendation() {
+            state.pendingActions.removeAll { $0.domain == recommendation.domain }
+            state.pendingActions.append(PlayerYearAction(domain: recommendation.domain, choiceID: recommendation.choiceID))
+        }
+    }
+
+    private func shouldStopAutopilot(before: GameState, outcome: YearAdvanceOutcome) -> Bool {
+        if !outcome.cards.isEmpty { return true }
+        if state.isGameOver { return true }
+        if state.player.health <= 35 || state.healthProfile.physicalWellness <= 35 || state.healthProfile.mentalWellness <= 30 { return true }
+        if state.finance.totalWealth <= -15_000 || state.finance.cashOnHand <= -5_000 || state.finance.financialStress >= 75 { return true }
+        if state.relationships.activeTensionCount > before.relationships.activeTensionCount || state.relationships.partnerStatus != before.relationships.partnerStatus { return true }
+        if state.family.isPregnant != before.family.isPregnant || state.family.childCount != before.family.childCount { return true }
+        if state.career.status != before.career.status || state.career.roleID != before.career.roleID { return true }
+        if state.crime.status != before.crime.status || state.crime.heat >= 60 { return true }
+        if state.narrativeArcs.currentMoodTone != before.narrativeArcs.currentMoodTone { return true }
+        guard let summary = outcome.summary else { return false }
+        let items = summary.headlines + summary.spillovers + [
+            summary.topProblem,
+            summary.checkpoint,
+            summary.nextYearPressure,
+            summary.yearlyStanceOutcome
+        ].compactMap { $0 }
+        return items.contains { item in
+            item.tone == .warning || item.title.localizedCaseInsensitiveContains("milestone") || item.title.localizedCaseInsensitiveContains("legacy")
+        }
+    }
+
+    private func updateFirstLifeOnboarding(after outcome: YearAdvanceOutcome) {
+        guard state.mvpOnboarding.startAge != nil else { return }
+        state.mvpOnboarding.advance(afterAge: state.player.age, hadMajorMoment: isMajorMoment(outcome))
+    }
+
+    private func isMajorMoment(_ outcome: YearAdvanceOutcome) -> Bool {
+        if outcome.cards.contains(where: isMajorMomentCard) { return true }
+        guard let summary = outcome.summary else { return false }
+        let items = summary.headlines + summary.spillovers + [
+            summary.topProblem,
+            summary.checkpoint,
+            summary.nextYearPressure,
+            summary.yearlyStanceOutcome
+        ].compactMap { $0 }
+        return items.contains { $0.tone == .warning }
+    }
+
+    private func isMajorMomentCard(_ card: InteractionCardPayload) -> Bool {
+        switch card {
+        case .event, .reaction, .consequence, .resolution, .crisis, .pitchDeck:
+            return true
+        case .yearSummary, .forecast:
+            return false
+        }
     }
 
     func resolveCrisis(_ choice: CrisisChoice) {
@@ -588,10 +852,8 @@ final class GameViewModel: ObservableObject {
     }
 
     func openDetail(_ destination: PlannerDetailDestination) {
-        if selectedTab != .feed {
-            originTab = selectedTab
-            originPlannerDetail = destination
-        }
+        originTab = selectedTab
+        originPlannerDetail = destination
         plannerDetail = destination
     }
 
@@ -623,13 +885,15 @@ final class GameViewModel: ObservableObject {
             previewQuickStart()
         case .template:
             previewTemplate(selectedTemplate)
+        case .custom:
+            previewQuickStart() // Fallback to quickstart for custom reroll
         }
     }
 
     // MARK: - Character Creation Navigation (Codex IX)
 
     func advanceCreation() {
-        let allSteps = CharacterCreationStep.allCases
+        let allSteps: [CharacterCreationStep] = [.name, .origin, .trait]
         guard let current = allSteps.firstIndex(of: charCreationStep),
               current + 1 < allSteps.count else { return }
         // Auto-generate an origin preview when entering the origin step if none exists
@@ -641,7 +905,7 @@ final class GameViewModel: ObservableObject {
     }
 
     func retreatCreation() {
-        let allSteps = CharacterCreationStep.allCases
+        let allSteps: [CharacterCreationStep] = [.name, .origin, .trait]
         guard let current = allSteps.firstIndex(of: charCreationStep), current > 0 else { return }
         charCreationStep = allSteps[current - 1]
     }
@@ -669,6 +933,8 @@ final class GameViewModel: ObservableObject {
         if selectedStartMode == .custom {
             preview.originProfile?.startMode = .custom
         }
+        preview.mvpOnboarding.activate(at: preview.player.age)
+        autoLifePace = .guided
 
         latestYearSummary = nil
         presentedCard = nil
@@ -753,6 +1019,43 @@ final class GameViewModel: ObservableObject {
         orchestrator.roleTitle(for: state.career)
     }
 
+    /// Header cash line: `$420` or `-$620` for negative balances.
+    func formattedCashOnHand() -> String {
+        let cash = state.finance.cashOnHand
+        if cash >= 0 {
+            return "$\(cash)"
+        }
+        return "-$\(abs(cash))"
+    }
+
+    /// Primary occupation / education / special-career badge for the life header.
+    func headerOccupationHighlight() -> (title: String, symbol: String, tone: PlannerTone) {
+        if state.specialCareer.track != .inactive {
+            let pair = HeaderOccupationCopy.specialCareer(state.specialCareer.track)
+            return (pair.title, pair.symbol, .warning)
+        }
+        if showingEducationAsPrimaryTab {
+            switch state.education.stage {
+            case .university:
+                return ("University", "graduationcap.fill", .neutral)
+            case .tradeTraining:
+                return ("Trade School", "hammer.fill", .neutral)
+            default:
+                if state.player.age >= 18, state.education.pathway == .graduate, state.education.stage == .inactive {
+                    return ("Graduate", "checkmark.seal.fill", .positive)
+                }
+                return ("Student", "book.closed.fill", .neutral)
+            }
+        }
+        switch state.career.status {
+        case .unemployed:
+            let title = roleTitle()
+            return (title.isEmpty ? "Unemployed" : title, "briefcase.circle.fill", .warning)
+        default:
+            return (roleTitle(), "briefcase.fill", .positive)
+        }
+    }
+
     var showingEducationAsPrimaryTab: Bool {
         state.player.age < 18 || state.education.stage != .inactive || state.education.pathway == .student || state.education.pathway == .training
     }
@@ -799,39 +1102,31 @@ final class GameViewModel: ObservableObject {
 
         let matchedDomains: Set<HistoryDomainTag>
         switch tab {
-        case .feed:
-            matchedDomains = Set(HistoryDomainTag.allCases)
-        case .career:
+        case .home:
+            return feedSummaryItems()
+        case .occupation:
             matchedDomains = showingEducationAsPrimaryTab ? [.education, .progress] : [.career, .crime, .progress]
-        case .finance:
-            matchedDomains = [.finance, .housing, .progress]
         case .assets:
-            matchedDomains = [.finance, .progress] // Firearms/Upgrades are listed under finance history often
+            matchedDomains = [.finance, .housing, .progress]
         case .relationships:
             matchedDomains = [.relationships, .lifeEvent, .progress]
-        case .health:
-            matchedDomains = [.health, .progress]
-        case .activities:
-            let items = state.activities.currentYearActivities.prefix(2).map {
-                YearlyOutcomeItem(
-                    title: $0.headline,
-                    detail: $0.detail,
-                    domain: .activities,
-                    tone: $0.tone,
-                    impactScore: max(1, min(8, $0.detail.count / 18))
-                )
-            }
-            return Array(items)
+        case .history:
+            matchedDomains = Set(HistoryDomainTag.allCases)
         }
 
         let items = latestYearSummary.headlines + latestYearSummary.spillovers
-        let budget = (tab == .feed) ? 3 : 2
-        return Array(items.filter { matchedDomains.contains($0.domain) }.prefix(budget))
+        return Array(items.filter { matchedDomains.contains($0.domain) }.prefix(2))
     }
 
-    func continuityHub(for tab: Tab) -> ContinuityHubModel? {
-        guard tab == .feed else { return nil }
+    /// Year headlines for the Life Feed sheet (cross-domain glance).
+    func feedSummaryItems() -> [YearlyOutcomeItem] {
+        guard let latestYearSummary else { return [] }
+        let matchedDomains = Set(HistoryDomainTag.allCases)
+        let items = latestYearSummary.headlines + latestYearSummary.spillovers
+        return Array(items.filter { matchedDomains.contains($0.domain) }.prefix(3))
+    }
 
+    func feedContinuityHub() -> ContinuityHubModel? {
         let changed = continuityChangedItems()
         let unresolved = continuityUnresolvedItems()
         let comingBack = continuityComingBackItems()
@@ -854,11 +1149,155 @@ final class GameViewModel: ObservableObject {
 
     func feedUrgencyItems() -> [PlannerInsight] {
         [
-            PlannerInsight(title: "Money Pressure", value: moneyPressureStatus(), tone: moneyPressureTone()),
-            PlannerInsight(title: showingEducationAsPrimaryTab ? "School Momentum" : "Work Stability", value: schoolOrWorkStatus(), tone: schoolOrWorkTone()),
-            PlannerInsight(title: "Social Life", value: socialLifeStatus(), tone: socialLifeTone()),
-            PlannerInsight(title: "Burnout", value: burnoutStatus(), tone: burnoutTone())
+            PlannerInsight(title: "Money Pressure", value: pressureStatus(domain: "finance", fallback: moneyPressureStatus()), tone: moneyPressureTone()),
+            PlannerInsight(title: showingEducationAsPrimaryTab ? "School Momentum" : "Work Stability", value: pressureStatus(domain: showingEducationAsPrimaryTab ? "education" : "career", fallback: schoolOrWorkStatus()), tone: schoolOrWorkTone()),
+            PlannerInsight(title: "Social Life", value: npcAutonomyPulse() ?? pressureStatus(domain: "relationships", fallback: socialLifeStatus()), tone: socialLifeTone()),
+            PlannerInsight(title: "Burnout", value: pressureStatus(domain: "health", fallback: burnoutStatus()), tone: burnoutTone())
         ]
+    }
+
+    func backgroundPulseItems() -> [BackgroundPulseItem] {
+        var items: [BackgroundPulseItem] = []
+
+        if state.mvpOnboarding.isActive(at: state.player.age) {
+            let hint: String
+            switch state.mvpOnboarding.elapsedYears(at: state.player.age) {
+            case 0:
+                hint = "Pick one stance, then age up."
+            case 1:
+                hint = state.yearlyStance.lastOutcomeLine ?? "Read the pressure that carried forward."
+            default:
+                hint = currentIdentityPattern?.legacyLine ?? "Repeat what worked or change the year."
+            }
+            items.append(
+                BackgroundPulseItem(
+                    title: "First Life",
+                    detail: hint,
+                    tone: .neutral
+                )
+            )
+        }
+
+        if state.currentEra != .stable {
+            items.append(
+                BackgroundPulseItem(
+                    title: "World",
+                    detail: "\(state.currentEra.rawValue.capitalized) is shaping costs and opportunity.",
+                    tone: state.currentEra == .bullMarket || state.currentEra == .techBoom ? .positive : .warning
+                )
+            )
+        } else if state.player.age >= 18 {
+            items.append(BackgroundPulseItem(title: "World", detail: "The broader economy stayed quiet.", tone: .neutral))
+        }
+
+        if let npcPulse = npcAutonomyPulse() {
+            items.append(BackgroundPulseItem(title: "People", detail: npcPulse, tone: .warning))
+        } else if !state.relationships.friends.isEmpty || state.relationships.hasPartner {
+            items.append(BackgroundPulseItem(title: "People", detail: "Close bonds kept moving in the background.", tone: .neutral))
+        }
+
+        if let summary = latestYearSummary {
+            if let finance = (summary.headlines + summary.spillovers).first(where: { $0.domain == .finance || $0.domain == .housing }) {
+                items.append(BackgroundPulseItem(title: "Money", detail: finance.detail, tone: PlannerTone(finance.tone)))
+            } else if state.finance.lastYearBalanceDelta != 0 {
+                items.append(
+                    BackgroundPulseItem(
+                        title: "Money",
+                        detail: state.finance.lastYearBalanceDelta > 0 ? "Cash flow added room." : "Cash flow tightened the year.",
+                        tone: state.finance.lastYearBalanceDelta > 0 ? .positive : .warning
+                    )
+                )
+            }
+
+            if let health = (summary.headlines + summary.spillovers).first(where: { $0.domain == .health }) {
+                items.append(BackgroundPulseItem(title: "Health", detail: health.detail, tone: PlannerTone(health.tone)))
+            }
+        }
+
+        if state.career.status != .student, !showingEducationAsPrimaryTab {
+            items.append(
+                BackgroundPulseItem(
+                    title: "Work",
+                    detail: state.career.performance >= 65 ? "Work performance held its shape." : "Work stability softened in the background.",
+                    tone: state.career.performance >= 65 ? .positive : .warning
+                )
+            )
+        }
+
+        var seen: Set<String> = []
+        return items.filter { item in
+            seen.insert(item.title).inserted && !item.detail.contains("%")
+        }
+        .prefix(3)
+        .map { $0 }
+    }
+
+    var currentIdentityPattern: PlayerPattern? {
+        state.currentIdentityPattern
+    }
+
+    func yearlyStanceChips() -> [YearlyStanceChip] {
+        YearlyStanceID.allCases.map { stance in
+            let actionTitle = stance.preferredAction(for: state).map { ActionChoiceCatalog.definition(for: $0).title } ?? "No forced action"
+            return YearlyStanceChip(
+                id: stance,
+                title: stance.title,
+                detail: actionTitle,
+                tone: state.yearlyStance.selectedStance == stance ? .positive : (harmfulPatternLabel(for: stance) == nil ? .neutral : .warning),
+                isSelected: state.yearlyStance.selectedStance == stance
+            )
+        }
+    }
+
+    func setYearlyStance(_ stance: YearlyStanceID) {
+        state.yearlyStance.selectedStance = stance
+        if let domain = stance.domain, let action = stance.preferredAction(for: state), actionChoices(for: domain).contains(action) {
+            setAction(action, for: domain)
+        } else {
+            activityPulse = ActivityPulse(title: "Year Goal Set", detail: "\(stance.title) will let the year resolve with less player steering.", tone: .neutral)
+            showTransientActivityPulse()
+            refreshDerivedState()
+            save()
+        }
+    }
+
+    func keepLastYearlyStance() {
+        guard let stance = state.yearlyStance.lastCompletedStance else { return }
+        setYearlyStance(stance)
+    }
+
+    func pressureContextLines(limit: Int = 3) -> [String] {
+        let ranked = state.correlationLedger.pressureCauses
+            .sorted { lhs, rhs in
+                if lhs.age == rhs.age { return abs(lhs.delta) > abs(rhs.delta) }
+                return lhs.age > rhs.age
+            }
+            .prefix(limit)
+        return ranked.map { cause in
+            "\(cause.label) -> \(pressureLabel(for: cause.domain)) -> \(spilloverLabel(for: cause.domain, delta: cause.delta))"
+        }
+    }
+
+    func npcAutonomyPulse() -> String? {
+        let contacts = state.relationships.friends + state.relationships.romanticPartners
+        if state.relationships.activeRumorHeat >= 50 {
+            return "Rumor heat is making people reactive"
+        }
+        if let strained = contacts.first(where: { $0.hiddenResentment >= 35 || $0.status == .strained }) {
+            return "\(strained.name) is carrying unresolved tension"
+        }
+        if let needy = contacts.first(where: { $0.hiddenNeedLevel >= 42 }) {
+            return "\(needy.name) may ask for help soon"
+        }
+        if let overworked = state.correlationLedger.npcImpressions.first(where: { $0.value["overworked", default: 0] >= 4 }),
+           let contact = contacts.first(where: { $0.id.uuidString == overworked.key }) {
+            return "\(contact.name) notices the overwork"
+        }
+        if let absent = state.correlationLedger.npcImpressions.first(where: { $0.value["absent", default: 0] >= 4 }),
+           let contact = contacts.first(where: { $0.id.uuidString == absent.key }) {
+            return "\(contact.name) has been waiting on you"
+        }
+        return nil
     }
 
     func nextDecisionPrompt() -> String {
@@ -875,7 +1314,7 @@ final class GameViewModel: ObservableObject {
             case .consequence(let preview):
                 return preview.title
             case .resolution:
-                return "Return to the feed when you're ready."
+                return "Continue when you are ready."
             case .crisis(let crisis):
                 return crisis.title
             case .pitchDeck(let pitch):
@@ -883,11 +1322,7 @@ final class GameViewModel: ObservableObject {
             }
         }
 
-        if !state.pendingActions.isEmpty {
-            return "Your yearly focus is set. Age up when you're ready to test it."
-        }
-
-        return "Choose a focus or age up to see what the year throws at you."
+        return ""
     }
 
     func nextDecisionDetail() -> String {
@@ -915,28 +1350,135 @@ final class GameViewModel: ObservableObject {
         return pendingActionSummary()
     }
 
+    func plannerDestination(forUrgencyItemTitle title: String) -> PlannerDetailDestination? {
+        switch title {
+        case "Money Pressure":
+            return .financeCashflow
+        case "School Momentum":
+            return .educationClimate
+        case "Work Stability":
+            return .careerOverview
+        case "Social Life":
+            return .relationshipsConnections
+        case "Burnout":
+            return .healthOverview
+        default:
+            return nil
+        }
+    }
+
     func selectedAction(for domain: ActionDomain) -> ActionChoiceID? {
-        state.pendingActions.first(where: { $0.domain == domain })?.choiceID
+        if let pending = state.pendingActions.first(where: { $0.domain == domain }) {
+            return pending.choiceID
+        }
+        return state.actionMemory.lastAction(for: domain)
     }
 
     func setAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
-        let definition = ActionChoiceCatalog.definition(for: choiceID)
-        let feedback = feedbackCoordinator.actionResponse(for: definition.baseFriction, microBeat: definition.microBeat)
-        guard !feedback.shouldReturnEarly else { return }
-        applyFeedback(feedback)
+        switch makeActionRegistry().resolutionTier(for: choiceID, domain: domain) {
+        case .instant:
+            performInstantAction(choiceID, for: domain)
+        case .committed:
+            queueCommittedAction(choiceID, for: domain)
+        }
+    }
 
+    func quickActionChoices(for domain: ActionDomain) -> [ActionChoiceID] {
+        makeActionRegistry().availableQuick(for: domain)
+    }
+
+    func quickActionBlockReason(_ choiceID: ActionChoiceID, domain: ActionDomain) -> String? {
+        guard quickActionChoices(for: domain).contains(choiceID) else { return "Unavailable right now." }
+        var memory = state.quickActionMemory
+        return memory.blockReason(for: PlayerYearAction(domain: domain, choiceID: choiceID), age: state.player.age)
+    }
+
+    func hasPerformedQuickAction(_ choiceID: ActionChoiceID, domain: ActionDomain) -> Bool {
+        var memory = state.quickActionMemory
+        memory.rolloverIfNeeded(age: state.player.age)
+        return memory.completedThisAge.contains { $0.domain == domain && $0.choiceID == choiceID }
+    }
+
+    func performQuickAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
+        guard !state.isGameOver, presentedCard == nil, state.activeYearChapter == nil else { return }
+        let action = PlayerYearAction(domain: domain, choiceID: choiceID)
+        let definition = ActionChoiceCatalog.definition(for: choiceID)
+
+        if let reason = quickActionBlockReason(choiceID, domain: domain) {
+            AppFeedback.notify(.warning)
+            activityPulse = ActivityPulse(title: "Quick Action Blocked", detail: reason, tone: .warning)
+            showTransientActivityPulse()
+            return
+        }
+
+        AppFeedback.impact(.light)
+        state.quickActionMemory.record(action, age: state.player.age)
         let result = orchestrator.applyImmediateAction(choiceID, domain: domain, state: &state)
-        
-        activityPulse = ActivityPulse(
-            title: result.notes.first?.title ?? "Action Complete",
-            detail: result.notes.first?.text ?? definition.identityLine,
-            tone: result.notes.contains(where: { $0.tags.contains(.progress) }) ? .positive : .neutral
+
+        activityPulse = activityPulseFromDomainResult(
+            result,
+            fallbackTitle: QuickActionCatalog.title(for: choiceID),
+            fallbackDetail: result.notes.first?.text ?? definition.identityLine
         )
         showTransientActivityPulse()
 
-        // Clear any pending actions to ensure no double-processing
-        state.pendingActions = []
-        
+        orchestrator.applyAmbientPressureSync(state: &state)
+        refreshDerivedState()
+        save()
+    }
+
+    private func performInstantAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
+        let definition = ActionChoiceCatalog.definition(for: choiceID)
+        if definition.baseFriction == .locked {
+            let feedback = feedbackCoordinator.actionResponse(for: .locked, microBeat: definition.microBeat)
+            guard !feedback.shouldReturnEarly else { return }
+            applyFeedback(feedback)
+            return
+        }
+
+        AppFeedback.impact(.light)
+
+        let result = orchestrator.applyImmediateAction(choiceID, domain: domain, state: &state)
+
+        activityPulse = activityPulseFromDomainResult(
+            result,
+            fallbackTitle: "Action Complete",
+            fallbackDetail: result.notes.first?.text ?? definition.identityLine
+        )
+        showTransientActivityPulse()
+
+        orchestrator.applyAmbientPressureSync(state: &state)
+
+        refreshDerivedState()
+        save()
+    }
+
+    private func queueCommittedAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
+        let definition = ActionChoiceCatalog.definition(for: choiceID)
+        if definition.baseFriction == .locked {
+            let feedback = feedbackCoordinator.actionResponse(for: .locked, microBeat: definition.microBeat)
+            guard !feedback.shouldReturnEarly else { return }
+            applyFeedback(feedback)
+            return
+        }
+
+        AppFeedback.impact(.light)
+
+        state.pendingActions.removeAll { $0.domain == domain }
+        state.pendingActions.append(PlayerYearAction(domain: domain, choiceID: choiceID))
+        while state.pendingActions.count > 8 {
+            state.pendingActions.removeFirst()
+        }
+
+        activityPulse = ActivityPulse(
+            title: "Year Stance Set",
+            detail: "\(definition.title) will shape the next yearly pulse.",
+            tone: .positive
+        )
+        showTransientActivityPulse()
+
+        orchestrator.applyAmbientPressureSync(state: &state)
+
         refreshDerivedState()
         save()
     }
@@ -952,24 +1494,185 @@ final class GameViewModel: ObservableObject {
     func performActivity(_ activityID: String) {
         guard !state.isGameOver, presentedCard == nil, state.activeYearChapter == nil else { return }
         guard let resolution = activitySystem.apply(activityID: activityID, to: &state) else { return }
-        
+
         AppFeedback.impact(.light)
-        
+
+        var detail = resolution.detail
         if let preview = resolution.majorPreview {
-            AppFeedback.impact(.medium)
-            actionFrictionJitter = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.actionFrictionJitter = false }
-            present(cards: [.consequence(preview)])
+            detail = "\(detail)\n\n\(preview.title): \(preview.detail)"
+        }
+        let pressureLines = resolution.pressureChanges
+            .filter { $0.value != 0 }
+            .sorted(by: { $0.key < $1.key })
+            .map { key, value in
+                "\(key) pressure \(value > 0 ? "+" : "")\(value)"
+            }
+        if !pressureLines.isEmpty {
+            detail = detail + "\n\n" + pressureLines.joined(separator: "\n")
         }
 
         activityPulse = ActivityPulse(
             title: resolution.headline,
-            detail: resolution.detail,
+            detail: detail,
             tone: PlannerTone(resolution.tone)
         )
         showTransientActivityPulse()
         refreshDerivedState()
         save()
+    }
+
+    func recommendedActionChips() -> [RecommendedActionChip] {
+        homeQuickActionChips().prefix(6).map { pair in
+            let definition = ActionChoiceCatalog.definition(for: pair.choiceID)
+            let tradeoff = actionTradeoffLine(for: pair.choiceID)
+            return RecommendedActionChip(
+                id: "\(pair.domain.rawValue)-\(pair.choiceID.rawValue)",
+                domain: pair.domain,
+                choiceID: pair.choiceID,
+                title: definition.title,
+                relief: tradeoff.relief,
+                cost: whyActionMatters(pair.choiceID, domain: pair.domain),
+                tone: definition.baseFriction == .warning || definition.baseFriction == .resistance ? .warning : .neutral
+            )
+        }
+    }
+
+    /// Context-ranked cross-domain chips for the Home dashboard (only choices valid for the current year).
+    func homeQuickActionChips() -> [(domain: ActionDomain, choiceID: ActionChoiceID)] {
+        var seen: Set<ActionChoiceID> = []
+        var result: [(ActionDomain, ActionChoiceID)] = []
+        if let callback = makeActionRegistry().suggestedCallbackAction(),
+           actionChoices(for: callback.domain).contains(callback.choiceID)
+               || quickActionChoices(for: callback.domain).contains(callback.choiceID) {
+            result.append((callback.domain, callback.choiceID))
+            seen.insert(callback.choiceID)
+        }
+        let pressureRanked = dominantPressureActionPairs()
+        let fallback: [(ActionDomain, ActionChoiceID)] = [
+            (.education, .studyConsistently),
+            (.education, .studyHard),
+            (.career, .workHard),
+            (.career, .jobHunt),
+            (.finance, .smallHustle),
+            (.health, .protectSleep),
+            (.health, .rest),
+            (.relationships, .reachOut),
+            (.relationships, .findYourCrowd),
+            (.career, .takeOvertime),
+            (.finance, .cutSpending),
+            (.health, .seeDoctor)
+        ]
+        for pair in pressureRanked + fallback {
+            guard actionChoices(for: pair.0).contains(pair.1), !seen.contains(pair.1) else { continue }
+            result.append((pair.0, pair.1))
+            seen.insert(pair.1)
+            if result.count >= 8 { break }
+        }
+        if result.count < 6 {
+            outer: for domain in [ActionDomain.education, .career, .finance, .relationships, .health, .crime] {
+                for choice in actionChoices(for: domain) where !seen.contains(choice) {
+                    result.append((domain, choice))
+                    seen.insert(choice)
+                    if result.count >= 8 { break outer }
+                }
+            }
+        }
+        return result
+    }
+
+    private func dominantPressureActionPairs() -> [(ActionDomain, ActionChoiceID)] {
+        let rankedPressure = state.consequences.pressureByDomain.sorted { lhs, rhs in
+            if lhs.value == rhs.value { return lhs.key < rhs.key }
+            return lhs.value > rhs.value
+        }
+        var pairs: [(ActionDomain, ActionChoiceID)] = []
+        for (domain, _) in rankedPressure {
+            switch domain {
+            case "finance":
+                pairs.append((.finance, state.finance.cashOnHand < 1_500 ? .smallHustle : .cutSpending))
+                pairs.append((.finance, .minimumPayments))
+            case "health":
+                pairs.append((.health, .protectSleep))
+                pairs.append((.health, .rest))
+            case "relationships":
+                pairs.append((.relationships, state.relationships.activeTensionCount > 0 ? .repairTension : .reachOut))
+            case "career":
+                pairs.append((.career, state.career.status == .unemployed ? .jobHunt : .protectYourEnergy))
+            case "education":
+                pairs.append((.education, .lockInRoutine))
+                pairs.append((.education, .studyConsistently))
+            default:
+                break
+            }
+        }
+        if state.yearlyStance.lastCompletedStance != nil {
+            pairs.append((state.yearlyStance.lastCompletedStance?.domain ?? .health, state.yearlyStance.lastCompletedStance?.preferredAction(for: state) ?? .rest))
+        }
+        return pairs
+    }
+
+    private func actionTradeoffLine(for choiceID: ActionChoiceID) -> (relief: String, cost: String) {
+        let definition = ActionChoiceCatalog.definition(for: choiceID)
+        let tags = definition.previewTags.joined(separator: ", ")
+        switch definition.baseFriction {
+        case .warning: return ("High leverage", "real fallout")
+        case .resistance: return ("Pressure relief", "energy cost")
+        case .locked: return ("Not ready", "locked")
+        case .none: return (tags.isEmpty ? "Small stabilizer" : tags, "low friction")
+        }
+    }
+
+    func whyActionMatters(_ choiceID: ActionChoiceID, domain: ActionDomain) -> String {
+        if let cause = state.correlationLedger.pressureCauseLine(for: domain.rawValue, limit: 1) {
+            return cause
+        }
+        let pressure = state.consequences.pressureByDomain[domain.rawValue, default: 0]
+        if pressure >= 30 {
+            return "interrupts active pressure"
+        }
+        if selectedAction(for: domain) == choiceID {
+            return "already shaping this year"
+        }
+        return actionTradeoffLine(for: choiceID).cost
+    }
+
+    private func pressureLabel(for domain: String) -> String {
+        switch domain {
+        case "finance": return "money pressure"
+        case "health": return "health strain"
+        case "relationships": return "relationship tension"
+        case "career": return "work pressure"
+        case "education": return "school pressure"
+        case "housing": return "housing instability"
+        default: return "\(domain) pressure"
+        }
+    }
+
+    private func spilloverLabel(for domain: String, delta: Int) -> String {
+        if delta < 0 { return "pressure easing" }
+        switch domain {
+        case "finance": return "health and people feel it"
+        case "health": return "work and school get harder"
+        case "relationships": return "support thins out"
+        case "career": return "burnout risk rises"
+        case "education": return "future doors narrow"
+        case "housing": return "daily stability drops"
+        default: return "life context shifts"
+        }
+    }
+
+    private func harmfulPatternLabel(for stance: YearlyStanceID) -> String? {
+        guard state.yearlyStance.lastCompletedStance == stance, state.yearlyStance.repeatCount >= 2 else { return nil }
+        switch stance {
+        case .stabilizeMoney where state.healthProfile.mentalWellness < 45:
+            return "This is becoming overwork."
+        case .letYearDrift:
+            return "This is becoming avoidance."
+        case .pushCareer where state.career.burnout >= 58:
+            return "This is becoming overwork."
+        default:
+            return nil
+        }
     }
 
     func buyFirearm(_ firearm: Firearm, cost: Int) {
@@ -1109,7 +1812,7 @@ final class GameViewModel: ObservableObject {
     }
 
     func actionChoices(for domain: ActionDomain) -> [ActionChoiceID] {
-        actionPlanningSupport.choices(for: domain)
+        makeActionRegistry().availableCommitted(for: domain)
     }
 
     func actionLabel(for choiceID: ActionChoiceID) -> String {
@@ -1264,7 +1967,7 @@ final class GameViewModel: ObservableObject {
         }
     }
 
-    func comingUpItems(for tab: Tab = .feed) -> [String] {
+    func comingUpItems(for tab: Tab) -> [String] {
         if let forecast = state.activeYearChapter?.forecast {
             return [forecast.anticipationTitle]
         }
@@ -1290,7 +1993,7 @@ final class GameViewModel: ObservableObject {
                 items.append("School pressure likely to spill over")
             }
         }
-        if tab == .finance || state.finance.financialStress >= 40 || state.finance.cashOnHand < 0 {
+        if tab == .assets || tab == .home || state.finance.financialStress >= 40 || state.finance.cashOnHand < 0 {
             items.append("Budget margin tightening")
         }
         if state.relationships.hasPartner && state.relationships.partnerBond < 55 {
@@ -1298,6 +2001,78 @@ final class GameViewModel: ObservableObject {
         }
         if state.healthProfile.mentalWellness < 48 || !state.healthProfile.activeConditions.isEmpty {
             items.append("Recovery will set the pace")
+        }
+
+        switch state.player.age + 1 {
+        case 15:
+            items.append("Age 15 independence pressure")
+        case 16:
+            items.append("Age 16 work search opens")
+        case 17:
+            items.append("Age 17 applications matter more")
+        case 18:
+            items.append("Age 18 path resolution")
+        default:
+            break
+        }
+
+        if tab == .home {
+            let feed = comingUpItemsForFeed()
+            if !feed.isEmpty {
+                return Array(feed.prefix(2))
+            }
+        }
+        if tab == .history {
+            return Array(state.history.prefix(4).map(\.title))
+        }
+
+        return Array(items.prefix(2))
+    }
+
+    /// Glance lines for the Life Feed sheet (includes risk and housing hints).
+    func comingUpItemsForFeed() -> [String] {
+        if let forecast = state.activeYearChapter?.forecast {
+            return [forecast.anticipationTitle]
+        }
+
+        if let upcoming = state.consequences.scheduledEvents.sorted(by: { $0.dueAge < $1.dueAge }).first {
+            return [upcoming.title ?? "Age \(upcoming.dueAge) callback"]
+        }
+
+        let unresolvedPressures = state.consequences.pressureByDomain
+            .filter { $0.value >= 25 }
+            .sorted { $0.value > $1.value }
+            .prefix(2)
+            .map { unresolvedPressureLabel(domain: $0.key, intensity: $0.value) }
+        if !unresolvedPressures.isEmpty {
+            return Array(unresolvedPressures)
+        }
+
+        var items: [String] = []
+        if showingEducationAsPrimaryTab && state.player.age < 18 {
+            if state.education.schoolStanding >= 72 && state.education.teacherSupport >= 60 {
+                items.append("Recommendation window opening")
+            } else if state.education.burnoutRisk >= 50 {
+                items.append("School pressure likely to spill over")
+            }
+        }
+        if state.finance.financialStress >= 40 || state.finance.cashOnHand < 0 {
+            items.append("Budget margin tightening")
+        }
+        if state.relationships.hasPartner && state.relationships.partnerBond < 55 {
+            items.append("Relationship strain close to the surface")
+        }
+        if state.healthProfile.mentalWellness < 48 || !state.healthProfile.activeConditions.isEmpty {
+            items.append("Recovery will set the pace")
+        }
+        if state.crime.heat >= 50 {
+            items.append("Street heat is visible")
+        }
+        if state.housing.housingStability < 40 {
+            items.append("Housing margin is thin")
+        }
+        if state.crime.status == .layingLow {
+            items.append("Cool-down window matters")
         }
 
         switch state.player.age + 1 {
@@ -1342,18 +2117,29 @@ final class GameViewModel: ObservableObject {
     func clearDebugScenario() {
         newLife()
     }
+
+    func mutateStateForTesting(_ mutation: (inout GameState) -> Void) {
+        mutation(&state)
+    }
     #endif
 
     func pendingActionSummary() -> String {
-        guard let plannedAction = state.pendingActions.first else {
-            return "No yearly focus set"
+        if !state.pendingActions.isEmpty {
+            let labels = state.pendingActions.map { actionLabel(for: $0.choiceID) }.joined(separator: " · ")
+            return "Year stance: \(labels)"
+        }
+        guard let recentAction = state.actionMemory.latestAction else {
+            return "No clear pattern yet"
         }
 
-        return "\(actionDomainLabel(for: plannedAction.domain)): \(actionLabel(for: plannedAction.choiceID))"
+        return "\(actionDomainLabel(for: recentAction.domain)): \(actionLabel(for: recentAction.choiceID))"
     }
 
     func pendingActionStatus() -> String {
-        state.pendingActions.isEmpty ? "Optional" : "1 focus locked"
+        if !state.pendingActions.isEmpty {
+            return "Year queued"
+        }
+        return state.actionMemory.latestAction == nil ? "Open" : "Action taken"
     }
 
     func ageUpRiskPreviewSignals() -> [AgeUpRiskSignal] {
@@ -1369,16 +2155,16 @@ final class GameViewModel: ObservableObject {
             )
         }
 
-        if let planned = state.pendingActions.first {
+        if let planned = state.actionMemory.latestAction {
             let definition = ActionChoiceCatalog.definition(for: planned.choiceID)
             let frictionSignal: AgeUpRiskSignal?
             switch definition.baseFriction {
             case .warning:
-                frictionSignal = AgeUpRiskSignal(title: "This focus carries real fallout", symbol: "exclamationmark.triangle.fill", tone: .warning)
+                frictionSignal = AgeUpRiskSignal(title: "This action carries real fallout", symbol: "exclamationmark.triangle.fill", tone: .warning)
             case .resistance:
-                frictionSignal = AgeUpRiskSignal(title: "This focus will cost energy", symbol: "flame.fill", tone: .warning)
+                frictionSignal = AgeUpRiskSignal(title: "This action will cost energy", symbol: "flame.fill", tone: .warning)
             case .locked:
-                frictionSignal = AgeUpRiskSignal(title: "This focus is not ready", symbol: "lock.fill", tone: .warning)
+                frictionSignal = AgeUpRiskSignal(title: "This action is not ready", symbol: "lock.fill", tone: .warning)
             case .none:
                 frictionSignal = nil
             }
@@ -1510,16 +2296,6 @@ final class GameViewModel: ObservableObject {
         ]
     }
 
-    private var actionPlanningSupport: YearlyActionPlanningSupport {
-        YearlyActionPlanningSupport(
-            state: state,
-            isTeenExperience: isTeenExperience,
-            isStudentLifeExperience: isStudentLifeExperience,
-            canAccessInvesting: canAccessInvesting,
-            investmentEmergencyReserve: investmentEmergencyReserve
-        )
-    }
-
     private func moneyPressureStatus() -> String {
         switch state.finance.financialStress {
         case 55...:
@@ -1533,6 +2309,13 @@ final class GameViewModel: ObservableObject {
 
     private func moneyPressureTone() -> PlannerTone {
         state.finance.financialStress >= 35 ? .warning : .neutral
+    }
+
+    private func pressureStatus(domain: String, fallback: String) -> String {
+        guard let causeLine = state.correlationLedger.pressureCauseLine(for: domain) else {
+            return fallback
+        }
+        return "\(fallback): \(causeLine)"
     }
 
     private func schoolOrWorkStatus() -> String {
@@ -1619,12 +2402,12 @@ final class GameViewModel: ObservableObject {
     private func refreshDerivedState() {
         historyDigest = HistoryDigest(state: state)
         refreshChangeInsights()
+        DomainActionRegistry.refreshSuggestedAction(in: &state, isTeenExperience: isTeenExperience)
         #if DEBUG
         lastTimingSnapshot = orchestrator.latestTimingSnapshot ?? lastTimingSnapshot
         #endif
     }
 
-    #if DEBUG
     private func applyDebugPayload(
         _ payload: DebugScenarioPayload,
         scenarioID: DebugScenarioID,
@@ -1673,15 +2456,9 @@ final class GameViewModel: ObservableObject {
         }
     }
 
-    private func debugDefaultTab(for scenarioID: DebugScenarioID) -> Tab {
-        switch scenarioID {
-        case .eventPreview, .yearSummaryPreview:
-            return .feed
-        default:
-            return .feed
-        }
+    private func debugDefaultTab(for _: DebugScenarioID) -> Tab {
+        .home
     }
-    #endif
 
     private func actionDomainLabel(for domain: ActionDomain) -> String {
         switch domain {
@@ -1692,6 +2469,38 @@ final class GameViewModel: ObservableObject {
         case .relationships: return "Social"
         case .health: return "Health"
         }
+    }
+
+    private func coreStatDeltaLine(for core: CoreStatEffects?) -> String? {
+        guard let core else { return nil }
+        var parts: [String] = []
+        if let d = core.happiness, d != 0 { parts.append("Happy \(d > 0 ? "+" : "")\(d)") }
+        if let d = core.smarts, d != 0 { parts.append("Smart \(d > 0 ? "+" : "")\(d)") }
+        if let d = core.looks, d != 0 { parts.append("Looks \(d > 0 ? "+" : "")\(d)") }
+        if let d = core.health, d != 0 { parts.append("Health \(d > 0 ? "+" : "")\(d)") }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func activityPulseFromDomainResult(
+        _ result: DomainYearResult,
+        fallbackTitle: String,
+        fallbackDetail: String
+    ) -> ActivityPulse {
+        let title = result.notes.first?.title ?? fallbackTitle
+        var segments: [String] = []
+        if let first = result.notes.first {
+            segments.append(first.text)
+        }
+        for note in result.notes.dropFirst().prefix(3) {
+            segments.append("\(note.title): \(note.text)")
+        }
+        if let line = coreStatDeltaLine(for: result.coreEffects) {
+            segments.append(line)
+        }
+        let merged = segments.filter { !$0.isEmpty }.joined(separator: "\n\n")
+        let detail = merged.isEmpty ? fallbackDetail : merged
+        let tone: PlannerTone = result.notes.contains(where: { $0.tags.contains(.progress) }) ? .positive : .neutral
+        return ActivityPulse(title: title, detail: detail, tone: tone)
     }
 
     private func configureStartupStateForLoadedGame() {
@@ -1710,12 +2519,6 @@ final class GameViewModel: ObservableObject {
     }
 
     private func captureReturnOrigin() {
-        guard selectedTab != .feed else {
-            originTab = nil
-            originPlannerDetail = nil
-            returnPrompt = nil
-            return
-        }
         originTab = selectedTab
         if plannerDetail == nil {
             originPlannerDetail = nil
@@ -1723,7 +2526,7 @@ final class GameViewModel: ObservableObject {
     }
 
     private func restoreInteractionOriginIfNeeded() {
-        guard let originTab, originTab != .feed else {
+        guard let originTab else {
             originPlannerDetail = nil
             returnPrompt = nil
             return
@@ -1749,7 +2552,7 @@ final class GameViewModel: ObservableObject {
     private func showTransientActivityPulse() {
         activityPulseTask?.cancel()
         activityPulseTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
             guard !Task.isCancelled else { return }
             self?.activityPulse = nil
         }
@@ -1955,30 +2758,28 @@ final class GameViewModel: ObservableObject {
 extension GameViewModel {
     func overview(for tab: Tab) -> TabOverviewModel {
         switch tab {
-        case .feed:
-            return feedOverview()
-        case .career:
+        case .home:
+            return homeDashboardOverview()
+        case .occupation:
             return showingEducationAsPrimaryTab ? educationOverview() : careerOverview()
-        case .finance:
+        case .assets:
             return financeOverview()
         case .relationships:
             return relationshipsOverview()
-        case .health:
-            return healthOverview()
-        case .assets:
-            return assetsOverview()
-        case .activities:
-            return activitiesOverview()        }
+        case .history:
+            return journalOverview()
+        }
     }
 
-    private func feedOverview() -> TabOverviewModel {
+    /// Full feed header model for the Life Feed sheet and unit tests.
+    func feedTabOverview() -> TabOverviewModel {
         let dominant = dominantFeedDomain()
         let pressure: PressureSummary
         switch dominant {
         case .education:
             pressure = PressureSummary(
                 symbol: "book.closed.fill",
-                title: ContinuityLanguage.pressureTitle(for: .career, showingEducation: true),
+                title: ContinuityLanguage.pressureTitle(for: .occupation, showingEducation: true),
                 detail: teenPressureSources().first ?? "School momentum is getting shaped by stress, belonging, and attendance pressure.",
                 tone: schoolOrWorkTone(),
                 destination: .educationClimate
@@ -1986,7 +2787,7 @@ extension GameViewModel {
         case .career:
             pressure = PressureSummary(
                 symbol: "briefcase.fill",
-                title: ContinuityLanguage.pressureTitle(for: .career, showingEducation: false),
+                title: ContinuityLanguage.pressureTitle(for: .occupation, showingEducation: false),
                 detail: state.career.status == .unemployed ? "You need a steadier work lane before the next year compounds the gap." : "Performance and income are moving, but not cleanly enough to feel secure.",
                 tone: schoolOrWorkTone(),
                 destination: .careerOverview
@@ -1994,7 +2795,7 @@ extension GameViewModel {
         case .finance:
             pressure = PressureSummary(
                 symbol: "dollarsign.circle.fill",
-                title: ContinuityLanguage.pressureTitle(for: .finance, showingEducation: showingEducationAsPrimaryTab),
+                title: ContinuityLanguage.pressureTitle(for: .assets, showingEducation: showingEducationAsPrimaryTab),
                 detail: state.finance.lastYearBalanceDelta < 0 ? "The year is leaking money, so cash flow is the first thing to stabilize." : "You are still functioning, but there is not much room for mistakes or shocks.",
                 tone: moneyPressureTone(),
                 destination: .financeCashflow
@@ -2010,7 +2811,7 @@ extension GameViewModel {
         case .health:
             pressure = PressureSummary(
                 symbol: "cross.case.fill",
-                title: ContinuityLanguage.pressureTitle(for: .health, showingEducation: showingEducationAsPrimaryTab),
+                title: ContinuityLanguage.pressureTitle(for: .home, showingEducation: showingEducationAsPrimaryTab),
                 detail: burnoutStatus() == "Recovery load is low" ? "Health is not the main drag right now, but your habits still set the pace." : "Stress, sleep, or active conditions are turning recovery into the bottleneck for the next year.",
                 tone: burnoutTone(),
                 destination: .healthOverview
@@ -2038,7 +2839,55 @@ extension GameViewModel {
             recommendedFocus: recommendedFocus(for: dominant),
             stripTitle: "Coming Up",
             stripItems: feedStripItems(),
-            continuity: continuityHub(for: .feed)
+            continuity: feedContinuityHub()
+        )
+    }
+
+    /// Activities + health planner overview (formerly the standalone Activities tab); used by tests and continuity.
+    func activitiesTabOverview() -> TabOverviewModel {
+        activitiesOverview()
+    }
+
+    private func homeDashboardOverview() -> TabOverviewModel {
+        let base = feedTabOverview()
+        return TabOverviewModel(
+            title: "Home",
+            symbol: "house.fill",
+            status: base.status,
+            summary: base.summary,
+            tone: base.tone,
+            trendLabel: base.trendLabel,
+            detailDestination: base.detailDestination,
+            topSignals: base.topSignals,
+            primaryPressure: base.primaryPressure,
+            recommendedFocus: base.recommendedFocus,
+            stripTitle: base.stripTitle,
+            stripItems: base.stripItems,
+            continuity: base.continuity
+        )
+    }
+
+    private func journalOverview() -> TabOverviewModel {
+        let recent = Array(state.history.prefix(3).map(\.title))
+        return TabOverviewModel(
+            title: "History",
+            symbol: "scroll.fill",
+            status: "\(state.history.count) entries",
+            summary: state.history.last?.text ?? "Every choice and quiet year shows up here.",
+            tone: .neutral,
+            trendLabel: "Chronicled",
+            detailDestination: nil,
+            topSignals: [],
+            primaryPressure: PressureSummary(
+                symbol: "book.pages.fill",
+                title: "Full timeline",
+                detail: "Scroll through years of decisions, milestones, and carryover threads.",
+                tone: .neutral,
+                destination: nil
+            ),
+            recommendedFocus: RecommendedFocus(domain: nil, choiceID: nil, title: "Read the arc", subtitle: "Patterns explain what the next year is likely to test.", previewTags: recent, isSelected: false),
+            stripTitle: "Latest beats",
+            stripItems: recent.isEmpty ? ["Age up to start the story"] : recent
         )
     }
 
@@ -2086,7 +2935,7 @@ extension GameViewModel {
             primaryPressure: pressure,
             recommendedFocus: recommendedFocus(for: .education),
             stripTitle: "Near Term",
-            stripItems: Array((comingUpItems(for: .career) + teenUnlocks()).prefix(3))
+            stripItems: Array((comingUpItems(for: .occupation) + teenUnlocks()).prefix(3))
         )
     }
 
@@ -2292,61 +3141,48 @@ extension GameViewModel {
         )
     }
 
-    private func healthOverview() -> TabOverviewModel {
-        let tone: PlannerTone = !state.healthProfile.activeConditions.isEmpty || state.player.health < 40 ? .warning : .positive
-        let pressure: PressureSummary
+    /// Primary health pressure card; shared by the Activities tab header when wellness should lead.
+    private func healthPrimaryPressureForPlanner() -> PressureSummary {
         if !state.healthProfile.activeConditions.isEmpty {
-            pressure = PressureSummary(
+            return PressureSummary(
                 symbol: "cross.case.fill",
                 title: "Conditions are active",
                 detail: "Health is asking for attention now. Recovery is the current bottleneck, not a background stat.",
                 tone: .warning,
                 destination: .healthConditions
             )
-        } else if state.healthProfile.mentalWellness < 45 {
-            pressure = PressureSummary(
+        }
+        if state.healthProfile.mentalWellness < 45 {
+            return PressureSummary(
                 symbol: "brain.head.profile",
                 title: "Stress load is rising",
                 detail: "Mental strain is quietly dragging down the rest of your year even if you are still functional.",
                 tone: .warning,
                 destination: .healthOverview
             )
-        } else {
-            pressure = PressureSummary(
-                symbol: "heart.fill",
-                title: "Recovery is the maintenance job",
-                detail: "Health is stable enough to hold, but only if your habits keep doing the quiet work.",
-                tone: .neutral,
-                destination: .healthOverview
-            )
         }
+        return PressureSummary(
+            symbol: "heart.fill",
+            title: "Recovery is the maintenance job",
+            detail: "Health is stable enough to hold, but only if your habits keep doing the quiet work.",
+            tone: .neutral,
+            destination: .healthOverview
+        )
+    }
 
-        let signals: [OverviewSignal] = isTeenExperience
-            ? makeOverviewSignals(
+    private func healthTopOverviewSignals() -> [OverviewSignal] {
+        if isTeenExperience {
+            return makeOverviewSignals(
                 teenHealthMetrics(),
                 symbols: ["bed.double.fill", "bolt.heart.fill", "cross.vial.fill"]
             ).map { OverviewSignal(symbol: $0.symbol, title: $0.title, value: $0.value, tone: $0.tone, insightTopic: .health) }
-            : [
-                OverviewSignal(symbol: "heart.fill", title: "Overall", value: "\(state.player.health)", tone: state.player.health >= 60 ? .positive : (state.player.health < 40 ? .warning : .neutral), insightTopic: .health),
-                OverviewSignal(symbol: "figure.walk", title: "Physical", value: "\(state.healthProfile.physicalWellness)", tone: state.healthProfile.physicalWellness >= 60 ? .positive : (state.healthProfile.physicalWellness < 40 ? .warning : .neutral), insightTopic: .health),
-                OverviewSignal(symbol: "brain.head.profile", title: "Mental", value: "\(state.healthProfile.mentalWellness)", tone: state.healthProfile.mentalWellness >= 60 ? .positive : (state.healthProfile.mentalWellness < 40 ? .warning : .neutral), insightTopic: .health),
-                OverviewSignal(symbol: "hourglass.bottomhalf.filled", title: "Recovery Debt", value: "\(max(0, 100 - state.healthProfile.habits.stressManagement))", tone: state.healthProfile.habits.stressManagement < 45 ? .warning : .neutral, insightTopic: .health)
-            ]
-
-        return TabOverviewModel(
-            title: "Health",
-            symbol: "cross.case.fill",
-            status: healthStatusLabel(),
-            summary: !state.healthProfile.activeConditions.isEmpty ? "Health has moved into the foreground, and the year will feel it." : "Habits are still doing more work than dramatic interventions.",
-            tone: tone,
-            trendLabel: healthTrendLabel(),
-            detailDestination: .healthOverview,
-            topSignals: signals,
-            primaryPressure: pressure,
-            recommendedFocus: recommendedFocus(for: .health),
-            stripTitle: "Coming Up",
-            stripItems: healthStripItems()
-        )
+        }
+        return [
+            OverviewSignal(symbol: "heart.fill", title: "Overall", value: "\(state.player.health)", tone: state.player.health >= 60 ? .positive : (state.player.health < 40 ? .warning : .neutral), insightTopic: .health),
+            OverviewSignal(symbol: "figure.walk", title: "Physical", value: "\(state.healthProfile.physicalWellness)", tone: state.healthProfile.physicalWellness >= 60 ? .positive : (state.healthProfile.physicalWellness < 40 ? .warning : .neutral), insightTopic: .health),
+            OverviewSignal(symbol: "brain.head.profile", title: "Mental", value: "\(state.healthProfile.mentalWellness)", tone: state.healthProfile.mentalWellness >= 60 ? .positive : (state.healthProfile.mentalWellness < 40 ? .warning : .neutral), insightTopic: .health),
+            OverviewSignal(symbol: "hourglass.bottomhalf.filled", title: "Recovery Debt", value: "\(max(0, 100 - state.healthProfile.habits.stressManagement))", tone: state.healthProfile.habits.stressManagement < 45 ? .warning : .neutral, insightTopic: .health)
+        ]
     }
 
     private func assetsOverview() -> TabOverviewModel {
@@ -2381,7 +3217,9 @@ extension GameViewModel {
     }
 
     private func activitiesOverview() -> TabOverviewModel {
-        let pressure = PressureSummary(
+        let healthLeadsHeader = !state.healthProfile.activeConditions.isEmpty || state.healthProfile.mentalWellness < 45
+
+        let activityPressure = PressureSummary(
             symbol: state.activities.riskLoad >= 8 ? "flame.fill" : "sparkles",
             title: state.activities.riskLoad >= 8 ? "Relief is turning into risk" : "Activities shape the emotional floor",
             detail: state.activities.riskLoad >= 8
@@ -2390,16 +3228,39 @@ extension GameViewModel {
             tone: state.activities.riskLoad >= 8 ? .warning : (state.activities.recoveryBalance >= 4 ? .positive : .neutral),
             destination: nil
         )
+
+        if healthLeadsHeader {
+            let pressure = healthPrimaryPressureForPlanner()
+            let overviewTone: PlannerTone = !state.healthProfile.activeConditions.isEmpty || state.player.health < 40 ? .warning : .positive
+            let summary = !state.healthProfile.activeConditions.isEmpty
+                ? "Health has moved into the foreground, and the year will feel it."
+                : "Habits are still doing more work than dramatic interventions."
+            return TabOverviewModel(
+                title: "Activities",
+                symbol: "sparkles",
+                status: healthStatusLabel(),
+                summary: summary,
+                tone: overviewTone,
+                trendLabel: healthTrendLabel(),
+                detailDestination: .healthOverview,
+                topSignals: healthTopOverviewSignals(),
+                primaryPressure: pressure,
+                recommendedFocus: recommendedFocus(for: .health),
+                stripTitle: "Coming Up",
+                stripItems: healthStripItems()
+            )
+        }
+
         return TabOverviewModel(
             title: "Activities",
             symbol: "sparkles",
             status: activityThisYearStatus(),
             summary: activityPushbackSummary(),
-            tone: pressure.tone,
+            tone: activityPressure.tone,
             trendLabel: state.activities.recoveryBalance >= 4 ? "Counterbalancing" : (state.activities.riskLoad >= 8 ? "Spiraling" : "Open"),
-            detailDestination: nil,
+            detailDestination: .healthOverview,
             topSignals: activityTopSignals(),
-            primaryPressure: pressure,
+            primaryPressure: activityPressure,
             recommendedFocus: RecommendedFocus(domain: nil, choiceID: nil, title: "Immediate outlet", subtitle: "Use activities to trade money, energy, risk, and relief in real time.", previewTags: activityFeedItems(), isSelected: false),
             stripTitle: "Pattern",
             stripItems: activityFeedItems()
@@ -2467,14 +3328,14 @@ extension GameViewModel {
         let activeChoice = selectedAction(for: domain)
         let selected = activeChoice ?? suggestedChoice(for: domain) ?? actionChoices(for: domain).first
         guard let choice = selected else {
-            return RecommendedFocus(domain: domain, choiceID: nil, title: "No focus available", subtitle: "This domain has no active yearly choices right now.", previewTags: [], isSelected: false)
+            return RecommendedFocus(domain: domain, choiceID: nil, title: "No action available", subtitle: "This domain has no active yearly choices right now.", previewTags: [], isSelected: false)
         }
 
         return RecommendedFocus(
             domain: domain,
             choiceID: choice,
             title: actionLabel(for: choice),
-            subtitle: activeChoice == nil ? actionSubtitle(for: choice) : "Locked in for the year.",
+            subtitle: activeChoice == nil ? actionSubtitle(for: choice) : "Already shaped this year.",
             previewTags: actionPreview(for: choice),
             isSelected: activeChoice == choice
         )
@@ -2497,7 +3358,7 @@ extension GameViewModel {
     }
 
     private func suggestedChoice(for domain: ActionDomain) -> ActionChoiceID? {
-        actionPlanningSupport.suggestedChoice(for: domain)
+        makeActionRegistry().suggestedChoice(for: domain)
     }
 
     private func unresolvedPressureLabel(domain: String, intensity: Int) -> String {
@@ -2530,12 +3391,12 @@ extension GameViewModel {
     }
 
     private func feedStripItems() -> [String] {
-        let shifts = summaryItems(for: .feed).map(\.title)
-        return Array((comingUpItems() + shifts).prefix(3))
+        let shifts = feedSummaryItems().map(\.title)
+        return Array((comingUpItemsForFeed() + shifts).prefix(3))
     }
 
     private func careerStripItems() -> [String] {
-        var items = comingUpItems(for: .career)
+        var items = comingUpItems(for: .occupation)
         if let door = state.career.activeOpportunityDoor {
             items.insert("\(door.shortLabel) is open", at: 0)
         }
@@ -2548,7 +3409,7 @@ extension GameViewModel {
     }
 
     private func financeStripItems() -> [String] {
-        var items = comingUpItems(for: .finance)
+        var items = comingUpItems(for: .assets)
         if state.finance.hasInvestments {
             items.append(state.finance.lastYearInvestmentDelta >= 0 ? "Portfolio is compounding" : "Portfolio hit needs context")
         }
@@ -2569,7 +3430,7 @@ extension GameViewModel {
     }
 
     private func healthStripItems() -> [String] {
-        var items = comingUpItems(for: .health)
+        var items = comingUpItems(for: .home)
         if !state.healthProfile.activeConditions.isEmpty {
             items.append("Conditions can spill into other domains")
         } else if state.healthProfile.mentalWellness < 45 {
@@ -2715,196 +3576,6 @@ extension GameViewModel {
     }
 }
 
-private struct YearlyActionPlanningSupport {
-    let state: GameState
-    let isTeenExperience: Bool
-    let isStudentLifeExperience: Bool
-    let canAccessInvesting: Bool
-    let investmentEmergencyReserve: Int
-
-    func choices(for domain: ActionDomain) -> [ActionChoiceID] {
-        switch domain {
-        case .education:
-            if isTeenExperience {
-                return [.studyConsistently, .cramAndSurvive, .joinClub, .buildPortfolio, .skipAndDrift, .keepThePeace]
-            }
-            if isStudentLifeExperience {
-                return [.studyConsistently, .cramAndSurvive, .buildPortfolio, .keepThePeace, .skipAndDrift]
-            }
-            return [.studyHard, .layLow, .skipClass]
-        case .career:
-            if state.player.age < 16 {
-                return []
-            }
-            var options: [ActionChoiceID] = []
-            if state.player.age >= 18 {
-                options = [.workHard, .protectYourEnergy, .network, .retrain, .takeOvertime, .coast, .jobHunt, .chaseSpotlight]
-                
-                // Special tracks stay gated by career proof instead of being generic adult buttons.
-                if SpecialCareerSystem.qualificationIssue(for: .startCompany, state: state) == nil {
-                    options.append(.startCompany)
-                }
-                if state.specialCareer.track == .founder {
-                    options.append(contentsOf: [.pivotBusiness, .raiseCapital, .aggressiveExpansion])
-                    if state.specialCareer.audience >= 75 {
-                        options.append(.ipoExit)
-                    }
-                }
-                if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil {
-                    options.append(.manageFund)
-                }
-                if SpecialCareerSystem.qualificationIssue(for: .acquireCompetitor, state: state) == nil {
-                    options.append(.acquireCompetitor)
-                }
-                
-                // Athlete
-                options.append(contentsOf: [.intenseTraining, .compete])
-                
-                // Shadow Operative
-                if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil {
-                    options.append(contentsOf: [.gatherIntelligence, .exploitLeverage])
-                }
-            } else {
-                options = [.workHard, .coast, .jobHunt]
-            }
-            return options
-        case .crime:
-            return state.player.age >= 18 ? [.runScheme, .layLow, .buildCrew, .cleanMoney, .stepAway] : []
-        case .finance:
-            if isStudentLifeExperience {
-                var studentOptions: [ActionChoiceID] = [.takeExtraShifts, .saveForEscape, .cutSpending, .spendToCope]
-                if state.finance.studentDebt > 0 {
-                    studentOptions.append(.deferStudentLoans)
-                }
-                return studentOptions
-            }
-            var financeOptions: [ActionChoiceID] = []
-            if (14...15).contains(state.player.age) {
-                financeOptions = [.smallHustle, .cutSpending, .spendForRelief]
-            } else if state.player.age >= 18 {
-                financeOptions = [.cutSpending, .spendForRelief, .takeSideWork]
-                if state.finance.totalNonHousingDebt > 0 {
-                    financeOptions.append(contentsOf: [.payDownDebt, .consolidateDebt, .minimumPayments])
-                    if state.finance.studentDebt > 0 {
-                        financeOptions.append(.deferStudentLoans)
-                    }
-                    if state.finance.canUseDebtReset {
-                        financeOptions.append(.declareBankruptcy)
-                    }
-                }
-                
-                // Trader actions
-                if state.finance.cashOnHand >= 2000 {
-                    financeOptions.append(contentsOf: [.dayTrade, .analyzeMarkets])
-                }
-            }
-            
-            if state.assets.ownsHome {
-                financeOptions.append(contentsOf: [.buildMaintenanceReserve, .refinanceMortgage, .sellHome])
-            }
-            
-            if state.player.age >= 18 && state.career.status == .fullTime {
-                let canBuyStarterHome =
-                    state.career.yearsWorked >= 2 &&
-                    state.finance.lastYearBalanceDelta >= 0 &&
-                    state.finance.homeDownPaymentSavings + state.finance.cashOnHand >= 35_000 &&
-                    state.finance.debtPressureBand != .heavy &&
-                    state.finance.debtPressureBand != .crushing &&
-                    state.finance.recentDebtReliefYears == 0
-                if canBuyStarterHome || state.assets.isSavingForHome || state.finance.homeDownPaymentSavings > 0 {
-                    financeOptions.append(contentsOf: canBuyStarterHome
-                        ? [.saveForDownPayment, .buyStarterHome, .buyIndexFund]
-                        : [.saveForDownPayment, .cutSpending, .takeSideWork])
-                }
-            }
-            
-            if canAccessInvesting {
-                let isUnderPressure = state.finance.lastYearBalanceDelta < 0 || state.finance.cashOnHand < investmentEmergencyReserve
-                if isUnderPressure, state.finance.hasInvestments {
-                    financeOptions.append(contentsOf: [.buildEmergencyFund, .holdPositions, .sellToCover])
-                } else if state.finance.hasInvestments {
-                    financeOptions.append(contentsOf: [.buyIndexFund, .speculateStocks, .holdPositions])
-                } else {
-                    financeOptions.append(contentsOf: [.buildEmergencyFund, .buyIndexFund, .speculateStocks])
-                }
-            }
-            return Array(Set(financeOptions)) // Remove duplicates
-        case .relationships:
-            if isTeenExperience {
-                return [.findYourCrowd, .dateCarefully, .chaseStatus, .stayInvisible, .leanOnMentor]
-            }
-            if state.relationships.hasPartner {
-                var actions: [ActionChoiceID] = [.strengthenBond, .discussFuture]
-                if !state.relationships.hasCohabitingPartner {
-                    actions.append(.moveInTogether)
-                }
-                actions.append(contentsOf: [.tryForBaby, .avoidPregnancy, .letChanceDecide, .repairTension])
-                if state.player.age >= 18 {
-                    actions.append(.callInFavor)
-                }
-                return actions
-            }
-            var options: [ActionChoiceID] = [.reachOut, .keepDistance, .repairTension]
-            if state.player.age >= 18 {
-                options.append(.callInFavor)
-            }
-            return options
-        case .health:
-            return isStudentLifeExperience ? [.protectSleep, .pushThrough, .rest] : [.rest, .pushThrough, .seeDoctor]
-        }
-    }
-
-    func suggestedChoice(for domain: ActionDomain) -> ActionChoiceID? {
-        switch domain {
-        case .education:
-            if state.education.burnoutRisk >= 55 || state.healthProfile.mentalWellness < 45 { return .keepThePeace }
-            if state.education.applicationReadiness >= 60 { return .buildPortfolio }
-            if state.relationships.friends.isEmpty { return .joinClub }
-            return .studyConsistently
-        case .career:
-            if state.career.status == .unemployed { return .jobHunt }
-            if state.career.activeOpportunityDoor == .burnoutExit { return .protectYourEnergy }
-            if state.career.activeOpportunityDoor == .credentialPivot { return .retrain }
-            if state.career.activeOpportunityDoor == .lateralEscapeRoute { return .jobHunt }
-            if state.career.activeOpportunityDoor == .internalPromotionTrack { return .network }
-            if state.career.activeOpportunityDoor == .contractWindfall { return .takeOvertime }
-            if state.career.burnout >= 68 || state.career.relationshipSpillover >= 58 { return .protectYourEnergy }
-            if state.career.performance < 55 { return .workHard }
-            if state.career.retrainingProgress == 0 && state.career.profile != .credentialedProfessional && state.career.yearsWorked >= 2 { return .retrain }
-            if state.specialCareer.track == .entertainment && state.specialCareer.burnout < 70 { return .chaseSpotlight }
-            if state.career.performance >= 74 { return .network }
-            return .coast
-        case .crime:
-            if state.crime.heat >= 65 { return .layLow }
-            if state.finance.cashOnHand < 0 { return .cleanMoney }
-            return .runScheme
-        case .finance:
-            if isStudentLifeExperience {
-                if state.finance.studentDebt > 0 && state.finance.debtPressureBand == .heavy { return .deferStudentLoans }
-                return state.finance.financialStress >= 40 ? .cutSpending : .takeExtraShifts
-            }
-            if state.finance.canUseDebtReset { return .declareBankruptcy }
-            if state.finance.debtPressureBand == .crushing { return .consolidateDebt }
-            if state.finance.debtPressureBand == .heavy { return .minimumPayments }
-            if state.assets.ownsHome && state.assets.primaryResidence?.status == .delinquent { return .refinanceMortgage }
-            if state.finance.lastYearBalanceDelta < 0 || state.finance.cashOnHand < 0 { return .cutSpending }
-            if canAccessInvesting && !state.finance.hasInvestments { return .buyIndexFund }
-            if state.assets.isSavingForHome || state.finance.homeDownPaymentSavings > 0 { return .saveForDownPayment }
-            return canAccessInvesting ? .buildEmergencyFund : .takeSideWork
-        case .relationships:
-            let strained = (state.relationships.friends + state.relationships.romanticPartners).filter { $0.status == .strained }.count
-            if strained > 0 { return .repairTension }
-            if isTeenExperience && state.relationships.friends.isEmpty && !state.relationships.hasPartner { return .findYourCrowd }
-            if state.relationships.hasPartner { return .strengthenBond }
-            return .reachOut
-        case .health:
-            if !state.healthProfile.activeConditions.isEmpty { return isStudentLifeExperience ? .rest : .seeDoctor }
-            if state.healthProfile.mentalWellness < 45 { return isStudentLifeExperience ? .protectSleep : .rest }
-            return .rest
-        }
-    }
-}
-
 private struct HidePlannerNavigationBar: ViewModifier {
     func body(content: Content) -> some View {
         #if os(macOS)
@@ -2986,8 +3657,9 @@ struct GameBouncyButtonStyle: ButtonStyle {
 
 struct ContentView: View {
     @StateObject private var vm = GameViewModel()
-    @ScaledMetric(relativeTo: .title3) private var settingsButtonSize = 44
     @State private var isPulsing = false
+    @State private var showLifeFeedSheet = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
@@ -3013,89 +3685,17 @@ struct ContentView: View {
                     }
 
                     if vm.state.startupState == .active {
-                        VStack(spacing: 0) {
-                            // BitLife HUD
-                            BitLifeHUD(vm: vm)
-                                .padding(.top, 10)
-                                .padding(.horizontal, 16)
-                                .zIndex(20)
-
-                            // Main Stages
-                            ScrollView(showsIndicators: false) {
-                                activeTabContent
-                                    .padding(.bottom, 160)
-                            }
-                            .zIndex(10)
-                        }
-                        .padding(.top, 14)
+                        LifeConsoleView(
+                            vm: vm,
+                            onOpenFeed: { showLifeFeedSheet = true },
+                            onSettings: { vm.showingSettings = true }
+                        )
                         .offset(x: vm.actionFrictionJitter ? 4 : 0)
                         .animation(vm.actionFrictionJitter ? .default.repeatCount(3, autoreverses: true) : .default, value: vm.actionFrictionJitter)
                     } else {
                         CharacterCreationView(vm: vm)
                             .padding(.top, 14)
                             .padding(.bottom, geometry.safeAreaInsets.bottom + 28)
-                    }
-
-                    // Floating Age Up and Dock Overlay
-                    if vm.state.startupState == .active {
-                        VStack {
-                            Spacer()
-                            ZStack(alignment: .bottom) {
-                                // Bottom Dock
-                                HStack(spacing: 0) {
-                                    ForEach(GameViewModel.Tab.allCases) { tab in
-                                        Button { 
-                                            vm.selectedTab = tab
-                                            AppFeedback.impact(.light)
-                                        } label: { 
-                                            VStack(spacing: 4) {
-                                                Image(systemName: vm.tabSymbol(for: tab))
-                                                    .font(.system(size: 22, weight: vm.selectedTab == tab ? .bold : .medium))
-                                                Text(vm.tabTitle(for: tab))
-                                                    .font(.system(size: 10, weight: .bold))
-                                            }
-                                            .foregroundColor(vm.selectedTab == tab ? DesignSystem.Colors.accent : DesignSystem.Colors.neutral.opacity(0.6))
-                                            .frame(maxWidth: .infinity)
-                                        }
-                                        .buttonStyle(.plain)
-                                        
-                                        if tab == .assets {
-                                            Spacer().frame(width: 80)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.top, 12)
-                                .padding(.bottom, max(geometry.safeAreaInsets.bottom, 12) + 12)
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-
-                                // Central Age Up Button
-                                Button { 
-                                    vm.ageUp()
-                                    AppFeedback.impact(.medium)
-                                } label: { 
-                                    VStack(spacing: 2) {
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 24, weight: .black))
-                                        Text("AGE")
-                                            .font(.system(size: 10, weight: .black))
-                                    }
-                                    .foregroundColor(.white)
-                                    .frame(width: 70, height: 70)
-                                    .background(
-                                        Circle().fill(DesignSystem.Colors.accent)
-                                            .shadow(color: DesignSystem.Colors.accent.opacity(0.4), radius: 10, x: 0, y: 5)
-                                    )
-                                }
-                                .buttonStyle(GameBouncyButtonStyle())
-                                .offset(y: -max(geometry.safeAreaInsets.bottom, 12) - 30)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 10)
-                        }
-                        .zIndex(30)
                     }
 
                     if vm.state.startupState == .active, let presentedCard = vm.presentedCard {
@@ -3120,9 +3720,9 @@ struct ContentView: View {
                             }
                         )
                         .padding(.horizontal, 16)
-                        .padding(.bottom, geometry.safeAreaInsets.bottom + 96)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom + 12)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .zIndex(10)
+                        .zIndex(40)
                     }
 
                     if let saveStatusBanner = vm.saveStatusBanner, vm.state.startupState == .active {
@@ -3168,6 +3768,36 @@ struct ContentView: View {
             .sheet(item: $vm.selectedInsight) { topic in
                 if let insight = vm.changeInsights[topic] {
                     ChangeInsightSheet(insight: insight)
+                }
+            }
+            .sheet(isPresented: $showLifeFeedSheet) {
+                NavigationStack {
+                    ScrollView(showsIndicators: false) {
+                        FeedHomeTab(
+                            state: vm.state,
+                            signals: topSignals(),
+                            summaryItems: vm.feedSummaryItems(),
+                            urgencyItems: vm.feedUrgencyItems(),
+                            nextDecisionTitle: vm.nextDecisionPrompt(),
+                            nextDecisionDetail: vm.nextDecisionDetail(),
+                            queuedInteractionCount: vm.interactionQueueDepth,
+                            nowStatus: vm.interactionQueueDepth > 0 ? "Live stack" : vm.chapterStatus(),
+                            pendingActionStatus: vm.pendingActionStatus(),
+                            pendingActionSummary: vm.pendingActionSummary(),
+                            comingUpItems: vm.comingUpItemsForFeed(),
+                            recentHistory: vm.historyDigest.all
+                        )
+                        .padding(.top, 10)
+                    }
+                    .navigationTitle("Life Feed")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") {
+                                showLifeFeedSheet = false
+                            }
+                        }
+                    }
                 }
             }
             .sheet(isPresented: $vm.showingSettings) {
@@ -3362,27 +3992,19 @@ struct ContentView: View {
     }
 
     private var plannerBackground: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    DesignSystem.Colors.lightBackgroundStart,
-                    DesignSystem.Colors.lightBackgroundEnd
+        LinearGradient(
+            colors: colorScheme == .dark
+                ? [
+                    Color(red: 0.08, green: 0.09, blue: 0.10),
+                    Color(red: 0.13, green: 0.13, blue: 0.12)
+                ]
+                : [
+                    Color(red: 0.96, green: 0.96, blue: 0.93),
+                    Color(red: 0.90, green: 0.93, blue: 0.91)
                 ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Circle()
-                .fill(Color.white.opacity(0.35))
-                .frame(width: 220, height: 220)
-                .offset(x: 140, y: -260)
-
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(Color.black.opacity(0.05))
-                .frame(height: 280)
-                .blur(radius: 30)
-                .offset(y: -300)
-        }
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     private func returnPromptBanner(_ prompt: PlannerReturnContext) -> some View {
@@ -3417,18 +4039,23 @@ struct ContentView: View {
                 Text(pulse.detail)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .lineLimit(3)
+                    .lineLimit(6)
             }
 
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(.thinMaterial)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(OLTheme.cardFill(colorScheme))
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(pulse.tone.fill, lineWidth: 1)
         )
+        .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 12, x: 0, y: 6)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .accessibilityIdentifier("activity-pulse-banner")
     }
 
     private func saveStatusToast(_ message: String, safeAreaBottom: CGFloat) -> some View {
@@ -3446,117 +4073,320 @@ struct ContentView: View {
             .padding(.bottom, safeAreaBottom + 74)
     }
 
-    private var topBar: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(vm.state.player.name)")
-                    .font(DesignSystem.Typography.titleSecondary)
-                
-                HStack(spacing: 8) {
-                    Text("Age \(vm.state.player.age)")
-                        .font(DesignSystem.Typography.subheadline)
-                        .foregroundStyle(.secondary)
-                    
-                    if let lifePath = vm.currentLifePathProfile() {
-                        Label(lifePath.title, systemImage: lifePath.symbol)
-                            .font(DesignSystem.Typography.captionBold)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(DesignSystem.Colors.positive)
-                            .clipShape(Capsule())
-                    }
-                }
-            }
+    @ViewBuilder
+    private func homeJumpTabButton(tab: GameViewModel.Tab, label: String, accessibilityId: String) -> some View {
+        Button {
+            vm.selectedTab = tab
+            AppFeedback.impact(.light)
+        } label: {
+            Text(label)
+                .font(.caption.weight(.heavy))
+                .lineLimit(1)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .foregroundStyle(vm.selectedTab == tab ? Color.white : Color.primary.opacity(0.85))
+                .background(
+                    Capsule()
+                        .fill(vm.selectedTab == tab ? DesignSystem.Colors.accent : Color.white.opacity(0.72))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(accessibilityId)
+    }
 
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 4) {
-                HStack(spacing: 4) {
-                    Text("$\(vm.state.finance.cashOnHand)")
-                        .font(DesignSystem.Typography.titleSecondary)
-                        .foregroundStyle(vm.state.finance.cashOnHand >= 0 ? DesignSystem.Colors.positive : DesignSystem.Colors.warning)
-                }
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(vm.state.player.health > 40 ? DesignSystem.Colors.positive : DesignSystem.Colors.warning)
-                        .font(DesignSystem.Typography.caption)
-                    Text("\(vm.state.player.health)%")
-                        .font(DesignSystem.Typography.subheadline)
-                        .foregroundStyle(.primary)
-                }
+    @ViewBuilder
+    private func homeUrgencyRow(item: PlannerInsight, showChevron: Bool) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(item.tone.color)
+                .frame(width: 10, height: 10)
+                .padding(.top, 4)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(item.value)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(item.tone.color)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.trailing, 4)
-
-            Button {
-                vm.showingSettings = true
-            } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.headline)
-                    .frame(width: settingsButtonSize, height: settingsButtonSize)
-                    .background(.thinMaterial)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white.opacity(0.35), lineWidth: 1))
+            Spacer(minLength: 0)
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 2)
             }
-            .accessibilityLabel("Open settings")
-            .accessibilityHint("Shows debug tools and save management actions.")
-            .accessibilityIdentifier("settings-button")
         }
     }
 
-    private var tabStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(GameViewModel.Tab.allCases) { tab in
-                    Button {
-                        AppFeedback.impact(.light)
-                        vm.selectedTab = tab
-                    } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: vm.tabSymbol(for: tab))
-                                .font(.title3.weight(.bold))
-                            Text(vm.tabTitle(for: tab))
-                                .font(DesignSystem.Typography.captionBold)
-                        }
-                        .frame(minWidth: 64)
-                        .foregroundStyle(vm.selectedTab == tab ? .white : .primary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 10)
-                        .background(vm.selectedTab == tab ? Color.black.opacity(0.85) : Color.white.opacity(0.55))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    }
-                    .accessibilityLabel(vm.tabTitle(for: tab))
-                    .accessibilityValue(vm.selectedTab == tab ? "Selected" : "Not selected")
-                    .accessibilityHint("Switch to the \(vm.tabTitle(for: tab)) planner tab.")
-                    .accessibilityIdentifier("\(tab.rawValue)-tab")
-                    .buttonStyle(GameBouncyButtonStyle())
-                }
-            }
-            .padding(.horizontal, 4)
+    private func homeUrgencyAccessibilityId(forTitle title: String) -> String {
+        switch title {
+        case "Money Pressure": return "home-urgency-money"
+        case "School Momentum": return "home-urgency-school"
+        case "Work Stability": return "home-urgency-work"
+        case "Social Life": return "home-urgency-social"
+        case "Burnout": return "home-urgency-burnout"
+        default: return "home-urgency-row"
         }
-    }
-
-    private var lifeSignals: some View {
-        let signals = topSignals()
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(signals, id: \.title) { signal in
-                    StatusPill(symbol: signal.symbol, title: signal.title, value: signal.value, tone: signal.tone)
-                }
-            }
-            .padding(.horizontal, 2)
-        }
-        .accessibilityIdentifier("life-signals")
     }
 
     @ViewBuilder
     private var activeTabContent: some View {
         switch vm.selectedTab {
         case .home:
-            LifeLogView(history: vm.state.history)
-                .padding(.top, 10)
-        
+            VStack(alignment: .leading, spacing: 20) {
+                PlannerSectionCard(
+                    title: "Auto-Life Pace",
+                    symbol: "forward.end.fill",
+                    status: vm.autoLifePace.title,
+                    tone: vm.autoLifePace == .autopilot ? .positive : .neutral
+                ) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Picker("Auto-Life Pace", selection: $vm.autoLifePace) {
+                            ForEach(AutoLifePace.allCases) { pace in
+                                Text(pace.title).tag(pace)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityIdentifier("auto-life-pace-picker")
+
+                        if vm.autoLifePace != .manual, let recommendation = vm.guidedRecommendation() {
+                            Button {
+                                vm.applyGuidedRecommendation()
+                            } label: {
+                                HStack(alignment: .top, spacing: 10) {
+                                    Image(systemName: "sparkles")
+                                        .foregroundStyle(recommendation.tone.color)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(vm.autoLifePace == .autopilot ? "Autopilot will favor this" : "Guided pick")
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(.secondary)
+                                        Text(recommendation.title)
+                                            .font(.subheadline.weight(.semibold))
+                                        Text(recommendation.cost)
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2)
+                                    }
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(10)
+                                .background(recommendation.tone.fill)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("guided-recommendation-button")
+                        }
+                    }
+                }
+                .accessibilityIdentifier("home-auto-life")
+
+                PlannerSectionCard(
+                    title: "Year Goal",
+                    symbol: "scope",
+                    status: vm.state.yearlyStance.selectedStance?.title ?? "Recommended: \(vm.recommendedYearlyStance().title)",
+                    tone: vm.state.yearlyStance.selectedStance == nil ? .neutral : .positive
+                ) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let last = vm.state.yearlyStance.lastCompletedStance {
+                            Button {
+                                vm.keepLastYearlyStance()
+                            } label: {
+                                HStack {
+                                    Label("Keep \(last.title)", systemImage: "repeat")
+                                        .font(.caption.weight(.heavy))
+                                    Spacer(minLength: 0)
+                                    if let line = vm.state.yearlyStance.lastOutcomeLine {
+                                        Text(line)
+                                            .font(.caption2.weight(.bold))
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.7)
+                                    }
+                                }
+                                .padding(10)
+                                .background(PlannerTone.positive.fill)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("keep-yearly-stance-button")
+                        }
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                            ForEach(Array(vm.yearlyStanceChips().prefix(4))) { stance in
+                                Button {
+                                    vm.setYearlyStance(stance.id)
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(stance.title)
+                                            .font(.caption.weight(.heavy))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.78)
+                                        Text(stance.detail)
+                                            .font(.caption2.weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(10)
+                                    .background(stance.isSelected ? PlannerTone.positive.fill : Color.white.opacity(0.72))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("yearly-stance-\(stance.id.rawValue)")
+                            }
+                        }
+                    }
+                }
+                .accessibilityIdentifier("home-yearly-stance")
+
+                PlannerSectionCard(
+                    title: "Recommended Action",
+                    symbol: "bolt.fill",
+                    status: vm.pressureContextLines(limit: 1).first ?? "This year",
+                    tone: vm.feedUrgencyItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral
+                ) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(Array(vm.recommendedActionChips().prefix(1))) { action in
+                            Button {
+                                vm.setAction(action.choiceID, for: action.domain)
+                            } label: {
+                                HStack(alignment: .top, spacing: 12) {
+                                    Image(systemName: "bolt.circle.fill")
+                                        .foregroundStyle(action.tone.color)
+                                        .padding(.top, 2)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(action.title)
+                                            .font(.subheadline.weight(.heavy))
+                                            .foregroundStyle(Color.primary)
+                                            .lineLimit(2)
+                                        Text(action.relief)
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(action.tone.color)
+                                            .lineLimit(1)
+                                        Text("Why: \(action.cost)")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2)
+                                    }
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                                .background(Color.white.opacity(0.72))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("action-choice-\(action.choiceID.rawValue)")
+                        }
+                    }
+                }
+                .accessibilityIdentifier("home-quick-actions")
+
+                PlannerSectionCard(
+                    title: "Top Status",
+                    symbol: "exclamationmark.bubble.fill",
+                    status: vm.feedUrgencyItems().first(where: { $0.tone == .warning })?.value
+                        ?? vm.feedUrgencyItems().first?.value
+                        ?? "Glance",
+                    tone: vm.feedUrgencyItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral
+                ) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(Array(vm.feedUrgencyItems().prefix(3))) { item in
+                                Button {
+                                    if let dest = vm.plannerDestination(forUrgencyItemTitle: item.title) {
+                                        AppFeedback.impact(.light)
+                                        vm.openDetail(dest)
+                                    }
+                                } label: {
+                                    homeUrgencyRow(
+                                        item: item,
+                                        showChevron: vm.plannerDestination(forUrgencyItemTitle: item.title) != nil
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier(homeUrgencyAccessibilityId(forTitle: item.title))
+                            }
+                        }
+                    }
+                }
+                .accessibilityIdentifier("home-opportunities")
+
+                PlannerSectionCard(
+                    title: "Background Pulse",
+                    symbol: "waveform.path.ecg",
+                    status: vm.backgroundPulseItems().first?.detail ?? "Quiet",
+                    tone: vm.backgroundPulseItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral
+                ) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(vm.backgroundPulseItems()) { item in
+                            HStack(alignment: .top, spacing: 10) {
+                                Circle()
+                                    .fill(item.tone.color)
+                                    .frame(width: 8, height: 8)
+                                    .padding(.top, 5)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.title)
+                                        .font(.caption.weight(.bold))
+                                    Text(item.detail)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .accessibilityIdentifier("background-pulse-item")
+                        }
+                        if vm.backgroundPulseItems().isEmpty {
+                            Text("No background pressure is asking for attention.")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                homeJumpTabButton(tab: .occupation, label: vm.showingEducationAsPrimaryTab ? "School" : "Jobs", accessibilityId: "home-jump-career")
+                                homeJumpTabButton(tab: .assets, label: "Money", accessibilityId: "home-jump-finance")
+                                homeJumpTabButton(tab: .relationships, label: "People", accessibilityId: "home-jump-relationships")
+                                homeJumpTabButton(tab: .history, label: "Journal", accessibilityId: "home-jump-history")
+                            }
+                            .padding(.horizontal, 2)
+                        }
+                        .accessibilityIdentifier("home-systems-strip")
+                    }
+                }
+                .accessibilityIdentifier("home-background-pulse")
+
+                if !vm.summaryItems(for: .home).isEmpty {
+                    PlannerSectionCard(
+                        title: "What Shifted",
+                        symbol: "arrow.triangle.branch",
+                        status: "Year \(vm.state.player.age)",
+                        tone: vm.summaryItems(for: .home).contains(where: { PlannerTone($0.tone) == .warning }) ? .warning : .positive
+                    ) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(vm.summaryItems(for: .home)) { item in
+                                Text(item.title)
+                                    .font(.subheadline.weight(.semibold))
+                                Text(item.detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                        }
+                    }
+                    .accessibilityIdentifier("home-summary-card")
+                }
+            }
+            .padding(.horizontal, 18)
+            .accessibilityIdentifier("home-tab-content")
+
         case .occupation:
             VStack(alignment: .leading, spacing: 20) {
                 if vm.state.player.age < 18 || vm.state.education.pathway == .student {
@@ -3567,28 +4397,24 @@ struct ContentView: View {
                         schoolClimateMetrics: vm.teenSchoolClimateMetrics(),
                         pressureSources: vm.teenPressureSources(),
                         nextUnlocks: vm.teenUnlocks(),
-                        summaryItems: vm.summaryItems(for: .career),
+                        summaryItems: vm.summaryItems(for: .occupation),
                         recentHistory: vm.historyDigest.education,
-                        selectedAction: vm.selectedAction(for: .education),
                         actionChoices: vm.actionChoices(for: .education),
-                        actionLabel: vm.actionLabel(for:),
-                        actionPreview: vm.actionPreview(for:),
                         onSelectAction: { vm.setAction($0, for: .education) },
-                        comingUpItems: vm.comingUpItems(for: .career),
+                        comingUpItems: vm.comingUpItems(for: .occupation),
                         openDetail: vm.openDetail(_:)
                     )
                 } else {
                     CareerPlannerTab(
                         state: vm.state,
                         roleTitle: vm.roleTitle(),
-                        summaryItems: vm.summaryItems(for: .career),
+                        summaryItems: vm.summaryItems(for: .occupation),
                         recentHistory: vm.historyDigest.all,
-                        selectedAction: vm.selectedAction(for: .career),
                         actionChoices: vm.actionChoices(for: .career),
-                        actionLabel: vm.actionLabel(for:),
-                        actionPreview: vm.actionPreview(for:),
                         onSelectAction: { vm.setAction($0, for: .career) },
-                        comingUpItems: vm.comingUpItems(for: .career),
+                        crimeActionChoices: vm.actionChoices(for: .crime),
+                        onSelectCrimeAction: { vm.setAction($0, for: .crime) },
+                        comingUpItems: vm.comingUpItems(for: .occupation),
                         openDetail: vm.openDetail(_:)
                     )
                 }
@@ -3602,14 +4428,11 @@ struct ContentView: View {
                     isTeenExperience: vm.isTeenExperience,
                     teenMetrics: vm.teenFinanceMetrics(),
                     policyLabel: vm.policyLabel(),
-                    summaryItems: vm.summaryItems(for: .finance),
+                    summaryItems: vm.summaryItems(for: .assets),
                     recentHistory: vm.historyDigest.finance,
-                    selectedAction: vm.selectedAction(for: .finance),
                     actionChoices: vm.actionChoices(for: .finance),
-                    actionLabel: vm.actionLabel(for:),
-                    actionPreview: vm.actionPreview(for:),
                     onSelectAction: { vm.setAction($0, for: .finance) },
-                    comingUpItems: vm.comingUpItems(for: .finance),
+                    comingUpItems: vm.comingUpItems(for: .assets),
                     openDetail: vm.openDetail(_:)
                 )
 
@@ -3628,6 +4451,8 @@ struct ContentView: View {
                     onBuyMarine: { vm.buyMarine($0) },
                     onSellMarine: { vm.sellMarine($0) }
                 )
+
+                AssetsHousingLegacySection(state: vm.state, openDetail: vm.openDetail(_:))
             }
             .padding(.horizontal, 18)
 
@@ -3638,135 +4463,166 @@ struct ContentView: View {
                 teenMetrics: vm.teenRelationshipMetrics(),
                 summaryItems: vm.summaryItems(for: .relationships),
                 recentHistory: vm.historyDigest.relationships,
-                selectedAction: vm.selectedAction(for: .relationships),
                 actionChoices: vm.actionChoices(for: .relationships),
-                actionLabel: vm.actionLabel(for:),
-                actionPreview: vm.actionPreview(for:),
                 onSelectAction: { vm.setAction($0, for: .relationships) },
                 comingUpItems: vm.comingUpItems(for: .relationships),
                 openDetail: vm.openDetail(_:)
             )
             .padding(.horizontal, 18)
 
-        case .activities:
-            VStack(alignment: .leading, spacing: 20) {
-                Text("ACTIVITIES").font(.title2.bold())
-                
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                    ActivityCategoryCard(title: "Wellness", icon: "heart.fill", color: .green) {
-                        vm.openDetail(.healthOverview)
-                    }
-                    ActivityCategoryCard(title: "Lifestyle", icon: "sparkles", color: .orange) {
-                        vm.selectedTab = .activities // Placeholder
-                    }
-                    ActivityCategoryCard(title: "Health", icon: "cross.case.fill", color: .red) {
-                        vm.openDetail(.healthConditions)
-                    }
-                    ActivityCategoryCard(title: "History", icon: "clock.fill", color: .blue) {
-                        vm.openDetail(.lifeHistory)
-                    }
-                }
-                
-                ActivitiesPlannerTab(
-                    state: vm.state,
-                    categories: vm.activityCategories(),
-                    activitiesForCategory: vm.activities(in:),
-                    summaryItems: vm.summaryItems(for: .activities),
-                    recentHistory: vm.historyDigest.activities,
-                    statusLine: vm.activityThisYearStatus(),
-                    pushbackSummary: vm.activityPushbackSummary(),
-                    onPerformActivity: vm.performActivity(_:)
-                )
+        case .history:
+            VStack(alignment: .leading, spacing: 12) {
+                LifeLogView(history: vm.state.history)
             }
             .padding(.horizontal, 18)
+            .accessibilityIdentifier("history-tab-content")
         }
     }
-}
 
-struct ActivityCategoryCard: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundStyle(.white)
-                    .frame(width: 50, height: 50)
-                    .background(color)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                
-                Text(title)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.primary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(Color.white.opacity(0.5))
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-        }
-    }
-}
-
-
-    private var ageUpDock: some View {
-        VStack(spacing: 12) {
-            tabStrip
-                .padding(.bottom, 8)
-                
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(vm.interactionQueueDepth > 0 ? "\(vm.interactionQueueDepth) cards live" : vm.pendingActionStatus())
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(
-                            vm.state.activeYearChapter != nil
-                                ? PlannerTone.warning.color
-                                : (vm.interactionQueueDepth > 0 ? PlannerTone.positive.color : (vm.state.pendingActions.isEmpty ? PlannerTone.warning.color : .secondary))
-                        )
-                    Text(vm.chapterStatus())
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    if vm.presentedCard == nil, vm.state.activeYearChapter == nil {
-                        AgeUpRiskPreviewStrip(signals: vm.ageUpRiskPreviewSignals())
-                            .padding(.top, 4)
+    @ViewBuilder
+    private var bottomGameBar: some View {
+        VStack(spacing: 8) {
+            if vm.presentedCard == nil,
+               vm.state.activeYearChapter == nil,
+               let last = vm.state.yearlyStance.lastCompletedStance,
+               vm.state.yearlyStance.selectedStance == nil {
+                Button {
+                    vm.keepLastYearlyStance()
+                    AppFeedback.impact(.light)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "repeat.circle.fill")
+                        Text("Continue \(last.title)")
+                            .font(.caption.weight(.heavy))
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text(vm.state.yearlyStance.lastOutcomeLine ?? "worked last year")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(PlannerTone.positive.fill)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("bottom-continue-stance-button")
+            }
+
+            HStack(spacing: 10) {
+                Menu {
+                    ForEach(GameViewModel.Tab.allCases) { tab in
+                        Button {
+                            vm.selectedTab = tab
+                            AppFeedback.impact(.light)
+                        } label: {
+                            Label(vm.tabTitle(for: tab), systemImage: vm.tabSymbol(for: tab))
+                        }
+                        .accessibilityIdentifier(tab.uiTestTabIdentifier)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "list.bullet.rectangle.portrait.fill")
+                            .font(.system(size: 18, weight: .bold))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Actions")
+                                .font(.system(size: 13, weight: .black))
+                            Text(vm.tabTitle(for: vm.selectedTab))
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .background(OLTheme.subtleFill(colorScheme))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("bottom-actions-menu")
 
                 Button {
-                    AppFeedback.impact(.medium)
                     vm.ageUp()
                     if vm.state.isGameOver {
                         AppFeedback.notify(.warning)
                     }
                 } label: {
-                    ZStack {
-                        Circle()
-                            .fill(vm.state.isGameOver ? Color.gray : DesignSystem.Colors.positive)
-                            .frame(width: 84, height: 84)
-                            .shadow(color: DesignSystem.Colors.positive.opacity(isPulsing ? 0.8 : 0.4), radius: isPulsing ? 20 : 12, y: isPulsing ? 10 : 6)
-                            .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 2))
-                            .scaleEffect(isPulsing && !vm.state.isGameOver && vm.interactionQueueDepth == 0 ? 1.05 : 1.0)
-                            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: isPulsing)
-                            .onAppear { isPulsing = true }
-
-                        Image(systemName: vm.state.isGameOver ? "xmark" : "plus")
-                            .font(.system(size: 44, weight: .bold))
-                            .foregroundColor(.white)
+                    HStack(spacing: 8) {
+                        Image(systemName: vm.state.isGameOver ? "xmark" : "arrow.up.circle.fill")
+                            .font(.system(size: 20, weight: .bold))
+                        Text(vm.state.isGameOver ? "Ended" : "Age Up")
+                            .font(.system(size: 15, weight: .black))
+                            .lineLimit(1)
                     }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(vm.state.isGameOver ? Color.gray : DesignSystem.Colors.positive)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .shadow(color: DesignSystem.Colors.positive.opacity(isPulsing ? 0.35 : 0.16), radius: isPulsing ? 10 : 5, y: 4)
+                    .scaleEffect(isPulsing && !vm.state.isGameOver && vm.interactionQueueDepth == 0 ? 1.015 : 1.0)
+                    .animation(.easeInOut(duration: 1.15).repeatForever(autoreverses: true), value: isPulsing)
+                    .onAppear { isPulsing = true }
                 }
                 .buttonStyle(GameBouncyButtonStyle())
                 .disabled(vm.state.isGameOver || vm.presentedCard != nil || vm.state.activeYearChapter != nil)
-                .accessibilityHint("Advance one year and resolve the consequences of your current focus.")
-                .accessibilityIdentifier("age-up-button")                
-                Spacer()
-                    .frame(maxWidth: .infinity)
+                .accessibilityLabel(vm.state.isGameOver ? "Life ended" : "Age up one year")
+                .accessibilityHint("Advances one year in the simulation.")
+                .accessibilityIdentifier("age-up-button")
+            }
+
+            HStack(spacing: 8) {
+                Text(vm.interactionQueueDepth > 0 ? "\(vm.interactionQueueDepth) cards live" : vm.pendingActionSummary())
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(
+                        vm.state.activeYearChapter != nil
+                            ? PlannerTone.warning.color
+                            : (vm.interactionQueueDepth > 0 ? PlannerTone.positive.color : .secondary)
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer(minLength: 0)
+                Text(vm.chapterStatus())
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            HStack(spacing: 4) {
+                ForEach(GameViewModel.Tab.allCases) { tab in
+                    bottomDomainButton(tab)
+                }
+            }
+            .accessibilityIdentifier("bottom-domain-strip")
+
+            if vm.presentedCard == nil, vm.state.activeYearChapter == nil {
+                AgeUpRiskPreviewStrip(signals: vm.ageUpRiskPreviewSignals())
             }
         }
+        .accessibilityIdentifier("bottom-game-bar")
+    }
+
+    private func bottomDomainButton(_ tab: GameViewModel.Tab) -> some View {
+        Button {
+            vm.selectedTab = tab
+            AppFeedback.impact(.light)
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: vm.tabSymbol(for: tab))
+                    .font(.system(size: 14, weight: .bold))
+                Text(vm.navShortTitle(for: tab))
+                    .font(.system(size: 9, weight: .heavy))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity, minHeight: 42)
+            .foregroundStyle(vm.selectedTab == tab ? DesignSystem.Colors.accent : Color.primary.opacity(0.48))
+            .background(vm.selectedTab == tab ? DesignSystem.Colors.accent.opacity(0.12) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(vm.tabTitle(for: tab))
+        .accessibilityIdentifier(tab.uiTestTabIdentifier)
     }
 
     private func topSignals() -> [SignalSummary] {
@@ -3806,6 +4662,7 @@ struct ActivityCategoryCard: View {
             thirdSignal
         ]
     }
+}
 
 
 struct HistoryDigest {
@@ -3903,7 +4760,7 @@ private struct StatusPill: View {
 private struct PlannerSectionCard<Content: View>: View {
     let title: String
     let symbol: String
-    let status: String
+    let status: String?
     let tone: PlannerTone
     let detailTitle: String?
     let detailIdentifier: String?
@@ -3913,8 +4770,8 @@ private struct PlannerSectionCard<Content: View>: View {
     init(
         title: String,
         symbol: String,
-        status: String,
-        tone: PlannerTone,
+        status: String? = nil,
+        tone: PlannerTone = .neutral,
         detailTitle: String? = nil,
         detailIdentifier: String? = nil,
         detailAction: (() -> Void)? = nil,
@@ -3930,6 +4787,8 @@ private struct PlannerSectionCard<Content: View>: View {
         self.content = content
     }
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
@@ -3942,10 +4801,12 @@ private struct PlannerSectionCard<Content: View>: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title)
-                            .font(.headline)
-                        Text(status)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(tone.color)
+                            .font(.title3.weight(.semibold))
+                        if let status {
+                            Text(status)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(tone.color)
+                        }
                     }
                 }
 
@@ -3957,7 +4818,7 @@ private struct PlannerSectionCard<Content: View>: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .frame(minHeight: 44)
-                        .background(Color.black.opacity(0.06))
+                        .background(OLTheme.subtleFill(colorScheme))
                         .clipShape(Capsule())
                         .accessibilityIdentifier(detailIdentifier ?? "\(title.lowercased())-detail-button")
                 }
@@ -3967,12 +4828,15 @@ private struct PlannerSectionCard<Content: View>: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.thinMaterial)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(OLTheme.cardFill(colorScheme))
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                .stroke(OLTheme.cardStroke(colorScheme), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 18, x: 0, y: 8)
         .accessibilityElement(children: .contain)
     }
 }
@@ -4016,6 +4880,7 @@ private struct MetricTile: View {
 private struct RecentLifeModule: View {
     let history: [HistoryEntry]
     let detailAction: (() -> Void)?
+    @Environment(\.colorScheme) private var colorScheme
 
     init(history: [HistoryEntry], detailAction: (() -> Void)? = nil) {
         self.history = history
@@ -4059,8 +4924,15 @@ private struct RecentLifeModule: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.55))
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.large, style: .continuous)
+                .fill(OLTheme.cardFill(colorScheme))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.large, style: .continuous)
+                .stroke(OLTheme.cardStroke(colorScheme), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 14, x: 0, y: 6)
         .accessibilityElement(children: .contain)
     }
 }
@@ -4120,95 +4992,18 @@ private struct OverviewSignalStrip: View {
 
 private struct CompactFocusDock: View {
     let focus: RecommendedFocus
-    let selectedAction: ActionChoiceID?
     let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
     let onSelectAction: (ActionChoiceID) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Recommended Actions")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if focus.isSelected {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(DesignSystem.Colors.accent)
-                }
-            }
-
-            Text(focus.title)
-                .font(.subheadline.weight(.semibold))
-
-            Text(focus.subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-
-            if let choiceID = focus.choiceID {
-                Text(ActionChoiceCatalog.definition(for: choiceID).identityLine)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-
-            if let previewChoice = focus.choiceID {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(actionPreview(previewChoice), id: \.self) { preview in
-                            Text(preview)
-                                .font(.caption.weight(.semibold))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
-                                .background(Color.black.opacity(0.06))
-                                .clipShape(Capsule())
-                        }
-                    }
-                }
-                .accessibilityIdentifier("action-preview-strip")
-            }
-
-            if !actionChoices.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(actionChoices) { action in
-                            let isSelected = selectedAction == action
-                            Button {
-                                AppFeedback.impact(.light)
-                                onSelectAction(action)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                        .font(.caption.weight(.bold))
-                                    Text(actionLabel(action))
-                                        .font(.caption.weight(.semibold))
-                                        .lineLimit(1)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .background(isSelected ? Color.black.opacity(0.82) : Color.black.opacity(0.06))
-                                .foregroundStyle(isSelected ? Color.white : Color.primary)
-                                .clipShape(Capsule())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("action-choice-\(action.rawValue)")
-                        }
-                    }
-                }
-            }
-        }
+        ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
     }
 }
 
 private struct CompressedPlannerTab: View {
     let identifier: String
     let overview: TabOverviewModel
-    let selectedAction: ActionChoiceID?
     let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
     let onSelectAction: (ActionChoiceID) -> Void
     let openDetail: (PlannerDetailDestination) -> Void
     let openInsight: (ChangeInsightTopic) -> Void
@@ -4227,15 +5022,14 @@ private struct CompressedPlannerTab: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 8) {
                         TrendBadge(title: overview.trendLabel, tone: overview.tone)
-                        if selectedAction != nil {
-                            TrendBadge(title: "Focus Set", tone: .positive)
-                        }
                     }
 
-                    Text(overview.summary)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
+                    if !overview.summary.isEmpty {
+                        Text(overview.summary)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                    }
                 }
             }
             .accessibilityIdentifier("\(identifier)-overview-header")
@@ -4255,7 +5049,7 @@ private struct CompressedPlannerTab: View {
             }
 
             PlannerSectionCard(
-                title: "Action Deck",
+                title: "Pressure Read",
                 symbol: overview.primaryPressure.symbol,
                 status: overview.primaryPressure.title,
                 tone: overview.primaryPressure.tone,
@@ -4271,10 +5065,7 @@ private struct CompressedPlannerTab: View {
 
                     CompactFocusDock(
                         focus: overview.recommendedFocus,
-                        selectedAction: selectedAction,
                         actionChoices: actionChoices,
-                        actionLabel: actionLabel,
-                        actionPreview: actionPreview,
                         onSelectAction: onSelectAction
                     )
                 }
@@ -4377,6 +5168,7 @@ private struct FeedHomeTab: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             feedHero
+                .accessibilityIdentifier("feed-overview-header")
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -4385,40 +5177,9 @@ private struct FeedHomeTab: View {
                     }
                 }
                 .padding(.horizontal, 2)
+                .accessibilityIdentifier("feed-overview-audit")
             }
             .accessibilityIdentifier("life-signals")
-
-            PlannerSectionCard(
-                title: "Now",
-                symbol: "bolt.horizontal.circle.fill",
-                status: nowStatus,
-                tone: queuedInteractionCount > 0 ? .positive : .warning
-            ) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(nextDecisionTitle)
-                        .font(.headline)
-                    Text(nextDecisionDetail)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-
-                    Text(queuedInteractionCount > 0 ? "Finish the live card stack to settle the year." : pendingActionSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .accessibilityIdentifier("feed-now-card")
-
-            if !comingUpItems.isEmpty {
-                PlannerSectionCard(
-                    title: "Coming Up",
-                    symbol: "hourglass.bottomhalf.filled",
-                    status: comingUpItems.first ?? "Nothing urgent",
-                    tone: .neutral
-                ) {
-                    ChipStrip(title: "Brace For", items: comingUpItems, tone: .neutral, identifier: "feed-coming-up")
-                }
-            }
 
             PlannerSectionCard(
                 title: "Pressure Map",
@@ -4443,7 +5204,39 @@ private struct FeedHomeTab: View {
                     }
                 }
             }
-            .accessibilityIdentifier("feed-pressure-card")
+            .accessibilityIdentifier("feed-overview-pressure")
+
+            if !comingUpItems.isEmpty {
+                PlannerSectionCard(
+                    title: "Coming Up",
+                    symbol: "hourglass.bottomhalf.filled",
+                    status: comingUpItems.first ?? "Nothing urgent",
+                    tone: .neutral
+                ) {
+                    ChipStrip(title: "Brace For", items: comingUpItems, tone: .neutral, identifier: "feed-coming-up")
+                }
+            }
+
+            PlannerSectionCard(
+                title: "Now",
+                symbol: "bolt.horizontal.circle.fill",
+                status: nowStatus,
+                tone: queuedInteractionCount > 0 ? .positive : .warning
+            ) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(nextDecisionTitle)
+                        .font(.headline)
+                    Text(nextDecisionDetail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+
+                    Text(queuedInteractionCount > 0 ? "Finish the live card stack to settle the year." : pendingActionSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier("feed-now-card")
 
             if !summaryItems.isEmpty {
                 PlannerSectionCard(
@@ -4476,12 +5269,13 @@ private struct FeedHomeTab: View {
     }
 
     private var feedHero: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Life Feed")
-                .font(.title2.weight(.bold))
-            Text("Fast read, hard choices, and the fallout that keeps following you.")
+                .font(.title.weight(.bold))
+            Text("Pressure, timing, and momentum — read fast, tap once to drill down.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -4536,6 +5330,7 @@ private struct CompactInteractionOverlay: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(sheetAccessibilityIdentifier)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
 
     private var sheetAccessibilityIdentifier: String {
@@ -4568,8 +5363,12 @@ private struct CompactInteractionOverlay: View {
             Text("Year In Brief")
                 .font(.title3.weight(.bold))
 
+            if let yearlyStanceOutcome = summary.yearlyStanceOutcome {
+                compactItem(label: "Year Goal", title: yearlyStanceOutcome.title, detail: yearlyStanceOutcome.detail, tone: PlannerTone(yearlyStanceOutcome.tone))
+            }
+
             if let focusOutcome = summary.focusOutcome {
-                compactItem(label: "What Changed", title: focusOutcome.title, detail: focusOutcome.detail, tone: PlannerTone(focusOutcome.tone))
+                compactItem(label: "Pattern Read", title: focusOutcome.title, detail: focusOutcome.detail, tone: PlannerTone(focusOutcome.tone))
             }
 
             if let mainTradeoff = summary.mainTradeoff {
@@ -5409,114 +6208,180 @@ private struct TraitStrip: View {
     }
 }
 
-private struct ActionSelectionModule: View {
-    let title: String
-    let selectedAction: ActionChoiceID?
-    let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
-    let onSelectAction: (ActionChoiceID) -> Void
+private struct ActionChoiceRow: View {
+    let action: ActionChoiceID
+    let immediate: Bool
+    let colorScheme: ColorScheme
+    let onSelect: () -> Void
 
-    private var highlightedAction: ActionChoiceID? {
-        selectedAction ?? actionChoices.first
+    private var definition: ActionChoiceDefinition {
+        ActionChoiceCatalog.definition(for: action)
     }
 
-    private var actionRows: [[ActionChoiceID]] {
-        stride(from: 0, to: actionChoices.count, by: 2).map { index in
-            Array(actionChoices[index..<min(index + 2, actionChoices.count)])
+    var body: some View {
+        Button {
+            AppFeedback.impact(.light)
+            onSelect()
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: rowSymbol)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(rowTone.color)
+                    .frame(width: 38, height: 38)
+                    .background(rowTone.fill)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(definition.title)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    Text(definition.subtitle)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+
+                    previewTagsRow
+                }
+
+                Spacer()
+
+                VStack(spacing: 4) {
+                    Image(systemName: immediate ? "play.fill" : "text.line.magnify")
+                        .font(.system(size: 13, weight: .black))
+                    Text(immediate ? "NOW" : "QUEUE")
+                        .font(.system(size: 8, weight: .black))
+                }
+                .foregroundStyle(Color.white)
+                .frame(width: 42, height: 42)
+                .background(rowTone.color)
+                .clipShape(Circle())
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, minHeight: 74, alignment: .leading)
+            .background(OLTheme.cardFill(colorScheme))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(rowTone.fill, lineWidth: 1.2)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 8, x: 0, y: 4)
         }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("action-choice-\(action.rawValue)")
+        .accessibilityLabel(definition.title)
+        .accessibilityHint(immediate ? "Applies this choice immediately." : "Queues this choice until you age up.")
+    }
+
+    private var previewTagsRow: some View {
+        HStack(spacing: 6) {
+            ForEach(Array(definition.previewTags.prefix(3)), id: \.self) { tag in
+                Text(tag)
+                    .font(.system(size: 11, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(rowTone.fill)
+                    .clipShape(Capsule())
+            }
+        }
+        .accessibilityIdentifier("action-preview-strip")
+    }
+
+    private var rowTone: PlannerTone {
+        switch definition.baseFriction {
+        case .warning, .resistance, .locked:
+            return .warning
+        case .none:
+            return .neutral
+        }
+    }
+
+    private var rowSymbol: String {
+        let tags = definition.previewTags.joined(separator: " ").lowercased()
+        if tags.contains("money") || tags.contains("cash") || tags.contains("debt") || tags.contains("fund") {
+            return "dollarsign.circle.fill"
+        }
+        if tags.contains("health") || tags.contains("sleep") || tags.contains("recovery") || tags.contains("stress") {
+            return "heart.fill"
+        }
+        if tags.contains("friend") || tags.contains("bond") || tags.contains("belonging") || tags.contains("support") {
+            return "person.2.fill"
+        }
+        if tags.contains("standing") || tags.contains("readiness") || tags.contains("school") {
+            return "book.closed.fill"
+        }
+        if definition.baseFriction == .warning || definition.baseFriction == .resistance {
+            return "exclamationmark.triangle.fill"
+        }
+        return "bolt.fill"
+    }
+}
+
+private struct ActionSelectionModule: View {
+    let actionChoices: [ActionChoiceID]
+    let onSelectAction: (ActionChoiceID) -> Void
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var instantChoices: [ActionChoiceID] {
+        actionChoices.filter { ActionChoiceCatalog.resolutionTier(for: $0) == .instant }
+    }
+
+    private var committedChoices: [ActionChoiceID] {
+        actionChoices.filter { ActionChoiceCatalog.resolutionTier(for: $0) == .committed }
     }
 
     var body: some View {
         if !actionChoices.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title)
-                    .font(.headline)
-
-                if let highlightedAction {
-                    let definition = ActionChoiceCatalog.definition(for: highlightedAction)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(selectedAction == nil ? "Suggested focus" : "Current focus")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.secondary)
-                        Text(definition.title)
-                            .font(.subheadline.weight(.semibold))
-                        Text(definition.subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(selectedAction == nil ? "Suggested yearly focus" : "Current yearly focus")
-                    .accessibilityValue(definition.title)
+            VStack(alignment: .leading, spacing: 14) {
+                if !instantChoices.isEmpty {
+                    actionSection(
+                        title: "Right now",
+                        subtitle: "Instant",
+                        headerSymbol: "bolt.fill",
+                        choices: instantChoices,
+                        immediate: true
+                    )
                 }
-
-                VStack(spacing: 8) {
-                    ForEach(Array(actionRows.enumerated()), id: \.offset) { _, row in
-                        HStack(alignment: .top, spacing: 8) {
-                            ForEach(row) { action in
-                                let definition = ActionChoiceCatalog.definition(for: action)
-                                Button {
-                                    AppFeedback.impact(.light)
-                                    onSelectAction(action)
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: selectedAction == action ? "checkmark.circle.fill" : "circle")
-                                                .font(.caption.weight(.semibold))
-                                            Text(definition.title)
-                                                .font(.caption.weight(.semibold))
-                                                .multilineTextAlignment(.leading)
-                                            Spacer(minLength: 0)
-                                        }
-                                        Text(definition.subtitle)
-                                            .font(.caption2)
-                                            .foregroundStyle(selectedAction == action ? Color.white.opacity(0.85) : .secondary)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-                                    .background(selectedAction == action ? Color.black.opacity(0.82) : Color.black.opacity(0.06))
-                                    .foregroundStyle(selectedAction == action ? Color.white : Color.primary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                }
-                                .buttonStyle(.plain)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .accessibilityIdentifier("action-choice-\(action.rawValue)")
-                                .accessibilityLabel(definition.title)
-                                .accessibilityValue(selectedAction == action ? "Selected" : "Not selected")
-                                .accessibilityHint("Sets your yearly focus to \(definition.title).")
-                            }
-
-                            if row.count == 1 {
-                                Spacer(minLength: 0)
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-                    }
+                if !committedChoices.isEmpty {
+                    actionSection(
+                        title: "Year stance",
+                        subtitle: "Intent",
+                        headerSymbol: "calendar",
+                        choices: committedChoices,
+                        immediate: false
+                    )
                 }
+            }
+            .accessibilityIdentifier("action-deck-header")
+        }
+    }
 
-                if let highlightedAction {
-                    let definition = ActionChoiceCatalog.definition(for: highlightedAction)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(definition.identityLine)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+    @ViewBuilder
+    private func actionSection(title: String, subtitle: String, headerSymbol: String, choices: [ActionChoiceID], immediate: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label(title, systemImage: headerSymbol)
+                    .font(.headline.weight(.bold))
+                Spacer()
+                Text(subtitle)
+                    .font(.caption.weight(.heavy))
+                    .foregroundStyle(immediate ? PlannerTone.positive.color : Color.accentColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(immediate ? PlannerTone.positive.fill : Color.accentColor.opacity(0.15))
+                    .clipShape(Capsule())
+            }
 
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(actionPreview(highlightedAction), id: \.self) { preview in
-                                    Text(preview)
-                                        .font(.caption.weight(.semibold))
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 7)
-                                        .background(Color.black.opacity(0.06))
-                                        .clipShape(Capsule())
-                                }
-                            }
-                        }
-                        .accessibilityIdentifier("action-preview-strip")
-                    }
-                }
+            ForEach(choices) { action in
+                ActionChoiceRow(
+                    action: action,
+                    immediate: immediate,
+                    colorScheme: colorScheme,
+                    onSelect: { onSelectAction(action) }
+                )
             }
         }
     }
@@ -5801,10 +6666,7 @@ private struct EducationPlannerTab: View {
     let nextUnlocks: [String]
     let summaryItems: [YearlyOutcomeItem]
     let recentHistory: [HistoryEntry]
-    let selectedAction: ActionChoiceID?
     let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
     let onSelectAction: (ActionChoiceID) -> Void
     let comingUpItems: [String]
     let openDetail: (PlannerDetailDestination) -> Void
@@ -5818,10 +6680,7 @@ private struct EducationPlannerTab: View {
         nextUnlocks: [String],
         summaryItems: [YearlyOutcomeItem],
         recentHistory: [HistoryEntry],
-        selectedAction: ActionChoiceID?,
         actionChoices: [ActionChoiceID],
-        actionLabel: @escaping (ActionChoiceID) -> String,
-        actionPreview: @escaping (ActionChoiceID) -> [String],
         onSelectAction: @escaping (ActionChoiceID) -> Void,
         comingUpItems: [String],
         openDetail: @escaping (PlannerDetailDestination) -> Void
@@ -5834,17 +6693,14 @@ private struct EducationPlannerTab: View {
         self.nextUnlocks = nextUnlocks
         self.summaryItems = summaryItems
         self.recentHistory = recentHistory
-        self.selectedAction = selectedAction
         self.actionChoices = actionChoices
-        self.actionLabel = actionLabel
-        self.actionPreview = actionPreview
         self.onSelectAction = onSelectAction
         self.comingUpItems = comingUpItems
         self.openDetail = openDetail
     }
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             PlannerSectionCard(
                 title: "Education",
                 symbol: "book.closed.fill",
@@ -5854,57 +6710,42 @@ private struct EducationPlannerTab: View {
                 detailIdentifier: "education-overview-detail-button",
                 detailAction: { openDetail(.educationOverview) }
             ) {
-                MetricRow(metrics: [
-                    ("Standing", "\(state.education.schoolStanding)", state.education.schoolStanding >= 70 ? .positive : (state.education.schoolStanding < 40 ? .warning : .neutral)),
-                    (isTeenExperience ? "Readiness" : "Campus Fit", isTeenExperience ? "\(state.education.applicationReadiness)" : "\(state.education.campusFit)", (isTeenExperience ? state.education.applicationReadiness : state.education.campusFit) >= 60 ? .positive : ((isTeenExperience ? state.education.applicationReadiness : state.education.campusFit) < 40 ? .warning : .neutral)),
-                    (isTeenExperience ? "Belonging" : "Burnout", isTeenExperience ? "\(state.education.schoolBelonging)" : "\(state.education.burnoutRisk)", isTeenExperience ? (state.education.schoolBelonging >= 58 ? .positive : (state.education.schoolBelonging < 35 ? .warning : .neutral)) : (state.education.burnoutRisk >= 55 ? .warning : .neutral))
-                ])
-
-                AuditStrip(insights: auditInsights, identifier: "education-audit-strip")
-
-                Text(educationSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                YearlyConsequenceStrip(items: summaryItems, identifier: "education-consequence-strip")
-            }
-
-            if isTeenExperience {
-                PlannerSectionCard(
-                    title: "School Climate",
-                    symbol: "sparkles",
-                    status: state.education.hasScholarship ? "Doors opening" : "Pressure map",
-                    tone: state.education.hasScholarship ? .positive : (pressureSources.isEmpty ? .neutral : .warning),
-                    detailTitle: "Details",
-                    detailIdentifier: "education-climate-detail-button",
-                    detailAction: { openDetail(.educationClimate) }
-                ) {
+                VStack(alignment: .leading, spacing: 12) {
                     MetricRow(metrics: [
-                        ("Pressure", "\(state.education.attendancePressure)", state.education.attendancePressure >= 55 ? .warning : .neutral),
-                        ("Scholarship", state.education.hasScholarship ? "Live" : (state.education.applicationReadiness >= 58 ? "Nearby" : "Closed"), state.education.hasScholarship ? .positive : (state.education.applicationReadiness >= 58 ? .neutral : .warning)),
-                        ("Track", state.education.academicTrack.rawValue.capitalized, state.education.academicTrack == .struggling ? .warning : .neutral)
+                        ("Standing", "\(state.education.schoolStanding)", state.education.schoolStanding >= 70 ? .positive : (state.education.schoolStanding < 40 ? .warning : .neutral)),
+                        (isTeenExperience ? "Readiness" : "Campus Fit", isTeenExperience ? "\(state.education.applicationReadiness)" : "\(state.education.campusFit)", (isTeenExperience ? state.education.applicationReadiness : state.education.campusFit) >= 60 ? .positive : ((isTeenExperience ? state.education.applicationReadiness : state.education.campusFit) < 40 ? .warning : .neutral))
                     ])
-
-                    InsightStrip(title: "Why This Matters", insights: whyItMatters, identifier: "education-teen-strip")
-                    SchoolClimateModule(metrics: schoolClimateMetrics)
-                    ChipStrip(title: "Pressure Sources", items: pressureSources, tone: .warning, identifier: "education-pressure-sources")
-                    ChipStrip(title: "Next Unlocks", items: nextUnlocks, tone: .neutral, identifier: "education-next-unlocks")
-                    if !comingUpItems.isEmpty {
-                        ChipStrip(title: "Coming Up", items: comingUpItems, tone: .neutral, identifier: "education-coming-up")
-                    }
+                    Text(educationSummary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
                 }
             }
+            .accessibilityIdentifier("education-overview-header")
 
-            PlannerSectionCard(
-                title: "Quick Actions",
-                symbol: "target",
-                status: selectedAction.map(actionLabel) ?? "Pick a focus",
-                tone: selectedAction == nil ? .warning : .neutral
-            ) {
-                ActionSelectionModule(title: "Select Action", selectedAction: selectedAction, actionChoices: actionChoices, actionLabel: actionLabel, actionPreview: actionPreview, onSelectAction: onSelectAction)
+            AuditStrip(insights: auditInsights, identifier: "education-overview-audit")
+
+            if !pressureSources.isEmpty || !comingUpItems.isEmpty {
+                PlannerSectionCard(
+                    title: "What Can Bite",
+                    symbol: "exclamationmark.triangle.fill",
+                    status: pressureSources.first ?? comingUpItems.first,
+                    tone: pressureSources.isEmpty ? .neutral : .warning,
+                    detailTitle: "Inspect",
+                    detailIdentifier: "education-pressure-detail-button",
+                    detailAction: { openDetail(.educationClimate) }
+                ) {
+                    ChipStrip(
+                        title: "Live pressure",
+                        items: Array((pressureSources + comingUpItems).prefix(4)),
+                        tone: pressureSources.isEmpty ? .neutral : .warning,
+                        identifier: "education-pressure-strip"
+                    )
+                }
+                .accessibilityIdentifier("education-overview-pressure")
             }
 
-            RecentLifeModule(history: recentHistory, detailAction: { openDetail(.educationHistory) })
+            ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
         }
         .accessibilityIdentifier("education-tab-content")
     }
@@ -6000,16 +6841,15 @@ private struct CareerPlannerTab: View {
     let roleTitle: String
     let summaryItems: [YearlyOutcomeItem]
     let recentHistory: [HistoryEntry]
-    let selectedAction: ActionChoiceID?
     let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
     let onSelectAction: (ActionChoiceID) -> Void
+    let crimeActionChoices: [ActionChoiceID]
+    let onSelectCrimeAction: (ActionChoiceID) -> Void
     let comingUpItems: [String]
     let openDetail: (PlannerDetailDestination) -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             PlannerSectionCard(
                 title: "Career",
                 symbol: "briefcase.fill",
@@ -6019,59 +6859,79 @@ private struct CareerPlannerTab: View {
                 detailIdentifier: "career-overview-detail-button",
                 detailAction: { openDetail(.careerOverview) }
             ) {
-                MetricRow(metrics: [
-                    ("Performance", "\(state.career.performance)", state.career.performance >= 75 ? .positive : (state.career.performance < 35 ? .warning : .neutral)),
-                    ("Income", "$\(state.career.annualIncome)", state.career.annualIncome > 0 ? .positive : .warning),
-                    ("Years", "\(state.career.yearsWorked)", .neutral)
-                ])
-                MetricRow(metrics: [
-                    ("Lane", experienceLaneLabel, .neutral),
-                    ("Bridge", specialCareerReadinessLabel, specialCareerReadinessTone),
-                    ("Role Pool", "\(qualifiedRoleCount)", qualifiedRoleCount > 0 ? .positive : .warning)
-                ])
-
-                AuditStrip(insights: auditInsights, identifier: "career-audit-strip")
-
-                Text(careerSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                if !comingUpItems.isEmpty {
-                    ChipStrip(title: "Coming Up", items: comingUpItems, tone: .neutral, identifier: "career-coming-up")
+                VStack(alignment: .leading, spacing: 12) {
+                    MetricRow(metrics: [
+                        ("Performance", "\(state.career.performance)", state.career.performance >= 75 ? .positive : (state.career.performance < 35 ? .warning : .neutral)),
+                        ("Income", "$\(state.career.annualIncome)", state.career.annualIncome > 0 ? .positive : .warning),
+                        ("Years", "\(state.career.yearsWorked)", .neutral)
+                    ])
+                    Text(careerSummary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
                 }
-
-                YearlyConsequenceStrip(items: summaryItems, identifier: "career-consequence-strip")
             }
+            .accessibilityIdentifier("career-overview-header")
+
+            AuditStrip(insights: auditInsights, identifier: "career-overview-audit")
 
             if let specialMetrics {
                 PlannerSectionCard(
-                    title: "Risk Track",
+                    title: "Special Career",
                     symbol: state.specialCareer.track == .crime ? "flame.fill" : "sparkles",
                     status: state.specialCareer.track == .crime ? "High volatility" : "Spotlight pressure",
-                    tone: state.specialCareer.burnout >= 70 || state.specialCareer.track == .crime ? .warning : .neutral,
-                    detailTitle: "Details",
-                    detailIdentifier: "career-track-detail-button",
-                    detailAction: { openDetail(.careerTrack) }
+                    tone: state.specialCareer.burnout >= 70 || state.specialCareer.track == .crime ? .warning : .neutral
                 ) {
                     MetricRow(metrics: specialMetrics)
-                    Text(state.specialCareer.track == .crime ? "Fast money is running beside your normal career and can still blow back into work, health, and relationships." : "Attention-based work is opening a second career lane, but the audience and burnout numbers matter as much as income.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
                 }
             }
 
-            PlannerSectionCard(
-                title: "Quick Actions",
-                symbol: "target",
-                status: selectedAction.map(actionLabel) ?? "Pick a focus",
-                tone: selectedAction == nil ? .warning : .neutral
-            ) {
-                ActionSelectionModule(title: "Select Action", selectedAction: selectedAction, actionChoices: actionChoices, actionLabel: actionLabel, actionPreview: actionPreview, onSelectAction: onSelectAction)
+            if showsCrimeCareerSection {
+                PlannerSectionCard(
+                    title: "Crime",
+                    symbol: "flame.fill",
+                    status: crimeStatus,
+                    tone: crimeTone
+                ) {
+                    MetricRow(metrics: [
+                        ("Heat", "\(state.crime.heat)", state.crime.heat >= 65 ? .warning : .neutral),
+                        ("Loyalty", "\(state.crime.loyalty)", state.crime.loyalty >= 55 ? .positive : .neutral),
+                        ("Pressure", "\(state.crime.territoryPressure)", state.crime.territoryPressure >= 60 ? .warning : .neutral)
+                    ])
+
+                    ActionSelectionModule(actionChoices: crimeActionChoices, onSelectAction: onSelectCrimeAction)
+                }
+                .accessibilityIdentifier("crime-career-section")
             }
 
-            RecentLifeModule(history: recentHistory, detailAction: { openDetail(.careerHistory) })
+            ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
         }
         .accessibilityIdentifier("career-tab-content")
+    }
+
+    private var showsCrimeCareerSection: Bool {
+        state.crime.status != .inactive || !crimeActionChoices.isEmpty || state.specialCareer.track == .crime
+    }
+
+    private var crimeStatus: String {
+        switch state.crime.status {
+        case .inactive:
+            return "Dormant"
+        case .active:
+            return state.crime.crewID == nil ? "Operating solo" : "Crew active"
+        case .layingLow:
+            return "Laying low"
+        }
+    }
+
+    private var crimeTone: PlannerTone {
+        if state.crime.heat >= 65 || state.crime.territoryPressure >= 60 || state.crime.burnout >= 70 {
+            return .warning
+        }
+        if state.crime.status != .inactive && state.crime.loyalty >= 55 {
+            return .positive
+        }
+        return .neutral
     }
 
     private var careerSummary: String {
@@ -6181,16 +7041,13 @@ private struct FinancePlannerTab: View {
     let policyLabel: String
     let summaryItems: [YearlyOutcomeItem]
     let recentHistory: [HistoryEntry]
-    let selectedAction: ActionChoiceID?
     let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
     let onSelectAction: (ActionChoiceID) -> Void
     let comingUpItems: [String]
     let openDetail: (PlannerDetailDestination) -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             PlannerSectionCard(
                 title: "Finance",
                 symbol: "dollarsign.circle.fill",
@@ -6200,117 +7057,43 @@ private struct FinancePlannerTab: View {
                 detailIdentifier: "finance-cashflow-detail-button",
                 detailAction: { openDetail(.financeCashflow) }
             ) {
-                if isTeenExperience {
-                    MetricRow(metrics: teenMetrics)
-                    MetricRow(metrics: [
-                        ("School Cost", "$\(state.finance.annualEducationCost)", state.finance.annualEducationCost > 0 ? .warning : .neutral),
-                        ("Housing", housingLabel, state.housing.housingStability < 35 ? .warning : .neutral),
-                        ("Policy", policyLabel, .neutral)
-                    ])
-                } else {
-                    MetricRow(metrics: [
-                        ("Net", "$\(state.finance.annualNetIncome)", state.finance.annualNetIncome > 0 ? .positive : .warning),
-                        ("Expenses", "$\(state.finance.annualTotalExpenses)", state.finance.annualTotalExpenses > state.finance.annualNetIncome ? .warning : .neutral),
-                        ("Stress", "\(state.finance.financialStress)", state.finance.financialStress >= 45 ? .warning : .neutral)
-                    ])
-
-                    MetricRow(metrics: [
-                        ("Cash", "$\(state.finance.cashOnHand)", state.finance.cashOnHand >= 0 ? .positive : .warning),
-                        ("Housing", housingLabel, state.housing.housingStability < 35 ? .warning : .neutral),
-                        ("Policy", policyLabel, .neutral)
-                    ])
-
-                    if homeownershipActive {
+                VStack(alignment: .leading, spacing: 12) {
+                    if isTeenExperience {
+                        MetricRow(metrics: teenMetrics)
+                    } else {
                         MetricRow(metrics: [
-                            ("Home Fund", "$\(state.finance.homeDownPaymentSavings)", state.finance.homeDownPaymentSavings > 0 ? .positive : .neutral),
-                            ("Equity", "$\(state.finance.homeEquity)", state.finance.homeEquity > 0 ? .positive : .neutral),
-                            ("Housing", signedDollar(state.finance.lastYearHousingGainLoss), state.finance.lastYearHousingGainLoss >= 0 ? .positive : .warning)
-                        ])
-
-                        MetricRow(metrics: [
-                            ("Home", homeStatusLabel, homeStatusTone),
-                            ("Burden", "$\(state.finance.housingDebtBurden)", state.finance.housingDebtBurden > 0 ? .warning : .neutral),
-                            ("Value", "$\(state.assets.primaryResidence?.homeValue ?? state.assets.targetHomeValue)", (state.assets.primaryResidence?.homeValue ?? state.assets.targetHomeValue) > 0 ? .neutral : .neutral)
+                            ("Cash", "$\(state.finance.cashOnHand)", state.finance.cashOnHand >= 0 ? .positive : .warning),
+                            ("Net", "$\(state.finance.annualNetIncome)", state.finance.annualNetIncome > 0 ? .positive : .warning),
+                            ("Stress", "\(state.finance.financialStress)", state.finance.financialStress >= 45 ? .warning : .neutral)
                         ])
                     }
-
-                    if state.finance.hasInvestments || state.finance.lastYearInvestmentDelta != 0 {
-                        MetricRow(metrics: [
-                            ("Invested", "$\(state.finance.investedBalance)", state.finance.investedBalance > 0 ? .positive : .neutral),
-                            ("Market", signedDollar(state.finance.lastYearInvestmentDelta), state.finance.lastYearInvestmentDelta >= 0 ? .positive : .warning),
-                            ("Risk", state.finance.investmentRiskProfile.displayLabel, riskTone)
-                        ])
-
-                        MetricRow(metrics: [
-                            ("Liquid", "$\(state.finance.cashOnHand)", state.finance.cashOnHand >= 0 ? .positive : .warning),
-                            ("Index", "$\(state.finance.indexFundBalance)", state.finance.indexFundBalance > 0 ? .positive : .neutral),
-                            ("Stocks", "$\(state.finance.stockPortfolioBalance)", state.finance.stockPortfolioBalance > 0 ? .positive : .neutral)
-                        ])
-                    }
+                    Text(financeSummary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
                 }
-
-                AuditStrip(insights: auditInsights, identifier: "finance-audit-strip")
-
-                Text(financeSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                YearlyConsequenceStrip(items: summaryItems, identifier: "finance-consequence-strip")
             }
+            .accessibilityIdentifier("finance-overview-header")
+
+            AuditStrip(insights: auditInsights, identifier: "finance-overview-audit")
 
             PlannerSectionCard(
-                title: "Investing",
-                symbol: "chart.line.uptrend.xyaxis",
-                status: state.finance.hasInvestments ? "Portfolio active" : "Cash first",
-                tone: state.finance.hasInvestments ? riskTone : .neutral,
-                detailTitle: "Details",
-                detailIdentifier: "finance-investing-detail-button",
-                detailAction: { openDetail(.financeInvesting) }
-            ) {
-                MetricRow(metrics: [
-                    ("Invested", "$\(state.finance.investedBalance)", state.finance.investedBalance > 0 ? .positive : .neutral),
-                    ("Index", "$\(state.finance.indexFundBalance)", state.finance.indexFundBalance > 0 ? .positive : .neutral),
-                    ("Stocks", "$\(state.finance.stockPortfolioBalance)", state.finance.stockPortfolioBalance > 0 ? .positive : .neutral)
-                ])
-                MetricRow(metrics: [
-                    ("Market", signedDollar(state.finance.lastYearInvestmentDelta), state.finance.lastYearInvestmentDelta >= 0 ? .positive : .warning),
-                    ("Risk", state.finance.investmentRiskProfile.displayLabel, riskTone),
-                    ("Liquidity", "$\(state.finance.cashOnHand)", state.finance.cashOnHand >= 0 ? .positive : .warning)
-                ])
-            }
-
-            PlannerSectionCard(
-                title: "Policy And Housing",
-                symbol: "building.2.crop.circle",
+                title: "Money Pressure",
+                symbol: state.finance.lastYearBalanceDelta < 0 ? "arrow.down.circle.fill" : "chart.line.uptrend.xyaxis",
                 status: policyLabel,
-                tone: state.housing.housingStability < 35 ? .warning : .neutral,
-                detailTitle: "Details",
+                tone: state.finance.financialStress >= 45 || state.finance.lastYearBalanceDelta < 0 ? .warning : .neutral,
+                detailTitle: "Inspect",
                 detailIdentifier: "finance-policy-detail-button",
                 detailAction: { openDetail(.financePolicy) }
             ) {
                 MetricRow(metrics: [
-                    ("Housing", housingLabel, state.housing.housingStability < 35 ? .warning : .neutral),
-                    ("Stability", "\(state.housing.housingStability)", state.housing.housingStability < 35 ? .warning : .neutral),
-                    ("Stress", "\(state.finance.financialStress)", state.finance.financialStress >= 45 ? .warning : .neutral)
+                    ("Housing", housingLabel, state.housing.housingStability < 40 ? .warning : .neutral),
+                    ("Velocity", signedDollar(state.finance.lastYearBalanceDelta), state.finance.lastYearBalanceDelta < 0 ? .warning : (state.finance.lastYearBalanceDelta > 0 ? .positive : .neutral))
                 ])
-                Text("Regional policy, housing strain, and budget pressure all decide whether a decent income actually feels livable.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                if !comingUpItems.isEmpty {
-                    ChipStrip(title: "Coming Up", items: comingUpItems, tone: .neutral, identifier: "finance-coming-up")
-                }
             }
+            .accessibilityIdentifier("finance-overview-pressure")
 
-            PlannerSectionCard(
-                title: "Quick Actions",
-                symbol: "target",
-                status: selectedAction.map(actionLabel) ?? "Pick a focus",
-                tone: selectedAction == nil ? .warning : .neutral
-            ) {
-                ActionSelectionModule(title: "Select Action", selectedAction: selectedAction, actionChoices: actionChoices, actionLabel: actionLabel, actionPreview: actionPreview, onSelectAction: onSelectAction)
-            }
-
-            RecentLifeModule(history: recentHistory, detailAction: { openDetail(.financeHistory) })
+            ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
         }
         .accessibilityIdentifier("finance-tab-content")
     }
@@ -6465,16 +7248,13 @@ private struct RelationshipsPlannerTab: View {
     let teenMetrics: [(String, String, PlannerTone)]
     let summaryItems: [YearlyOutcomeItem]
     let recentHistory: [HistoryEntry]
-    let selectedAction: ActionChoiceID?
     let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
     let onSelectAction: (ActionChoiceID) -> Void
     let comingUpItems: [String]
     let openDetail: (PlannerDetailDestination) -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             PlannerSectionCard(
                 title: "Relationships",
                 symbol: "person.2.fill",
@@ -6484,61 +7264,22 @@ private struct RelationshipsPlannerTab: View {
                 detailIdentifier: "relationships-connections-detail-button",
                 detailAction: { openDetail(.relationshipsConnections) }
             ) {
-                MetricRow(metrics: isTeenExperience ? teenMetrics : [
-                    ("Connections", "\(connectionCount)", connectionCount > 0 ? .positive : .warning),
-                    ("Social Climate", "\(state.relationships.publicReputation)", state.relationships.publicReputation >= 60 ? .positive : (state.relationships.publicReputation <= 40 ? .warning : .neutral)),
-                    ("Rumor Heat", "\(state.relationships.activeRumorHeat)", state.relationships.activeRumorHeat >= 55 ? .warning : .neutral),
-                    ("Loose Ends", "\(state.relationships.activeTensionCount)", state.relationships.activeTensionCount > 0 ? .warning : .neutral)
-                ])
-
-                AuditStrip(insights: auditInsights, identifier: "relationships-audit-strip")
-
-                Text(relationshipSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                connectionPreview
-
-                if !looseEnds.isEmpty {
-                    ChipStrip(title: "Loose Ends", items: Array(looseEnds.prefix(3)), tone: .warning, identifier: "relationships-loose-ends")
-                }
-
-                YearlyConsequenceStrip(items: summaryItems, identifier: "relationships-consequence-strip")
-            }
-
-            PlannerSectionCard(
-                title: "Family Planning",
-                symbol: "heart.text.square.fill",
-                status: familyStatusMetric,
-                tone: state.family.isPregnant || state.family.childCount > 0 ? .warning : .neutral,
-                detailTitle: "Details",
-                detailIdentifier: "relationships-family-detail-button",
-                detailAction: { openDetail(.relationshipsFamily) }
-            ) {
-                MetricRow(metrics: [
-                    ("Intent", state.family.pregnancyIntent.rawValue.capitalized, .neutral),
-                    ("Children", "\(state.family.childCount)", state.family.childCount > 0 ? .warning : .neutral),
-                    ("Postpartum", "\(state.family.postpartumYearsRemaining)", state.family.postpartumYearsRemaining > 0 ? .warning : .neutral),
-                    ("Future Align", "\(state.relationships.futureAlignment.averageReadiness)", state.relationships.futureAlignment.averageReadiness <= 42 ? .warning : .neutral)
-                ])
-                Text(state.family.isPregnant ? "Family pressure is no longer abstract. Health, money, and relationship alignment are all in the same conversation now." : "Family planning stays quiet until it doesn’t. This bucket keeps the hidden load visible before it blindsides the year.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                if !comingUpItems.isEmpty {
-                    ChipStrip(title: "Coming Up", items: comingUpItems, tone: .neutral, identifier: "relationships-coming-up")
+                VStack(alignment: .leading, spacing: 12) {
+                    MetricRow(metrics: isTeenExperience ? teenMetrics : [
+                        ("Connections", "\(connectionCount)", connectionCount > 0 ? .positive : .warning),
+                        ("Social Climate", "\(state.relationships.publicReputation)", state.relationships.publicReputation >= 60 ? .positive : (state.relationships.publicReputation <= 40 ? .warning : .neutral))
+                    ])
+                    Text(relationshipSummary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
                 }
             }
+            .accessibilityIdentifier("relationships-overview-header")
 
-            PlannerSectionCard(
-                title: "Quick Actions",
-                symbol: "target",
-                status: selectedAction.map(actionLabel) ?? "Pick a focus",
-                tone: selectedAction == nil ? .warning : .neutral
-            ) {
-                ActionSelectionModule(title: "Select Action", selectedAction: selectedAction, actionChoices: actionChoices, actionLabel: actionLabel, actionPreview: actionPreview, onSelectAction: onSelectAction)
-            }
+            AuditStrip(insights: auditInsights, identifier: "relationships-overview-audit")
 
-            RecentLifeModule(history: recentHistory, detailAction: { openDetail(.relationshipsHistory) })
+            ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
         }
         .accessibilityIdentifier("relationships-tab-content")
     }
@@ -6685,100 +7426,43 @@ private struct HealthPlannerTab: View {
     let teenMetrics: [(String, String, PlannerTone)]
     let summaryItems: [YearlyOutcomeItem]
     let recentHistory: [HistoryEntry]
-    let selectedAction: ActionChoiceID?
     let actionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
     let onSelectAction: (ActionChoiceID) -> Void
     let comingUpItems: [String]
     let openDetail: (PlannerDetailDestination) -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             PlannerSectionCard(
                 title: "Health",
-                symbol: "cross.case.fill",
+                symbol: "heart.fill",
                 status: healthStatus,
-                tone: state.player.health < 40 || !state.healthProfile.activeConditions.isEmpty ? .warning : .positive,
+                tone: state.player.health < 40 ? .warning : (state.player.health >= 60 ? .positive : .neutral),
                 detailTitle: "Details",
                 detailIdentifier: "health-overview-detail-button",
                 detailAction: { openDetail(.healthOverview) }
             ) {
-                if isTeenExperience {
-                    MetricRow(metrics: teenMetrics)
-                    MetricRow(metrics: [
-                        ("Mental", "\(state.healthProfile.mentalWellness)", state.healthProfile.mentalWellness >= 60 ? .positive : (state.healthProfile.mentalWellness < 40 ? .warning : .neutral)),
-                        ("Exercise", "\(state.healthProfile.habits.exercise)", tone(for: state.healthProfile.habits.exercise)),
-                        ("Housing", "\(state.housing.housingStability)", state.housing.housingStability < 35 ? .warning : .neutral)
-                    ])
-                } else {
-                    MetricRow(metrics: [
-                        ("Overall", "\(state.player.health)", state.player.health >= 60 ? .positive : (state.player.health < 40 ? .warning : .neutral)),
-                        ("Physical", "\(state.healthProfile.physicalWellness)", state.healthProfile.physicalWellness >= 60 ? .positive : (state.healthProfile.physicalWellness < 40 ? .warning : .neutral)),
-                        ("Mental", "\(state.healthProfile.mentalWellness)", state.healthProfile.mentalWellness >= 60 ? .positive : (state.healthProfile.mentalWellness < 40 ? .warning : .neutral))
-                    ])
-
-                    MetricRow(metrics: [
-                        ("Exercise", "\(state.healthProfile.habits.exercise)", tone(for: state.healthProfile.habits.exercise)),
-                        ("Nutrition", "\(state.healthProfile.habits.nutrition)", tone(for: state.healthProfile.habits.nutrition)),
-                        ("Housing", "\(state.housing.housingStability)", state.housing.housingStability < 35 ? .warning : .neutral)
-                    ])
-                }
-
-                AuditStrip(insights: auditInsights, identifier: "health-audit-strip")
-
-                Text(healthSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                YearlyConsequenceStrip(items: summaryItems, identifier: "health-consequence-strip")
-            }
-
-            PlannerSectionCard(
-                title: "Recovery Risks",
-                symbol: "bed.double.fill",
-                status: state.healthProfile.activeConditions.isEmpty ? "Manageable load" : "Conditions active",
-                tone: state.healthProfile.activeConditions.isEmpty ? .neutral : .warning,
-                detailTitle: "Details",
-                detailIdentifier: "health-conditions-detail-button",
-                detailAction: { openDetail(.healthConditions) }
-            ) {
-                MetricRow(metrics: [
-                    ("Exercise", "\(state.healthProfile.habits.exercise)", tone(for: state.healthProfile.habits.exercise)),
-                    ("Nutrition", "\(state.healthProfile.habits.nutrition)", tone(for: state.healthProfile.habits.nutrition)),
-                    ("Stress", "\(100 - state.healthProfile.mentalWellness)", state.healthProfile.mentalWellness < 45 ? .warning : .neutral)
-                ])
-
-                if !state.healthProfile.activeConditions.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(state.healthProfile.activeConditions) { condition in
-                                Text("\(condition.name) • \(condition.severity)")
-                                    .font(.caption.weight(.semibold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
-                                    .background(PlannerTone.warning.fill)
-                                    .clipShape(Capsule())
-                            }
-                        }
+                VStack(alignment: .leading, spacing: 12) {
+                    if isTeenExperience {
+                        MetricRow(metrics: teenMetrics)
+                    } else {
+                        MetricRow(metrics: [
+                            ("Overall", "\(state.player.health)", state.player.health >= 60 ? .positive : (state.player.health < 40 ? .warning : .neutral)),
+                            ("Physical", "\(state.healthProfile.physicalWellness)", state.healthProfile.physicalWellness >= 60 ? .positive : (state.healthProfile.physicalWellness < 40 ? .warning : .neutral)),
+                            ("Mental", "\(state.healthProfile.mentalWellness)", state.healthProfile.mentalWellness >= 60 ? .positive : (state.healthProfile.mentalWellness < 40 ? .warning : .neutral))
+                        ])
                     }
-                }
-
-                if !comingUpItems.isEmpty {
-                    ChipStrip(title: "Coming Up", items: comingUpItems, tone: .neutral, identifier: "health-coming-up")
+                    Text(healthSummary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
                 }
             }
+            .accessibilityIdentifier("health-overview-header")
 
-            PlannerSectionCard(
-                title: "Quick Actions",
-                symbol: "target",
-                status: selectedAction.map(actionLabel) ?? "Pick a focus",
-                tone: selectedAction == nil ? .warning : .neutral
-            ) {
-                ActionSelectionModule(title: "Select Action", selectedAction: selectedAction, actionChoices: actionChoices, actionLabel: actionLabel, actionPreview: actionPreview, onSelectAction: onSelectAction)
-            }
+            AuditStrip(insights: auditInsights, identifier: "health-overview-audit")
 
-            RecentLifeModule(history: recentHistory, detailAction: { openDetail(.healthHistory) })
+            ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
         }
         .accessibilityIdentifier("health-tab-content")
     }
@@ -7538,7 +8222,7 @@ private struct ActivitiesPlannerTab: View {
     @State private var selectedCategory: ActivityCategory = .mindBody
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             PlannerSectionCard(
                 title: "Activities",
                 symbol: "sparkles",
@@ -7566,58 +8250,19 @@ private struct ActivitiesPlannerTab: View {
                         }
                     }
                 }
-
-                Text(pushbackSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
-                if !summaryItems.isEmpty {
-                    YearlyConsequenceStrip(items: summaryItems, identifier: "activities-consequence-strip")
-                }
             }
 
-            PlannerSectionCard(
-                title: selectedCategory.title,
-                symbol: selectedCategory.symbol,
-                status: "\(activitiesForCategory(selectedCategory).count) options live",
-                tone: selectedCategory == .viceRisk ? .warning : .neutral
-            ) {
-                VStack(spacing: 10) {
-                    ForEach(activitiesForCategory(selectedCategory)) { activity in
-                        Button {
-                            onPerformActivity(activity.id)
-                        } label: {
-                            ActivityRow(activity: activity)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("activity-\(activity.id)")
+            VStack(spacing: 12) {
+                ForEach(activitiesForCategory(selectedCategory)) { activity in
+                    Button {
+                        onPerformActivity(activity.id)
+                    } label: {
+                        ActivityRow(activity: activity)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("activity-\(activity.id)")
                 }
             }
-
-            PlannerSectionCard(
-                title: "This Year",
-                symbol: "waveform.path.ecg",
-                status: "\(state.activities.yearlyCount) activity\(state.activities.yearlyCount == 1 ? "" : "ies")",
-                tone: state.activities.yearlyCount <= 5 ? .neutral : .warning
-            ) {
-                MetricRow(metrics: [
-                    ("Recovery", "\(state.activities.recoveryBalance)", state.activities.recoveryBalance >= 4 ? .positive : .neutral),
-                    ("Social", "\(state.activities.socialMomentum)", state.activities.socialMomentum >= 4 ? .positive : .neutral),
-                    ("Risk", "\(state.activities.riskLoad)", state.activities.riskLoad >= 8 ? .warning : .neutral)
-                ])
-
-                if !state.activities.currentYearActivities.isEmpty {
-                    ChipStrip(
-                        title: "Recent Pattern",
-                        items: Array(state.activities.currentYearActivities.prefix(3).map(\.headline)),
-                        tone: state.activities.riskLoad >= 8 ? .warning : .neutral,
-                        identifier: "activities-pattern-strip"
-                    )
-                }
-            }
-
-            RecentLifeModule(history: recentHistory)
         }
         .accessibilityIdentifier("activities-tab-content")
     }
@@ -7683,44 +8328,12 @@ private struct ActivityRow: View {
     }
 }
 
-private struct LifePlannerTab: View {
+private struct AssetsHousingLegacySection: View {
     let state: GameState
-    let summaryItems: [YearlyOutcomeItem]
-    let recentHistory: [HistoryEntry]
-    let crimeSummaryItems: [YearlyOutcomeItem]
-    let selectedCrimeAction: ActionChoiceID?
-    let crimeActionChoices: [ActionChoiceID]
-    let actionLabel: (ActionChoiceID) -> String
-    let actionPreview: (ActionChoiceID) -> [String]
-    let onSelectCrimeAction: (ActionChoiceID) -> Void
     let openDetail: (PlannerDetailDestination) -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
-            if state.crime.status != .inactive || !crimeActionChoices.isEmpty {
-                PlannerSectionCard(
-                    title: "Crime",
-                    symbol: "flame.fill",
-                    status: crimeStatus,
-                    tone: crimeTone
-                ) {
-                    MetricRow(metrics: [
-                        ("Heat", "\(state.crime.heat)", state.crime.heat >= 65 ? .warning : .neutral),
-                        ("Loyalty", "\(state.crime.loyalty)", state.crime.loyalty >= 55 ? .positive : .neutral),
-                        ("Pressure", "\(state.crime.territoryPressure)", state.crime.territoryPressure >= 60 ? .warning : .neutral)
-                    ])
-
-                    AuditStrip(insights: crimeAuditInsights, identifier: "crime-audit-strip")
-
-                    Text(crimeSummary)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-
-                    YearlyConsequenceStrip(items: crimeSummaryItems, identifier: "crime-consequence-strip")
-                    ActionSelectionModule(title: "Crime Focus", selectedAction: selectedCrimeAction, actionChoices: crimeActionChoices, actionLabel: actionLabel, actionPreview: actionPreview, onSelectAction: onSelectCrimeAction)
-                }
-            }
-
+        VStack(spacing: 20) {
             PlannerSectionCard(
                 title: "Housing",
                 symbol: "house.fill",
@@ -7732,128 +8345,23 @@ private struct LifePlannerTab: View {
             ) {
                 MetricRow(metrics: [
                     ("Setup", housingLabel, housingTone),
-                    ("Stability", "\(state.housing.housingStability)", housingTone),
-                    ("Cost Band", "\(state.housing.housingCostBand)", state.housing.housingCostBand > 55 ? .warning : .neutral)
+                    ("Stability", "\(state.housing.housingStability)", housingTone)
                 ])
-
-                if state.assets.ownsHome || state.finance.homeDownPaymentSavings > 0 {
-                    MetricRow(metrics: [
-                        ("Equity", "$\(state.finance.homeEquity)", state.finance.homeEquity > 0 ? .positive : .neutral),
-                        ("Mortgage", "$\(state.finance.housingDebtBurden)", state.finance.housingDebtBurden > 0 ? .warning : .neutral),
-                        ("House Fund", "$\(state.finance.homeDownPaymentSavings)", state.finance.homeDownPaymentSavings > 0 ? .positive : .neutral)
-                    ])
-                }
-
-                AuditStrip(insights: auditInsights, identifier: "life-audit-strip")
-
-                Text(housingSummary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
 
             PlannerSectionCard(
                 title: "Legacy",
                 symbol: state.progress.finalLifePath == nil ? "sparkles" : "flag.fill",
                 status: legacyStatus,
-                tone: .neutral,
-                detailTitle: "Details",
-                detailIdentifier: "life-legacy-detail-button",
-                detailAction: { openDetail(.lifeLegacy) }
+                tone: .neutral
             ) {
                 MetricRow(metrics: [
                     ("Score", "\(state.progress.legacyScore)", .neutral),
-                    ("Milestones", "\(state.progress.unlockedMilestones.count)", state.progress.unlockedMilestones.isEmpty ? .warning : .positive),
-                    ("Home", state.assets.ownsHome ? "Owned" : (state.finance.homeDownPaymentSavings > 0 ? "Saving" : "No"), state.assets.ownsHome ? .positive : (state.finance.homeDownPaymentSavings > 0 ? .neutral : .neutral))
+                    ("Milestones", "\(state.progress.unlockedMilestones.count)", state.progress.unlockedMilestones.isEmpty ? .warning : .positive)
                 ])
-
-                if let path = state.progress.finalLifePath ?? state.progress.currentLifePath {
-                    let profile = LifePathCatalog.profile(for: path)
-                    Label(profile.title, systemImage: profile.symbol)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                }
-
-                if let signal = state.narrativeArcs.currentSignalLine {
-                    Text(signal)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                if !state.progress.unlockedMilestones.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(state.progress.unlockedMilestones) { milestone in
-                                Text(milestone.id.rawValue.capitalized)
-                                    .font(.caption.weight(.semibold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
-                                    .background(Color.white.opacity(0.55))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-                }
-
-                YearlyConsequenceStrip(items: summaryItems, identifier: "life-consequence-strip")
             }
-
-            RecentLifeModule(history: recentHistory, detailAction: { openDetail(.lifeHistory) })
         }
-        .accessibilityIdentifier("life-tab-content")
-    }
-
-    private var crimeStatus: String {
-        switch state.crime.status {
-        case .inactive:
-            return "Dormant"
-        case .active:
-            return state.crime.crewID == nil ? "Operating solo" : "Crew active"
-        case .layingLow:
-            return "Laying low"
-        }
-    }
-
-    private var crimeTone: PlannerTone {
-        if state.crime.heat >= 65 || state.crime.territoryPressure >= 60 || state.crime.burnout >= 70 {
-            return .warning
-        }
-        if state.crime.status != .inactive && state.crime.loyalty >= 55 {
-            return .positive
-        }
-        return .neutral
-    }
-
-    private var crimeSummary: String {
-        if state.crime.status == .inactive {
-            return "Crime is outside your active life right now, but the option is still there if scarcity corners you."
-        }
-        if state.crime.heat >= 65 {
-            return "The money is coming faster, but so is the pressure. One bad year could wipe out the upside."
-        }
-        if state.crime.status == .layingLow {
-            return "You are trying to let the noise cool down without losing your place entirely."
-        }
-        return "You are making risky money. It helps in the short term, but it is already bleeding into the rest of your life."
-    }
-
-    private var crimeAuditInsights: [PlannerInsight] {
-        [
-            PlannerInsight(
-                title: "Problem",
-                value: state.crime.heat >= 65 ? "heat rising" : (state.crime.territoryPressure >= 60 ? "territory pressure" : "contained"),
-                tone: state.crime.heat >= 65 || state.crime.territoryPressure >= 60 ? .warning : .neutral
-            ),
-            PlannerInsight(
-                title: "Opportunity",
-                value: state.crime.loyalty >= 55 ? "crew holding" : (state.crime.status != .inactive ? "still forming" : "off-ramp open"),
-                tone: state.crime.loyalty >= 55 ? .positive : .neutral
-            ),
-            PlannerInsight(
-                title: "Momentum",
-                value: state.crime.lastPayout >= 3_000 ? "cash moving" : (state.crime.status == .inactive ? "dormant" : "fragile"),
-                tone: state.crime.lastPayout >= 3_000 ? .positive : (state.crime.status == .inactive ? .neutral : .warning)
-            )
-        ]
+        .accessibilityIdentifier("assets-housing-legacy-section")
     }
 
     private var housingStatus: String {
@@ -7882,25 +8390,6 @@ private struct LifePlannerTab: View {
         }
     }
 
-    private var housingSummary: String {
-        if state.assets.primaryResidence?.status == .delinquent {
-            return "Ownership is now a class-pressure test. The house is still there, but the mortgage is squeezing the rest of life."
-        }
-        if state.assets.ownsHome {
-            return "You have turned cash into equity and debt at the same time. The floor is sturdier, but it is no longer light."
-        }
-        if state.finance.homeDownPaymentSavings > 0 {
-            return "You are trying to buy your way into stability, and that means sacrificing liquid comfort before ownership even starts."
-        }
-        if state.housing.livingArrangement == .couchSurfing {
-            return "Your living situation is unstable enough to threaten the rest of the year."
-        }
-        if state.housing.housingStability < 45 {
-            return "Housing strain is rising and can spill into health, money, and relationships."
-        }
-        return "Your living situation is functional, but still sensitive to money pressure."
-    }
-
     private var legacyStatus: String {
         if let finalPath = state.progress.finalLifePath {
             return LifePathCatalog.profile(for: finalPath).title
@@ -7909,26 +8398,6 @@ private struct LifePlannerTab: View {
             return "Current path: \(LifePathCatalog.profile(for: currentPath).title)"
         }
         return "Legacy still forming"
-    }
-
-    private var auditInsights: [PlannerInsight] {
-        [
-            PlannerInsight(
-                title: "Problem",
-                value: state.housing.livingArrangement == .couchSurfing ? "housing unstable" : (state.housing.housingStability < 45 ? "home pressure" : "contained"),
-                tone: state.housing.livingArrangement == .couchSurfing || state.housing.housingStability < 45 ? .warning : .neutral
-            ),
-            PlannerInsight(
-                title: "Opportunity",
-                value: state.assets.ownsHome ? "equity building" : (state.finance.homeDownPaymentSavings > 0 ? "house fund live" : (state.progress.unlockedMilestones.isEmpty ? "milestones open" : "legacy building")),
-                tone: state.assets.ownsHome || state.finance.homeDownPaymentSavings > 0 || !state.progress.unlockedMilestones.isEmpty ? .positive : .neutral
-            ),
-            PlannerInsight(
-                title: "Momentum",
-                value: state.progress.currentLifePath == nil ? "still forming" : "path visible",
-                tone: state.progress.currentLifePath == nil ? .neutral : .positive
-            )
-        ]
     }
 }
 
@@ -8136,8 +8605,12 @@ struct YearSummarySheet: View {
                             summaryCard(item: checkpoint)
                         }
 
+                        if let yearlyStanceOutcome = summary.yearlyStanceOutcome {
+                            summaryCard(item: yearlyStanceOutcome, label: "Year Goal")
+                        }
+
                         if let focusOutcome = summary.focusOutcome {
-                            summaryCard(item: focusOutcome, label: "Focus Outcome")
+                            summaryCard(item: focusOutcome, label: "Pattern Outcome")
                         }
 
                         if let mainTradeoff = summary.mainTradeoff {
@@ -8302,3 +8775,323 @@ struct FlowLayout: View {
         }
     }
 }
+
+// MARK: - Frictionless UI Components
+
+struct PlayerLifeHeader: View {
+    @ObservedObject var vm: GameViewModel
+    var onOpenFeed: () -> Void
+    var onSettings: () -> Void
+    @ScaledMetric(relativeTo: .body) private var settingsHit = 44
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var occupation: (title: String, symbol: String, tone: PlannerTone) {
+        vm.headerOccupationHighlight()
+    }
+
+    private var occupationPillColors: (background: Color, foreground: Color) {
+        switch occupation.tone {
+        case .positive:
+            return (DesignSystem.Colors.positive, .white)
+        case .warning:
+            return (DesignSystem.Colors.warning, .white)
+        case .neutral:
+            return (Color.accentColor, .white)
+        }
+    }
+
+    var body: some View {
+        let pill = occupationPillColors
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Button {
+                        AppFeedback.impact(.light)
+                        onOpenFeed()
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(vm.state.player.name)
+                                .font(.largeTitle.weight(.bold))
+                                .foregroundStyle(.primary)
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .minimumScaleFactor(0.75)
+                        .lineLimit(2)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("open-life-feed-button")
+                    .accessibilityHint("Opens the life feed.")
+                    HStack(spacing: 10) {
+                        Text("Age \(vm.state.player.age)")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 6) {
+                            Image(systemName: occupation.symbol)
+                                .font(.caption.weight(.bold))
+                            Text(occupation.title)
+                                .font(.caption.weight(.heavy))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                        }
+                        .foregroundStyle(pill.foreground)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(pill.background)
+                        .clipShape(Capsule())
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Current role")
+                        .accessibilityValue(occupation.title)
+                    }
+                }
+
+                Spacer(minLength: 10)
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(vm.formattedCashOnHand())
+                        .font(.system(size: 24, weight: .heavy, design: .rounded))
+                        .foregroundStyle(vm.state.finance.cashOnHand >= 0 ? DesignSystem.Colors.positive : DesignSystem.Colors.warning)
+                        .minimumScaleFactor(0.8)
+                    Text("Cash")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    AppFeedback.impact(.light)
+                    onSettings()
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: settingsHit, height: settingsHit)
+                        .background(OLTheme.subtleFill(colorScheme))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open settings")
+                .accessibilityHint("Shows debug tools and save management actions.")
+                .accessibilityIdentifier("settings-button")
+            }
+
+            if let lifePath = vm.currentLifePathProfile() {
+                Label(lifePath.title, systemImage: lifePath.symbol)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(OLTheme.subtleFill(colorScheme))
+                    .clipShape(Capsule())
+                    .accessibilityLabel("Life path")
+                    .accessibilityValue(lifePath.title)
+            }
+
+            HStack(spacing: 8) {
+                StatMeter(icon: "face.smiling.fill", label: "Happy", value: vm.state.player.happiness, tint: Color(red: 0.95, green: 0.72, blue: 0.18))
+                StatMeter(icon: "heart.fill", label: "Health", value: vm.state.player.health, tint: DesignSystem.Colors.positive)
+                StatMeter(icon: "brain.head.profile", label: "Smart", value: vm.state.player.smarts, tint: Color(red: 0.28, green: 0.52, blue: 0.95))
+                StatMeter(icon: "sparkles", label: "Looks", value: vm.state.player.looks, tint: Color(red: 0.92, green: 0.38, blue: 0.58))
+                StatMeter(icon: "star.fill", label: "Rep", value: vm.state.relationships.publicReputation, tint: Color(red: 0.55, green: 0.42, blue: 0.95))
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.large, style: .continuous)
+                .fill(OLTheme.cardFill(colorScheme))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.large, style: .continuous)
+                .stroke(OLTheme.cardStroke(colorScheme), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 18, x: 0, y: 10)
+    }
+}
+
+struct StatMeter: View {
+    let icon: String
+    let label: String
+    let value: Int
+    let tint: Color
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+
+            Text(label.uppercased())
+                .font(.system(size: 7, weight: .heavy))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule(style: .continuous)
+                        .fill(tint.opacity(colorScheme == .dark ? 0.22 : 0.2))
+                    Capsule(style: .continuous)
+                        .fill(tint)
+                        .frame(width: max(3, geo.size.width * CGFloat(value) / 100))
+                }
+            }
+            .frame(height: 6)
+
+            Text("\(value)")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.primary.opacity(0.92))
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue("\(value) out of 100")
+    }
+}
+
+struct LifeLogView: View {
+    let history: [HistoryEntry]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if history.isEmpty {
+                VStack(spacing: 20) {
+                    Spacer()
+                    Image(systemName: "book.closed.fill")
+                        .font(.system(size: 60))
+                        .foregroundStyle(.quaternary)
+                    Text("Your story is waiting to be written.")
+                        .font(.system(size: 16, weight: .medium, design: .serif))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, minHeight: 400)
+            } else {
+                ForEach(history) { entry in
+                    HStack(alignment: .top, spacing: 16) {
+                        Text("\(entry.age)")
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 30, alignment: .trailing)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(entry.title)
+                                .font(.system(size: 15, weight: .bold))
+                            Text(entry.text)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 20)
+                    
+                    Divider()
+                        .padding(.leading, 66)
+                }
+            }
+        }
+        .background(Color.white.opacity(0.5))
+    }
+}
+
+struct ActivityCategoryCard: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundStyle(.white)
+                    .frame(width: 50, height: 50)
+                    .background(color)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.primary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+            .background(Color.white.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+        }
+    }
+}
+
+#if DEBUG
+private struct PreviewLifeHeaderShell: View {
+    let scenario: DebugScenarioID
+    let scheme: ColorScheme
+    @StateObject private var vm: GameViewModel
+
+    init(scenario: DebugScenarioID, scheme: ColorScheme) {
+        self.scenario = scenario
+        self.scheme = scheme
+        let suiteName = "onelife.preview.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let persistence = PersistenceCoordinator(directoryProvider: { dir })
+        _vm = StateObject(
+            wrappedValue: GameViewModel(
+                persistence: persistence,
+                defaults: defaults,
+                debugConfiguration: DebugTestingConfiguration(scenarioID: scenario, modal: .none)
+            )
+        )
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                PlayerLifeHeader(vm: vm, onOpenFeed: {}, onSettings: {})
+
+                FeedHomeTab(
+                    state: vm.state,
+                    signals: [
+                        SignalSummary(symbol: "dollarsign.circle.fill", title: "Cash Flow", value: "Stable", tone: .neutral),
+                        SignalSummary(symbol: "heart.fill", title: "Health", value: "Stable", tone: .positive),
+                        SignalSummary(symbol: "briefcase.fill", title: "Career", value: "Full-time", tone: .neutral)
+                    ],
+                    summaryItems: [],
+                    urgencyItems: vm.feedUrgencyItems(),
+                    nextDecisionTitle: vm.nextDecisionPrompt(),
+                    nextDecisionDetail: vm.nextDecisionDetail(),
+                    queuedInteractionCount: vm.interactionQueueDepth,
+                    nowStatus: vm.chapterStatus(),
+                    pendingActionStatus: vm.pendingActionStatus(),
+                    pendingActionSummary: vm.pendingActionSummary(),
+                    comingUpItems: vm.comingUpItemsForFeed(),
+                    recentHistory: Array(vm.historyDigest.all.prefix(3))
+                )
+            }
+            .padding()
+        }
+        #if canImport(UIKit)
+        .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
+        #else
+        .background(Color.gray.opacity(0.12))
+        #endif
+        .preferredColorScheme(scheme)
+    }
+}
+
+#Preview("Life Shell · Light") {
+    PreviewLifeHeaderShell(scenario: .adultCareerFlow, scheme: .light)
+}
+
+#Preview("Life Shell · Dark") {
+    PreviewLifeHeaderShell(scenario: .adultCareerFlow, scheme: .dark)
+}
+
+#Preview("Life Shell · Teen School") {
+    PreviewLifeHeaderShell(scenario: .teenEducationPressure, scheme: .light)
+}
+#endif

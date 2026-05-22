@@ -370,7 +370,7 @@ struct NarrativeArcSystem {
             return "arc_health_momentum"
         case .chaoticHomeSelfReliant:
             return "arc_belonging_risk"
-        case .stableHomeAverageMeans, .luckyBreak, .wealthyDynasty, .academicLegacy:
+        case .stableHomeAverageMeans, .luckyBreak, .wealthyDynasty, .academicLegacy, .ruralEscapist, .techProdigy, .artisticDrifter:
             return nil
         }
     }

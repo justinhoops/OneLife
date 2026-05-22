@@ -684,7 +684,12 @@ struct ActionSystem {
         self.effectApplier = effectApplier
     }
 
-    func apply(actions: [PlayerYearAction], state: inout GameState, world: WorldSnapshot? = nil) -> DomainYearResult {
+    func apply(
+        actions: [PlayerYearAction],
+        state: inout GameState,
+        world: WorldSnapshot? = nil,
+        clearsPendingActions: Bool = true
+    ) -> DomainYearResult {
         var result = DomainYearResult()
         for action in actions {
             let actionResult: DomainYearResult
@@ -731,7 +736,9 @@ struct ActionSystem {
         state.healthProfile.clamp()
         state.housing.clamp()
         state.player.clampStats()
-        state.pendingActions = []
+        if clearsPendingActions {
+            state.pendingActions = []
+        }
         return result
     }
 

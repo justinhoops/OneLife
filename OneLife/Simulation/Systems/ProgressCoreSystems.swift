@@ -796,6 +796,7 @@ struct YearlyOutcomeAggregator {
         let focusOutcome = focusOutcomeItem(before: before, after: after, plannedActions: plannedActions)
         let mainTradeoff = mainTradeoffItem(summaryHeadlines: sorted, spillovers: spillovers)
         let nextYearPressure = nextYearPressureItem(after: after, topProblem: topProblem, spillovers: spillovers)
+        let yearlyStanceOutcome = yearlyStanceOutcomeItem(after: after)
 
         return YearlyOutcomeSummary(
             age: after.player.age,
@@ -807,7 +808,24 @@ struct YearlyOutcomeAggregator {
             checkpoint: checkpoint,
             focusOutcome: focusOutcome,
             mainTradeoff: mainTradeoff,
-            nextYearPressure: nextYearPressure
+            nextYearPressure: nextYearPressure,
+            yearlyStanceOutcome: yearlyStanceOutcome
+        )
+    }
+
+    private func yearlyStanceOutcomeItem(after: GameState) -> YearlyOutcomeItem? {
+        guard let stance = after.yearlyStance.lastCompletedStance,
+              let detail = after.yearlyStance.lastOutcomeLine else { return nil }
+
+        let tone: YearlyOutcomeTone = detail.contains("could not") || detail.contains("delayed") || detail.contains("Drift") || detail.contains("without")
+            ? .warning
+            : .positive
+        return YearlyOutcomeItem(
+            title: "Yearly Goal",
+            detail: "\(stance.title): \(detail)",
+            domain: domainTag(for: stance.domain ?? .health),
+            tone: tone,
+            impactScore: tone == .positive ? 5 : -5
         )
     }
 
@@ -930,8 +948,8 @@ struct YearlyOutcomeAggregator {
     ) -> YearlyOutcomeItem? {
         guard let action = plannedActions.first else {
             return YearlyOutcomeItem(
-                title: "Focus Outcome",
-                detail: "You left the year reactive, so outside pressure had more say than your own plan.",
+                title: "Pattern Outcome",
+                detail: "You left the year reactive, so outside pressure had more say than your lived pattern.",
                 domain: .progress,
                 tone: .neutral,
                 impactScore: 2
@@ -979,7 +997,7 @@ struct YearlyOutcomeAggregator {
         }
 
         return YearlyOutcomeItem(
-            title: "Focus Outcome",
+            title: "Pattern Outcome",
             detail: detail,
             domain: domainTag(for: action.domain),
             tone: tone,
@@ -1191,6 +1209,7 @@ enum SimulationDomain {
     case trajectory
     case education
     case career
+    case specialCareer
     case crime
     case investments
     case housing
@@ -1218,6 +1237,8 @@ struct SystemRegistry {
             return state.player.age <= 22 || state.education.pathway == .student || state.education.pathway == .training
         case .career:
             return state.player.age >= 16 || state.career.roleID != nil || state.career.status != .student
+        case .specialCareer:
+            return state.player.age >= 18
         case .crime:
             return state.player.age >= 18 && (
                 state.crime.status != .inactive ||
@@ -1249,14 +1270,11 @@ struct SystemRegistry {
         case .progress:
             return true
         case .world:
-            return state.player.age >= 18 && (
-                state.currentEra != .stable ||
-                state.eraYearsRemaining <= 0 ||
-                state.consequences.narrativeFlags["world_autonomy_enabled", default: 0] > 0
-            )
+            // WorldAutonomySystem guards age < 18 internally. Era countdown runs here; gating on
+            // stable era + eraYearsRemaining caused a deadlock (timer only decrements when this runs).
+            return state.player.age >= 18
         case .npcAutonomy:
             return state.player.age >= 12 &&
-                state.consequences.narrativeFlags["npc_autonomy_enabled", default: 0] > 0 &&
                 (state.relationships.hasPartner || !state.relationships.friends.isEmpty)
         }
     }

@@ -1,0 +1,104 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/LifeConsoleView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 149
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 168
+        }
+      },
+      {
+        "comment": "",
+        "key": "Top Pressures",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assets",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 258
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ledger",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 261
+        }
+      },
+      {
+        "comment": "",
+        "key": "Actions",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 307
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ended",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 329
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age Up",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 329
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 458
+        }
+      },
+      {
+        "comment": "",
+        "key": "Details",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 481
+        }
+      },
+      {
+        "comment": "",
+        "key": "Actions",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 570
+        }
+      },
+      {
+        "comment": "",
+        "key": "SET",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 595
+        }
+      }
+    ]
+  },
+  "version": 1
+}

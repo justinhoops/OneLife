@@ -1,0 +1,168 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Start a New Life",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "You're 14. This is where it starts.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 75
+        }
+      },
+      {
+        "comment": "",
+        "key": "Location",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 89
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose where your story begins.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 91
+        }
+      },
+      {
+        "comment": "",
+        "key": "(Coming soon)",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 94
+        }
+      },
+      {
+        "comment": "",
+        "key": "Preview",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 102
+        }
+      },
+      {
+        "comment": "",
+        "key": "No preview available yet.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 107
+        }
+      },
+      {
+        "comment": "",
+        "key": "BEGIN LIFE",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 127
+        }
+      },
+      {
+        "comment": "",
+        "key": "NEXT STEP",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 146
+        }
+      },
+      {
+        "comment": "",
+        "key": "Go Back",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 164
+        }
+      },
+      {
+        "comment": "",
+        "key": "Identity",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter a name...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 188
+        }
+      },
+      {
+        "comment": "",
+        "key": "Starting Background",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 215
+        }
+      },
+      {
+        "comment": "",
+        "key": "Randomize Details",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 293
+        }
+      },
+      {
+        "comment": "",
+        "key": "Economic Region",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 260
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stat Bias",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "Starting Trait",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 305
+        }
+      },
+      {
+        "comment": "",
+        "key": "Surprise Me",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 312
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 351
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age 14",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 381
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,210 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ../OneLife.xcodeproj -scheme OneLife -destination "platform=iOS Simulator,name=iPhone 17 Pro" -derivedDataPath ./DerivedData build
+
+2026-05-04 03:52:27.094 xcodebuild[12389:423711]  IDEDownloadableMetalToolchainCoordinator: Failed to remount the Metal Toolchain: No downloaded assets found: The file “MetalToolchain” couldn’t be saved in the folder “Assets”.
+2026-05-04 03:52:27.097 xcodebuild[12389:423697] [MT] IDESimulatorRuntimeVersionCoordinator: Error loading SDK-to-sim mappings: Error Domain=NSCocoaErrorDomain Code=257 "The file “SDKToSimulatorIndexMapping.plist” couldn’t be opened because you don’t have permission to view it." UserInfo={NSFilePath=/Users/justinjeffery/Library/Developer/Xcode/SDKToSimulatorIndexMapping.plist, NSURL=file:///Users/justinjeffery/Library/Developer/Xcode/SDKToSimulatorIndexMapping.plist, NSUnderlyingError=0x9afdc8840 {Error Domain=NSPOSIXErrorDomain Code=1 "Operation not permitted"}}
+2026-05-04 03:52:27.097 xcodebuild[12389:423697] [MT] IDESimulatorRuntimeVersionCoordinator: Unable to read RuntimeMap data at /Users/justinjeffery/Library/Developer/CoreSimulator/RuntimeMap.plist: Error Domain=NSCocoaErrorDomain Code=257 "The file “RuntimeMap.plist” couldn’t be opened because you don’t have permission to view it." UserInfo={NSFilePath=/Users/justinjeffery/Library/Developer/CoreSimulator/RuntimeMap.plist, NSURL=file:///Users/justinjeffery/Library/Developer/CoreSimulator/RuntimeMap.plist, NSUnderlyingError=0x9afdc8450 {Error Domain=NSPOSIXErrorDomain Code=1 "Operation not permitted"}}
+2026-05-04 03:52:27.120 xcodebuild[12389:423697] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'OneLife' in project 'OneLife' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/justinjeffery/Developer/OneLife/OneLife/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 077df7585cb467179dc5e7245c5469b4
+Build description path: /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/XCBuildData/077df7585cb467179dc5e7245c5469b4.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E237-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -o /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E237-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache
+
+CreateBuildDirectory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    builtin-create-build-directory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products
+
+CreateBuildDirectory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    builtin-create-build-directory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex
+
+CreateBuildDirectory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    builtin-create-build-directory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    builtin-create-build-directory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    builtin-create-build-directory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    builtin-create-build-directory /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife-ec6a500a1f8177a8b2851984d2396fb6-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/justinjeffery/Developer/OneLife/OneLife.xcodeproj
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife-ec6a500a1f8177a8b2851984d2396fb6-VFS-iphonesimulator/all-product-headers.yaml
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-own-target-headers.hmap (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-all-non-framework-target-headers.hmap (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/empty-OneLife.plist (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/empty-OneLife.plist
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-DebugDylibPath-normal-arm64.txt (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-generated-files.hmap (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-generated-files.hmap
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-project-headers.hmap (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-project-headers.hmap
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-all-target-headers.hmap (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.hmap (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.hmap
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.DependencyStaticMetadataFileList (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.DependencyMetadataFileList (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-DebugDylibInstallName-normal-arm64.txt (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.SwiftFileList (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.SwiftFileList
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife_const_extract_protocols.json (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife_const_extract_protocols.json
+
+MkDir /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    /bin/mkdir -p /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-OutputFileMap.json (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/Entitlements-Simulated.plist (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/Entitlements-Simulated.plist
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.SwiftConstValuesFileList (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.LinkFileList (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    write-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.LinkFileList
+
+ProcessProductPackaging "" /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "PH3Q39RH2H.LifeApp.OneLife";
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent
+
+ProcessProductPackagingDER /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent.der (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    /usr/bin/derq query -f xml -i /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent -o /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent.der --raw
+
+GenerateAssetSymbols /Users/justinjeffery/Developer/OneLife/OneLife/Assets.xcassets (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/justinjeffery/Developer/OneLife/OneLife/Assets.xcassets --compile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_dependencies --output-partial-info-plist /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 26.2 --platform iphonesimulator --bundle-identifier LifeApp.OneLife --generate-swift-asset-symbols /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+MkDir /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_output/thinned (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    /bin/mkdir -p /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_output/thinned
+
+MkDir /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_output/unthinned (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    /bin/mkdir -p /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_output/unthinned
+
+Ld /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app/__preview.dylib normal (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.2-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -O0 -L/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator -install_name @rpath/OneLife.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife_dependency_info.dat -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife.app-Simulated.xcent.der -Xlinker -no_adhoc_codesign -o /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app/__preview.dylib
+
+CpResource /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app/SampleEvents.json /Users/justinjeffery/Developer/OneLife/OneLife/SampleEvents.json (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/justinjeffery/Developer/OneLife/OneLife/SampleEvents.json /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app
+
+CompileAssetCatalogVariant thinned /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app /Users/justinjeffery/Developer/OneLife/OneLife/Assets.xcassets (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/justinjeffery/Developer/OneLife/OneLife/Assets.xcassets --compile /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPhone18,1 --filter-for-device-os-version 26.4 --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 26.2 --platform iphonesimulator
+/* com.apple.actool.errors */
+/Users/justinjeffery/Developer/OneLife/OneLife/Assets.xcassets: error: Failed to launch AssetCatalogSimulatorAgent via CoreSimulator spawn
+    Failure Reason: Failed to spawn AssetCatalogSimulatorAgent on IBSimDeviceTypeiPad3x (B1221E91-C9DF-4233-9597-325A9A80CD35, iOS 26.4, Shutdown)
+    Underlying Errors:
+        Description: The file “B1221E91-C9DF-4233-9597-325A9A80CD35” couldn’t be saved in the folder “CoreSimulator”.
+        Underlying Errors:
+            Description: The operation couldn’t be completed. Input/output error
+            Failure Reason: Input/output error
+/* com.apple.actool.compilation-results */
+/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_generated_info.plist_thinned
+/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+
+
+SwiftDriver OneLife normal arm64 com.apple.xcode.tools.swift.compiler (in target 'OneLife' from project 'OneLife')
+    cd /Users/justinjeffery/Developer/OneLife
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name OneLife -Onone @/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk -target arm64-apple-ios26.2-simulator -g -module-cache-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/SDKStatCaches.noindex/iphonesimulator26.4-23E237-686eebb5dc1d8ecb277353a59184f4aa.sdkstatcache -output-file-map /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife_const_extract_protocols.json -Xcc -iquote -Xcc /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-generated-files.hmap -Xcc -I/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-own-target-headers.hmap -Xcc -I/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-all-target-headers.hmap -Xcc -iquote -Xcc /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/OneLife-project-headers.hmap -Xcc -I/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources-normal/arm64 -Xcc -I/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources/arm64 -Xcc -I/Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/OneLife-Swift.h -working-directory /Users/justinjeffery/Developer/OneLife -experimental-emit-module-separately -disable-cmo
+
+** BUILD FAILED **
+
+
+The following build commands failed:
+	CompileAssetCatalogVariant thinned /Users/justinjeffery/Developer/OneLife/OneLife/DerivedData/Build/Products/Debug-iphonesimulator/OneLife.app /Users/justinjeffery/Developer/OneLife/OneLife/Assets.xcassets (in target 'OneLife' from project 'OneLife')
+	Building project OneLife with scheme OneLife
+(2 failures)

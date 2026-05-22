@@ -319,12 +319,30 @@ final class EventEngine {
         let total = weightedEvents.reduce(0) { $0 + max(0, $1.1) }
         guard total > 0 else { return events[0] }
 
-        var roll = Int.random(in: 1...total)
+        var roll = deterministicRoll(in: 1...total, state: state, weightedEvents: weightedEvents)
         for (event, adjustedWeight) in weightedEvents {
             roll -= max(0, adjustedWeight)
             if roll <= 0 { return event }
         }
         return events[0]
+    }
+
+    private func deterministicRoll(in range: ClosedRange<Int>, state: GameState, weightedEvents: [(GameEvent, Int)]) -> Int {
+        let span = max(1, range.upperBound - range.lowerBound + 1)
+        var hash: UInt64 = UInt64(truncatingIfNeeded: state.player.age)
+        hash = hash &* 1_540_469 &+ UInt64(truncatingIfNeeded: state.finance.financialStress)
+        hash = hash &* 1_299_709 &+ UInt64(truncatingIfNeeded: state.player.smarts)
+        hash = hash &* 1_299_709 &+ UInt64(truncatingIfNeeded: state.player.happiness)
+        for (event, weight) in weightedEvents {
+            hash = hash &* 97 &+ UInt64(truncatingIfNeeded: stableHash(event.id))
+            hash &+= UInt64(truncatingIfNeeded: weight)
+        }
+        let offset = Int(hash % UInt64(span))
+        return range.lowerBound + offset
+    }
+
+    private func stableHash(_ string: String) -> Int {
+        string.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
     }
 
     private func stabilityWeightAdjustment(for event: GameEvent, state: GameState) -> Int {
