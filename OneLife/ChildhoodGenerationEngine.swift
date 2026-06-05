@@ -227,6 +227,17 @@ struct ChildhoodGenerationEngine {
             case .burnoutProne:
                 aptitudes.creative += bump / 2
                 aptitudes.analytical += bump / 2
+            case .workaholic:
+                aptitudes.analytical += bump
+                aptitudes.technical += bump / 2
+            case .resilient:
+                aptitudes.physical += bump / 2
+                aptitudes.social += bump / 3
+            case .unreliable:
+                aptitudes.entrepreneurial += bump / 3
+            case .ptsd:
+                aptitudes.analytical += bump / 2
+                aptitudes.creative += bump / 3
             }
         }
     }

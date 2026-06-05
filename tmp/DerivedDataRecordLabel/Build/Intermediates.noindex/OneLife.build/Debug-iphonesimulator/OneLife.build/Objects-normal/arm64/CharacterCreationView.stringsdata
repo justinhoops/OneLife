@@ -1,0 +1,232 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Start a New Life",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "You're 14. The world is already moving. Choose your starting shape.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "BEGIN LIFE",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 127
+        }
+      },
+      {
+        "comment": "",
+        "key": "NEXT",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 148
+        }
+      },
+      {
+        "comment": "",
+        "key": "Back",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 166
+        }
+      },
+      {
+        "comment": "",
+        "key": "What will they call you?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 189
+        }
+      },
+      {
+        "comment": "",
+        "key": "Names are just the first story you tell.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 215
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter a name...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 192
+        }
+      },
+      {
+        "comment": "",
+        "key": "Where does your story begin?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose your origin archetype",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 241
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlocked via legacy in another life",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 272
+        }
+      },
+      {
+        "comment": "",
+        "key": "Region & Starting Vibe",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 295
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tweak the numbers — the preview above reacts instantly.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 320
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reroll This Background",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 336
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pick a defining trait (or let life surprise you)",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 346
+        }
+      },
+      {
+        "comment": "",
+        "key": "🎲 Surprise Me",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 357
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 403
+        }
+      },
+      {
+        "comment": "",
+        "key": "14 • %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 438
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Before 14",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 456
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Starting Shape",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 478
+        }
+      },
+      {
+        "comment": "",
+        "key": "Echoes of What Could Be",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 491
+        }
+      },
+      {
+        "comment": "",
+        "key": "• %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 495
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 516
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age 14",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 572
+        }
+      },
+      {
+        "comment": "",
+        "key": "You can always start another life with a different feel. Every run is a fresh story.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 662
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current feel: %@ — the preview stats above will feel the difference once you begin.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 668
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Feel",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 619
+        }
+      },
+      {
+        "comment": "",
+        "key": "How much bite do you want in this life?",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 621
+        }
+      }
+    ]
+  },
+  "version": 1
+}

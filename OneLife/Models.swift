@@ -1,9 +1,10 @@
 import Foundation
 
 enum CharacterCreationStep: Int, CaseIterable, Codable {
-    case name     = 0
-    case origin   = 1
-    case trait    = 2
+    case name       = 0
+    case origin     = 1
+    case trait      = 2
+    case resilience = 3   // "Life Feel" choice — key for replayability tuning
 }
 
 // MARK: - Core Game Models
@@ -24,6 +25,15 @@ struct Player: Codable, Equatable {
         smarts = smarts.clamped(to: 0...100)
         looks = looks.clamped(to: 0...100)
         health = health.clamped(to: 0...100)
+    }
+
+    /// Mirrored from GameState for convenient use inside domain systems that only receive Player.
+    /// Kept in sync by the orchestrator and origin system.
+    var _resilience: LifeResilience = .resilient
+
+    /// Effective dampener for health decline (lower = less punishing spirals).
+    var healthDeclineDampener: Double {
+        _resilience.scaling.healthDeclineDampener
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -68,6 +78,7 @@ struct MetaState: Codable, Equatable {
 enum StartupState: String, Codable, Equatable {
     case choosingOrigin
     case active
+    case inheritingLegacy
 }
 
 enum StartMode: String, Codable, CaseIterable, Identifiable {
@@ -182,6 +193,35 @@ enum TrajectoryDirection: String, Codable, CaseIterable {
     case sliding
 }
 
+/// Controls the overall "bite" of the life simulation for replayability.
+/// .resilient (default) softens death spirals and spillovers so players can recover from bad stretches
+/// without the run feeling immediately doomed — while still preserving meaningful consequences.
+/// .grounded is the full unflinching "Life Killer" experience for veterans.
+enum LifeResilience: String, Codable, CaseIterable, Identifiable {
+    case resilient
+    case grounded
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .resilient: return "Resilient"
+        case .grounded: return "Grounded"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .resilient:
+            return "More room to recover from rough years. Still authentic, but less punishing spirals."
+        case .grounded:
+            return "Full Life Killer experience. Harsh consequences, minimal safety nets. For veterans."
+        }
+    }
+
+    var isDefault: Bool { self == .resilient }
+}
+
 struct TrajectoryState: Codable, Equatable {
     var lifePhase: LifePhase = .adolescence
     var direction: TrajectoryDirection = .stable
@@ -215,6 +255,7 @@ enum EducationPathway: String, Codable, CaseIterable {
     case dropout
     case training
     case graduate
+    case rotc
 }
 
 enum EducationStage: String, Codable, CaseIterable {
@@ -236,6 +277,9 @@ enum StudyFocus: String, Codable, CaseIterable {
     case generalStudies
     case business
     case technology
+    case medicine
+    case law
+    case computerScience
     case arts
     case health
     case trades
@@ -262,6 +306,10 @@ struct EducationState: Codable, Equatable {
     var studyFocus: StudyFocus? = nil
     var credentials: [String] = []
     var hasScholarship: Bool = false
+    /// D3: Education pathway differentiation support. credentialStrength starts higher for honors, decays over time unless refreshed (or trade track maintains via practice).
+    /// Used for handoff income ramps, special entry bias, and long-term credential value in career.
+    var credentialStrength: Int = 65
+    var yearsSinceCredential: Int = 0
 
     private enum CodingKeys: String, CodingKey {
         case pathway
@@ -284,6 +332,8 @@ struct EducationState: Codable, Equatable {
         case studyFocus
         case credentials
         case hasScholarship
+        case credentialStrength  // D3
+        case yearsSinceCredential
     }
 
     init() {}
@@ -310,6 +360,8 @@ struct EducationState: Codable, Equatable {
         studyFocus = try container.decodeIfPresent(StudyFocus.self, forKey: .studyFocus)
         credentials = try container.decodeIfPresent([String].self, forKey: .credentials) ?? []
         hasScholarship = try container.decodeIfPresent(Bool.self, forKey: .hasScholarship) ?? false
+        credentialStrength = try container.decodeIfPresent(Int.self, forKey: .credentialStrength) ?? 65
+        yearsSinceCredential = try container.decodeIfPresent(Int.self, forKey: .yearsSinceCredential) ?? 0
         clamp()
     }
 
@@ -328,6 +380,8 @@ struct EducationState: Codable, Equatable {
         mentorSupport = mentorSupport.clamped(to: 0...100)
         peerPressure = peerPressure.clamped(to: 0...100)
         yearsInStage = max(0, yearsInStage)
+        credentialStrength = credentialStrength.clamped(to: 0...100)
+        yearsSinceCredential = max(0, yearsSinceCredential)
     }
 }
 
@@ -351,15 +405,11 @@ struct HousingState: Codable, Equatable {
     }
 }
 
-enum ActionDomain: String, Codable, CaseIterable, Identifiable {
-    case education
-    case career
-    case crime
-    case finance
-    case relationships
-    case health
-
-    var id: String { rawValue }
+struct ActiveEffect: Equatable, Identifiable {
+    var id: String { title }
+    let title: String
+    let detail: String
+    let tone: PlannerTone
 }
 
 enum YearlyStanceID: String, Codable, CaseIterable, Identifiable {
@@ -368,6 +418,8 @@ enum YearlyStanceID: String, Codable, CaseIterable, Identifiable {
     case repairPeople
     case pushCareer
     case letYearDrift
+    case soldierStance
+    case studentStance
 
     var id: String { rawValue }
 
@@ -378,6 +430,8 @@ enum YearlyStanceID: String, Codable, CaseIterable, Identifiable {
         case .repairPeople: return "Repair People"
         case .pushCareer: return "Push Career"
         case .letYearDrift: return "Let The Year Drift"
+        case .soldierStance: return "Standard Service"
+        case .studentStance: return "Academic Focus"
         }
     }
 
@@ -387,6 +441,8 @@ enum YearlyStanceID: String, Codable, CaseIterable, Identifiable {
         case .protectHealth: return .health
         case .repairPeople: return .relationships
         case .pushCareer: return .career
+        case .soldierStance: return .military
+        case .studentStance: return .education
         case .letYearDrift: return nil
         }
     }
@@ -403,7 +459,33 @@ enum YearlyStanceID: String, Codable, CaseIterable, Identifiable {
             return state.relationships.friends.isEmpty ? .findYourCrowd : .reachOut
         case .pushCareer:
             return state.career.status == .unemployed ? .jobHunt : .workHard
+        case .soldierStance:
+            return .militaryService
+        case .studentStance:
+            return .studyConsistently
         case .letYearDrift:
+            return nil
+        }
+    }
+}
+
+extension YearlyStanceID {
+    /// Short hint on Year Goal chips so Resilient vs Grounded changes how the year reads.
+    func yearGoalHint(for state: GameState) -> String? {
+        switch self {
+        case .protectHealth:
+            return state.resilience == .grounded
+                ? "Grounded: care choices land harder when you actually take them."
+                : "Resilient: recovery has more slack if you protect the year."
+        case .stabilizeMoney:
+            return state.resilience == .grounded
+                ? "Grounded: money fixes are real wins, not guaranteed saves."
+                : nil
+        case .letYearDrift:
+            return state.resilience == .grounded
+                ? "Grounded: drift often costs more than it looks."
+                : nil
+        default:
             return nil
         }
     }
@@ -414,6 +496,88 @@ struct YearlyStanceMemory: Codable, Equatable {
     var lastCompletedStance: YearlyStanceID? = nil
     var repeatCount: Int = 0
     var lastOutcomeLine: String? = nil
+    /// D4: recent focus residue for echoes, ruts, autonomy bias, life-shape, silent/continuity flavor (capped low overhead)
+    var recentStances: [YearlyStanceID] = []
+}
+
+/// Lightweight state tracking the "momentum" from recent instant actions and autonomous world reactions.
+/// Used in Phase 2 to let micro-actions meaningfully influence the upcoming year's stakes and events.
+struct InstantMomentumState: Codable, Equatable {
+    var overallStrength: Int = 0          // 0-100 scale
+    var healthMomentum: Int = 0
+    var financeMomentum: Int = 0
+    var relationshipMomentum: Int = 0
+    var lastUpdatedAge: Int = 0
+
+    mutating func recordReaction(domain: ActionDomain, strength: Int, currentAge: Int) {
+        let clamped = max(1, min(25, strength))
+
+        switch domain {
+        case .health:
+            healthMomentum = min(100, healthMomentum + clamped)
+        case .finance:
+            financeMomentum = min(100, financeMomentum + clamped)
+        case .relationships:
+            relationshipMomentum = min(100, relationshipMomentum + clamped)
+        default:
+            break
+        }
+
+        overallStrength = min(100, (healthMomentum + financeMomentum + relationshipMomentum) / 3)
+        lastUpdatedAge = currentAge
+    }
+
+    mutating func decay() {
+        healthMomentum = max(0, healthMomentum - 8)
+        financeMomentum = max(0, financeMomentum - 8)
+        relationshipMomentum = max(0, relationshipMomentum - 8)
+        overallStrength = max(0, (healthMomentum + financeMomentum + relationshipMomentum) / 3)
+    }
+
+    mutating func clear() {
+        self = InstantMomentumState()
+    }
+
+    /// True when recent quick moves are strong enough to surface the momentum strip.
+    var isVisible: Bool { overallStrength >= 12 }
+
+    /// Domains ranked for the console strip (highest first).
+    var rankedDomainMomentum: [(domain: ActionDomain, value: Int)] {
+        [
+            (.health, healthMomentum),
+            (.finance, financeMomentum),
+            (.relationships, relationshipMomentum)
+        ]
+        .filter { $0.value > 0 }
+        .sorted { $0.value > $1.value }
+    }
+
+    /// Coach copy for how to build momentum before the next Age Up.
+    func buildHint(resilience: LifeResilience) -> String {
+        guard let weakest = rankedDomainMomentum.last else {
+            return "Repeat focused quick moves in one lane before Age Up — the forecast will read your pattern."
+        }
+        let lane: String
+        let sample: String
+        switch weakest.domain {
+        case .health:
+            lane = "health"
+            sample = resilience == .grounded ? "Rest or protect sleep" : "Rest, protect sleep, or see a doctor"
+        case .finance:
+            lane = "money"
+            sample = "Cut spending or pay down debt"
+        case .relationships:
+            lane = "people"
+            sample = "Reach out or repair tension"
+        default:
+            lane = "your focus"
+            sample = "the quick action that matches this year"
+        }
+        if resilience == .grounded {
+            return "Grounded runs reward repeats in \(lane). Try \(sample) twice, then Age Up — momentum carries into the forecast."
+        }
+        return "Stack quick moves in \(lane) (e.g. \(sample)) — repeats build momentum that softens the next year."
+    }
 }
 
 enum PlayerPattern: String, Codable, CaseIterable, Identifiable {
@@ -468,10 +632,10 @@ enum PlayerPattern: String, Codable, CaseIterable, Identifiable {
         let stancePattern: PlayerPattern?
         if state.yearlyStance.repeatCount >= 3 {
             switch state.yearlyStance.lastCompletedStance {
-            case .pushCareer: stancePattern = .overworker
+            case .pushCareer, .soldierStance: stancePattern = .overworker
             case .letYearDrift: stancePattern = .drifter
             case .repairPeople: stancePattern = .caregiver
-            case .stabilizeMoney: stancePattern = .stabilizer
+            case .stabilizeMoney, .studentStance: stancePattern = .stabilizer
             case .protectHealth, .none: stancePattern = nil
             }
         } else {
@@ -498,10 +662,152 @@ enum PlayerPattern: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Tracks which in-game teaching moments the player has seen (Tier 1 / Phase 4 discoverability).
+struct DiscoverabilityState: Codable, Equatable {
+    var seenLongPressCoach: Bool = false
+    var seenMomentumCoach: Bool = false
+    var seenResilienceExplain: Bool = false
+    var seenAdultChildrenCoach: Bool = false
+    var seenInstantYearlyCoach: Bool = false
+    var performedFirstQuickAction: Bool = false
+    /// Ages at which we already added a resilience reflection to the journal.
+    var resilienceJournalAges: Set<Int> = []
+
+    mutating func markLongPressSeen() { seenLongPressCoach = true }
+    mutating func markMomentumSeen() { seenMomentumCoach = true }
+    mutating func markResilienceExplainSeen() { seenResilienceExplain = true }
+    mutating func markAdultChildrenSeen() { seenAdultChildrenCoach = true }
+    mutating func markInstantYearlySeen() { seenInstantYearlyCoach = true }
+
+    /// One-line coach for the console banner (nil when nothing to show).
+    func pendingCoachLine(
+        quickActionsAvailable: Bool,
+        mvpOnboardingActive: Bool,
+        momentumActive: Bool = false,
+        earlyDossierActive: Bool = false
+    ) -> String? {
+        if mvpOnboardingActive, !seenInstantYearlyCoach {
+            return "Quick actions = instant feedback. Age Up commits a full year — plan both."
+        }
+        if momentumActive, !seenMomentumCoach {
+            return "The momentum strip tracks repeat quick moves. Tap the globe icon to see how it feeds Age Up."
+        }
+        if quickActionsAvailable, performedFirstQuickAction, !seenLongPressCoach {
+            return "Hold any quick action to preview effects before you tap."
+        }
+        // P5-4: Lightweight first-life teaching for powerful systems (dossier carry, stance/shape power)
+        // Shown naturally in early years without new persisted flags (age-gated so it feels like discovery, not tutorial)
+        if mvpOnboardingActive, earlyDossierActive, !seenInstantYearlyCoach {
+            return "What you were at 14 is still wiring how the world answers you. Stance choices compound into your life shape."
+        }
+        return nil
+    }
+}
+
+extension YearlyOutcomeSummary {
+    /// Phase 7: One actionable nudge so even harsh years leave the player a clear next move.
+    func actionableLesson(resilience: LifeResilience, state: GameState) -> YearlyOutcomeItem? {
+        let harshYear = (topProblem?.tone == .warning) || (mainTradeoff?.tone == .warning)
+        guard harshYear else { return nil }
+
+        let stance = state.yearlyStance.lastCompletedStance ?? state.yearlyStance.selectedStance
+        if let stance, let choiceID = stance.preferredAction(for: state) {
+            let actionTitle = ActionChoiceCatalog.definition(for: choiceID).title
+            let detail: String
+            if resilience == .grounded {
+                detail = "This year was loud. One focused \(actionTitle) before the next Age Up can still move the needle in a Grounded run."
+            } else {
+                detail = "Try \(actionTitle) as a quick action — repeats build momentum that shows up on the next forecast."
+            }
+            return YearlyOutcomeItem(
+                title: "Small Win To Try",
+                detail: detail,
+                domain: historyDomain(for: stance.domain ?? .health),
+                tone: .positive,
+                impactScore: 3
+            )
+        }
+
+        if let opportunity = topOpportunity {
+            return YearlyOutcomeItem(
+                title: "Small Win To Try",
+                detail: "Lean into \(opportunity.title.lowercased()) while the window is open.",
+                domain: opportunity.domain,
+                tone: .positive,
+                impactScore: 2
+            )
+        }
+        return nil
+    }
+
+    private func historyDomain(for domain: ActionDomain) -> HistoryDomainTag {
+        switch domain {
+        case .health: return .health
+        case .finance: return .finance
+        case .relationships: return .relationships
+        case .career: return .career
+        case .education: return .education
+        case .military: return .military
+        case .crime: return .crime
+        case .family: return .family
+        case .identity: return .progress
+        }
+    }
+}
+
+/// Tier A: One rotating mission so each year has a clear target.
+struct SoftRunGoal: Codable, Equatable, Identifiable {
+    enum Status: String, Codable, Equatable {
+        case inProgress
+        case met
+        case missed
+    }
+
+    var id: String
+    var title: String
+    var detail: String
+    var progressHint: String
+    var domain: ActionDomain
+    var suggestedChoice: ActionChoiceID?
+    var setAtAge: Int
+    var status: Status = .inProgress
+}
+
+/// Tier A: Unified "what to do now" payload for console + feed.
+struct NowLaneSnapshot: Equatable {
+    var headline: String
+    var detail: String
+    var quickActionTitle: String?
+    var quickActionDomain: ActionDomain?
+    var quickActionChoice: ActionChoiceID?
+    var ageUpHint: String
+    var tone: PlannerTone
+    var showsQuickAction: Bool
+}
+
+struct CastStripMember: Identifiable, Equatable {
+    var id: String
+    var name: String
+    var roleLabel: String
+    var line: String
+    var icon: String
+}
+
+struct AutonomyToast: Identifiable, Equatable {
+    var id: UUID = UUID()
+    var title: String
+    var detail: String
+    var tone: PlannerTone
+}
+
 struct MVPOnboardingState: Codable, Equatable {
     var startAge: Int? = nil
     var completed: Bool = false
     var endedByMajorMoment: Bool = false
+    /// Scripted first-life beats (Tier A4).
+    var beatQuickActionDone: Bool = false
+    var beatHoldPreviewDone: Bool = false
+    var beatForecastCommitDone: Bool = false
 
     mutating func activate(at age: Int) {
         startAge = age
@@ -528,6 +834,49 @@ struct MVPOnboardingState: Codable, Equatable {
         guard let startAge else { return 0 }
         return max(0, age - startAge)
     }
+
+    /// Next scripted coaching line while first-life onboarding is active.
+    func scriptedDirective(
+        age: Int,
+        performedQuickAction: Bool,
+        seenHoldCoach: Bool,
+        hasYearStance: Bool
+    ) -> String? {
+        guard isActive(at: age) else { return nil }
+        if !beatQuickActionDone, !performedQuickAction {
+            return "Step 1: Tap the Now quick action for instant feedback."
+        }
+        if !beatHoldPreviewDone, !seenHoldCoach {
+            return "Step 2: Hold that action to preview effects before you tap."
+        }
+        if !beatForecastCommitDone, !hasYearStance {
+            return "Step 3: Age Up, pick a year goal on the forecast, then Start The Year."
+        }
+        return "Step 4: Finish the year cards, then repeat — quick moves stack momentum."
+    }
+}
+
+struct LegacyInheritanceSnapshot: Codable, Equatable {
+    var parentName: String
+    var childName: String
+    var childAge: Int
+    var inheritedCash: Int
+    var inheritedProperty: PrimaryResidenceState?
+    var inheritedReputation: Int
+    var parentDeathAge: Int
+    var parentLegacyHeadline: String? = nil
+}
+
+struct LifeSummarySnapshot: Codable, Equatable {
+    var headline: String
+    var closingLine: String
+    var lifePathTitle: String
+    var relationshipLine: String
+    var reputationLine: String
+    var achievements: [String]
+    var regrets: [String]
+    var legacyScore: Int
+    var legacyPointsEarned: Int
 }
 
 enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
@@ -542,16 +891,91 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case skipClass
     case skipAndDrift
     case keepThePeace
+    // Teen precursors (dossier-driven early sparks for special careers - available 14-17, seed substates + school buffs)
+    case teenAthleticDrill      // physical -> athlete path
+    case teenSideHustle         // entrepreneurial -> founder/crime trader
+    case teenCreativeProject    // creative -> creator
+    case teenLeadInitiative     // social -> politics
+    case teenRiskyExperiment    // high risk tolerance lean -> criminal enterprise
     case workHard
     case protectYourEnergy
     case network
+    case pivotCareer
+    case trainNewSkill
+    case retire
     case retrain
     case takeOvertime
     case coast
     case jobHunt
     case chaseSpotlight
+    case startMovieActor
+    case auditionRole
+    case actingClass
+    case buildActingReel
+    case takeIndieRole
+    case managePublicist
+    case startMusicProducer
+    case produceTrack
+    case runStudioSession
+    case shopBeats
+    case collaborateWithArtist
+    case polishSignatureSound
+    case manageProducerCredits
+    case startMovieProducer
+    case optionScript
+    case castProject
+    case shootFilm
+    case handleProductionCrisis
+    case secureDistribution
+    case manageBackEndPoints
+    case startRecordLabel
+    case signArtist
+    case developArtist
+    case releaseRecord
+    case bookTour
+    case payArtists
+    case pushSingle
+    case handleArtistDrama
+    case startCoachingCareer
+    case recruitTalent
+    case hireCoachingStaff
+    case installSystem
+    case runTrainingCamp
+    case manageLockerRoom
+    case callBigGame
+    case handleBoosterPressure
     case intenseTraining
     case compete
+    // Phase S2: Dedicated athlete quick actions for frictionless sports pipeline
+    case extraTrainingSession
+    case mediaAppearance
+    case recoveryFocus
+    case teamBonding
+    // S3a: The Myth & The Machine — doping / edge temptation
+    case edgeProtocol
+    // E2: Dedicated founder quick actions for frictionless entrepreneur experience
+    case closeMajorDeal
+    case allHandsRally
+    case fundraiseSprint
+    case takeRealBreak
+    case hireKeyTalent
+    // C2: Dedicated creator quick actions for frictionless content creator experience
+    case postDaily
+    case goLive
+    case filmBanger
+    case collab
+    case addressDrama
+    case takeMentalBreak
+    case dropBrandDeal
+    // P2: Dedicated politics quick actions
+    case townHall
+    case politicalFundraise
+    case scandalResponse
+    case policyPush
+    case backroomDeal
+    case mediaHit
+    case takeAStand
+    case attackOpponent
     case gatherIntelligence
     case exploitLeverage
     case dayTrade
@@ -560,6 +984,13 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case buildCrew
     case cleanMoney
     case stepAway
+    // CE2: Dedicated instant actions for Criminal Enterprise paths
+    case ghostProtocol
+    case burnEvidence
+    case payTheFixer
+    case launderThroughShell
+    case hostStrategicGala
+    case aggressiveTakeover
     case smallHustle
     case takeExtraShifts
     case saveForEscape
@@ -578,12 +1009,38 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case holdPositions
     case sellToCover
     case saveForDownPayment
+    case depositToHouseFund
     case buyStarterHome
     case refinanceMortgage
     case buildMaintenanceReserve
+    case topUpHouseReserve
+    // Econ4: Dedicated economic quick actions with strong era + special career flavor
+    case panicSell
+    case aggressiveSideHustle
+    case bigLifestylePurchase
+    case rideTheWave
+    case quietFinancialQuit
     case sellHome
+    // Econ1 (Stock Market)
+    case checkPortfolio
+    case rebalancePortfolio
+    case researchTip
+    case buyIndex
+    case sellPosition
+    // Assets3: Instant layer for luxury and signature assets
+    case flexLuxuryAsset
+    case liquidateLuxury
+    case upgradeCollection
+    case hostAtSignatureEstate
     case findYourCrowd
     case dateCarefully
+    case startAffair
+    case endAffair
+    case buyEngagementRing
+    case signPrenup
+    case proposeMarriage
+    case planWedding
+    case fileForDivorce
     case chaseStatus
     case stayInvisible
     case leanOnMentor
@@ -596,6 +1053,11 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case letChanceDecide
     case keepDistance
     case repairTension
+    // Phase 2.2: Simple parenting mechanics with trade-offs
+    case spendTimeWithKids
+    case enforceRoutine
+    case encourageIndependence
+    case checkInOnChild
     case protectSleep
     case rest
     case pushThrough
@@ -611,8 +1073,165 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case stripAssets
     case ipoExit
     case hireAdvisor
+    
+    // Military
+    case enlistArmy
+    case enlistNavy
+    case enlistAirForce
+    case enlistMarines
+    case enlistCoastGuard
+    case enlistSpaceForce
+    case commissionArmy
+    case commissionNavy
+    case commissionAirForce
+    case commissionMarines
+    case commissionCoastGuard
+    case commissionSpaceForce
+    case joinReservesArmy
+    case joinReservesNavy
+    case joinReservesAirForce
+    case joinReservesMarines
+    case joinReservesCoastGuard
+    case joinReservesSpaceForce
+    case militaryService
+    case deploy
+    case goAWOL
+    case desert
+    case militaryRetirement
+    
+    // Military V2
+    case joinROTC
+    case leaveROTC
+    case selectCombatMOS
+    case selectMedicalMOS
+    case selectAviationMOS
+    case selectIntelMOS
+    case selectLogisticsMOS
+    case useGIBill
+    case seekVAHealthcare
+    case claimPension
+    
+    // Investment Portfolios
+    case buyStocks
+    case sellStocks
+    case buyCrypto
+    case sellCrypto
+    case buyRentalProperty
+    case sellRentalProperty
+    case manageRentals
+    
+    // Legacy
+    case switchToChild
+    
+    // Specialized Civilian Careers
+    case applyForResidency
+    case completeResidency
+    case openPrivatePractice
+    case passBarExam
+    case makePartner
+    case becomeCTO
+    case launchStartupSpinOff
+
+    // D1: Identity domain activation — light self actions, always-available static instants
+    case morningReflection
+    case reconcileWithPast
+    case tryNewPersona
+    case publicReset
+    case therapySession
+    case processCrisis
+
+    // D1: Military depth — new static instants + deploy tour
+    case ptFocus
+    case seekCounsel
+    case studyTradition
+    case deployTour
+
+    // D1: Family light always — persistent low-commitment family statics
+    case familyMeal
+    case storyTime
+
+    // D2: Finance/Assets mastery & collector loops (per-path unique assets, maintenance, era costs, fame/lifestyle/knownFor)
+    case curateCollection
+    case hostSignatureEvent
+    case maintainAsset
+
+    // D2: Health depth (condition management, aging curves by resilience/lifestyle, body-as-asset)
+    case recurringTherapy
+    case manageMeds
+    case bodyConditioning
+
+    // D2: Relationships depth (per-friend, rivalry, private vs public rep split)
+    case deepenSpecificBond
+    case fuelRivalry
+    case splitReputation
+
+    // D3: Education-to-everything branches (trade/uni/honors mechanical differences, lifelong learning, credential handoff)
+    case pursueTradeCert
+    case honorsTrack
+    case uniApplication
+    case lifelongLearning
+    case credentialRefresh
+
+    // D3: Regular career archetype parity (non-special deep paths, aging curves, side-hustle overlap)
+    case corporateClimb
+    case freelanceHustle
+    case tradesMastery
+    case pivotToGig
+    // D3: additional regular archetypes for 6-way parity (public service, tech/engineering)
+    case publicServiceGrind
+    case techDeepWork
 
     var id: String { rawValue }
+    
+    var domain: ActionDomain {
+        switch self {
+        case .studyHard, .studyConsistently, .cramAndSurvive, .lockInRoutine, .joinClub, .buildPortfolio, .skipClass, .layLow, .skipAndDrift, .joinROTC, .leaveROTC:
+            return .education
+        case .workHard, .network, .pivotCareer, .trainNewSkill, .retire, .jobHunt, .takeOvertime, .takeExtraShifts, .chaseSpotlight, .startMovieActor, .auditionRole, .actingClass, .buildActingReel, .takeIndieRole, .managePublicist, .startMusicProducer, .produceTrack, .runStudioSession, .shopBeats, .collaborateWithArtist, .polishSignatureSound, .manageProducerCredits, .startMovieProducer, .optionScript, .castProject, .shootFilm, .handleProductionCrisis, .secureDistribution, .manageBackEndPoints, .startRecordLabel, .signArtist, .developArtist, .releaseRecord, .bookTour, .payArtists, .pushSingle, .handleArtistDrama, .startCoachingCareer, .recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .startCompany, .pitchDeck, .pivotBusiness, .raiseCapital, .aggressiveExpansion, .ipoExit, .hireAdvisor, .compete, .intenseTraining, .recoveryFocus, .mediaAppearance, .teamBonding, .extraTrainingSession, .edgeProtocol, .gatherIntelligence, .exploitLeverage, .applyForResidency, .completeResidency, .openPrivatePractice, .passBarExam, .makePartner, .becomeCTO, .launchStartupSpinOff,
+             .closeMajorDeal, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent,
+             .postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal,
+             .townHall, .politicalFundraise, .scandalResponse, .policyPush, .backroomDeal, .mediaHit, .takeAStand, .attackOpponent:
+            return .career
+        case .enlistArmy, .enlistNavy, .enlistAirForce, .enlistMarines, .enlistCoastGuard, .enlistSpaceForce, .commissionArmy, .commissionNavy, .commissionAirForce, .commissionMarines, .commissionCoastGuard, .commissionSpaceForce, .joinReservesArmy, .joinReservesNavy, .joinReservesAirForce, .joinReservesMarines, .joinReservesCoastGuard, .joinReservesSpaceForce, .militaryService, .deploy, .goAWOL, .desert, .militaryRetirement, .selectCombatMOS, .selectMedicalMOS, .selectAviationMOS, .selectIntelMOS, .selectLogisticsMOS, .ptFocus, .seekCounsel, .studyTradition, .deployTour:
+            return .military
+        case .runScheme, .layLow, .buildCrew, .cleanMoney, .stepAway,
+             .ghostProtocol, .burnEvidence, .payTheFixer, .launderThroughShell, .hostStrategicGala, .aggressiveTakeover:
+            return .crime
+        case .cutSpending, .spendForRelief, .spendToCope, .saveForEscape, .payDownDebt, .consolidateDebt, .minimumPayments, .deferStudentLoans, .declareBankruptcy, .dayTrade, .analyzeMarkets, .buyStocks, .sellStocks, .buyCrypto, .sellCrypto, .buyRentalProperty, .sellRentalProperty, .manageRentals, .claimPension,
+             .saveForDownPayment, .depositToHouseFund, .buyStarterHome, .refinanceMortgage, .buildMaintenanceReserve, .topUpHouseReserve, .sellHome,
+             .buildEmergencyFund, .buyIndexFund, .speculateStocks, .holdPositions, .sellToCover, .takeSideWork, .smallHustle, .takeExtraShifts,
+             .panicSell, .aggressiveSideHustle, .bigLifestylePurchase, .rideTheWave, .quietFinancialQuit:
+            return .finance
+        case .reachOut, .repairTension, .keepDistance, .discussFuture, .moveInTogether, .callInFavor, .startAffair, .endAffair, .buyEngagementRing, .signPrenup, .proposeMarriage, .planWedding, .fileForDivorce:
+            return .relationships
+        case .seeDoctor, .rest, .protectSleep, .pushThrough, .seekVAHealthcare:
+            return .health
+        case .tryForBaby, .avoidPregnancy, .letChanceDecide, .checkInOnChild, .spendTimeWithKids, .enforceRoutine, .encourageIndependence:
+            return .family
+        // D1 new actions
+        case .morningReflection, .reconcileWithPast, .tryNewPersona, .publicReset, .therapySession, .processCrisis:
+            return .identity
+        case .ptFocus, .seekCounsel, .studyTradition, .deployTour:
+            return .military
+        case .familyMeal, .storyTime:
+            return .family
+        // D2 new actions
+        case .curateCollection, .hostSignatureEvent, .maintainAsset:
+            return .finance
+        case .recurringTherapy, .manageMeds, .bodyConditioning:
+            return .health
+        case .deepenSpecificBond, .fuelRivalry, .splitReputation:
+            return .relationships
+        // D3 education
+        case .pursueTradeCert, .honorsTrack, .uniApplication, .lifelongLearning, .credentialRefresh:
+            return .education
+        // D3 regular career
+        case .corporateClimb, .freelanceHustle, .tradesMastery, .pivotToGig, .publicServiceGrind, .techDeepWork:
+            return .career
+        default:
+            return .career
+        }
+    }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -723,11 +1342,97 @@ struct QuickActionMemoryState: Codable, Equatable {
         guard !completedThisAge.contains(where: { $0.domain == action.domain && $0.choiceID == action.choiceID }) else { return }
         completedThisAge.append(ActionMemoryEntry(age: age, domain: action.domain, choiceID: action.choiceID))
     }
+}
 
-    mutating func clearForNewAge(_ age: Int) {
-        currentAge = age
-        completedThisAge = []
+// MARK: - Engine1: Lightweight System Correlation Ledger
+// Low-overhead bus that lets Instant layer, Autonomous systems, and Background engines
+// publish and read very cheap signals without full simulation every frame.
+// Designed for high correlation with minimal cost (fixed small size + automatic decay).
+
+struct CorrelationSignal: Codable, Equatable {
+    enum Kind: String, Codable, Equatable {
+        case instantActionPulse      // Player did a meaningful instant/quick action
+        case autonomousReaction      // An autonomous system reacted (NPC, finance, health, etc.)
+        case momentumEcho            // Strong momentum carry from instant → yearly
+        case economicPressureShift   // WorldEra or finance stress changed meaningfully
+        case npcAutonomyPulse        // NPC autonomy system fired something noticeable
+        case worldAutonomyPulse      // Macro/world event or era shift
+        case focusStance             // D4: yearly focus/stance chosen or completed (residue + autonomy reactivity + silent flavor)
     }
+
+    var kind: Kind
+    var domain: String?              // e.g. "finance", "relationships", "career"
+    var strength: Int                // 0-100 scale (higher = more significant)
+    var age: Int                     // When the signal was recorded
+}
+
+struct SystemCorrelationLedger: Codable, Equatable {
+    private var signals: [CorrelationSignal] = []
+    private let maxSignals = 12      // Hard cap for low overhead
+
+    // Engine4: Echo system - high-correlation moments can schedule future consequences
+    private var echoHooks: [CorrelationEcho] = []
+    private let maxEchoHooks = 6
+
+    mutating func publish(_ signal: CorrelationSignal) {
+        signals.removeAll { $0.kind == signal.kind && $0.domain == signal.domain }
+        signals.append(signal)
+
+        if signals.count > maxSignals {
+            signals.sort { $0.strength > $1.strength }
+            signals = Array(signals.prefix(maxSignals))
+        }
+    }
+
+    /// Returns recent signals, optionally filtered by kind and minimum strength.
+    func recentSignals(kind: CorrelationSignal.Kind? = nil, minStrength: Int = 0, sinceAge: Int? = nil) -> [CorrelationSignal] {
+        signals.filter { sig in
+            (kind == nil || sig.kind == kind) &&
+            sig.strength >= minStrength &&
+            (sinceAge == nil || sig.age >= sinceAge!)
+        }
+        .sorted { $0.age > $1.age }
+    }
+
+    /// Total "heat" from recent instant/autonomous activity
+    var recentActivityLevel: Int {
+        let recent = signals.filter { $0.age > (signals.first?.age ?? 0) - 3 }
+        return min(100, recent.reduce(0) { $0 + $1.strength } / max(1, recent.count))
+    }
+
+    mutating func decay(oldAge: Int) {
+        signals.removeAll { $0.age < oldAge - 8 }
+
+        // Engine4: Also clean old echo hooks
+        echoHooks.removeAll { $0.dueAge < oldAge }
+    }
+
+    // Engine4: Record a high-correlation "echo" that can fire later
+    mutating func recordEcho(tag: String, dueAge: Int, strength: Int, domain: String?) {
+        let echo = CorrelationEcho(tag: tag, dueAge: dueAge, strength: strength, domain: domain)
+        echoHooks.removeAll { $0.tag == tag && $0.domain == domain }
+        echoHooks.append(echo)
+
+        if echoHooks.count > maxEchoHooks {
+            echoHooks.sort { $0.strength > $1.strength }
+            echoHooks = Array(echoHooks.prefix(maxEchoHooks))
+        }
+    }
+
+    func pendingEchoes(currentAge: Int) -> [CorrelationEcho] {
+        echoHooks.filter { $0.dueAge <= currentAge }
+    }
+
+    mutating func consumeEcho(_ echo: CorrelationEcho) {
+        echoHooks.removeAll { $0.tag == echo.tag && $0.dueAge == echo.dueAge }
+    }
+}
+
+struct CorrelationEcho: Codable, Equatable {
+    var tag: String
+    var dueAge: Int
+    var strength: Int
+    var domain: String?
 }
 
 struct PressureCause: Codable, Equatable, Identifiable {
@@ -829,12 +1534,78 @@ struct CorrelationLedger: Codable, Equatable {
         guard !causes.isEmpty else { return nil }
         return causes.joined(separator: ", ")
     }
+
+    // Engine1+ compatibility + real low-overhead bus for engine collaboration.
+    // All background engines (Silent, Continuity, WorldAuto, NPCAuto) + instant publishers
+    // read/write the same tiny capped structure so they can influence each other cheaply
+    // without duplicating state or heavy computation.
+    private var signals: [CorrelationSignal] = []
+    private let maxSignals = 12
+    private var echoHooks: [CorrelationEcho] = []
+    private let maxEchoHooks = 6
+
+    var recentActivityLevel: Int {
+        // Prefer real signals if present (from Engine1 publish path); fallback to action count approx.
+        if !signals.isEmpty {
+            let recent = signals.filter { $0.age > (signals.first?.age ?? 0) - 3 }
+            return min(100, recent.reduce(0) { $0 + $1.strength } / max(1, recent.count))
+        }
+        let total = actionCounts.values.reduce(0, +)
+        return min(100, total * 3)
+    }
+
+    mutating func publish(_ signal: CorrelationSignal) {
+        // Low overhead: dedup same kind/domain, cap at 12, keep strongest.
+        signals.removeAll { $0.kind == signal.kind && $0.domain == signal.domain }
+        signals.append(signal)
+
+        if signals.count > maxSignals {
+            signals.sort { $0.strength > $1.strength }
+            signals = Array(signals.prefix(maxSignals))
+        }
+    }
+
+    mutating func recordEcho(tag: String, dueAge: Int, strength: Int, domain: String?) {
+        let echo = CorrelationEcho(tag: tag, dueAge: dueAge, strength: strength, domain: domain)
+        echoHooks.removeAll { $0.tag == tag && $0.domain == domain }
+        echoHooks.append(echo)
+
+        if echoHooks.count > maxEchoHooks {
+            echoHooks.sort { $0.strength > $1.strength }
+            echoHooks = Array(echoHooks.prefix(maxEchoHooks))
+        }
+    }
+
+    mutating func decay(oldAge: Int) {
+        signals.removeAll { $0.age < oldAge - 8 }
+        echoHooks.removeAll { $0.dueAge < oldAge }
+    }
+
+    func pendingEchoes(currentAge: Int) -> [CorrelationEcho] {
+        echoHooks.filter { $0.dueAge <= currentAge }
+    }
+
+    mutating func consumeEcho(_ echo: CorrelationEcho) {
+        echoHooks.removeAll { $0.tag == echo.tag && $0.dueAge == echo.dueAge }
+    }
+
+    /// Returns recent signals (for cross-engine reads, e.g. SilentYear reacting to autonomy pulses).
+    /// Kept tiny and cheap. (real impl now lives on the active ledger)
+    func recentSignals(kind: CorrelationSignal.Kind? = nil, minStrength: Int = 0, sinceAge: Int? = nil) -> [CorrelationSignal] {
+        signals.filter { sig in
+            (kind == nil || sig.kind == kind) &&
+            sig.strength >= minStrength &&
+            (sinceAge == nil || sig.age >= sinceAge!)
+        }
+        .sorted { $0.age > $1.age }
+    }
 }
 
 enum ActionFrictionLevel: String, Codable, Equatable {
     case none
     case resistance // Harder to press, visual jitter
     case warning // Red pulse, heavy haptics
+    case danger // Severe warning
     case locked // Cannot be selected due to state
 }
 
@@ -849,6 +1620,7 @@ struct ActionChoiceDefinition: Equatable {
     var choiceID: ActionChoiceID
     var title: String
     var subtitle: String
+    var detail: String = ""
     var identityLine: String
     var previewTags: [String]
     var preferredEventTags: [String: Int] = [:]
@@ -883,6 +1655,17 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Let The Year Slide", subtitle: "Stop pushing and see what breaks.", identityLine: "You stop fighting the drift and let the consequences catch up later.", previewTags: ["Relief", "Standing down", "Momentum loss"], preferredEventTags: ["school": 5, "risk": 3, "health": 2], microBeat: "Watching the ceiling.", baseFriction: .none)
         case .keepThePeace:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Smooth The Edges", subtitle: "Stability over ambition.", identityLine: "You spend the year avoiding conflict instead of chasing momentum.", previewTags: ["Drama down", "Belonging down", "Stability"], preferredEventTags: ["social": 4, "routine": 3], microBeat: "Just nod and smile.", baseFriction: .none)
+        // Teen 2 precursors
+        case .teenAthleticDrill:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Athletic Drill", subtitle: "Push the body, build the future.", identityLine: "You treat after-school sweat like an investment in a version of yourself that performs.", previewTags: ["Momentum", "Body", "Athlete seed"], preferredEventTags: ["school": 4, "health": 6], microBeat: "Lungs burning in a good way.", baseFriction: .resistance)
+        case .teenSideHustle:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Side Hustle", subtitle: "Turn spare time into edge.", identityLine: "You decide small money and small reputation now will compound into options later.", previewTags: ["Cash", "Readiness", "Founder seed"], preferredEventTags: ["finance": 5, "school": 3, "chance": 4], microBeat: "Counting small wins.", baseFriction: .none)
+        case .teenCreativeProject:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Creative Project", subtitle: "Make something that is yours.", identityLine: "You spend real hours on work that might never be graded but feels like the real thing.", previewTags: ["Voice", "Belonging", "Creator seed"], preferredEventTags: ["school": 3, "social": 5, "creative": 6], microBeat: "The idea won't leave you alone.", baseFriction: .none)
+        case .teenLeadInitiative:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Lead Initiative", subtitle: "Step up and be counted.", identityLine: "You organize something that requires other people to trust you. The taste of it is addictive.", previewTags: ["Presence", "Support", "Politics seed"], preferredEventTags: ["social": 7, "school": 4], microBeat: "People are looking at you.", baseFriction: .none)
+        case .teenRiskyExperiment:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Risky Experiment", subtitle: "See what you can get away with.", identityLine: "You test a boundary because the safe version of the year feels too small.", previewTags: ["Heat", "Network", "Crime seed"], preferredEventTags: ["risk": 7, "money": 4, "school": 2], microBeat: "Adrenaline and second thoughts.", baseFriction: .warning)
         case .workHard:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Lean Into The Grind", subtitle: "Push for traction.", identityLine: "You decide this year should move forward even if your body complains.", previewTags: ["Performance", "Mental cost"], preferredEventTags: ["career": 8, "money": 3], microBeat: "The coffee is cold. Again.", baseFriction: .resistance)
         case .protectYourEnergy:
@@ -899,6 +1682,78 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Go Looking For A Better Door", subtitle: "Trade certainty for possibility.", identityLine: "You decide your current setup is not enough and start reaching outward.", previewTags: ["Cash shot", "Work shot"], preferredEventTags: ["career": 7, "chance": 3], microBeat: "Refreshing the inbox.", baseFriction: .none)
         case .chaseSpotlight:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Step Into The Spotlight", subtitle: "Visibility with volatility.", identityLine: "You want this year to notice you, even if it gets unstable fast.", previewTags: ["Fame shot", "Audience", "Stability loss"], preferredEventTags: ["career": 5, "social": 4, "risk": 5], microBeat: "All eyes on you.", baseFriction: .warning)
+        case .startMovieActor:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Become Movie Actor", subtitle: "Audition for screen work.", identityLine: "You decide the camera is the room you want to survive in.", previewTags: ["Acting", "Auditions", "Fame shot"], preferredEventTags: ["career": 8, "fame": 5], microBeat: "The reader starts the scene.", baseFriction: .resistance)
+        case .auditionRole:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Audition For Role", subtitle: "Chase the part.", identityLine: "You decide rejection is the price of being seen by the right room.", previewTags: ["Role shot", "Fame", "Burnout"], preferredEventTags: ["career": 8, "chance": 5, "fame": 5], microBeat: "Slate. Breath. Line.", baseFriction: .resistance)
+        case .actingClass:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Take Acting Class", subtitle: "Build craft before attention.", identityLine: "You decide the work has to get better before the world gets louder.", previewTags: ["Craft +", "Range +", "Cash cost"], preferredEventTags: ["career": 7, "routine": 4], microBeat: "Again, but honest this time.", baseFriction: .none)
+        case .buildActingReel:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Build Acting Reel", subtitle: "Package the proof.", identityLine: "You decide talent needs evidence people can watch in two minutes.", previewTags: ["Auditions +", "Visibility", "Cash cost"], preferredEventTags: ["career": 7, "fame": 3], microBeat: "The best takes survive.", baseFriction: .none)
+        case .takeIndieRole:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Take Indie Role", subtitle: "Trade money for credits.", identityLine: "You decide a strange little film might teach you more than waiting.", previewTags: ["Credits +", "Craft", "Low pay"], preferredEventTags: ["career": 7, "creative": 5], microBeat: "Tiny crew. Real work.", baseFriction: .none)
+        case .managePublicist:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Manage Publicist", subtitle: "Shape the public story.", identityLine: "You decide the performance does not end when the camera cuts.", previewTags: ["Heat down", "Brand +", "Cash cost"], preferredEventTags: ["social": 6, "risk": 5, "fame": 4], microBeat: "The quote gets cleaned up.", baseFriction: .warning)
+        case .startMusicProducer:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Become Music Producer", subtitle: "Build the sound behind the artist.", identityLine: "You decide your place in music is behind the board, shaping the record before anyone hears it.", previewTags: ["Credits", "Royalties", "Studio cost"], preferredEventTags: ["career": 8, "fame": 4, "money": 4], microBeat: "The session opens.", baseFriction: .resistance)
+        case .produceTrack:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Produce Track", subtitle: "Turn a session into a credit.", identityLine: "You decide this beat, mix, and arrangement can carry your name further.", previewTags: ["Credit +", "Royalty shot", "Demand"], preferredEventTags: ["career": 8, "fame": 5, "money": 5], microBeat: "The drums finally hit.", baseFriction: .resistance)
+        case .runStudioSession:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Run Studio Session", subtitle: "Keep the room productive.", identityLine: "You decide the vibe, the clock, and the take all need your hand on them.", previewTags: ["Network +", "Studio +", "Burnout"], preferredEventTags: ["career": 7, "social": 5], microBeat: "Take it from the top.", baseFriction: .none)
+        case .shopBeats:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Shop Beats", subtitle: "Find the right ears.", identityLine: "You decide the hard drive is worthless unless the right artist hears what is on it.", previewTags: ["Demand +", "Cash shot", "Rejection"], preferredEventTags: ["career": 6, "money": 5, "chance": 4], microBeat: "The folder gets sent.", baseFriction: .none)
+        case .collaborateWithArtist:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Collaborate With Artist", subtitle: "Borrow chemistry.", identityLine: "You decide the record needs another person's gravity, not just your control.", previewTags: ["Network", "Credit risk", "Hit chance"], preferredEventTags: ["social": 7, "career": 7], microBeat: "The room changes.", baseFriction: .resistance)
+        case .polishSignatureSound:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Polish Signature Sound", subtitle: "Become recognizable.", identityLine: "You decide the sound needs to become yours before the industry can pay for it.", previewTags: ["Signature +", "Quality +", "Slow money"], preferredEventTags: ["routine": 6, "career": 6], microBeat: "You mute everything except the feeling.", baseFriction: .none)
+        case .manageProducerCredits:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Manage Producer Credits", subtitle: "Protect the paperwork.", identityLine: "You decide the song is not done until the split sheet tells the truth.", previewTags: ["Disputes down", "Royalties", "Relationship risk"], preferredEventTags: ["money": 6, "risk": 7], microBeat: "The split sheet gets signed.", baseFriction: .warning)
+        case .startMovieProducer:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Become Movie Producer", subtitle: "Put money and taste behind films.", identityLine: "You decide the next chapter is assembling the people, money, and chaos that make movies real.", previewTags: ["Diamond", "Slate", "Cash risk"], preferredEventTags: ["career": 8, "money": 6, "risk": 5], microBeat: "The script hits your desk.", baseFriction: .warning)
+        case .optionScript:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Option Script", subtitle: "Buy a story before it exists.", identityLine: "You decide this idea is worth locking up before someone braver does.", previewTags: ["Slate +", "IP", "Cash cost"], preferredEventTags: ["career": 8, "money": 4], microBeat: "The option agreement lands.", baseFriction: .resistance)
+        case .castProject:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Cast Project", subtitle: "Attach people with gravity.", identityLine: "You decide the movie needs faces that make money answer the phone.", previewTags: ["Cast +", "Prestige", "Burn rate"], preferredEventTags: ["career": 8, "social": 6], microBeat: "Availability is everything.", baseFriction: .resistance)
+        case .shootFilm:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Shoot Film", subtitle: "Turn the slate into footage.", identityLine: "You decide the only way out is through the production calendar.", previewTags: ["Film shot", "Overruns", "Prestige"], preferredEventTags: ["career": 8, "money": 6, "risk": 6], microBeat: "First day of principal.", baseFriction: .warning)
+        case .handleProductionCrisis:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Handle Production Crisis", subtitle: "Stop chaos from becoming fatal.", identityLine: "You decide to solve the thing nobody wants to own.", previewTags: ["Chaos down", "Trust", "Cash cost"], preferredEventTags: ["risk": 8, "career": 6], microBeat: "Everyone is waiting.", baseFriction: .warning)
+        case .secureDistribution:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Secure Distribution", subtitle: "Get the film seen and paid.", identityLine: "You decide a finished movie is still a liability until someone can sell it.", previewTags: ["Revenue shot", "Prestige", "Leverage"], preferredEventTags: ["money": 8, "career": 7], microBeat: "The offer letter opens.", baseFriction: .resistance)
+        case .manageBackEndPoints:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Manage Backend Points", subtitle: "Protect payout math.", identityLine: "You decide the glamour can wait until the contracts make sense.", previewTags: ["Backend +", "Chaos down", "Relationship risk"], preferredEventTags: ["money": 7, "risk": 6], microBeat: "Every percentage has a lawyer.", baseFriction: .warning)
+        case .startRecordLabel:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Start Record Label", subtitle: "Own the machine behind the music.", identityLine: "You decide the next chapter is not performing for the industry. It is building one.", previewTags: ["Roster", "Catalog", "Cash risk"], preferredEventTags: ["career": 8, "money": 5, "fame": 5], microBeat: "The label name goes on the contract.", baseFriction: .resistance)
+        case .signArtist:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Sign New Artist", subtitle: "Bet on raw talent.", identityLine: "You decide someone else's voice is worth your money, time, and reputation.", previewTags: ["Roster +", "Cash cost", "Upside"], preferredEventTags: ["career": 8, "social": 5, "money": 4], microBeat: "The demo plays again.", baseFriction: .resistance)
+        case .developArtist:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Develop Artist", subtitle: "Turn potential into work.", identityLine: "You decide the slow studio hours matter more than chasing a quick hit.", previewTags: ["Talent +", "Trust +", "Cash cost"], preferredEventTags: ["career": 7, "routine": 5], microBeat: "Another take from the top.", baseFriction: .none)
+        case .releaseRecord:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Release Record", subtitle: "Add to the catalog.", identityLine: "You decide the song is ready to leave the room and face the world.", previewTags: ["Catalog", "Royalties", "Hit chance"], preferredEventTags: ["career": 8, "fame": 6, "money": 5], microBeat: "Upload scheduled.", baseFriction: .resistance)
+        case .bookTour:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Book Tour", subtitle: "Put the roster on the road.", identityLine: "You decide the money is on stage, even if the road eats people alive.", previewTags: ["Tour upside", "Burnout", "Cancellation risk"], preferredEventTags: ["money": 8, "career": 6, "risk": 6], microBeat: "Dates go on sale.", baseFriction: .warning)
+        case .payArtists:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Pay Artists Fairly", subtitle: "Protect trust over margin.", identityLine: "You decide the people making the music should feel the money, not just the label.", previewTags: ["Trust +", "Heat down", "Cash cost"], preferredEventTags: ["social": 8, "money": 5], microBeat: "The statements are clean.", baseFriction: .none)
+        case .pushSingle:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Push The Single", subtitle: "Spend for attention.", identityLine: "You decide this record needs a real campaign, not hope and a post.", previewTags: ["Popularity +", "Prestige", "Cash cost"], preferredEventTags: ["fame": 8, "money": 5, "career": 5], microBeat: "The hook follows you home.", baseFriction: .resistance)
+        case .handleArtistDrama:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Handle Artist Drama", subtitle: "Keep the roster from cracking.", identityLine: "You decide to get in the room before the rumor becomes the story.", previewTags: ["Heat down", "Trust risk", "Morale"], preferredEventTags: ["risk": 8, "social": 6], microBeat: "Phones face down.", baseFriction: .warning)
+        case .startCoachingCareer:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Become Program Coach", subtitle: "Run the whole sports machine.", identityLine: "You decide the next game is not played with your body. It is played through the people you can teach.", previewTags: ["Diamond", "Program", "Pressure"], preferredEventTags: ["career": 8, "sports": 7], microBeat: "The whistle hangs differently.", baseFriction: .warning)
+        case .recruitTalent:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Recruit Talent", subtitle: "Win the living room.", identityLine: "You decide the season starts with convincing someone talented to believe you.", previewTags: ["Roster +", "Prestige", "Compliance risk"], preferredEventTags: ["career": 8, "social": 6], microBeat: "Family on one side. Future on the other.", baseFriction: .resistance)
+        case .hireCoachingStaff:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Hire Coaching Staff", subtitle: "Build the room behind the team.", identityLine: "You decide the program cannot be smarter than the people helping you run it.", previewTags: ["Staff +", "Culture", "Budget"], preferredEventTags: ["career": 7, "money": 4], microBeat: "Another headset joins the sideline.", baseFriction: .none)
+        case .installSystem:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Install System", subtitle: "Teach the identity.", identityLine: "You decide what your team is supposed to become before the scoreboard argues back.", previewTags: ["Scheme +", "Development", "Short pain"], preferredEventTags: ["career": 8, "routine": 5], microBeat: "Whiteboard. Repetition. Again.", baseFriction: .resistance)
+        case .runTrainingCamp:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Run Training Camp", subtitle: "Sharpen the roster.", identityLine: "You decide the team needs hard reps now so the season costs less later.", previewTags: ["Readiness +", "Injury risk", "Morale"], preferredEventTags: ["career": 8, "health": 3, "risk": 4], microBeat: "Two whistles. One more rep.", baseFriction: .warning)
+        case .manageLockerRoom:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Manage Locker Room", subtitle: "Keep belief from splitting.", identityLine: "You decide culture is not a poster. It is every hard conversation nobody wants.", previewTags: ["Culture +", "Morale", "Drama down"], preferredEventTags: ["social": 8, "career": 6], microBeat: "The room gets quiet.", baseFriction: .none)
+        case .callBigGame:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Call The Big Game", subtitle: "Risk the scheme under pressure.", identityLine: "You decide the moment needs your nerve, not just the binder.", previewTags: ["Win shot", "Prestige", "Heat"], preferredEventTags: ["career": 8, "chance": 6, "fame": 4], microBeat: "Fourth quarter. No hiding.", baseFriction: .warning)
+        case .handleBoosterPressure:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Handle Booster Pressure", subtitle: "Survive the money people.", identityLine: "You decide who gets access without letting them own the program.", previewTags: ["Pressure down", "Budget risk", "Integrity"], preferredEventTags: ["money": 5, "risk": 7, "career": 6], microBeat: "Dinner with strings attached.", baseFriction: .warning)
         case .runScheme:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Chase Fast Money", subtitle: "Speed over safety.", identityLine: "You decide the clean route is too slow for the pressure you are under.", previewTags: ["Fast cash", "Heat", "Stability loss"], preferredEventTags: ["money": 5, "risk": 8], microBeat: "You check over your shoulder.", baseFriction: .warning)
         case .buildCrew:
@@ -907,6 +1762,19 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Make The Money Look Legit", subtitle: "Reduce heat at a cost.", identityLine: "You decide survival now depends on making your mess look stable.", previewTags: ["Heat down", "Cash cost", "Safety"], preferredEventTags: ["money": 4, "routine": 3], microBeat: "Scrubbing the trail.", baseFriction: .none)
         case .stepAway:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Back Away Before It Owns You", subtitle: "Choose air over pace.", identityLine: "You decide the year needs breathing room more than momentum.", previewTags: ["Exit risk", "Breathing room"], preferredEventTags: ["health": 5, "relationships": 2], microBeat: "Letting it go.", baseFriction: .none)
+        // CE2: Dedicated instant actions for Criminal Enterprise paths
+        case .ghostProtocol:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Ghost Protocol", subtitle: "Disappear for a while.", identityLine: "You decide the best move is to become very hard to find right now.", previewTags: ["Heat down", "Opportunity cost", "Isolation"], preferredEventTags: ["risk": 4, "routine": 3], microBeat: "Going dark.", baseFriction: .none)
+        case .burnEvidence:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Burn The Evidence", subtitle: "Destroy what can be used against you.", identityLine: "You choose to erase proof even if it costs you leverage or money.", previewTags: ["Heat down", "Irreversible", "Loss"], preferredEventTags: ["risk": 5, "money": 3], microBeat: "Watching it burn.", baseFriction: .warning)
+        case .payTheFixer:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Pay The Fixer", subtitle: "Throw money at the problem.", identityLine: "You decide problems go away faster when the right person is well compensated.", previewTags: ["Heat down", "Cash cost", "Temporary"], preferredEventTags: ["money": 6, "risk": 4], microBeat: "Making the call.", baseFriction: .none)
+        case .launderThroughShell:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Launder Through Shells", subtitle: "Make dirty money look clean.", identityLine: "You choose to spend time and resources making your cash harder to trace.", previewTags: ["Clean money up", "Time cost", "Complexity"], preferredEventTags: ["money": 5, "risk": 3], microBeat: "Paperwork and patience.", baseFriction: .none)
+        case .hostStrategicGala:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Host The Strategic Gala", subtitle: "Use social cover.", identityLine: "You decide the best way to move right now is in plain sight, surrounded by the right people.", previewTags: ["Network up", "Social cost", "Cover"], preferredEventTags: ["social": 7, "risk": 3], microBeat: "Smiling for the room.", baseFriction: .none)
+        case .aggressiveTakeover:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Aggressive Takeover", subtitle: "Move hard and fast.", identityLine: "You decide this is the moment to be ruthless. Win big or create enemies.", previewTags: ["Big swing", "Heat risk", "Reputation"], preferredEventTags: ["money": 7, "risk": 8], microBeat: "Going for the throat.", baseFriction: .warning)
         case .smallHustle:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Scrape Together Your Own Money", subtitle: "A little freedom, a little strain.", identityLine: "You decide even a small cash buffer is worth carrying a little more weight.", previewTags: ["Cash", "-Mental", "Recovery loss"], preferredEventTags: ["money": 7, "career": 2], microBeat: "Counting every cent.", baseFriction: .none)
         case .takeExtraShifts:
@@ -931,6 +1799,26 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Push The Student Debt Forward", subtitle: "Relief now, interest later.", identityLine: "You decide the present is too fragile to carry the full student payment this year.", previewTags: ["Cash relief", "Debt up later", "Stress"], preferredEventTags: ["money": 7, "school": 2], microBeat: "Kicking the bill down the road.", baseFriction: .resistance)
         case .declareBankruptcy:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Let The Whole Thing Collapse On Paper", subtitle: "A brutal reset.", identityLine: "You decide surviving matters more than protecting the image of how this was supposed to go.", previewTags: ["Debt reset", "Wealth wiped", "Long shadow"], preferredEventTags: ["money": 8, "health": 3], microBeat: "Signing the surrender.", baseFriction: .warning)
+        // Econ4: Rich instant economic actions with era + special career flavor
+        case .panicSell:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Panic Sell And Get Out", subtitle: "Cut the bleeding now.", identityLine: "You decide the downside risk is no longer worth holding. Cash in hand feels safer than hope.", previewTags: ["Cash now", "Loss locked", "Relief"], preferredEventTags: ["money": 9, "risk": 4, "negative": 3], microBeat: "Selling at the bottom of your fear.", baseFriction: .warning)
+        case .aggressiveSideHustle:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Go All In On Side Money", subtitle: "Grind when the main path is shaky.", identityLine: "You decide the official income isn't enough and you're willing to bleed for the gap.", previewTags: ["Extra cash", "Burnout risk", "Hidden hours"], preferredEventTags: ["money": 8, "career": 4, "health": 3], microBeat: "Another shift, another corner cut.", baseFriction: .resistance)
+        case .bigLifestylePurchase:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Buy The Victory Lap", subtitle: "Spend like the good times are real.", identityLine: "You decide the numbers on the screen are permission to feel successful in public.", previewTags: ["Status up", "Cash down", "Lifestyle creep"], preferredEventTags: ["money": 6, "social": 5, "positive": 3], microBeat: "The keys feel heavy in the best way.", baseFriction: .none)
+        case .rideTheWave:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Ride The Wave Hard", subtitle: "Lean all the way into the upswing.", identityLine: "You decide the economy is handing you a gift and you're not going to be the one who blinks first.", previewTags: ["Upside", "Risk on", "Momentum"], preferredEventTags: ["money": 7, "opportunity": 6, "career": 4], microBeat: "Saying yes to everything that feels hot.", baseFriction: .none)
+        case .quietFinancialQuit:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Quiet Financial Quit", subtitle: "Protect what you still have.", identityLine: "You decide the game is rigged against you right now and the smartest move is to stop playing so loud.", previewTags: ["Risk down", "Growth paused", "Peace"], preferredEventTags: ["money": 5, "health": 4, "routine": 4], microBeat: "Choosing smaller to stay whole.", baseFriction: .none)
+        // Assets3 instant actions
+        case .flexLuxuryAsset:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Flex the Collection", subtitle: "Let people know what you own.", identityLine: "You decide the right move is to be seen with the toys.", previewTags: ["Status", "Social", "Fame risk"], preferredEventTags: ["social": 8, "opportunity": 4], microBeat: "Posting the keys.", baseFriction: .none)
+        case .liquidateLuxury:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Liquidate the Toys", subtitle: "Cash out the lifestyle.", identityLine: "You decide the symbols of success are now liabilities.", previewTags: ["Cash now", "Prestige hit"], preferredEventTags: ["money": 9, "negative": 3], microBeat: "The garage is getting emptier.", baseFriction: .warning)
+        case .upgradeCollection:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Level Up the Fleet", subtitle: "Make the toys even better.", identityLine: "You decide the current level of flex isn't enough.", previewTags: ["Prestige up", "Cash down"], preferredEventTags: ["money": 5, "social": 5], microBeat: "Bigger, faster, shinier.", baseFriction: .none)
+        case .hostAtSignatureEstate:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Host at the Estate", subtitle: "Use the big house for influence.", identityLine: "You decide the property is a tool, not just a flex.", previewTags: ["Social", "Influence", "Cost"], preferredEventTags: ["social": 7, "career": 4], microBeat: "The guest list is strategic.", baseFriction: .none)
         case .buildEmergencyFund:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Build A Real Cushion", subtitle: "Protect the floor first.", identityLine: "You decide resilience matters more than flashy upside this year.", previewTags: ["Cash floor", "Risk down", "Resilience"], preferredEventTags: ["money": 8, "routine": 4], microBeat: "Securing the floor.", baseFriction: .none)
         case .buyIndexFund:
@@ -943,18 +1831,47 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Pull Money Back To Safety", subtitle: "Protect today from tomorrow.", identityLine: "You decide liquidity matters more than staying exposed to future upside.", previewTags: ["Cash", "Future growth loss", "Fees"], preferredEventTags: ["money": 5, "health": 1], microBeat: "Back to the bank.", baseFriction: .none)
         case .saveForDownPayment:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Start Building Toward A Place Of Your Own", subtitle: "Convert pressure into a target.", identityLine: "You turn this year into a long march toward stability you can point to.", previewTags: ["Home fund", "Flexible cash loss", "Stability goal"], preferredEventTags: ["housing": 6, "money": 6], microBeat: "Saving the keys.", baseFriction: .none)
+        case .depositToHouseFund:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Deposit To House Fund", subtitle: "Move cash into a down-payment bucket now.", identityLine: "You earmark real money today instead of waiting for the year to decide.", previewTags: ["House fund up", "Cash down", "Ownership closer"], preferredEventTags: ["housing": 5, "money": 4], microBeat: "Saving the keys.", baseFriction: .none)
         case .buyStarterHome:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Make The Jump Into Ownership", subtitle: "Control with real weight attached.", identityLine: "You decide the next chapter should belong to you, even if the cost lingers.", previewTags: ["Equity", "Housing control", "Liquidity loss"], preferredEventTags: ["housing": 8, "money": 4], microBeat: "Signing the life away.", baseFriction: .resistance)
         case .refinanceMortgage:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Renegotiate The Weight", subtitle: "Buy breathing room.", identityLine: "You decide the year needs room to breathe more than pride about the original deal.", previewTags: ["Monthly cost down", "Breathing room", "Fees"], preferredEventTags: ["housing": 5, "money": 5], microBeat: "Changing the deal.", baseFriction: .none)
         case .buildMaintenanceReserve:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Prepare For The House To Ask Again", subtitle: "Plan for the next hit.", identityLine: "You decide stability means getting ahead of future problems before they arrive.", previewTags: ["Housing resilience", "Liquid cash down", "Surprise risk down"], preferredEventTags: ["housing": 7, "money": 4], microBeat: "Fortifying the walls.", baseFriction: .none)
+        case .topUpHouseReserve:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Top Up Repair Reserve", subtitle: "Put cash aside before the house breaks something.", identityLine: "You fund the repair bucket now so the next leak does not become a crisis.", previewTags: ["Reserve up", "Cash down", "Repair risk down"], preferredEventTags: ["housing": 6, "money": 4], microBeat: "Fortifying the walls.", baseFriction: .none)
         case .sellHome:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Cash Out And Reset", subtitle: "Trade permanence for flexibility.", identityLine: "You decide the year needs margin more than it needs roots.", previewTags: ["Cash", "Housing stability loss", "Flexibility"], preferredEventTags: ["housing": 6, "money": 5], microBeat: "Handing over the keys.", baseFriction: .none)
+        // Econ1 (Stock Market)
+        case .checkPortfolio:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Review Portfolio", subtitle: "Glance at the wins and scars.", identityLine: "You take a cold look at your positions. The numbers don't lie.", previewTags: ["Knowledge", "Market Pulse"], microBeat: "Scrolling through the deltas.", baseFriction: .none)
+        case .rebalancePortfolio:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Rebalance Risk", subtitle: "Shift weight to protect the future.", identityLine: "You decide to adjust your exposure before the market decides for you.", previewTags: ["Risk Shift", "Momentum", "Fee hit"], microBeat: "Moving the sliders.", baseFriction: .resistance)
+        case .researchTip:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Research Hot Sector", subtitle: "Chase the whisper of an edge.", identityLine: "You spend the afternoon digging into the data everyone else is ignoring.", previewTags: ["Intel", "Confidence", "Time cost"], microBeat: "Reading between the lines.", baseFriction: .none)
+        case .buyIndex:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Buy Market Index", subtitle: "Broad exposure, steady growth.", identityLine: "You decide the whole market is better than any one bet.", previewTags: ["Cash down", "Index Fund up"], microBeat: "Setting up the auto-buy.", baseFriction: .none)
+        case .sellPosition:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Liquidate Position", subtitle: "Turn paper wins into real cash.", identityLine: "You decide the cash is better in your hand than on the screen.", previewTags: ["Cash up", "Portfolio down"], microBeat: "Executing the trade.", baseFriction: .none)
         case .findYourCrowd:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Find Your People", subtitle: "Belonging on purpose.", identityLine: "You decide this year should feel less lonely, even if it gets messy.", previewTags: ["Belonging", "School", "Support"], preferredEventTags: ["social": 8, "school": 3], microBeat: "Finally, someone laughs.", baseFriction: .none)
         case .dateCarefully:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Let Someone In Carefully", subtitle: "Connection with caution.", identityLine: "You open the door to closeness without pretending it cannot complicate the year.", previewTags: ["Bond", "Belonging", "Risk"], preferredEventTags: ["romance": 8, "social": 3], microBeat: "A tentative text.", baseFriction: .none)
+        case .startAffair:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Start an Affair", subtitle: "Seek connection on the side", detail: "Start a secret relationship. High risk of discovery and reputation damage.", identityLine: "You are leading a double life.", previewTags: ["Secret", "Rumor Heat", "Risk"], preferredEventTags: ["risk": 9, "social": 5], microBeat: "A late night text.", baseFriction: .warning)
+        case .endAffair:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "End the Affair", subtitle: "Close the secret door", detail: "Break off your secret relationship before you get caught.", identityLine: "You are trying to fix your mistakes.", previewTags: ["Relief", "Safety"], preferredEventTags: ["social": 4], microBeat: "The final goodbye.", baseFriction: .none)
+        case .buyEngagementRing:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Buy Engagement Ring", subtitle: "Prepare for the big question", detail: "Spend significant cash to buy a ring. Higher quality rings improve proposal success.", identityLine: "You are ready to commit.", previewTags: ["Cash cost", "Commitment"], preferredEventTags: ["money": 8, "social": 5], microBeat: "The box feels heavy in your pocket.", baseFriction: .resistance)
+        case .signPrenup:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Sign Prenup", subtitle: "Protect your assets", detail: "A legal agreement to keep your finances separate. Lowers bond but provides security.", identityLine: "You are looking out for yourself.", previewTags: ["Financial Safety", "Bond hit"], preferredEventTags: ["money": 7], microBeat: "The lawyers are in the room.", baseFriction: .resistance)
+        case .proposeMarriage:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Propose Marriage", subtitle: "Pop the question", detail: "Ask your partner to marry you. Success depends on bond and alignment.", identityLine: "You are taking the ultimate leap.", previewTags: ["Milestone", "Bond"], preferredEventTags: ["social": 10], microBeat: "The world holds its breath.", baseFriction: .none)
+        case .planWedding:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Plan Wedding", subtitle: "The big day", detail: "Host a wedding. Costs significant cash but provides massive social capital.", identityLine: "You are celebrating your union.", previewTags: ["Cash cost", "Reputation", "Social Capital"], preferredEventTags: ["money": 10, "social": 10], microBeat: "Flowers and music.", baseFriction: .resistance)
+        case .fileForDivorce:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "File for Divorce", subtitle: "End the union", detail: "End your marriage. Assets will be split 50/50 unless a prenup is active.", identityLine: "You are walking away.", previewTags: ["Asset Split", "Freedom", "Stress"], preferredEventTags: ["money": 9, "health": 6], microBeat: "Signing the papers.", baseFriction: .warning)
         case .chaseStatus:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Play For Attention", subtitle: "Visibility with heat.", identityLine: "You decide being seen matters enough to risk the backlash that follows.", previewTags: ["Visibility", "Peer heat", "Risk"], preferredEventTags: ["social": 6, "risk": 5], microBeat: "The likes are climbing.", baseFriction: .warning)
         case .stayInvisible:
@@ -979,6 +1896,86 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Keep Some Distance", subtitle: "Protect yourself first.", identityLine: "You decide staying intact matters more than staying close right now.", previewTags: ["Tension down", "Bond down"], preferredEventTags: ["health": 2, "relationships": 2], microBeat: "Building the wall.", baseFriction: .none)
         case .repairTension:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Try To Repair What Is Fraying", subtitle: "Choose the harder conversation.", identityLine: "You decide this year should not end with something important quietly worse.", previewTags: ["Bond", "Stability"], preferredEventTags: ["relationships": 8, "family": 3], microBeat: "I'm sorry.", baseFriction: .resistance)
+        // Phase 2.2 parenting actions — simple, high-texture, meaningful trade-offs
+        case .spendTimeWithKids:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Carve Out Real Time With Them", subtitle: "Presence over perfection.", identityLine: "You decide the year will include deliberate hours that belong only to your kids, not the to-do list.", previewTags: ["Bond up", "Mental cost", "Other plans down"], preferredEventTags: ["family": 9, "health": 2], microBeat: "You put the phone down.", baseFriction: .none)
+        case .enforceRoutine:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Hold The Line On Structure", subtitle: "Stability has a cost.", identityLine: "You decide some friction now is kinder than chaos later, even when it makes you the bad guy.", previewTags: ["Structure", "Some resentment", "Long-term calm"], preferredEventTags: ["family": 7, "routine": 5], microBeat: "Bedtime is bedtime.", baseFriction: .resistance)
+        case .encourageIndependence:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Step Back So They Can Step Up", subtitle: "Growth through space.", identityLine: "You decide your job is to make yourself a little less necessary this year.", previewTags: ["Autonomy", "Bond risk", "Pride"], preferredEventTags: ["family": 6, "chance": 3], microBeat: "You let them try.", baseFriction: .none)
+        case .checkInOnChild:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Ask The Real Questions", subtitle: "Emotional presence.", identityLine: "You decide to find out how they actually are, even if the answer is heavier than you wanted.", previewTags: ["Insight", "Bond", "Emotional load"], preferredEventTags: ["family": 8, "health": 3], microBeat: "The quiet conversation.", baseFriction: .resistance)
+        // D1: Identity domain — light, always-available static self actions (dossier-flavored, instant)
+        case .morningReflection:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Morning Reflection", subtitle: "Check in with yourself.", identityLine: "You decide the year needs at least one honest conversation with the person you are becoming.", previewTags: ["Clarity", "Mental", "Dossier echo"], preferredEventTags: ["health": 5, "identity": 4], microBeat: "The mirror is quiet.", baseFriction: .none)
+        case .reconcileWithPast:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Reconcile With Where You Came From", subtitle: "Make peace with the dossier.", identityLine: "You decide the wiring from 14 still has something to teach you, even if it stings.", previewTags: ["Dossier tie", "Mental relief", "Legacy note"], preferredEventTags: ["health": 4, "family": 3, "identity": 5], microBeat: "The old story gets a footnote.", baseFriction: .resistance)
+        case .tryNewPersona:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Try On A New Version Of You", subtitle: "Experiment with identity.", identityLine: "You decide this year is allowed to change what 'you' even means.", previewTags: ["Identity shift", "Rep risk", "Fresh start"], preferredEventTags: ["social": 5, "risk": 4, "identity": 6], microBeat: "New name in the mirror.", baseFriction: .warning)
+        case .publicReset:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Public Reset", subtitle: "Change the story people tell.", identityLine: "You decide the version of you that the world has been carrying is due for an edit.", previewTags: ["Rep swing", "Fame cost/benefit"], preferredEventTags: ["social": 6, "career": 3, "identity": 4], microBeat: "The announcement lands.", baseFriction: .none)
+        case .therapySession:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Therapy Session", subtitle: "Pay for perspective.", identityLine: "You decide some patterns are too expensive to keep carrying alone.", previewTags: ["Mental +", "Cash cost", "Insight"], preferredEventTags: ["health": 8, "money": 2], microBeat: "The hour that belongs only to you.", baseFriction: .none)
+        case .processCrisis:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Process The Identity Crisis", subtitle: "Face the fracture.", identityLine: "You decide the version of you that has been running this life is due for a reckoning.", previewTags: ["Coherence", "Painful clarity", "Stance realign"], preferredEventTags: ["health": 6, "identity": 7, "risk": 3], microBeat: "The pieces on the table.", baseFriction: .resistance)
+        // D1: Military depth statics + deploy
+        case .ptFocus:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "PT Focus", subtitle: "Sharpen the machine.", identityLine: "You decide the body that serves is the one that survives.", previewTags: ["Fitness +", "Discipline +"], preferredEventTags: ["health": 6, "military": 5], microBeat: "Boots on the ground before dawn.", baseFriction: .resistance)
+        case .seekCounsel:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Seek Counsel", subtitle: "Tend the invisible wounds.", identityLine: "You decide the things that don't bleed still need looking after.", previewTags: ["Trauma down", "Mental +"], preferredEventTags: ["health": 7, "military": 4], microBeat: "The quiet room.", baseFriction: .none)
+        case .studyTradition:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Study The Tradition", subtitle: "Know why you wear the uniform.", identityLine: "You decide the history in the unit patch is part of the strength you carry.", previewTags: ["Discipline +", "Pride"], preferredEventTags: ["military": 6, "identity": 3], microBeat: "The stories that outlive the orders.", baseFriction: .none)
+        case .deployTour:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Deploy On Tour", subtitle: "The real test.", identityLine: "You decide the only way to know what you are made of is to go where the year can take it from you.", previewTags: ["Medals", "Trauma risk", "Big payoff"], preferredEventTags: ["military": 9, "risk": 7, "health": 5], microBeat: "Wheels up.", baseFriction: .warning)
+        // D1: Family light always statics
+        case .familyMeal:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Family Meal", subtitle: "Anchor the day.", identityLine: "You decide the table is still the place where the year slows down and remembers who it belongs to.", previewTags: ["Bond +", "Dossier flavor"], preferredEventTags: ["family": 7, "health": 2], microBeat: "The chairs scrape back.", baseFriction: .none)
+        case .storyTime:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Story Time", subtitle: "Pass the thread.", identityLine: "You decide the stories you tell them tonight are the dossier they will carry when you are not in the room.", previewTags: ["Child wiring", "Legacy"], preferredEventTags: ["family": 8, "identity": 4], microBeat: "The lamp clicks off.", baseFriction: .none)
+        // D2: Finance/Assets collector & mastery statics (path-specific, era-reactive, fame/lifestyle boosts)
+        case .curateCollection:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Curate Collection", subtitle: "Tend the assets that tell your story.", identityLine: "You decide the things you own say as much about you as the things you do.", previewTags: ["Lifestyle +", "Maintenance cost", "KnownFor"], preferredEventTags: ["assets": 8, "finance": 4, "fame": 3], microBeat: "Polishing the trophies.", baseFriction: .none)
+        case .hostSignatureEvent:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Host at Signature", subtitle: "Use the house as stage.", identityLine: "You decide your home is the perfect backdrop for the deal, the deal, or the drama.", previewTags: ["Social leverage", "Era flex", "Rep swing"], preferredEventTags: ["social": 7, "assets": 6, "money": 3], microBeat: "The guests arrive.", baseFriction: .resistance)
+        case .maintainAsset:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Maintain The Fleet", subtitle: "Keep the shine on the toys.", identityLine: "You decide neglect is more expensive than the upkeep in the long run.", previewTags: ["Asset health +", "Cash burn", "Era risk"], preferredEventTags: ["assets": 7, "finance": 5], microBeat: "The mechanic nods.", baseFriction: .none)
+        // D2: Health mastery (condition loops, aging by resilience/lifestyle, body-as-asset)
+        case .recurringTherapy:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Recurring Therapy", subtitle: "Scheduled maintenance for the mind.", identityLine: "You decide the patterns don't fix themselves; they need regular appointments.", previewTags: ["Mental +", "Condition management", "Cash tie"], preferredEventTags: ["health": 8, "money": 3], microBeat: "The couch again.", baseFriction: .none)
+        case .manageMeds:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Manage The Meds", subtitle: "Trade symptoms for side effects.", identityLine: "You decide the chemical balance is worth the daily ritual and the monthly bill.", previewTags: ["Condition down", "Finance hit", "Health trade"], preferredEventTags: ["health": 7, "money": 4], microBeat: "Pill organizer clicks.", baseFriction: .resistance)
+        case .bodyConditioning:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Body Conditioning", subtitle: "Treat the machine as career asset.", identityLine: "You decide your body is the one investment that pays in every other domain.", previewTags: ["Athlete/creator edge", "Aging slow", "Discipline"], preferredEventTags: ["health": 6, "career": 5], microBeat: "The reps that matter.", baseFriction: .none)
+        // D2: Relationships depth (per-friend, rivalry, rep split)
+        case .deepenSpecificBond:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Deepen One Bond", subtitle: "Pick the person, go all in.", identityLine: "You decide quantity of friends is less valuable than the one who actually knows you.", previewTags: ["Per-friend depth", "Time cost", "Support up"], preferredEventTags: ["relationships": 9, "health": 2], microBeat: "The long conversation.", baseFriction: .none)
+        case .fuelRivalry:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Fuel The Rivalry", subtitle: "Let the competition sharpen you.", identityLine: "You decide a little enemy in the circle keeps everyone honest — including you.", previewTags: ["Rivalry heat", "Performance up", "Rep risk"], preferredEventTags: ["social": 5, "career": 4, "risk": 4], microBeat: "The side-eye across the room.", baseFriction: .warning)
+        case .splitReputation:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Split Public & Private", subtitle: "Different faces for different rooms.", identityLine: "You decide the version the world sees doesn't have to be the one you go home to.", previewTags: ["Public rep", "Private bond", "Ethics risk"], preferredEventTags: ["social": 6, "risk": 5, "identity": 3], microBeat: "The mask slips back on.", baseFriction: .resistance)
+        // D3: Education branches and regular career parity defs
+        case .pursueTradeCert:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Pursue Trade Certification", subtitle: "Hands-on path, faster income.", identityLine: "You decide practical skills and quick earning power beat the long academic road.", previewTags: ["Income ramp", "Credential", "Trade bonus"], preferredEventTags: ["career": 7, "education": 5], microBeat: "The shop floor calls.", baseFriction: .none)
+        case .honorsTrack:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Lock Into Honors", subtitle: "Prestige and pressure.", identityLine: "You decide the elite track is worth the extra grind for the doors it will open.", previewTags: ["Standing up", "Burnout risk", "Special entry"], preferredEventTags: ["education": 8, "career": 4], microBeat: "The seminar is small.", baseFriction: .resistance)
+        case .uniApplication:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Apply to University", subtitle: "The long game.", identityLine: "You decide the degree is the key that unlocks the higher ceiling later.", previewTags: ["Readiness", "Debt risk", "Future fit"], preferredEventTags: ["education": 6, "finance": 3], microBeat: "The applications go out.", baseFriction: .none)
+        case .lifelongLearning:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Lifelong Learning", subtitle: "Never stop stacking.", identityLine: "You decide the credential from 22 is just the start; the world rewards the curious forever.", previewTags: ["Skill up", "Standing", "Small cost"], preferredEventTags: ["education": 5, "career": 6], microBeat: "The online module completes.", baseFriction: .none)
+        case .credentialRefresh:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Refresh The Credential", subtitle: "Stay current or fade.", identityLine: "You decide the old degree needs new polish or it loses its power in the market.", previewTags: ["Decay reversal", "Cost", "Market edge"], preferredEventTags: ["education": 4, "career": 7], microBeat: "The renewal certificate arrives.", baseFriction: .resistance)
+        case .corporateClimb:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Climb The Corporate Ladder", subtitle: "Play the long internal game.", identityLine: "You decide steady promotion inside the machine is safer and more predictable than striking out.", previewTags: ["Rank up", "Politics", "Stability"], preferredEventTags: ["career": 8, "social": 4], microBeat: "The review goes well.", baseFriction: .none)
+        case .freelanceHustle:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Go Full Freelance", subtitle: "Own your time and clients.", identityLine: "You decide the gig economy is freedom, even if the safety net is thinner.", previewTags: ["Flex income", "Uncertainty", "Brand"], preferredEventTags: ["career": 7, "finance": 5, "risk": 4], microBeat: "The next invoice lands.", baseFriction: .resistance)
+        case .tradesMastery:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Master The Trade", subtitle: "Deep expertise, real value.", identityLine: "You decide becoming the best at a tangible skill beats chasing titles.", previewTags: ["Skill mastery", "Income stable", "Respect"], preferredEventTags: ["career": 8, "education": 3], microBeat: "The job is done right.", baseFriction: .none)
+        case .pivotToGig:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Pivot To The Gig Economy", subtitle: "Multiple streams, no boss.", identityLine: "You decide the 9-5 is overrated and you're ready to juggle projects instead.", previewTags: ["Side to main", "Variety", "Income variance"], preferredEventTags: ["career": 6, "finance": 6], microBeat: "The calendar fills with gigs.", baseFriction: .none)
+        case .publicServiceGrind:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Grind In Public Service", subtitle: "Steady mission, slower pay.", identityLine: "You decide impact and stability inside the system beat chasing private upside.", previewTags: ["Mission", "Security", "Pension path"], preferredEventTags: ["career": 7, "social": 5], microBeat: "The forms are endless, but the work matters.", baseFriction: .none)
+        case .techDeepWork:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Deep Technical Work", subtitle: "Mastery through focus.", identityLine: "You decide the real edge is in the quiet hours solving hard problems others avoid.", previewTags: ["Skill spike", "Focus", "IP edge"], preferredEventTags: ["career": 8, "education": 4], microBeat: "The commit compiles at 2am.", baseFriction: .resistance)
         case .protectSleep:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Protect Your Sleep Like It Matters", subtitle: "Recovery as a strategy.", identityLine: "You decide the year has to be survivable, not just productive.", previewTags: ["+Mental", "Recovery", "School pressure down"], preferredEventTags: ["health": 8, "routine": 4], microBeat: "The world goes dark.", baseFriction: .none)
         case .rest:
@@ -1007,10 +2004,65 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Scale Aggressively", subtitle: "Growth at all costs.", identityLine: "You decide to capture the market before it captures you.", previewTags: ["Valuation spike", "Burn rate up", "Burnout risk"], preferredEventTags: ["career": 8, "risk": 7], microBeat: "Burn the boats.", baseFriction: .warning)
         case .ipoExit:
             return ActionChoiceDefinition(choiceID: choiceID, title: "The Liquidity Event", subtitle: "Take the company public.", identityLine: "You decide the journey as a founder is done and it's time to cash in.", previewTags: ["Massive wealth", "Legacy", "Exit"], preferredEventTags: ["money": 10, "social": 6], microBeat: "Ringing the bell.", baseFriction: .resistance)
+        // E2: New dedicated founder quick actions
+        case .closeMajorDeal:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Close Major Deal", subtitle: "Land the big one.", identityLine: "You decide this partnership or customer could change everything.", previewTags: ["Traction +", "Cash", "Pressure up"], preferredEventTags: ["career": 8, "money": 6], microBeat: "The signature hits the table.", baseFriction: .resistance)
+        case .allHandsRally:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "All-Hands Rally", subtitle: "Re-energize the team.", identityLine: "You stand in front of everyone and remind them why they're here.", previewTags: ["Team health +", "Culture up", "Short-term productivity"], preferredEventTags: ["social": 7, "career": 4], microBeat: "The room feels different.", baseFriction: .none)
+        case .fundraiseSprint:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Fundraise Sprint", subtitle: "Hit the road for capital.", identityLine: "You decide the runway is too short and it's time to sell the vision again.", previewTags: ["Cash injection", "Equity risk", "Mental load"], preferredEventTags: ["money": 8, "risk": 6], microBeat: "Another pitch deck at 2am.", baseFriction: .warning)
+        case .takeRealBreak:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Take a Real Break", subtitle: "Step away from the machine.", identityLine: "You finally decide that burning out helps no one, least of all the company.", previewTags: ["Mental load down", "Execution dip", "Long-term health"], preferredEventTags: ["health": 8], microBeat: "The laptop stays closed.", baseFriction: .none)
+        case .hireKeyTalent:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Hire Key Talent", subtitle: "Bring in someone who changes the game.", identityLine: "You decide the right person is worth whatever it takes.", previewTags: ["Team strength +", "Culture risk", "Burn rate"], preferredEventTags: ["career": 7, "social": 5], microBeat: "The offer goes out.", baseFriction: .resistance)
+        // C2: New dedicated creator quick actions
+        case .postDaily:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Post Daily", subtitle: "Feed the algorithm.", identityLine: "You decide consistency is the only thing that matters right now.", previewTags: ["Algorithm +", "Burnout risk", "Small audience gain"], preferredEventTags: ["career": 6, "social": 4], microBeat: "Another caption written.", baseFriction: .resistance)
+        case .goLive:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Go Live", subtitle: "Raw connection.", identityLine: "You decide the unfiltered version of you is what people need tonight.", previewTags: ["Engagement spike", "Authenticity", "Risk of saying too much"], preferredEventTags: ["social": 8, "risk": 5], microBeat: "Stream is live.", baseFriction: .warning)
+        case .filmBanger:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Film a Banger", subtitle: "Swing for the fences.", identityLine: "You decide this one piece of content could be the one that changes everything.", previewTags: ["Viral potential", "High effort", "All or nothing"], preferredEventTags: ["career": 9, "risk": 7], microBeat: "Lights, camera, obsession.", baseFriction: .resistance)
+        case .collab:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Collab With Someone Big", subtitle: "Borrow their audience.", identityLine: "You decide the fastest way up is to stand next to someone already there.", previewTags: ["Audience cross-pollination", "Brand risk", "Relationship cost"], preferredEventTags: ["social": 7, "career": 6], microBeat: "The DM was sent.", baseFriction: .none)
+        case .addressDrama:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Address The Drama", subtitle: "Control the narrative.", identityLine: "You decide silence is no longer an option.", previewTags: ["Damage control", "Authenticity hit", "Possible recovery"], preferredEventTags: ["social": 8, "risk": 6], microBeat: "The camera is on.", baseFriction: .warning)
+        case .takeMentalBreak:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Take a Mental Health Break", subtitle: "Log off.", identityLine: "You finally decide that disappearing for a bit might be the only way to stay alive.", previewTags: ["Burnout relief", "Audience dip", "Long-term health"], preferredEventTags: ["health": 9], microBeat: "Status: offline.", baseFriction: .none)
+        case .dropBrandDeal:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Drop a Brand Deal", subtitle: "Cash the bag.", identityLine: "You decide the money is worth whatever it does to your soul this month.", previewTags: ["Cash", "Authenticity cost", "Sponsorship"], preferredEventTags: ["money": 9, "career": 5], microBeat: "The integration is filmed.", baseFriction: .resistance)
+        // P2: New dedicated politics quick actions
+        case .townHall:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Hold a Town Hall", subtitle: "Face the people.", identityLine: "You decide to stand in front of actual voters and hear what they think of you.", previewTags: ["Approval swing", "Authenticity", "Risk of gaffes"], preferredEventTags: ["social": 8, "career": 5], microBeat: "The room is full of faces.", baseFriction: .warning)
+        case .politicalFundraise:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Fundraise Hard", subtitle: "Dial for dollars.", identityLine: "You decide the war chest matters more than your dignity tonight.", previewTags: ["Donor base +", "Ethics risk", "Time sink"], preferredEventTags: ["money": 8, "risk": 5], microBeat: "Another call.", baseFriction: .resistance)
+        case .scandalResponse:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Respond to the Scandal", subtitle: "Damage control.", identityLine: "You decide how you will face the latest story about you.", previewTags: ["Scandal management", "Approval risk", "Narrative control"], preferredEventTags: ["social": 7, "risk": 8], microBeat: "The cameras are waiting.", baseFriction: .warning)
+        case .policyPush:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Push a Major Policy", subtitle: "Leave a mark.", identityLine: "You decide to bet political capital on something that actually matters.", previewTags: ["Policy legacy", "Approval cost", "Long game"], preferredEventTags: ["career": 9, "social": 4], microBeat: "The bill is introduced.", baseFriction: .resistance)
+        case .backroomDeal:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Cut a Backroom Deal", subtitle: "Trade favors.", identityLine: "You decide that the right compromise today can unlock real power tomorrow.", previewTags: ["Power gain", "Ethics hit", "Future leverage"], preferredEventTags: ["career": 7, "risk": 6], microBeat: "The handshake happens.", baseFriction: .warning)
+        case .mediaHit:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Do a Big Media Hit", subtitle: "Control the story.", identityLine: "You decide to go on the biggest stage and shape how the country sees you tonight.", previewTags: ["Approval swing", "Charisma test", "Scandal risk"], preferredEventTags: ["social": 9, "career": 5], microBeat: "The lights are hot.", baseFriction: .warning)
+        case .takeAStand:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Take a Public Stand", subtitle: "Risk it for principle.", identityLine: "You decide that some lines are worth drawing even if it costs you.", previewTags: ["Ethics gain", "Approval risk", "Polarization"], preferredEventTags: ["social": 6, "career": 7], microBeat: "The statement is released.", baseFriction: .resistance)
+        case .attackOpponent:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Attack Your Opponent", subtitle: "Go negative.", identityLine: "You decide that the other side needs to be destroyed before they destroy you.", previewTags: ["Approval swing", "Ethics cost", "Escalation"], preferredEventTags: ["social": 5, "risk": 8], microBeat: "The attack ad drops.", baseFriction: .warning)
         case .intenseTraining:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Push Your Physical Limits", subtitle: "Build the machine.", identityLine: "You decide your body is the only asset that matters this year.", previewTags: ["Peak up", "Burnout", "Injury risk"], preferredEventTags: ["health": 8, "routine": 5], microBeat: "The iron is heavy.", baseFriction: .resistance)
         case .compete:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Enter The Arena", subtitle: "Visibility through performance.", identityLine: "You step onto the stage where the only thing that matters is the result.", previewTags: ["Fame", "Fan base", "Injury risk"], preferredEventTags: ["career": 6, "social": 5, "risk": 4], microBeat: "Heartbeat in your ears.", baseFriction: .warning)
+        // Phase S2: New dedicated athlete quick actions
+        case .extraTrainingSession:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Extra Training Session", subtitle: "Push for marginal gains.", identityLine: "You decide one more rep today might be the difference.", previewTags: ["Peak +", "Injury risk", "Fatigue"], preferredEventTags: ["health": 7, "career": 5], microBeat: "The weights feel heavier tonight.", baseFriction: .resistance)
+        case .mediaAppearance:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Media Appearance", subtitle: "Feed the spotlight.", identityLine: "You step in front of the cameras to keep your name relevant.", previewTags: ["Fame +", "Heat up", "Sponsor interest"], preferredEventTags: ["career": 6, "social": 4], microBeat: "The lights are hot.", baseFriction: .none)
+        case .recoveryFocus:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Recovery Focus", subtitle: "Listen to the body.", identityLine: "You choose the ice bath and physio over another grind.", previewTags: ["Durability +", "Burnout down", "Short-term performance"], preferredEventTags: ["health": 9], microBeat: "The body finally gets a say.", baseFriction: .none)
+        case .teamBonding:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Team Bonding", subtitle: "Invest in the locker room.", identityLine: "You spend time with the guys instead of chasing individual stats.", previewTags: ["Fan loyalty +", "Team chemistry", "Slight fatigue"], preferredEventTags: ["social": 5, "career": 3], microBeat: "Laughter in the weight room.", baseFriction: .none)
+        // S3a: The Myth & The Machine — doping temptation (high risk, high reward)
+        case .edgeProtocol:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Edge Protocol", subtitle: "Take the risk. Chase the ceiling.", identityLine: "You know exactly what this is. One more edge. One more year at the top.", previewTags: ["Peak ++", "Detection risk", "Health cost", "Legacy stain"], preferredEventTags: ["career": 9, "risk": 8, "health": 6], microBeat: "The needle or the pill. The line you said you'd never cross.", baseFriction: .danger)
         case .gatherIntelligence:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Infiltrate The Circle", subtitle: "Trade trust for leverage.", identityLine: "You decide that knowing what others are hiding is the fastest way up.", previewTags: ["Leverage", "Exposure", "Suspicion"], preferredEventTags: ["social": 5, "risk": 7], microBeat: "Watching. Listening.", baseFriction: .warning)
         case .exploitLeverage:
@@ -1019,6 +2071,56 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Trade The Volatility", subtitle: "Short-term focus.", identityLine: "You decide to chase the noise of the market instead of its signal.", previewTags: ["Cash", "Stress", "Market risk"], preferredEventTags: ["money": 8, "risk": 6], microBeat: "The tape is moving fast today.", baseFriction: .warning)
         case .analyzeMarkets:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Study The Cycles", subtitle: "Trade activity for edge.", identityLine: "You decide patience and perspective are more profitable than adrenaline.", previewTags: ["Insight", "Capital access", "Patience"], preferredEventTags: ["money": 6, "routine": 5], microBeat: "The pattern emerges.", baseFriction: .none)
+        
+        // Military
+        case .enlistArmy, .enlistNavy, .enlistAirForce, .enlistMarines, .enlistCoastGuard, .enlistSpaceForce:
+            let branchName = MilitarySystem.branchName(for: choiceID)
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Enlist in the \(branchName)", subtitle: "Start your military career as a soldier", detail: "Sign a 4-year contract to serve. Provides discipline and fitness, but restricts freedom.", identityLine: "You are joining the \(branchName).", previewTags: ["Contract", "Discipline", "Fitness"], preferredEventTags: ["career": 8, "health": 4], microBeat: "Signing the papers.", baseFriction: .resistance)
+        case .commissionArmy, .commissionNavy, .commissionAirForce, .commissionMarines, .commissionCoastGuard, .commissionSpaceForce:
+            let branchName = MilitarySystem.branchName(for: choiceID)
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Commission in the \(branchName)", subtitle: "Leading from the front", detail: "Use your degree to start as an officer. Higher pay and responsibility.", identityLine: "You are taking a leadership role in the military.", previewTags: ["Officer", "Pay up", "Responsibility"], preferredEventTags: ["career": 9, "social": 5], microBeat: "Swearing the oath.", baseFriction: .resistance)
+        case .joinReservesArmy, .joinReservesNavy, .joinReservesAirForce, .joinReservesMarines, .joinReservesCoastGuard, .joinReservesSpaceForce:
+            let branchName = MilitarySystem.branchName(for: choiceID)
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Join \(branchName) Reserves", subtitle: "One weekend a month, two weeks a year", detail: "Balance civilian life with military service. Flexible, but always ready.", identityLine: "You are joining the \(branchName) Reserves.", previewTags: ["Reserve", "Balance", "Ready"], preferredEventTags: ["career": 6, "routine": 4], microBeat: "Reporting for drill.", baseFriction: .none)
+        case .militaryService:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Standard Service", subtitle: "Perform your daily duties", detail: "Focus on excellence in your current role. Improves performance and discipline.", identityLine: "You are dedicated to your service.", previewTags: ["Performance", "Discipline", "Fitness"], preferredEventTags: ["career": 7, "routine": 5], microBeat: "Another day on duty.", baseFriction: .none)
+        case .goAWOL:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Go AWOL", subtitle: "Walk away from your post", detail: "Abandon your duties temporarily. High risk of legal trouble.", identityLine: "You are running from your obligations.", previewTags: ["Freedom", "Heat", "Crime"], preferredEventTags: ["risk": 8, "social": 4], microBeat: "You don't look back.", baseFriction: .warning)
+        case .desert:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Desert", subtitle: "Leave the military for good", detail: "Abandon your service entirely. You will be hunted by military police.", identityLine: "You are a deserter.", previewTags: ["Heat spike", "Dishonorable", "Risk"], preferredEventTags: ["risk": 10, "crime": 8], microBeat: "Disappearing into the night.", baseFriction: .warning)
+        case .militaryRetirement:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Retire/Resign", subtitle: "Leave the service honorably", detail: "Complete your contract or retire after 20 years.", identityLine: "You are transitioning back to civilian life.", previewTags: ["Freedom", "Pension", "Transition"], preferredEventTags: ["career": 6, "money": 5], microBeat: "The final salute.", baseFriction: .resistance)
+        case .deploy:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Volunteer for Deployment", subtitle: "Go where the action is", detail: "Seek an overseas mission. Higher risk, but higher reward.", identityLine: "You are stepping up for your country.", previewTags: ["Deployment", "Risk", "Valor"], preferredEventTags: ["career": 7, "risk": 7], microBeat: "Packing your gear.", baseFriction: .warning)
+            
+        case .joinROTC:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Join ROTC", subtitle: "Train while you study", detail: "Receive a stipend and specialized training. Requires a post-grad commission.", identityLine: "You are balancing books and boots.", previewTags: ["Stipend", "Discipline", "Commission"], preferredEventTags: ["education": 6, "career": 5], microBeat: "Marching on the quad.", baseFriction: .none)
+        case .leaveROTC:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Leave ROTC", subtitle: "Focus solely on academics", detail: "Stop your military training. You lose your stipend and commission path.", identityLine: "You are returning to regular student life.", previewTags: ["Freedom", "No Stipend"], preferredEventTags: ["education": 4], microBeat: "Turning in your uniform.", baseFriction: .none)
+        case .selectCombatMOS, .selectMedicalMOS, .selectAviationMOS, .selectIntelMOS, .selectLogisticsMOS:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Select Specialization", subtitle: "Define your role", detail: "Choose your primary Military Occupational Specialty (MOS).", identityLine: "You are choosing your path in the service.", previewTags: ["Specialty", "Stats"], preferredEventTags: ["career": 7], microBeat: "Filling out the preference sheet.", baseFriction: .none)
+        case .useGIBill:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Use GI Bill", subtitle: "Fund your education", detail: "Apply your veteran benefits to cover tuition costs.", identityLine: "You are investing in your future after service.", previewTags: ["Free Tuition", "Smarts"], preferredEventTags: ["education": 9], microBeat: "Applying for benefits.", baseFriction: .none)
+        case .seekVAHealthcare:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Seek VA Healthcare", subtitle: "Treat service-related issues", detail: "Access specialized care for physical and mental trauma.", identityLine: "You are taking care of your health.", previewTags: ["Recovery", "Wellness"], preferredEventTags: ["health": 8], microBeat: "Checking in at the clinic.", baseFriction: .none)
+        case .claimPension:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Claim Pension", subtitle: "Receive retirement pay", detail: "Access the annual income you earned through 20+ years of service.", identityLine: "You are reaping the rewards of a long career.", previewTags: ["Passive Income", "Wealth"], preferredEventTags: ["money": 9], microBeat: "Verifying the direct deposit.", baseFriction: .none)
+            
+        case .applyForResidency:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Apply for Residency", subtitle: "Enter specialized training", detail: "The first step toward becoming an attending physician. Brutal hours, but high future upside.", identityLine: "You are entering the gauntlet of medical training.", previewTags: ["High Burnout", "MD Path"], preferredEventTags: ["career": 8, "health": 10], microBeat: "The match results are in.", baseFriction: .resistance)
+        case .completeResidency:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Complete Residency", subtitle: "Become an Attending", detail: "Transition from training to a full professional role. Salary spikes and burnout stabilizes.", identityLine: "You are finally a fully licensed doctor.", previewTags: ["Salary Spike", "Reputation"], preferredEventTags: ["career": 10, "money": 8], microBeat: "Signing the contract.", baseFriction: .none)
+        case .openPrivatePractice:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Open Private Practice", subtitle: "Be your own boss", detail: "Leave the hospital system to start your own clinic. High overhead, but highest income potential.", identityLine: "You are an independent medical professional.", previewTags: ["Entrepreneurial", "High Income"], preferredEventTags: ["career": 9, "money": 10], microBeat: "The keys are in your hand.", baseFriction: .resistance)
+        case .passBarExam:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Pass the Bar", subtitle: "License to practice law", detail: "A critical milestone. Allows you to transition from Clerk to Associate.", identityLine: "You are a licensed attorney.", previewTags: ["License", "Associate Path"], preferredEventTags: ["career": 7, "smarts": 10], microBeat: "Your name is on the list.", baseFriction: .resistance)
+        case .makePartner:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Make Partner", subtitle: "Peak legal achievement", detail: "Secure equity and leadership in the firm. Massive social capital and wealth.", identityLine: "You are at the top of the legal hierarchy.", previewTags: ["Equity", "Standing"], preferredEventTags: ["career": 10, "social": 10], microBeat: "The senior partners are waiting.", baseFriction: .resistance)
+        case .becomeCTO:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Become CTO", subtitle: "Technological leadership", detail: "Take control of a company's technical direction. High fame and influence.", identityLine: "You are a technical leader.", previewTags: ["Fame", "Salary"], preferredEventTags: ["career": 9, "tech": 10], microBeat: "Leading the strategy.", baseFriction: .none)
+        case .launchStartupSpinOff:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Launch Spin-off", subtitle: "Technical entrepreneurship", detail: "Use your industry expertise to launch a specialized startup.", identityLine: "You are technical visionary.", previewTags: ["Spec Career Path", "Risk"], preferredEventTags: ["career": 8, "money": 7], microBeat: "Drafting the whitepaper.", baseFriction: .resistance)
+
         default:
             return ActionChoiceDefinition(
                 choiceID: choiceID,
@@ -1037,8 +2139,24 @@ enum ActionChoiceCatalog {
         switch choiceID {
         case .smallHustle, .takeSideWork, .takeExtraShifts, .rest, .protectSleep, .pushThrough,
              .reachOut, .joinClub, .findYourCrowd, .keepDistance, .seeDoctor, .cutSpending,
-             .layLow, .spendForRelief:
-            return .instant
+             .depositToHouseFund, .topUpHouseReserve,
+             .layLow, .spendForRelief, .protectYourEnergy,
+             .teenAthleticDrill, .teenSideHustle, .teenCreativeProject, .teenLeadInitiative, .teenRiskyExperiment,
+             // D1: new always-static instants
+             .morningReflection, .reconcileWithPast, .tryNewPersona, .publicReset, .therapySession, .processCrisis,
+             .ptFocus, .seekCounsel, .studyTradition,
+             .familyMeal, .storyTime,
+             // D2: mastery static instants
+             .curateCollection, .hostSignatureEvent, .maintainAsset,
+             .recurringTherapy, .manageMeds, .bodyConditioning,
+             .deepenSpecificBond, .fuelRivalry, .splitReputation,
+             // D3: education branches and regular career statics (instant for quick access + parity)
+             .pursueTradeCert, .honorsTrack, .uniApplication, .lifelongLearning, .credentialRefresh,
+             .corporateClimb, .freelanceHustle, .tradesMastery, .pivotToGig, .publicServiceGrind, .techDeepWork,
+             // Econ1: Stock Market
+             .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition:
+             return .instant
+
         default:
             return .committed
         }
@@ -1134,7 +2252,7 @@ struct ActionCorrelationSystem {
         guard !impressions.isEmpty else { return }
 
         var ids: [String] = state.relationships.friends.map { $0.id.uuidString }
-        if let partner = state.relationships.romanticPartner {
+        if let partner = state.relationships.primaryPartner {
             ids.append(partner.id.uuidString)
         }
 
@@ -1236,6 +2354,9 @@ struct YearForecastCard: Codable, Equatable, Identifiable {
     var anticipationTitle: String
     var anticipationDetail: String
     var tone: YearlyOutcomeTone
+    /// Optional ambient contact voice surfaced on the forecast commit beat (Y2).
+    var voiceName: String? = nil
+    var voiceLine: String? = nil
 }
 
 struct TurnStakesSignal: Codable, Equatable, Identifiable {
@@ -1253,6 +2374,7 @@ struct TurnStakesSnapshot: Codable, Equatable {
     var topOpportunity: TurnStakesSignal
     var ignoredRisk: TurnStakesSignal
     var spilloverRisk: TurnStakesSignal
+    var momentum: TurnStakesSignal?   // Phase 2: Instant action momentum carrying into the year
 }
 
 struct YearReactionCard: Codable, Equatable, Identifiable {
@@ -1310,14 +2432,28 @@ enum ArcTheme: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum ActionDomain: String, Codable, CaseIterable, Identifiable {
+    case education
+    case career
+    case military
+    case finance
+    case relationships
+    case health
+    case crime
+    case family
+    case identity
+
+    var id: String { rawValue }
+}
+
 enum ArcDomain: String, Codable, CaseIterable, Identifiable {
     case education
     case career
     case finance
     case relationships
     case health
-    case housing
     case family
+    case housing
     case identity
 
     var id: String { rawValue }
@@ -1444,6 +2580,80 @@ enum WorldEra: String, Codable, Equatable, CaseIterable {
     case recession
     case highInflation
     case techBoom
+    case wartime
+    case pandemic
+
+    var displayName: String {
+        switch self {
+        case .stable: return "Stable Growth"
+        case .bullMarket: return "Bull Market"
+        case .recession: return "Economic Recession"
+        case .highInflation: return "High Inflation"
+        case .techBoom: return "Tech Boom"
+        case .wartime: return "Geopolitical Conflict"
+        case .pandemic: return "Global Pandemic"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .stable: return "chart.line.uptrend.xyaxis.circle"
+        case .bullMarket: return "chart.line.uptrend.xyaxis"
+        case .recession: return "chart.line.downtrend.xyaxis"
+        case .highInflation: return "arrow.up.circle"
+        case .techBoom: return "cpu"
+        case .wartime: return "shield.lefthalf.filled"
+        case .pandemic: return "facemask.fill"
+        }
+    }
+
+    var tone: PlannerTone {
+        switch self {
+        case .bullMarket, .techBoom: return .positive
+        case .recession, .highInflation, .wartime, .pandemic: return .warning
+        default: return .neutral
+        }
+    }
+
+    // Macro Modifiers
+    var jobSecurityMod: Int {
+        switch self {
+        case .recession: return -15
+        case .bullMarket: return 5
+        case .techBoom: return 10
+        case .pandemic: return -10
+        default: return 0
+        }
+    }
+
+    var livingCostMod: Int {
+        switch self {
+        case .highInflation: return 3000
+        case .recession: return -500
+        case .pandemic: return 1000
+        case .wartime: return 1500
+        default: return 0
+        }
+    }
+
+    var houseValueRateMod: Int {
+        switch self {
+        case .bullMarket: return 4
+        case .recession: return -6
+        case .techBoom: return 2
+        default: return 0
+        }
+    }
+
+    var investmentReturnMod: Double {
+        switch self {
+        case .bullMarket: return 0.08
+        case .techBoom: return 0.12
+        case .recession: return -0.15
+        case .pandemic: return -0.05
+        default: return 0.0
+        }
+    }
 }
 
 struct GameState: Codable, Equatable {
@@ -1453,6 +2663,7 @@ struct GameState: Codable, Equatable {
     var career: CareerState = CareerState()
     var specialCareer: SpecialCareerState = SpecialCareerState()
     var crime: CrimeState = CrimeState()
+    var military: MilitaryState = MilitaryState()
     var finance: FinanceState = FinanceState()
     var relationships: RelationshipState = RelationshipState()
     var family: FamilyState = FamilyState()
@@ -1463,8 +2674,12 @@ struct GameState: Codable, Equatable {
     var narrativeArcs: NarrativeArcState = NarrativeArcState()
     var consequences: ConsequenceState = ConsequenceState()
     var activities: ActivityState = ActivityState()
-    var correlationLedger: CorrelationLedger = CorrelationLedger()
+    // D1: Light identity coherence — 0-100, starts neutral. Self actions move it; low values create subtle pressure/crisis flavor.
+    var identityCoherence: Int = 55
     
+    // var correlationLedger: CorrelationLedger = CorrelationLedger()  // legacy duplicate — SystemCorrelationLedger (Engine1) is the active one below
+    
+    var economy: EconomyState = EconomyState()
     // Macro Autonomy
     var currentEra: WorldEra = .stable
     var eraYearsRemaining: Int = 10
@@ -1476,15 +2691,32 @@ struct GameState: Codable, Equatable {
     var suggestedPlayerAction: SuggestedPlayerAction? = nil
     var yearlyStance: YearlyStanceMemory = YearlyStanceMemory()
     var mvpOnboarding: MVPOnboardingState = MVPOnboardingState()
+    var softRunGoal: SoftRunGoal? = nil
+    var discoverability: DiscoverabilityState = DiscoverabilityState()
     var history: [HistoryEntry] = []
     var lastEventYearById: [String: Int] = [:]
     var startupState: StartupState = .choosingOrigin
     var originProfile: OriginProfile? = nil
     var openingSummary: String? = nil
+    var inheritedLegacy: LegacyInheritanceSnapshot? = nil
     var isGameOver: Bool = false
     var hasUsedCrisisBuyBack: Bool = false // One-time safety net
     /// Procedural childhood backstory + career aptitude DNA. Set by ChildhoodGenerationEngine at character creation.
     var childhoodDossier: ChildhoodDossier? = nil
+
+    /// Controls how forgiving the simulation is of setbacks. Defaults to .resilient for better replayability.
+    var resilience: LifeResilience = .resilient
+
+    /// Tracks the strength of recent instant/quick actions and their autonomous reactions.
+    /// This is the bridge for Phase 2: making micro-actions influence the next year's simulation.
+    var instantMomentum: InstantMomentumState = InstantMomentumState()
+    
+    // Using rich CorrelationLedger with Engine shims for full build compatibility
+    var correlationLedger: CorrelationLedger = CorrelationLedger()
+    
+    // Fame Web F1: Unified recognition profile. Every fame-adjacent avenue (special careers,
+    // athlete personalBrand, military medals, lifestyle/wealth, social rep, events) will feed here.
+    var fame: FameProfile = FameProfile()
 
     private enum CodingKeys: String, CodingKey {
         case player
@@ -1493,6 +2725,7 @@ struct GameState: Codable, Equatable {
         case career
         case specialCareer
         case crime
+        case military
         case finance
         case relationships
         case family
@@ -1503,6 +2736,7 @@ struct GameState: Codable, Equatable {
         case narrativeArcs
         case consequences
         case activities
+        case identityCoherence
         case correlationLedger
         case currentEra
         case eraYearsRemaining
@@ -1513,14 +2747,20 @@ struct GameState: Codable, Equatable {
         case suggestedPlayerAction
         case yearlyStance
         case mvpOnboarding
+        case softRunGoal
+        case discoverability
         case history
         case lastEventYearById
         case startupState
         case originProfile
         case openingSummary
+        case inheritedLegacy
         case isGameOver
         case hasUsedCrisisBuyBack
         case childhoodDossier
+        case resilience
+        case instantMomentum
+        case fame
     }
 
     init() {}
@@ -1533,6 +2773,7 @@ struct GameState: Codable, Equatable {
         career = try container.decodeIfPresent(CareerState.self, forKey: .career) ?? CareerState()
         specialCareer = try container.decodeIfPresent(SpecialCareerState.self, forKey: .specialCareer) ?? SpecialCareerState()
         crime = try container.decodeIfPresent(CrimeState.self, forKey: .crime) ?? CrimeState()
+        military = try container.decodeIfPresent(MilitaryState.self, forKey: .military) ?? MilitaryState()
         if crime.status == .inactive, specialCareer.track == .crime {
             crime = CrimeState.migratingFromLegacySpecialCareer(specialCareer)
             specialCareer = SpecialCareerState()
@@ -1548,6 +2789,7 @@ struct GameState: Codable, Equatable {
         narrativeArcs = try container.decodeIfPresent(NarrativeArcState.self, forKey: .narrativeArcs) ?? NarrativeArcState()
         consequences = try container.decodeIfPresent(ConsequenceState.self, forKey: .consequences) ?? ConsequenceState()
         activities = try container.decodeIfPresent(ActivityState.self, forKey: .activities) ?? ActivityState(currentYearAge: player.age)
+        identityCoherence = try container.decodeIfPresent(Int.self, forKey: .identityCoherence) ?? 55
         correlationLedger = try container.decodeIfPresent(CorrelationLedger.self, forKey: .correlationLedger) ?? CorrelationLedger()
 
         currentEra = try container.decodeIfPresent(WorldEra.self, forKey: .currentEra) ?? .stable
@@ -1560,14 +2802,21 @@ struct GameState: Codable, Equatable {
         suggestedPlayerAction = try container.decodeIfPresent(SuggestedPlayerAction.self, forKey: .suggestedPlayerAction)
         yearlyStance = try container.decodeIfPresent(YearlyStanceMemory.self, forKey: .yearlyStance) ?? YearlyStanceMemory()
         mvpOnboarding = try container.decodeIfPresent(MVPOnboardingState.self, forKey: .mvpOnboarding) ?? MVPOnboardingState()
+        softRunGoal = try container.decodeIfPresent(SoftRunGoal.self, forKey: .softRunGoal)
+        discoverability = try container.decodeIfPresent(DiscoverabilityState.self, forKey: .discoverability) ?? DiscoverabilityState()
         history = try container.decodeIfPresent([HistoryEntry].self, forKey: .history) ?? []
         lastEventYearById = try container.decodeIfPresent([String: Int].self, forKey: .lastEventYearById) ?? [:]
         startupState = try container.decodeIfPresent(StartupState.self, forKey: .startupState) ?? (player.traits.isEmpty ? .choosingOrigin : .active)
         originProfile = try container.decodeIfPresent(OriginProfile.self, forKey: .originProfile)
         openingSummary = try container.decodeIfPresent(String.self, forKey: .openingSummary)
+        inheritedLegacy = try container.decodeIfPresent(LegacyInheritanceSnapshot.self, forKey: .inheritedLegacy)
         isGameOver = try container.decodeIfPresent(Bool.self, forKey: .isGameOver) ?? false
         hasUsedCrisisBuyBack = try container.decodeIfPresent(Bool.self, forKey: .hasUsedCrisisBuyBack) ?? false
         childhoodDossier = try container.decodeIfPresent(ChildhoodDossier.self, forKey: .childhoodDossier)
+        resilience = try container.decodeIfPresent(LifeResilience.self, forKey: .resilience) ?? .resilient
+        instantMomentum = try container.decodeIfPresent(InstantMomentumState.self, forKey: .instantMomentum) ?? InstantMomentumState()
+        correlationLedger = try container.decodeIfPresent(CorrelationLedger.self, forKey: .correlationLedger) ?? CorrelationLedger()
+        fame = try container.decodeIfPresent(FameProfile.self, forKey: .fame) ?? FameProfile()
     }
 
     private static func decodeLegacyMoney(from container: KeyedDecodingContainer<CodingKeys>) throws -> Int? {
@@ -1591,6 +2840,11 @@ struct GameState: Codable, Equatable {
 
     var currentIdentityPattern: PlayerPattern? {
         PlayerPattern.resolve(from: self)
+    }
+
+    /// Keeps the Player's mirrored resilience in sync so domain systems can read it easily.
+    mutating func syncResilienceToPlayer() {
+        player._resilience = resilience
     }
 }
 
@@ -2076,7 +3330,8 @@ struct ActivitySystem {
             }
         }
 
-        if effects.partnerBond != 0, var partner = state.relationships.romanticPartner {
+        if effects.partnerBond != 0, let index = state.relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+            var partner = state.relationships.romanticPartners[index]
             partner.bond = (partner.bond + effects.partnerBond).clamped(to: 0...100)
             partner.commitmentAlignment = (partner.commitmentAlignment + effects.partnerCommitmentAlignment).clamped(to: 0...100)
             if effects.partnerBond <= -4 {
@@ -2084,7 +3339,7 @@ struct ActivitySystem {
             } else if partner.bond >= 45 && partner.status == .strained {
                 partner.status = .active
             }
-            state.relationships.romanticPartner = partner
+            state.relationships.romanticPartners[index] = partner
         }
 
         state.crime.heat = (state.crime.heat + effects.crimeHeat).clamped(to: 0...100)
@@ -2519,15 +3774,20 @@ enum HistoryDomainTag: String, Codable, CaseIterable, Identifiable {
     case activities
     case education
     case career
+    case military
+    case social
+    case fame
     case crime
     case risk
     case finance
     case relationships
     case health
+    case family
     case housing
     case assets
     case progress
     case lifeEvent
+    case identity  // D1 self domain
 
     var id: String { rawValue }
 }
@@ -2581,12 +3841,14 @@ struct DomainYearResult: Equatable {
     var educationEffects: EducationEffects? = nil
     var careerEffects: CareerEffects? = nil
     var specialCareerEffects: SpecialCareerEffects? = nil
+    var militaryEffects: MilitaryEffects? = nil
     var crimeEffects: CrimeEffects? = nil
     var financeEffects: FinanceEffects? = nil
     var relationshipEffects: RelationshipEffects? = nil
     var healthEffects: HealthEffects? = nil
     var housingEffects: HousingEffects? = nil
     var assetEffects: AssetEffects? = nil
+    var fameEffects: FameEffects? = nil   // Fame Web F1
 }
 
 struct DomainNote: Equatable {
@@ -2750,6 +4012,10 @@ enum PersonalityTrait: String, Codable, CaseIterable, Identifiable {
     case coldBlooded
     case visionary
     case burnoutProne
+    case workaholic
+    case resilient
+    case unreliable
+    case ptsd
 
     var id: String { rawValue }
 }
@@ -2899,13 +4165,57 @@ enum TraitCatalog {
                 eventTagOutcomes: ["routine": CoreStatDelta(health: -3)],
                 eventTagFinanceOutcomes: [:]
             )
+        case .workaholic:
+            return TraitProfile(
+                name: "Workaholic",
+                summary: "Your career is your identity. High performance and income, but personal life is a ghost town.",
+                yearlyDrift: CoreStatDelta(happiness: -2),
+                yearlyFinanceDrift: FinanceDelta(cash: 400),
+                eventTagWeights: ["career": 15, "social": -5],
+                eventTagOutcomes: ["career": CoreStatDelta(smarts: 2)],
+                eventTagFinanceOutcomes: ["career": FinanceDelta(cash: 1000)]
+            )
+        case .resilient:
+            return TraitProfile(
+                name: "Resilient",
+                summary: "You can take a hit. Drastically reduced impacts from stress and setbacks.",
+                yearlyDrift: CoreStatDelta(health: 1),
+                yearlyFinanceDrift: FinanceDelta(),
+                eventTagWeights: ["risk": 8, "health": 5],
+                eventTagOutcomes: ["risk": CoreStatDelta(happiness: 1)],
+                eventTagFinanceOutcomes: [:]
+            )
+        case .unreliable:
+            return TraitProfile(
+                name: "Unreliable",
+                summary: "Commitment is hard. High risk of losing stability, but life is less stressful.",
+                yearlyDrift: CoreStatDelta(happiness: 1),
+                yearlyFinanceDrift: FinanceDelta(cash: -200),
+                eventTagWeights: ["routine": -10, "social": 5],
+                eventTagOutcomes: ["career": CoreStatDelta(smarts: -1)],
+                eventTagFinanceOutcomes: [:]
+            )
+        case .ptsd:
+            return TraitProfile(
+                name: "PTSD",
+                summary: "The trauma stays with you. Constant drain on happiness and mental wellness.",
+                yearlyDrift: CoreStatDelta(happiness: -3, health: -1),
+                yearlyFinanceDrift: FinanceDelta(),
+                eventTagWeights: ["risk": 15, "health": 10],
+                eventTagOutcomes: ["health": CoreStatDelta(happiness: -2)],
+                eventTagFinanceOutcomes: [:]
+            )
         }
     }
 }
 
 struct TraitSystem {
-    func processMutations(player: inout Player, specialCareer: SpecialCareerState) -> [DomainNote] {
+    func processMutations(player: inout Player, state: GameState) -> [DomainNote] {
         var notes: [DomainNote] = []
+        let specialCareer = state.specialCareer
+        let career = state.career
+        let military = state.military
+        let finance = state.finance
         
         // Shadow Operative -> Manipulative
         if specialCareer.track == .shadowOperative, specialCareer.yearsActive >= 8, player.traits.contains(.charismatic), !player.traits.contains(.manipulative) {
@@ -2924,14 +4234,38 @@ struct TraitSystem {
             mutate(from: .disciplined, to: .visionary, on: &player)
             notes.append(DomainNote(title: "Trait Mutation", text: "Building something from nothing has expanded your horizon. You no longer just follow a routine; you see the future.", tags: [.progress, .lifeEvent]))
         }
+        
+        // Career -> Workaholic
+        if career.burnout >= 80, career.performance >= 80, !player.traits.contains(.workaholic) {
+            mutate(to: .workaholic, on: &player)
+            notes.append(DomainNote(title: "Trait Mutation", text: "You've crossed a line. Work isn't what you do; it's who you are. You are now a Workaholic.", tags: [.progress, .lifeEvent]))
+        }
+        
+        // Combat -> PTSD or Resilient
+        if military.combatTrauma >= 50, !player.traits.contains(.ptsd) {
+            mutate(to: .ptsd, on: &player)
+            notes.append(DomainNote(title: "Trait Mutation", text: "The sounds and sights of the front lines have left a permanent mark on your mind.", tags: [.progress, .lifeEvent, .health]))
+        } else if military.yearsServed >= 8, military.discipline >= 85, !player.traits.contains(.resilient) {
+            mutate(to: .resilient, on: &player)
+            notes.append(DomainNote(title: "Trait Mutation", text: "Years of service and strict discipline have forged you into someone who doesn't break under pressure.", tags: [.progress, .lifeEvent]))
+        }
+        
+        // AWOL/Debt -> Unreliable
+        if (military.isAWOL || finance.debtDelinquencyRisk >= 80), !player.traits.contains(.unreliable) {
+            mutate(to: .unreliable, on: &player)
+            notes.append(DomainNote(title: "Trait Mutation", text: "A pattern of running from obligations has hardened. People no longer expect you to show up when it matters.", tags: [.progress, .lifeEvent]))
+        }
 
         return notes
     }
     
-    private func mutate(from: PersonalityTrait, to: PersonalityTrait, on player: inout Player) {
-        if let index = player.traits.firstIndex(of: from) {
+    private func mutate(from: PersonalityTrait? = nil, to: PersonalityTrait, on player: inout Player) {
+        if let from = from, let index = player.traits.firstIndex(of: from) {
             player.traits[index] = to
-        } else if player.traits.count < 3 {
+        } else if !player.traits.contains(to) {
+            if player.traits.count >= 3 {
+                player.traits.removeFirst()
+            }
             player.traits.append(to)
         }
     }
@@ -3016,6 +4350,7 @@ enum CareerStatus: String, Codable, CaseIterable {
     case student
     case partTime
     case fullTime
+    case military
     case unemployed
 }
 
@@ -3025,6 +4360,11 @@ enum CareerProfile: String, Codable, CaseIterable {
     case serviceFrontline
     case creativeFreelance
     case credentialedProfessional
+    case militaryService
+    case medicalProfessional
+    case legalProfessional
+    case techSpecialist
+    case financialExpert
 
     var shortLabel: String {
         switch self {
@@ -3033,7 +4373,100 @@ enum CareerProfile: String, Codable, CaseIterable {
         case .serviceFrontline: return "Service Frontline"
         case .creativeFreelance: return "Creative Freelance"
         case .credentialedProfessional: return "Credentialed Pro"
+        case .militaryService: return "Military Service"
+        case .medicalProfessional: return "Medical"
+        case .legalProfessional: return "Legal"
+        case .techSpecialist: return "Tech"
+        case .financialExpert: return "Finance"
         }
+    }
+}
+
+enum SpecializedCareerTrack: String, Codable, CaseIterable {
+    case medical
+    case law
+    case tech
+    case corporateFinance
+}
+
+enum MilitaryBranch: String, Codable, CaseIterable {
+    case army
+    case navy
+    case airForce
+    case marines
+    case coastGuard
+    case spaceForce
+
+    var displayName: String {
+        switch self {
+        case .army: return "Army"
+        case .navy: return "Navy"
+        case .airForce: return "Air Force"
+        case .marines: return "Marines"
+        case .coastGuard: return "Coast Guard"
+        case .spaceForce: return "Space Force"
+        }
+    }
+}
+
+enum MilitaryTrack: String, Codable, CaseIterable {
+    case inactive
+    case enlisted
+    case officer
+    case reserve
+}
+
+enum DeploymentStatus: String, Codable, CaseIterable {
+    case home
+    case stationed
+    case deployed
+    case activeCombat
+}
+
+enum MilitarySpecialty: String, Codable, CaseIterable {
+    case combat
+    case medical
+    case aviation
+    case intelligence
+    case logistics
+    
+    var displayName: String {
+        switch self {
+        case .combat: return "Combat Operations"
+        case .medical: return "Medical Services"
+        case .aviation: return "Aviation"
+        case .intelligence: return "Intelligence"
+        case .logistics: return "Logistics"
+        }
+    }
+}
+
+struct MilitaryState: Codable, Equatable {
+    var track: MilitaryTrack = .inactive
+    var branch: MilitaryBranch? = nil
+    var specialty: MilitarySpecialty? = nil
+    var rank: String = "Private"
+    var rankLevel: Int = 1
+    var yearsServed: Int = 0
+    var contractYearsRemaining: Int = 0
+    var deploymentStatus: DeploymentStatus = .home
+    var fitness: Int = 60
+    var discipline: Int = 80
+    var heat: Int = 0 // AWOL/Trouble
+    var isAWOL: Bool = false
+    var medals: [String] = []
+    
+    // V2 additions
+    var isVeteran: Bool = false
+    var hasGIBill: Bool = false
+    var hasPension: Bool = false
+    var combatTrauma: Int = 0 // PTSD tracking
+
+    mutating func clamp() {
+        fitness = fitness.clamped(to: 0...100)
+        discipline = discipline.clamped(to: 0...100)
+        heat = heat.clamped(to: 0...100)
+        combatTrauma = combatTrauma.clamped(to: 0...100)
     }
 }
 
@@ -3046,6 +4479,7 @@ enum CareerExperienceTag: String, Codable, CaseIterable, Hashable {
     case sales
     case creative
     case management
+    case coaching
 
     var shortLabel: String {
         switch self {
@@ -3057,6 +4491,7 @@ enum CareerExperienceTag: String, Codable, CaseIterable, Hashable {
         case .sales: return "Sales"
         case .creative: return "Creative"
         case .management: return "Management"
+        case .coaching: return "Coaching"
         }
     }
 }
@@ -3101,9 +4536,39 @@ enum CareerOpportunityDoor: String, Codable, CaseIterable {
     }
 }
 
+/// D3: Regular (non-special) career archetypes for mechanical parity with deep paths.
+/// Different curves for performance, burnout, security, income ramp, aging resilience.
+/// Set by static instant actions; used in advanceYear + UI + handoff flavor.
+enum CareerArchetype: String, Codable, CaseIterable {
+    case corporateClimber
+    case gigFreelancer
+    case skilledTrades
+    case publicService
+    case techEngineer
+    case salesNetworker
+
+    var displayName: String {
+        switch self {
+        case .corporateClimber: return "Corporate Climber"
+        case .gigFreelancer: return "Gig Freelancer"
+        case .skilledTrades: return "Skilled Trades"
+        case .publicService: return "Public Service"
+        case .techEngineer: return "Tech Engineer"
+        case .salesNetworker: return "Sales Networker"
+        }
+    }
+}
+
 enum SpecialCareerTrack: String, Codable, CaseIterable {
     case inactive
     case entertainment
+    case movieActor
+    case musicProducer
+    case movieProducer
+    case recordLabelOwner
+    case coach
+    case contentCreator   // C1: New dedicated track for modern attention economy creators
+    case politics         // P1: New dedicated track for political life
     case crime
     case founder
     case athlete
@@ -3111,11 +4576,538 @@ enum SpecialCareerTrack: String, Codable, CaseIterable {
     case trader
     case ventureCapitalist
     case corporateRaider
+    case military
+}
+
+/// Dedicated state for the Athlete special career path.
+/// This is the foundation for a real sports pipeline.
+struct AthleteState: Codable, Equatable {
+    var sport: AthleteSport = .general
+    var peakPerformance: Int = 65          // 0-100, peaks in mid-late 20s, declines with age/injury
+    var durability: Int = 60               // Resistance to injury
+    var sponsorshipTier: Int = 1           // 1-5, affects income and fame
+    var fanLoyalty: Int = 40               // How much fans stick with you through slumps/scandals
+    var injuryRisk: Int = 25               // Current season injury chance modifier
+    
+    // S3a: Potential / Talent ceiling — the "gift" that determines how high you can realistically climb
+    var naturalPotential: Int = 72         // 40-95. Higher = better ceiling, slower age decline, bigger doping upside
+    
+    // S3a: Athlete-specific fame / icon status (separate from generic specialCareer.fame)
+    var personalBrand: Int = 25            // 0-100. "Pro" < 45, "Star" 45-70, "Legend" > 70. Resists audience decay, boosts endorsements.
+    
+    // S3a: Real accolades and legacy markers
+    var accolades: [String] = []           // e.g. "League MVP", "World Champion", "Hall of Fame Inductee"
+    
+    // S3a: Doping / edge state (high-risk, high-reward temptation)
+    var enhancementUses: Int = 0           // How many times you've crossed the line
+    var enhancementHeat: Int = 0           // Lingering detection risk (decays slowly)
+    var lastEnhancementAge: Int = 0        // For narrative + detection window logic
+    
+    var careerHighlights: [String] = []    // Memorable moments for narrative and legacy
+    var retirementOptionsUnlocked: Set<AthleteRetirementPath> = []
+    
+    mutating func clamp() {
+        peakPerformance = peakPerformance.clamped(to: 10...100)
+        durability = durability.clamped(to: 10...95)
+        sponsorshipTier = sponsorshipTier.clamped(to: 1...5)
+        fanLoyalty = fanLoyalty.clamped(to: 0...100)
+        injuryRisk = injuryRisk.clamped(to: 5...80)
+        naturalPotential = naturalPotential.clamped(to: 40...95)
+        personalBrand = personalBrand.clamped(to: 0...100)
+        enhancementHeat = enhancementHeat.clamped(to: 0...100)
+        enhancementUses = max(0, enhancementUses)
+    }
+}
+
+/// Dedicated state for the Founder / CEO / Entrepreneur special career path.
+/// E1 foundation: real CEO mechanics with vision, execution, team, stage, control, and mental load.
+struct FounderState: Codable, Equatable {
+    var vision: Int = 55                   // Big picture, storytelling, fundraising
+    var execution: Int = 55                // Operational delivery and discipline
+    var teamHealth: Int = 60               // Morale, retention, culture strength
+    var productStage: Int = 20             // 0-100: idea → mvp → early traction → scale → mature
+    var control: Int = 85                  // Founder power / influence (synergizes with equityOwned)
+    var founderMentalLoad: Int = 30        // Stress, burnout risk, decision fatigue
+    var companyCulture: Int = 50           // Values, identity, "how we do things"
+    var keyHires: Int = 10                 // Quality and number of critical hires made
+    var competitiveMoat: Int = 15          // Differentiation and defensibility
+    var personalLegend: Int = 20           // Founder-specific reputation (feeds FameProfile strongly)
+
+    mutating func clamp() {
+        vision = vision.clamped(to: 15...95)
+        execution = execution.clamped(to: 15...95)
+        teamHealth = teamHealth.clamped(to: 10...95)
+        productStage = productStage.clamped(to: 0...100)
+        control = control.clamped(to: 10...100)
+        founderMentalLoad = founderMentalLoad.clamped(to: 5...95)
+        companyCulture = companyCulture.clamped(to: 10...95)
+        keyHires = keyHires.clamped(to: 0...100)
+        competitiveMoat = competitiveMoat.clamped(to: 0...100)
+        personalLegend = personalLegend.clamped(to: 0...100)
+    }
+}
+
+struct MovieActorState: Codable, Equatable {
+    var actingSkill: Int = 35
+    var screenPresence: Int = 35
+    var auditionNetwork: Int = 25
+    var roleCredits: Int = 0
+    var boxOfficeDraw: Int = 5
+    var publicImage: Int = 45
+    var typecastRisk: Int = 15
+    var agentQuality: Int = 20
+    var lastRolePayout: Int = 0
+
+    init(
+        actingSkill: Int = 35,
+        screenPresence: Int = 35,
+        auditionNetwork: Int = 25,
+        roleCredits: Int = 0,
+        boxOfficeDraw: Int = 5,
+        publicImage: Int = 45,
+        typecastRisk: Int = 15,
+        agentQuality: Int = 20,
+        lastRolePayout: Int = 0
+    ) {
+        self.actingSkill = actingSkill
+        self.screenPresence = screenPresence
+        self.auditionNetwork = auditionNetwork
+        self.roleCredits = roleCredits
+        self.boxOfficeDraw = boxOfficeDraw
+        self.publicImage = publicImage
+        self.typecastRisk = typecastRisk
+        self.agentQuality = agentQuality
+        self.lastRolePayout = lastRolePayout
+        clamp()
+    }
+
+    mutating func clamp() {
+        actingSkill = actingSkill.clamped(to: 0...100)
+        screenPresence = screenPresence.clamped(to: 0...100)
+        auditionNetwork = auditionNetwork.clamped(to: 0...100)
+        roleCredits = max(0, roleCredits)
+        boxOfficeDraw = boxOfficeDraw.clamped(to: 0...100)
+        publicImage = publicImage.clamped(to: 0...100)
+        typecastRisk = typecastRisk.clamped(to: 0...100)
+        agentQuality = agentQuality.clamped(to: 0...100)
+        lastRolePayout = max(0, lastRolePayout)
+    }
+}
+
+struct MovieProducerState: Codable, Equatable {
+    var slateCount: Int = 0
+    var developmentQuality: Int = 30
+    var castRelationships: Int = 30
+    var budgetControl: Int = 35
+    var distributionLeverage: Int = 20
+    var productionChaos: Int = 25
+    var studioTrust: Int = 35
+    var backendCatalog: Int = 5
+    var prestige: Int = 15
+    var lastFilmPayout: Int = 0
+
+    init(
+        slateCount: Int = 0,
+        developmentQuality: Int = 30,
+        castRelationships: Int = 30,
+        budgetControl: Int = 35,
+        distributionLeverage: Int = 20,
+        productionChaos: Int = 25,
+        studioTrust: Int = 35,
+        backendCatalog: Int = 5,
+        prestige: Int = 15,
+        lastFilmPayout: Int = 0
+    ) {
+        self.slateCount = slateCount
+        self.developmentQuality = developmentQuality
+        self.castRelationships = castRelationships
+        self.budgetControl = budgetControl
+        self.distributionLeverage = distributionLeverage
+        self.productionChaos = productionChaos
+        self.studioTrust = studioTrust
+        self.backendCatalog = backendCatalog
+        self.prestige = prestige
+        self.lastFilmPayout = lastFilmPayout
+        clamp()
+    }
+
+    mutating func clamp() {
+        slateCount = slateCount.clamped(to: 0...12)
+        developmentQuality = developmentQuality.clamped(to: 0...100)
+        castRelationships = castRelationships.clamped(to: 0...100)
+        budgetControl = budgetControl.clamped(to: 0...100)
+        distributionLeverage = distributionLeverage.clamped(to: 0...100)
+        productionChaos = productionChaos.clamped(to: 0...100)
+        studioTrust = studioTrust.clamped(to: 0...100)
+        backendCatalog = backendCatalog.clamped(to: 0...100)
+        prestige = prestige.clamped(to: 0...100)
+        lastFilmPayout = max(0, lastFilmPayout)
+    }
+}
+
+struct CoachingState: Codable, Equatable {
+    var programLevel: Int = 1
+    var rosterTalent: Int = 42
+    var playerDevelopment: Int = 40
+    var schemeFit: Int = 38
+    var staffQuality: Int = 35
+    var lockerRoom: Int = 50
+    var recruitingReach: Int = 35
+    var boosterPressure: Int = 25
+    var programPrestige: Int = 20
+    var seasonWins: Int = 0
+    var seasonLosses: Int = 0
+    var contractValue: Int = 0
+
+    init(
+        programLevel: Int = 1,
+        rosterTalent: Int = 42,
+        playerDevelopment: Int = 40,
+        schemeFit: Int = 38,
+        staffQuality: Int = 35,
+        lockerRoom: Int = 50,
+        recruitingReach: Int = 35,
+        boosterPressure: Int = 25,
+        programPrestige: Int = 20,
+        seasonWins: Int = 0,
+        seasonLosses: Int = 0,
+        contractValue: Int = 0
+    ) {
+        self.programLevel = programLevel
+        self.rosterTalent = rosterTalent
+        self.playerDevelopment = playerDevelopment
+        self.schemeFit = schemeFit
+        self.staffQuality = staffQuality
+        self.lockerRoom = lockerRoom
+        self.recruitingReach = recruitingReach
+        self.boosterPressure = boosterPressure
+        self.programPrestige = programPrestige
+        self.seasonWins = seasonWins
+        self.seasonLosses = seasonLosses
+        self.contractValue = contractValue
+        clamp()
+    }
+
+    mutating func clamp() {
+        programLevel = programLevel.clamped(to: 1...4)
+        rosterTalent = rosterTalent.clamped(to: 0...100)
+        playerDevelopment = playerDevelopment.clamped(to: 0...100)
+        schemeFit = schemeFit.clamped(to: 0...100)
+        staffQuality = staffQuality.clamped(to: 0...100)
+        lockerRoom = lockerRoom.clamped(to: 0...100)
+        recruitingReach = recruitingReach.clamped(to: 0...100)
+        boosterPressure = boosterPressure.clamped(to: 0...100)
+        programPrestige = programPrestige.clamped(to: 0...100)
+        seasonWins = seasonWins.clamped(to: 0...16)
+        seasonLosses = seasonLosses.clamped(to: 0...16)
+        contractValue = max(0, contractValue)
+    }
+}
+
+enum ArtistPayoutPolicy: String, Codable, CaseIterable {
+    case exploitative
+    case standard
+    case artistFriendly
+}
+
+struct LabelArtist: Codable, Equatable, Identifiable {
+    var id: String = UUID().uuidString
+    var name: String = "New Artist"
+    var talent: Int = 50
+    var popularity: Int = 20
+    var morale: Int = 55
+    var contractFairness: Int = 50
+    var catalogCount: Int = 0
+    var tourReadiness: Int = 30
+    var yearlyEarnings: Int = 0
+
+    init(
+        id: String = UUID().uuidString,
+        name: String = "New Artist",
+        talent: Int = 50,
+        popularity: Int = 20,
+        morale: Int = 55,
+        contractFairness: Int = 50,
+        catalogCount: Int = 0,
+        tourReadiness: Int = 30,
+        yearlyEarnings: Int = 0
+    ) {
+        self.id = id
+        self.name = name
+        self.talent = talent
+        self.popularity = popularity
+        self.morale = morale
+        self.contractFairness = contractFairness
+        self.catalogCount = catalogCount
+        self.tourReadiness = tourReadiness
+        self.yearlyEarnings = yearlyEarnings
+        clamp()
+    }
+
+    mutating func clamp() {
+        talent = talent.clamped(to: 10...100)
+        popularity = popularity.clamped(to: 0...100)
+        morale = morale.clamped(to: 0...100)
+        contractFairness = contractFairness.clamped(to: 0...100)
+        catalogCount = max(0, catalogCount)
+        tourReadiness = tourReadiness.clamped(to: 0...100)
+        yearlyEarnings = max(0, yearlyEarnings)
+    }
+}
+
+struct RecordLabelState: Codable, Equatable {
+    var roster: [LabelArtist] = []
+    var catalogStrength: Int = 10
+    var tourMachine: Int = 10
+    var artistTrust: Int = 55
+    var cashflowPressure: Int = 25
+    var industryHeat: Int = 10
+    var labelPrestige: Int = 15
+    var artistPayoutPolicy: ArtistPayoutPolicy = .standard
+
+    init(
+        roster: [LabelArtist] = [],
+        catalogStrength: Int = 10,
+        tourMachine: Int = 10,
+        artistTrust: Int = 55,
+        cashflowPressure: Int = 25,
+        industryHeat: Int = 10,
+        labelPrestige: Int = 15,
+        artistPayoutPolicy: ArtistPayoutPolicy = .standard
+    ) {
+        self.roster = roster
+        self.catalogStrength = catalogStrength
+        self.tourMachine = tourMachine
+        self.artistTrust = artistTrust
+        self.cashflowPressure = cashflowPressure
+        self.industryHeat = industryHeat
+        self.labelPrestige = labelPrestige
+        self.artistPayoutPolicy = artistPayoutPolicy
+        clamp()
+    }
+
+    mutating func clamp() {
+        roster = roster.map { artist in
+            var copy = artist
+            copy.clamp()
+            return copy
+        }
+        if roster.count > 8 {
+            roster = Array(roster.prefix(8))
+        }
+        catalogStrength = catalogStrength.clamped(to: 0...100)
+        tourMachine = tourMachine.clamped(to: 0...100)
+        artistTrust = artistTrust.clamped(to: 0...100)
+        cashflowPressure = cashflowPressure.clamped(to: 0...100)
+        industryHeat = industryHeat.clamped(to: 0...100)
+        labelPrestige = labelPrestige.clamped(to: 0...100)
+    }
+}
+
+struct MusicProducerState: Codable, Equatable {
+    var credits: Int = 0
+    var sonicSignature: Int = 35
+    var studioQuality: Int = 30
+    var network: Int = 35
+    var demand: Int = 20
+    var royaltyCatalog: Int = 5
+    var creditDisputes: Int = 10
+    var lastPlacementValue: Int = 0
+
+    init(
+        credits: Int = 0,
+        sonicSignature: Int = 35,
+        studioQuality: Int = 30,
+        network: Int = 35,
+        demand: Int = 20,
+        royaltyCatalog: Int = 5,
+        creditDisputes: Int = 10,
+        lastPlacementValue: Int = 0
+    ) {
+        self.credits = credits
+        self.sonicSignature = sonicSignature
+        self.studioQuality = studioQuality
+        self.network = network
+        self.demand = demand
+        self.royaltyCatalog = royaltyCatalog
+        self.creditDisputes = creditDisputes
+        self.lastPlacementValue = lastPlacementValue
+        clamp()
+    }
+
+    mutating func clamp() {
+        credits = max(0, credits)
+        sonicSignature = sonicSignature.clamped(to: 0...100)
+        studioQuality = studioQuality.clamped(to: 0...100)
+        network = network.clamped(to: 0...100)
+        demand = demand.clamped(to: 0...100)
+        royaltyCatalog = royaltyCatalog.clamped(to: 0...100)
+        creditDisputes = creditDisputes.clamped(to: 0...100)
+        lastPlacementValue = max(0, lastPlacementValue)
+    }
+}
+
+// C1: Dedicated state for the Content Creator / Influencer special career path.
+enum CreatorPlatform: String, Codable, CaseIterable {
+    case youtube
+    case tiktokShorts
+    case instagram
+    case twitch
+    case podcast
+    case newsletter
+    case generalSocial
+}
+
+struct CreatorState: Codable, Equatable {
+    var platform: CreatorPlatform = .generalSocial
+    var audience: Int = 25              // Followers / subscribers (core "valuation" equivalent)
+    var algorithmFavor: Int = 50        // 0-100, swings with consistency, scandals, trends
+    var personalBrand: Int = 40         // Authenticity vs sell-out tension (feeds FameProfile strongly)
+    var contentQuality: Int = 50
+    var consistency: Int = 55
+    var burnout: Int = 20
+    var cancellationRisk: Int = 15      // "Heat" equivalent for creators
+    var brandDealValue: Int = 10        // Current sponsorship strength
+
+    mutating func clamp() {
+        audience = audience.clamped(to: 0...100)
+        algorithmFavor = algorithmFavor.clamped(to: 0...100)
+        personalBrand = personalBrand.clamped(to: 0...100)
+        contentQuality = contentQuality.clamped(to: 10...95)
+        consistency = consistency.clamped(to: 5...95)
+        burnout = burnout.clamped(to: 0...95)
+        cancellationRisk = cancellationRisk.clamped(to: 0...100)
+        brandDealValue = brandDealValue.clamped(to: 0...100)
+    }
+}
+
+// P1: Dedicated state for the Politics special career path.
+struct PoliticsState: Codable, Equatable {
+    var approvalRating: Int = 45           // Core "audience" equivalent — how much the public likes you
+    var scandalHeat: Int = 10              // Current risk of damaging revelations (like heat/cancellation)
+    var policyLegacy: Int = 20             // Long-term impact of your actual work
+    var donorBase: Int = 25                // Financial power base
+    var ethics: Int = 70                   // Personal integrity (affects options and reputation)
+    var voterBase: Int = 30                // Strength of core supporters
+    var charisma: Int = 50                 // Natural political talent
+    var burnout: Int = 15                  // The grind of constant performance and scrutiny
+
+    mutating func clamp() {
+        approvalRating = approvalRating.clamped(to: 0...100)
+        scandalHeat = scandalHeat.clamped(to: 0...100)
+        policyLegacy = policyLegacy.clamped(to: 0...100)
+        donorBase = donorBase.clamped(to: 0...100)
+        ethics = ethics.clamped(to: 10...100)
+        voterBase = voterBase.clamped(to: 0...100)
+        charisma = charisma.clamped(to: 15...95)
+        burnout = burnout.clamped(to: 0...95)
+    }
+}
+
+// CE1: Dedicated state for the Crime & Enterprise paths (shadow operative, crime, trader, VC, raider)
+enum CriminalEnterpriseSubtype: String, Codable, CaseIterable {
+    case shadowOperative
+    case streetCrime
+    case grayMarketTrader
+    case ventureCapitalist
+    case corporateRaider
+}
+
+struct CriminalEnterpriseState: Codable, Equatable {
+    var subtype: CriminalEnterpriseSubtype = .streetCrime
+    var heat: Int = 20                    // Law enforcement / external scrutiny
+    var notoriety: Int = 25               // Reputation in the underworld / gray economy
+    var loyalty: Int = 50                 // Crew / key allies loyalty and trust
+    var operationalSecurity: Int = 55     // How well you cover your tracks
+    var networkStrength: Int = 30         // Quality and reach of connections
+    var cleanMoneyRatio: Int = 25         // Percentage of wealth that appears legitimate (0-100)
+    var riskTolerance: Int = 50           // Willingness to take bigger, riskier moves
+    var crewSize: Int = 4
+    var lastMajorScoreAge: Int = 0        // For narrative and cooldown logic
+
+    mutating func clamp() {
+        heat = heat.clamped(to: 0...100)
+        notoriety = notoriety.clamped(to: 0...100)
+        loyalty = loyalty.clamped(to: 0...100)
+        operationalSecurity = operationalSecurity.clamped(to: 0...100)
+        networkStrength = networkStrength.clamped(to: 0...100)
+        cleanMoneyRatio = cleanMoneyRatio.clamped(to: 0...100)
+        riskTolerance = riskTolerance.clamped(to: 10...90)
+        crewSize = crewSize.clamped(to: 1...25)
+    }
+}
+
+enum AthleteSport: String, Codable, CaseIterable {
+    case general
+    case basketball
+    case football
+    case soccer
+    case tennis
+    case olympic
+    case combatSports
+}
+
+enum AthleteRetirementPath: String, Codable, CaseIterable {
+    case coaching
+    case business
+    case media
+    case philanthropy
+    case politics
+}
+
+// MARK: - Fame Unification (Fame Web F1 foundation)
+
+/// Unified fame / recognition profile. Every avenue that can make you "known" (athlete, entertainment,
+/// crime, military, wealth, social, career peaks, events) should eventually feed this.
+/// This replaces the previous total fragmentation between specialCareer.fame, athlete.personalBrand,
+/// relationships.publicReputation, crime.notoriety, military medals, etc.
+struct FameProfile: Codable, Equatable {
+    /// Positive cultural recognition / household name status (0-100).
+    /// "Pro athlete" or "local founder" sits low. "World champion / cultural icon" sits high.
+    var culturalFame: Int = 0
+    
+    /// Dark / controversial recognition (fear, infamy, "that guy from the scandal").
+    /// High notoriety creates different opportunities and much harsher downsides than culturalFame.
+    var notoriety: Int = 0
+    
+    /// What the world associates you with. Merged from athlete accolades, career highlights,
+    /// relationship knownForTags, military medals, viral moments, etc.
+    var knownFor: [String] = []
+    
+    /// Age at which your fame peaked (for legacy narratives and "has-been" texture).
+    var peakFameAge: Int? = nil
+    
+    /// Last age a major scandal or exposure hit (affects decay rate and "tainted" flavor).
+    var lastScandalAge: Int? = nil
+    
+    mutating func clamp() {
+        culturalFame = culturalFame.clamped(to: 0...100)
+        notoriety = notoriety.clamped(to: 0...100)
+        knownFor = Array(NSOrderedSet(array: knownFor.compactMap { $0.isEmpty ? nil : $0 }).array as? [String] ?? []).prefix(6).map { $0 }
+        if culturalFame == 0 && notoriety == 0 {
+            peakFameAge = nil
+        }
+    }
+    
+    /// Combined "how known are you?" signal used for many cross-domain rolls.
+    var recognition: Int {
+        max(culturalFame, notoriety)
+    }
+    
+    var isPublicFigure: Bool { recognition >= 45 }
+    var isHouseholdName: Bool { culturalFame >= 70 }
+    var isInfamous: Bool { notoriety >= 65 }
 }
 
 struct CareerState: Codable, Equatable {
     var status: CareerStatus = .student
     var profile: CareerProfile = .stableAdmin
+    var specializedTrack: SpecializedCareerTrack? = nil
+    /// D3: Regular career archetype set by static always-instant actions (corporateClimb etc).
+    /// Drives differentiated curves (perf/burnout/security/income/aging) + flavor + handoff.
+    /// Nil for special-track lives (they use their deep state instead).
+    var regularArchetype: CareerArchetype? = nil
+    var professionalRank: String = "Entry Level"
     var workIdentity: WorkIdentity = .unsettled
     var roleID: String? = nil
     var level: Int = 0
@@ -3142,6 +5134,9 @@ struct CareerState: Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case status
         case profile
+        case specializedTrack
+        case regularArchetype  // D3
+        case professionalRank
         case workIdentity
         case roleID
         case level
@@ -3192,7 +5187,8 @@ struct CareerState: Codable, Equatable {
         protectiveYears: Int = 0,
         hustleYears: Int = 0,
         driftYears: Int = 0,
-        careerExperience: [CareerExperienceTag: Int] = [:]
+        careerExperience: [CareerExperienceTag: Int] = [:],
+        regularArchetype: CareerArchetype? = nil  // D3
     ) {
         self.status = status
         self.profile = profile
@@ -3218,6 +5214,7 @@ struct CareerState: Codable, Equatable {
         self.hustleYears = hustleYears
         self.driftYears = driftYears
         self.careerExperience = careerExperience
+        self.regularArchetype = regularArchetype
         clamp()
     }
 
@@ -3225,6 +5222,9 @@ struct CareerState: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         status = try container.decodeIfPresent(CareerStatus.self, forKey: .status) ?? .student
         profile = try container.decodeIfPresent(CareerProfile.self, forKey: .profile) ?? .stableAdmin
+        specializedTrack = try container.decodeIfPresent(SpecializedCareerTrack.self, forKey: .specializedTrack)
+        regularArchetype = try container.decodeIfPresent(CareerArchetype.self, forKey: .regularArchetype)
+        professionalRank = try container.decodeIfPresent(String.self, forKey: .professionalRank) ?? "Entry Level"
         workIdentity = try container.decodeIfPresent(WorkIdentity.self, forKey: .workIdentity) ?? .unsettled
         roleID = try container.decodeIfPresent(String.self, forKey: .roleID)
         level = try container.decodeIfPresent(Int.self, forKey: .level) ?? 0
@@ -3306,6 +5306,36 @@ struct SpecialCareerState: Codable, Equatable {
     var boardPressure: Int = 0 // 0-100, if 100, you are ousted
     var capitalUnderManagement: Int = 0 // For VC/Raider
 
+    // Phase S1: Athlete dedicated state (only used when track == .athlete)
+    var athlete: AthleteState = AthleteState()
+
+    // E1: Dedicated Founder / CEO state (only used when track == .founder or related)
+    var founder: FounderState = FounderState()
+
+    // Film business: Dedicated Movie Actor state
+    var movieActor: MovieActorState = MovieActorState()
+
+    // Music business: Dedicated Music Producer state
+    var musicProducer: MusicProducerState = MusicProducerState()
+
+    // Film business: Dedicated Movie Producer state
+    var movieProducer: MovieProducerState = MovieProducerState()
+
+    // Music business: Dedicated Record Label Owner state
+    var recordLabel: RecordLabelState = RecordLabelState()
+
+    // Sports management: Dedicated Program Coach state
+    var coaching: CoachingState = CoachingState()
+
+    // C1: Dedicated Content Creator / Influencer state
+    var creator: CreatorState = CreatorState()
+
+    // P1: Dedicated Politics state
+    var politics: PoliticsState = PoliticsState()
+
+    // CE1: Dedicated Criminal Enterprise state (shadow operative, crime, trader, VC, raider)
+    var enterprise: CriminalEnterpriseState = CriminalEnterpriseState()
+
     private enum CodingKeys: String, CodingKey {
         case track
         case tier
@@ -3316,6 +5346,15 @@ struct SpecialCareerState: Codable, Equatable {
         case burnout
         case yearsActive
         case lastPayout
+        case founder     // E1
+        case movieActor
+        case musicProducer
+        case movieProducer
+        case recordLabel
+        case coaching
+        case creator     // C1
+        case politics    // P1
+        case enterprise  // CE1
     }
 
     init() {}
@@ -3354,6 +5393,15 @@ struct SpecialCareerState: Codable, Equatable {
         burnout = try container.decodeIfPresent(Int.self, forKey: .burnout) ?? 0
         yearsActive = try container.decodeIfPresent(Int.self, forKey: .yearsActive) ?? 0
         lastPayout = try container.decodeIfPresent(Int.self, forKey: .lastPayout) ?? 0
+        founder = try container.decodeIfPresent(FounderState.self, forKey: .founder) ?? FounderState()
+        movieActor = try container.decodeIfPresent(MovieActorState.self, forKey: .movieActor) ?? MovieActorState()
+        musicProducer = try container.decodeIfPresent(MusicProducerState.self, forKey: .musicProducer) ?? MusicProducerState()
+        movieProducer = try container.decodeIfPresent(MovieProducerState.self, forKey: .movieProducer) ?? MovieProducerState()
+        recordLabel = try container.decodeIfPresent(RecordLabelState.self, forKey: .recordLabel) ?? RecordLabelState()
+        coaching = try container.decodeIfPresent(CoachingState.self, forKey: .coaching) ?? CoachingState()
+        creator = try container.decodeIfPresent(CreatorState.self, forKey: .creator) ?? CreatorState()
+        politics = try container.decodeIfPresent(PoliticsState.self, forKey: .politics) ?? PoliticsState()
+        enterprise = try container.decodeIfPresent(CriminalEnterpriseState.self, forKey: .enterprise) ?? CriminalEnterpriseState()
         clamp()
     }
 
@@ -3366,6 +5414,15 @@ struct SpecialCareerState: Codable, Equatable {
         burnout = burnout.clamped(to: 0...100)
         yearsActive = max(0, yearsActive)
         lastPayout = max(0, lastPayout)
+        founder.clamp()
+        movieActor.clamp()
+        musicProducer.clamp()
+        movieProducer.clamp()
+        recordLabel.clamp()
+        coaching.clamp()
+        creator.clamp()
+        politics.clamp()
+        enterprise.clamp()
     }
 }
 
@@ -3538,6 +5595,69 @@ enum DebtPaymentStrategy: String, Codable, CaseIterable {
     case deferStudentLoans
 }
 
+enum MarketPhase: String, Codable, CaseIterable {
+    case stable
+    case boom
+    case correction
+    case recession
+}
+
+struct EconomyState: Codable, Equatable {
+    var marketCycle: MarketPhase = .stable
+    var inflationRate: Double = 0.02
+    var techSectorMultiplier: Double = 1.0
+    var energySectorMultiplier: Double = 1.0
+    var broadMarketMultiplier: Double = 1.0
+}
+
+struct StockHolding: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    var tickerOrSector: String // e.g. "TECH", "ENERGY", "INDEX"
+    var sharesOrValue: Double
+    var entryBasis: Double
+    var volatilityFactor: Double // 0.5-2.0 based on sector + current economy
+
+    var totalValue: Int { Int(sharesOrValue) }
+    var totalProfit: Int { Int(sharesOrValue - entryBasis) }
+}
+
+struct CryptoAsset: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    let symbol: String
+    var coins: Double
+    var averageCost: Double
+    var currentPrice: Double
+    
+    var totalValue: Int { Int(coins * currentPrice) }
+}
+
+struct RentalProperty: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    var name: String
+    var propertyValue: Int
+    var mortgagePrincipal: Int
+    var monthlyRent: Int
+    var monthlyMaintenance: Int
+    
+    var equity: Int { max(0, propertyValue - mortgagePrincipal) }
+    var annualNetIncome: Int { (monthlyRent - (mortgagePrincipal > 0 ? (monthlyRent/2) : 0) - monthlyMaintenance) * 12 }
+}
+
+struct InvestmentPortfolio: Codable, Equatable {
+    var stocks: [StockHolding] = []
+    var crypto: [CryptoAsset] = []
+    var rentals: [RentalProperty] = []
+    var totalMarketExposure: Double = 0 // % of net worth
+    var lastVolatilityEventAge: Int? // for narrative echo
+    
+    var totalValue: Int {
+        let stockVal = stocks.reduce(0) { $0 + $1.totalValue }
+        let cryptoVal = crypto.reduce(0) { $0 + $1.totalValue }
+        let rentalEquity = rentals.reduce(0) { $0 + $1.equity }
+        return stockVal + cryptoVal + rentalEquity
+    }
+}
+
 struct FinanceState: Codable, Equatable {
     var cashOnHand: Int = 250
     var studentDebt: Int = 0
@@ -3547,6 +5667,7 @@ struct FinanceState: Codable, Equatable {
     var indexFundBalance: Int = 0
     var stockPortfolioBalance: Int = 0
     var costBasis: Int = 0
+    var portfolio: InvestmentPortfolio = InvestmentPortfolio()
     var lastYearInvestmentDelta: Int = 0
     var investmentRiskProfile: InvestmentRiskProfile = .defensive
     var homeDownPaymentSavings: Int = 0
@@ -3587,6 +5708,7 @@ struct FinanceState: Codable, Equatable {
         case indexFundBalance
         case stockPortfolioBalance
         case costBasis
+        case portfolio
         case lastYearInvestmentDelta
         case investmentRiskProfile
         case homeDownPaymentSavings
@@ -3630,6 +5752,7 @@ struct FinanceState: Codable, Equatable {
         indexFundBalance: Int = 0,
         stockPortfolioBalance: Int = 0,
         costBasis: Int = 0,
+        portfolio: InvestmentPortfolio = InvestmentPortfolio(),
         lastYearInvestmentDelta: Int = 0,
         investmentRiskProfile: InvestmentRiskProfile = .defensive,
         homeDownPaymentSavings: Int = 0,
@@ -3669,6 +5792,7 @@ struct FinanceState: Codable, Equatable {
         self.indexFundBalance = indexFundBalance
         self.stockPortfolioBalance = stockPortfolioBalance
         self.costBasis = costBasis
+        self.portfolio = portfolio
         self.lastYearInvestmentDelta = lastYearInvestmentDelta
         self.investmentRiskProfile = investmentRiskProfile
         self.homeDownPaymentSavings = homeDownPaymentSavings
@@ -3711,6 +5835,7 @@ struct FinanceState: Codable, Equatable {
         indexFundBalance = try container.decodeIfPresent(Int.self, forKey: .indexFundBalance) ?? 0
         stockPortfolioBalance = try container.decodeIfPresent(Int.self, forKey: .stockPortfolioBalance) ?? 0
         costBasis = try container.decodeIfPresent(Int.self, forKey: .costBasis) ?? 0
+        portfolio = try container.decodeIfPresent(InvestmentPortfolio.self, forKey: .portfolio) ?? InvestmentPortfolio()
         lastYearInvestmentDelta = try container.decodeIfPresent(Int.self, forKey: .lastYearInvestmentDelta) ?? 0
         investmentRiskProfile = try container.decodeIfPresent(InvestmentRiskProfile.self, forKey: .investmentRiskProfile) ?? .defensive
         homeDownPaymentSavings = try container.decodeIfPresent(Int.self, forKey: .homeDownPaymentSavings) ?? 0
@@ -3745,7 +5870,7 @@ struct FinanceState: Codable, Equatable {
     }
 
     var totalWealth: Int {
-        cashOnHand + investedBalance + homeDownPaymentSavings + homeEquity - totalNonHousingDebt
+        cashOnHand + investedBalance + portfolio.totalValue + homeDownPaymentSavings + homeEquity - totalNonHousingDebt
     }
 
     var totalNonHousingDebt: Int {
@@ -3753,7 +5878,7 @@ struct FinanceState: Codable, Equatable {
     }
 
     var hasInvestments: Bool {
-        investedBalance > 0 || indexFundBalance > 0 || stockPortfolioBalance > 0
+        investedBalance > 0 || indexFundBalance > 0 || stockPortfolioBalance > 0 || portfolio.totalValue > 0
     }
 
     var lastYearHousingGainLoss: Int {
@@ -3981,10 +6106,19 @@ struct SimulationBalanceProfile: Equatable {
         var promotionBaseThreshold: Int
     }
 
+    struct EconomySettings: Equatable {
+        var baseInflationRate: Double
+        var marketBoomMultiplier: Double
+        var marketStableMultiplier: Double
+        var marketCorrectionMultiplier: Double
+        var marketRecessionMultiplier: Double
+    }
+
     var debt: DebtSettings
     var wealth: WealthSettings
     var homeownership: HomeownershipSettings
     var career: CareerSettings
+    var economy: EconomySettings
 
     func wealthBand(for totalWealth: Int) -> WealthBand {
         if totalWealth >= 1_000_000 { return .millionaire }
@@ -4030,8 +6164,82 @@ struct SimulationBalanceProfile: Equatable {
         ),
         career: CareerSettings(
             promotionBaseThreshold: 85
+        ),
+        economy: EconomySettings(
+            baseInflationRate: 0.02,
+            marketBoomMultiplier: 1.15,
+            marketStableMultiplier: 1.05,
+            marketCorrectionMultiplier: 0.92,
+            marketRecessionMultiplier: 0.80
         )
     )
+}
+
+/// Lightweight scaling factors derived from LifeResilience.
+/// Used by pressure, health, and game-over systems to reduce frustration spirals
+/// while preserving the core "Life Killer" authenticity.
+struct ResilienceScaling: Equatable {
+    var spilloverSeverityMultiplier: Double   // 0.65 = resilient (less punishing chain reactions)
+    var healthDeclineDampener: Double         // <1.0 reduces negative mental/physical shifts
+    var wealthGameOverFloor: Int              // e.g. -35_000 for resilient vs -20_000 grounded
+    var earlyLifeBufferYears: Int             // extra forgiveness before ~age 22
+}
+
+extension LifeResilience {
+    var scaling: ResilienceScaling {
+        switch self {
+        case .resilient:
+            return ResilienceScaling(
+                spilloverSeverityMultiplier: 0.68,
+                healthDeclineDampener: 0.78,
+                wealthGameOverFloor: -35_000,
+                earlyLifeBufferYears: 8
+            )
+        case .grounded:
+            return ResilienceScaling(
+                spilloverSeverityMultiplier: 1.0,
+                healthDeclineDampener: 1.0,
+                wealthGameOverFloor: -20_000,
+                earlyLifeBufferYears: 0
+            )
+        }
+    }
+
+    /// Returns a human-friendly short label for the current run.
+    var shortLabel: String {
+        switch self {
+        case .resilient: return "Resilient run"
+        case .grounded: return "Grounded (hardcore)"
+        }
+    }
+
+    /// Evolving journal texture so the chosen Life Feel stays visible over decades.
+    func journalReflection(forAge age: Int) -> (title: String, text: String)? {
+        switch self {
+        case .resilient:
+            switch age {
+            case 25:
+                return ("Life Feel", "Mid-twenties in a Resilient run: rough years still bend back. Recovery is part of the design.")
+            case 40:
+                return ("Life Feel", "Forty in a Resilient run: you've had room to correct course. The story still has slack in it.")
+            case 60:
+                return ("Life Feel", "Sixty in a Resilient run: scars exist, but fewer feel fatal. You outlasted more than you broke.")
+            default:
+                return nil
+            }
+        case .grounded:
+            switch age {
+            case 25:
+                return ("Life Feel", "Mid-twenties in a Grounded run: every mistake lands heavier. Choosing care is an act of courage.")
+            case 40:
+                return ("Life Feel", "Forty in a Grounded run: the weight is real. Small recoveries feel like victories because they are.")
+            case 60:
+                return ("Life Feel", "Sixty in a Grounded run: you survived without nets. What you built cost more — and means more.")
+            default:
+                return nil
+            }
+        }
+    }
 }
 
 struct FinanceYearContext: Equatable {
@@ -4152,6 +6360,8 @@ struct Relationship: Codable, Identifiable, Equatable {
     var stage: RelationshipStage = .dating
     var isCohabiting: Bool = false
     var commitmentAlignment: Int = 50
+    var isSecret: Bool = false
+    var hasPrenup: Bool = false
     
     // Social Capital & Autonomy
     var influence: Int = 10 
@@ -4173,6 +6383,8 @@ struct Relationship: Codable, Identifiable, Equatable {
         lhs.stage == rhs.stage &&
         lhs.isCohabiting == rhs.isCohabiting &&
         lhs.commitmentAlignment == rhs.commitmentAlignment &&
+        lhs.isSecret == rhs.isSecret &&
+        lhs.hasPrenup == rhs.hasPrenup &&
         lhs.nextAutonomyYear == rhs.nextAutonomyYear &&
         lhs.currentGoal == rhs.currentGoal
     }
@@ -4180,7 +6392,7 @@ struct Relationship: Codable, Identifiable, Equatable {
 
 struct RelationshipState: Codable, Equatable {
     var friends: [Relationship] = []
-    var romanticPartner: Relationship? = nil
+    var romanticPartners: [Relationship] = []
     var ambientContacts: [AmbientContact] = []
     var socialCapital: Int = 0
     var publicReputation: Int = 50
@@ -4194,13 +6406,14 @@ struct RelationshipState: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case friends
-        case romanticPartner
         case romanticPartners
+        case romanticPartner // legacy
         case ambientContacts
         case spouseName
         case publicReputation
         case privateReputation
         case activeRumorHeat
+        case socialCapital
         case knownForTags
         case recentSocialHit
         case recentSocialLift
@@ -4213,22 +6426,20 @@ struct RelationshipState: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         friends = try container.decodeIfPresent([Relationship].self, forKey: .friends) ?? []
-        if let romanticPartner = try container.decodeIfPresent(Relationship.self, forKey: .romanticPartner) {
-            self.romanticPartner = romanticPartner
-        } else if let legacyPartner = try container.decodeIfPresent([Relationship].self, forKey: .romanticPartners)?.first {
-            var migratedPartner = legacyPartner
-            let legacySpouseName = try container.decodeIfPresent(String.self, forKey: .spouseName)
-            if legacySpouseName == migratedPartner.name {
-                migratedPartner.stage = .married
-            }
-            self.romanticPartner = migratedPartner
+        
+        if let partners = try container.decodeIfPresent([Relationship].self, forKey: .romanticPartners) {
+            romanticPartners = partners
+        } else if let singlePartner = try container.decodeIfPresent(Relationship.self, forKey: .romanticPartner) {
+            romanticPartners = [singlePartner]
         } else {
-            self.romanticPartner = nil
+            romanticPartners = []
         }
+        
         ambientContacts = try container.decodeIfPresent([AmbientContact].self, forKey: .ambientContacts) ?? []
         publicReputation = try container.decodeIfPresent(Int.self, forKey: .publicReputation) ?? 50
         privateReputation = try container.decodeIfPresent(Int.self, forKey: .privateReputation) ?? 50
         activeRumorHeat = try container.decodeIfPresent(Int.self, forKey: .activeRumorHeat) ?? 10
+        socialCapital = try container.decodeIfPresent(Int.self, forKey: .socialCapital) ?? 20
         knownForTags = try container.decodeIfPresent([String].self, forKey: .knownForTags) ?? []
         recentSocialHit = try container.decodeIfPresent(String.self, forKey: .recentSocialHit)
         recentSocialLift = try container.decodeIfPresent(String.self, forKey: .recentSocialLift)
@@ -4240,11 +6451,12 @@ struct RelationshipState: Codable, Equatable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(friends, forKey: .friends)
-        try container.encodeIfPresent(romanticPartner, forKey: .romanticPartner)
+        try container.encode(romanticPartners, forKey: .romanticPartners)
         try container.encode(ambientContacts, forKey: .ambientContacts)
         try container.encode(publicReputation, forKey: .publicReputation)
         try container.encode(privateReputation, forKey: .privateReputation)
         try container.encode(activeRumorHeat, forKey: .activeRumorHeat)
+        try container.encode(socialCapital, forKey: .socialCapital)
         try container.encode(knownForTags, forKey: .knownForTags)
         try container.encodeIfPresent(recentSocialHit, forKey: .recentSocialHit)
         try container.encodeIfPresent(recentSocialLift, forKey: .recentSocialLift)
@@ -4252,31 +6464,48 @@ struct RelationshipState: Codable, Equatable {
         try container.encode(futureAlignment, forKey: .futureAlignment)
     }
 
-    var partnerName: String? { romanticPartner?.name }
-    var hasPartner: Bool { romanticPartner != nil }
-    var hasSpouse: Bool { romanticPartner?.stage == .married }
-    var spouseName: String? {
-        get { romanticPartner?.stage == .married ? romanticPartner?.name : nil }
+    var primaryPartner: Relationship? {
+        romanticPartners.first(where: { !$0.isSecret })
+    }
+
+    /// Legacy/test alias for the visible romantic partner.
+    var romanticPartner: Relationship? {
+        get { primaryPartner }
         set {
-            guard var romanticPartner else { return }
-            if newValue == nil {
-                if romanticPartner.stage == .married {
-                    romanticPartner.stage = .committed
+            if let newValue {
+                if let index = romanticPartners.firstIndex(where: { !$0.isSecret }) {
+                    romanticPartners[index] = newValue
+                } else {
+                    romanticPartners.append(newValue)
                 }
-            } else {
-                romanticPartner.stage = .married
+            } else if let index = romanticPartners.firstIndex(where: { !$0.isSecret }) {
+                romanticPartners.remove(at: index)
             }
-            self.romanticPartner = romanticPartner
         }
     }
-    var partnerStatus: RelationshipStatus? { romanticPartner?.status }
-    var partnerBond: Int { romanticPartner?.bond ?? 0 }
-    var partnerStage: RelationshipStage? { romanticPartner?.stage }
-    var hasCohabitingPartner: Bool { romanticPartner?.isCohabiting == true }
 
-    var romanticPartners: [Relationship] {
-        get { romanticPartner.map { [$0] } ?? [] }
-        set { romanticPartner = newValue.first }
+    var hasPartner: Bool { primaryPartner != nil }
+    var partnerName: String? { primaryPartner?.name }
+    var partnerBond: Int { primaryPartner?.bond ?? 0 }
+    var hasCohabitingPartner: Bool { primaryPartner?.isCohabiting ?? false }
+    var isMarried: Bool { primaryPartner?.stage == .married }
+    var hasSpouse: Bool { isMarried }
+    
+    var partnerStatus: RelationshipStatus? { primaryPartner?.status }
+    var partnerStage: RelationshipStage? { primaryPartner?.stage }
+    
+    var spouseName: String? {
+        get { isMarried ? primaryPartner?.name : nil }
+        set {
+            guard let index = romanticPartners.firstIndex(where: { !$0.isSecret }) else { return }
+            if newValue == nil {
+                if romanticPartners[index].stage == .married {
+                    romanticPartners[index].stage = .committed
+                }
+            } else {
+                romanticPartners[index].stage = .married
+            }
+        }
     }
 
     var strongestAmbientContact: AmbientContact? {
@@ -4353,13 +6582,94 @@ struct ChildRecord: Codable, Identifiable, Equatable {
     var otherParentName: String
     var supportLoad: Int = 50
 
+    // Phase 2 (Family Domain): Lightweight personality + development scaffolding.
+    // These are the foundation for visible emotional texture and long-term payoffs.
+    var temperament: ChildTemperament = .easygoing
+    var bondWithPlayer: Int = 55          // 0-100 core emotional connection; drifts with investment + life stress
+    var curiosity: Int = 50
+    var emotionalSensitivity: Int = 50
+    /// Short recent development notes / vibes for richer history and UI (e.g. "had a tough first year at school").
+    var developmentNotes: [String] = []
+
+    // Phase 2.3: Long-term adult outcomes and texture
+    var leftHomeAtAge: Int?
+    var adultProfile: AdultChildProfile?
+
     static func == (lhs: ChildRecord, rhs: ChildRecord) -> Bool {
         lhs.name == rhs.name &&
         lhs.age == rhs.age &&
         lhs.livesAtHome == rhs.livesAtHome &&
         lhs.otherParentName == rhs.otherParentName &&
-        lhs.supportLoad == rhs.supportLoad
+        lhs.supportLoad == rhs.supportLoad &&
+        lhs.temperament == rhs.temperament &&
+        lhs.bondWithPlayer == rhs.bondWithPlayer &&
+        lhs.curiosity == rhs.curiosity &&
+        lhs.emotionalSensitivity == rhs.emotionalSensitivity &&
+        lhs.leftHomeAtAge == rhs.leftHomeAtAge &&
+        lhs.adultProfile == rhs.adultProfile
+        // developmentNotes intentionally excluded from equality (they are narrative, not identity)
     }
+
+    /// Phase 2 polish: convenient summary for UI and notes.
+    var currentVibe: String {
+        if let adult = adultProfile {
+            let relWord: String
+            if adult.relationshipQuality >= 75 { relWord = "still close" }
+            else if adult.relationshipQuality >= 55 { relWord = "on decent terms" }
+            else if adult.relationshipQuality >= 35 { relWord = "strained" }
+            else { relWord = "mostly distant" }
+            let recent = adult.keyStories.last ?? adult.lifeVibe
+            return "\(adult.outcome.rawValue.capitalized) — \(relWord). \(recent)"
+        }
+
+        let temp = temperament.shortDescription
+        let bondWord: String
+        if bondWithPlayer >= 75 { bondWord = "very close" }
+        else if bondWithPlayer >= 60 { bondWord = "solidly bonded" }
+        else if bondWithPlayer >= 45 { bondWord = "connected but distant some days" }
+        else { bondWord = "feeling the distance" }
+
+        let recent = developmentNotes.last ?? ""
+        if !recent.isEmpty {
+            return "\(temp.capitalized), \(bondWord). \(recent)"
+        }
+        return "\(temp.capitalized), \(bondWord)"
+    }
+}
+
+/// Simple temperament archetypes that influence how children respond to stress, school, and the player's presence.
+/// Used for flavorful notes and future parenting trade-offs.
+enum ChildTemperament: String, Codable, CaseIterable, Equatable {
+    case easygoing   // rolls with changes, lower sensitivity impact
+    case spirited    // big feelings, high energy, can be a handful or a delight
+    case sensitive   // deeply affected by environment and parent's state
+    case independent // prefers autonomy, bond grows slower but more resilient
+    case intense     // all-or-nothing; big highs and difficult lows
+
+    var shortDescription: String {
+        switch self {
+        case .easygoing: return "easygoing"
+        case .spirited: return "spirited"
+        case .sensitive: return "sensitive"
+        case .independent: return "independent"
+        case .intense: return "intense"
+        }
+    }
+}
+
+/// Phase 2.3: Long-term adult child outcomes for emotional texture and legacy.
+enum AdultChildOutcome: String, Codable, CaseIterable, Equatable {
+    case thriving
+    case stable
+    case struggling
+    case distant
+}
+
+struct AdultChildProfile: Codable, Equatable {
+    var outcome: AdultChildOutcome = .stable
+    var relationshipQuality: Int = 55          // evolved from childhood bond
+    var lifeVibe: String = ""                  // short flavorful summary e.g. "solid career, one kid, lives across the country"
+    var keyStories: [String] = []              // memorable events that reappear in late life
 }
 
 struct FamilyState: Codable, Equatable {
@@ -4687,6 +6997,36 @@ struct MarineAsset: Codable, Identifiable, Equatable {
     var monthlyMaintenance: Int
 }
 
+// MARK: - Assets2: Signature Assets (Special Career Identity)
+
+/// High-status, path-unique assets that reinforce a special career's identity and provide unique prestige/mechanical payoffs.
+enum SignatureAssetCategory: String, Codable, CaseIterable {
+    case athleteTeamStake      // Ownership or equity in a sports team/franchise
+    case athleteTrainingEmpire // Personal training facilities, performance centers
+    case founderStrategicStake // Equity in other companies / venture holdings
+    case founderCompound       // Large private estate used for business + lifestyle
+    case creatorStudio         // Production studio or content company
+    case creatorBrandEstate    // Properties tied to personal brand (content houses, etc.)
+    case politicsInfluenceHold // "Foundations", large donor properties, or strategic real estate
+    case politicsLegacyEstate  // Grand estates used for political entertaining and legacy
+    // CE3: Criminal/gray enterprise signature holdings — high prestige + real social/legal risk
+    case crimeSafehouse        // Quiet, high-security properties for staying low or moving product
+    case crimeOffshoreHoldings // Shell companies, foreign accounts, "investment" properties that are hard to trace
+    case crimeFrontBusiness    // Legitimate-looking businesses that are actually cash flow / laundering vehicles
+    case crimeLuxuryFront      // Flashy but dangerous (yachts under LLCs, penthouses bought through proxies)
+}
+
+struct SignatureAsset: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    var name: String
+    var category: SignatureAssetCategory
+    var cost: Int
+    var resaleValue: Int
+    var monthlyMaintenance: Int
+    var prestigeBonus: Int          // Extra boost to effective LifestyleScore / Fame when owned
+    var associatedTrack: SpecialCareerTrack // Which special career this asset "belongs" to
+}
+
 enum VehicleUpgrade: String, Codable, CaseIterable {
     case supercharger
     case nos
@@ -4785,6 +7125,9 @@ struct AssetState: Codable, Equatable {
     var aviation: [AviationAsset] = []
     var marine: [MarineAsset] = []
 
+    // Assets2: Career-specific Signature Assets (high-status, path-unique holdings)
+    var signatureAssets: [SignatureAsset] = []
+
     private enum CodingKeys: String, CodingKey {
         case homeownershipTrackActive
         case targetHomeValue
@@ -4795,6 +7138,7 @@ struct AssetState: Codable, Equatable {
         case aviation
         case marine
         case ownsHome // for legacy decoding
+        case signatureAssets
     }
 
     init() {}
@@ -4821,6 +7165,7 @@ struct AssetState: Codable, Equatable {
         jewelry = try container.decodeIfPresent([Jewelry].self, forKey: .jewelry) ?? []
         aviation = try container.decodeIfPresent([AviationAsset].self, forKey: .aviation) ?? []
         marine = try container.decodeIfPresent([MarineAsset].self, forKey: .marine) ?? []
+        signatureAssets = try container.decodeIfPresent([SignatureAsset].self, forKey: .signatureAssets) ?? []
 
         let legacyOwnsHome = try container.decodeIfPresent(Bool.self, forKey: .ownsHome) ?? false
         if primaryResidence == nil, legacyOwnsHome {
@@ -4841,6 +7186,7 @@ struct AssetState: Codable, Equatable {
         try container.encode(jewelry, forKey: .jewelry)
         try container.encode(aviation, forKey: .aviation)
         try container.encode(marine, forKey: .marine)
+        try container.encode(signatureAssets, forKey: .signatureAssets)
     }
 
     var ownsHome: Bool {
@@ -4865,6 +7211,35 @@ struct AssetState: Codable, Equatable {
         homeownershipTrackActive && !ownsHome
     }
 
+    /// Aggressive QoL: Visible Lifestyle / Status score from assets.
+    /// High asset ownership gives tangible prestige and can influence social/finance events.
+    var lifestyleScore: Int {
+        var score = 0
+        
+        // Housing prestige
+        if let home = primaryResidence {
+            score += home.totalValue / 20_000
+            score += home.upgrades.count * 8
+        }
+        
+        // Vehicles
+        score += vehicles.count * 5
+        score += vehicles.filter { $0.upgrades.count > 0 }.count * 3
+        
+        // Luxury
+        score += jewelry.count * 4
+        score += aviation.count * 15
+        score += marine.count * 12
+        score += firearms.count * 2
+
+        // Assets2: Signature Assets give strong, career-specific prestige
+        for sig in signatureAssets {
+            score += sig.prestigeBonus
+        }
+        
+        return max(0, min(100, score))
+    }
+
     mutating func normalize() {
         targetHomeValue = max(0, targetHomeValue)
         primaryResidence?.normalize()
@@ -4883,6 +7258,10 @@ enum MilestoneID: String, Codable, CaseIterable, Identifiable {
     case married
     case millionaire
     case longLived
+    case raisedGoodKids   // Phase 2.3: Family legacy milestone
+    case culturalIcon
+    case infamous
+    case householdName
 
     var id: String { rawValue }
 }
@@ -5140,11 +7519,23 @@ struct AssetEffects: Codable, Equatable {
     var removeMarineID: UUID? = nil
 }
 
+struct MilitaryEffects: Codable, Equatable {
+    var fitness: Int? = nil
+    var discipline: Int? = nil
+    var heat: Int? = nil
+    var rankLevel: Int? = nil
+    var contractYearsRemaining: Int? = nil
+    var setDeploymentStatus: DeploymentStatus? = nil
+    var isAWOL: Bool? = nil
+    var addMedal: String? = nil
+}
+
 struct ChoiceEffects: Codable, Equatable {
     var core: CoreStatEffects? = nil
     var education: EducationEffects? = nil
     var career: CareerEffects? = nil
     var specialCareer: SpecialCareerEffects? = nil
+    var military: MilitaryEffects? = nil
     var crime: CrimeEffects? = nil
     var finance: FinanceEffects? = nil
     var relationship: RelationshipEffects? = nil
@@ -5152,6 +7543,7 @@ struct ChoiceEffects: Codable, Equatable {
     var housing: HousingEffects? = nil
     var assets: AssetEffects? = nil
     var consequence: ConsequenceEffects? = nil
+    var fame: FameEffects? = nil   // Fame Web F1
 }
 
 struct CoreStatEffects: Codable, Equatable {
@@ -5250,6 +7642,13 @@ struct SpecialCareerEffects: Codable, Equatable {
     var exitTrack: Bool? = nil
 }
 
+// Fame Web F1: Direct effects for the unified profile (used by actions, storylets, events)
+struct FameEffects: Codable, Equatable {
+    var culturalFame: Int? = nil
+    var notoriety: Int? = nil
+    var addKnownFor: String? = nil
+}
+
 struct CrimeEffects: Codable, Equatable {
     var setStatus: CrimeStatus? = nil
     var roleTier: Int? = nil
@@ -5289,6 +7688,7 @@ struct EducationEffects: Codable, Equatable {
 
 struct FinanceEffects: Codable, Equatable {
     var cashDelta: Int? = nil
+    var annualIncomeDelta: Int? = nil
     var studentDebtDelta: Int? = nil
     var creditDebtDelta: Int? = nil
     var medicalDebtDelta: Int? = nil

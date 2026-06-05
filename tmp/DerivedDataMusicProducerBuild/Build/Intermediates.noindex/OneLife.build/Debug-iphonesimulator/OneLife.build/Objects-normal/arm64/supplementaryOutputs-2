@@ -1,0 +1,30 @@
+{
+  "/Users/justinjeffery/Developer/OneLife/OneLife/ChildhoodGenerationEngine.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ChildhoodGenerationEngine.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ChildhoodGenerationEngine.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ChildhoodGenerationEngine.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ChildhoodGenerationEngine.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ChildhoodGenerationEngine.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/ContinuityThreadEngine.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContinuityThreadEngine.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/DebugTestingCoordinator.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DebugTestingCoordinator.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/DomainCacheArtifacts.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataMusicProducerBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainCacheArtifacts.swiftdeps"
+  }
+}

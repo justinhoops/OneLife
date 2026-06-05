@@ -31,17 +31,57 @@ struct WorldCache: Equatable {
     var focusTags: [String]
     var criticalStatuses: [String]
     var situationID: String
+
+    init(
+        age: Int = 0,
+        ageBand: String = "unknown",
+        isSchoolAge: Bool = false,
+        strongestRelationshipBond: Int = 0,
+        strainedRelationshipCount: Int = 0,
+        socialConnectionCount: Int = 0,
+        publicReputation: Int = 50,
+        privateReputation: Int = 50,
+        rumorHeat: Int = 0,
+        activeRelationshipTensionCount: Int = 0,
+        futureAlignmentAverage: Int = 50,
+        activeHealthConditionCount: Int = 0,
+        dependentChildCount: Int = 0,
+        infantCount: Int = 0,
+        focusTags: [String] = [],
+        criticalStatuses: [String] = [],
+        situationID: String = "default"
+    ) {
+        self.age = age
+        self.ageBand = ageBand
+        self.isSchoolAge = isSchoolAge
+        self.strongestRelationshipBond = strongestRelationshipBond
+        self.strainedRelationshipCount = strainedRelationshipCount
+        self.socialConnectionCount = socialConnectionCount
+        self.publicReputation = publicReputation
+        self.privateReputation = privateReputation
+        self.rumorHeat = rumorHeat
+        self.activeRelationshipTensionCount = activeRelationshipTensionCount
+        self.futureAlignmentAverage = futureAlignmentAverage
+        self.activeHealthConditionCount = activeHealthConditionCount
+        self.dependentChildCount = dependentChildCount
+        self.infantCount = infantCount
+        self.focusTags = focusTags
+        self.criticalStatuses = criticalStatuses
+        self.situationID = situationID
+    }
 }
 
 struct EducationDomainSnapshot: Equatable {
     var world: WorldCache
     var player: Player
     var education: EducationState
+    var military: MilitaryState
     var career: CareerState
     var finance: FinanceState
     var relationships: RelationshipState
     var health: HealthState
     var policySupport: Int
+    var childhoodDossier: ChildhoodDossier?
 }
 
 struct TrajectoryDomainSnapshot: Equatable {
@@ -78,6 +118,8 @@ struct SpecialCareerDomainSnapshot: Equatable {
     var health: HealthState
     var relationships: RelationshipState
     var housing: HousingState
+    var worldEra: WorldEra
+    var childhoodDossier: ChildhoodDossier?
 }
 
 struct CrimeDomainSnapshot: Equatable {
@@ -110,6 +152,8 @@ struct InvestmentDomainSnapshot: Equatable {
     var finance: FinanceState
     var career: CareerState
     var assets: AssetState
+    var worldEra: WorldEra
+    var economy: EconomyState
 }
 
 struct RelationshipDomainSnapshot: Equatable {
@@ -129,6 +173,7 @@ struct FamilyDomainSnapshot: Equatable {
     var family: FamilyState
     var health: HealthState
     var finance: FinanceState
+    var worldEra: WorldEra
 }
 
 struct HealthDomainSnapshot: Equatable {
@@ -152,6 +197,7 @@ struct HousingDomainSnapshot: Equatable {
 struct AssetDomainSnapshot: Equatable {
     var world: WorldCache
     var player: Player
+    var military: MilitaryState
     var career: CareerState
     var finance: FinanceState
     var assets: AssetState
@@ -180,7 +226,7 @@ struct WorldSnapshot: Equatable {
     }
 
     var education: EducationDomainSnapshot {
-        EducationDomainSnapshot(world: cache, player: state.player, education: state.education, career: state.career, finance: state.finance, relationships: state.relationships, health: state.healthProfile, policySupport: educationPolicySupport)
+        EducationDomainSnapshot(world: cache, player: state.player, education: state.education, military: state.military, career: state.career, finance: state.finance, relationships: state.relationships, health: state.healthProfile, policySupport: educationPolicySupport, childhoodDossier: state.childhoodDossier)
     }
 
     var career: CareerDomainSnapshot {
@@ -188,7 +234,7 @@ struct WorldSnapshot: Equatable {
     }
 
     var specialCareer: SpecialCareerDomainSnapshot {
-        SpecialCareerDomainSnapshot(world: cache, player: state.player, career: state.career, specialCareer: state.specialCareer, finance: state.finance, health: state.healthProfile, relationships: state.relationships, housing: state.housing)
+        SpecialCareerDomainSnapshot(world: cache, player: state.player, career: state.career, specialCareer: state.specialCareer, finance: state.finance, health: state.healthProfile, relationships: state.relationships, housing: state.housing, worldEra: state.currentEra, childhoodDossier: state.childhoodDossier)
     }
 
     var crime: CrimeDomainSnapshot {
@@ -199,8 +245,8 @@ struct WorldSnapshot: Equatable {
         FinanceDomainSnapshot(world: cache, player: state.player, finance: state.finance, career: state.career, education: state.education, health: state.healthProfile, relationships: state.relationships, family: state.family, housing: state.housing, assets: state.assets)
     }
 
-    var investment: InvestmentDomainSnapshot {
-        InvestmentDomainSnapshot(world: cache, player: state.player, finance: state.finance, career: state.career, assets: state.assets)
+    var investments: InvestmentDomainSnapshot {
+        InvestmentDomainSnapshot(world: cache, player: state.player, finance: state.finance, career: state.career, assets: state.assets, worldEra: state.currentEra, economy: state.economy)
     }
 
     var relationships: RelationshipDomainSnapshot {
@@ -208,7 +254,7 @@ struct WorldSnapshot: Equatable {
     }
 
     var family: FamilyDomainSnapshot {
-        FamilyDomainSnapshot(world: cache, player: state.player, relationships: state.relationships, family: state.family, health: state.healthProfile, finance: state.finance)
+        FamilyDomainSnapshot(world: cache, player: state.player, relationships: state.relationships, family: state.family, health: state.healthProfile, finance: state.finance, worldEra: state.currentEra)
     }
 
     var health: HealthDomainSnapshot {
@@ -220,7 +266,7 @@ struct WorldSnapshot: Equatable {
     }
 
     var assets: AssetDomainSnapshot {
-        AssetDomainSnapshot(world: cache, player: state.player, career: state.career, finance: state.finance, assets: state.assets, housing: state.housing)
+        AssetDomainSnapshot(world: cache, player: state.player, military: state.military, career: state.career, finance: state.finance, assets: state.assets, housing: state.housing)
     }
 
     var progress: ProgressDomainSnapshot {

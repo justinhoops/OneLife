@@ -1,0 +1,208 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/LifeConsoleView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Active Modifiers",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 220
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 221
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life feel: %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 375
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent reactions from your quick actions. The world responds instantly.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 294
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resilient",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 367
+        }
+      },
+      {
+        "comment": "",
+        "key": "Grounded",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 367
+        }
+      },
+      {
+        "comment": "",
+        "key": "Top Pressures",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 385
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Life Pace",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 440
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Life Pace",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 431
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why: %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 463
+        }
+      },
+      {
+        "comment": "",
+        "key": "Autopilot bias",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 457
+        }
+      },
+      {
+        "comment": "",
+        "key": "Guided pick",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 457
+        }
+      },
+      {
+        "comment": "",
+        "key": "Background Pulse",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 486
+        }
+      },
+      {
+        "comment": "",
+        "key": "No background pressure is asking for attention.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 492
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assets",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 529
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ledger",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 532
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 572
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assets",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 599
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ended",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 616
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age Up",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 616
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 749
+        }
+      },
+      {
+        "comment": "",
+        "key": "Details",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 772
+        }
+      },
+      {
+        "comment": "",
+        "key": "hold",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 946
+        }
+      },
+      {
+        "comment": "",
+        "key": "INSTANT PREVIEW",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 980
+        }
+      }
+    ]
+  },
+  "version": 1
+}

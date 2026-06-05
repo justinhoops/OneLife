@@ -32,6 +32,9 @@ struct FeedbackCoordinator {
         case .warning:
             AppFeedback.notify(.warning)
             return Response(microBeat: microBeat, jitterDuration: 0.25)
+        case .danger:
+            AppFeedback.notify(.error)
+            return Response(microBeat: microBeat, jitterDuration: 0.4)
         case .locked:
             AppFeedback.notify(.warning)
             return Response(shouldReturnEarly: true)

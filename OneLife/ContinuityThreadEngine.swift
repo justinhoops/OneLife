@@ -100,7 +100,14 @@ struct ContinuityThreadEngine {
             traitLine = "The person you were at 14 is still in there, somewhere."
         }
 
-        let text = "\(backwardLine) \(forwardLine)\n\n\(traitLine)"
+        // Engine2: Let recent instant/autonomous activity color the transition into adulthood
+        var finalTraitLine = traitLine
+        let recentHeat = state.correlationLedger.recentActivityLevel
+        if recentHeat >= 50 {
+            finalTraitLine += " The last few years of focused choices are still vibrating in you as you cross this line."
+        }
+
+        let text = "\(backwardLine) \(forwardLine)\n\n\(finalTraitLine)"
         return DomainNote(title: "Age 18", text: text, tags: [.progress, .lifeEvent])
     }
 
@@ -119,14 +126,21 @@ struct ContinuityThreadEngine {
         case .manipulative:
             return "Reading people got you this far. Adulthood is where that talent starts leaving marks."
         case .coldBlooded:
-            return "Staying detached helped before. Now it can look like strength or cost, depending on the room."
+            return "The distance between you and everyone else was built on purpose. It is holding."
         case .visionary:
-            return "You've been living partly in the future for years. Now the future expects receipts."
+            return "You stopped looking at what is and started seeing what could be."
         case .burnoutProne:
-            return "You learned early how to push past your limit. Adult life is about what that habit takes back."
+            return "You've been burning the candle at both ends since before you could vote."
+        case .workaholic:
+            return "You found your purpose in the grind early. The world is just a secondary concern."
+        case .resilient:
+            return "Life tried to break you early. It failed. You're ready for whatever comes next."
+        case .unreliable:
+            return "Obligations have always felt like suggestions. Adulthood might disagree."
+        case .ptsd:
+            return "Some things stay with you. You're carrying more than most at this age."
         }
-    }
-
+        }
     // MARK: - Age 20 Lookback
 
     private func age20Lookback(_ state: GameState) -> DomainNote? {
@@ -180,7 +194,26 @@ struct ContinuityThreadEngine {
             closingLine = "The shape of it isn't clear yet. That's not uncommon at 20."
         }
 
-        let text = "\(openingLine) \(middleLine) \(closingLine)"
+        // Engine2: Let recent intense instant/autonomous activity color the first adult lookback
+        var finalClosing = closingLine
+        let recentHeat = state.correlationLedger.recentActivityLevel
+        if recentHeat >= 55 {
+            finalClosing += " The last stretch of choices is still loud in the rearview."
+        }
+
+        // D4: stance/focus history in continuity lookback (connects teen focus to now)
+        if let last = state.yearlyStance.lastCompletedStance, state.player.age <= 22 {
+            switch last {
+            case .pushCareer:
+                finalClosing += " The push you chose is already writing the next chapter."
+            case .letYearDrift:
+                finalClosing += " The looseness you allowed at the start is still in the frame."
+            default:
+                finalClosing += " What you focused on (or let slide) since 14 is still shaping the room."
+            }
+        }
+
+        let text = "\(openingLine) \(middleLine) \(finalClosing)"
         return DomainNote(title: "Age 20 — First Look Back", text: text, tags: [.progress, .lifeEvent])
     }
 
@@ -200,6 +233,16 @@ struct ContinuityThreadEngine {
             jobLine = "Real income and no safety net. Both of those are true at the same time."
         case .credentialedProfessional:
             jobLine = "The credential opened the door exactly the way everyone said it would."
+        case .militaryService:
+            jobLine = "The uniform comes with a mission. You're part of something larger now."
+        case .medicalProfessional:
+            jobLine = "Residency is the test. The hours are long, but the impact is immediate."
+        case .legalProfessional:
+            jobLine = "The firm is watching. Every billable hour is a signal."
+        case .techSpecialist:
+            jobLine = "The build cycle is everything. You're making the future, one line at a time."
+        case .financialExpert:
+            jobLine = "The numbers have to work. You're navigating the flow of capital."
         }
 
         // Trait-specific line — connects identity to the first day
@@ -207,8 +250,14 @@ struct ContinuityThreadEngine {
             return DomainNote(title: "First Real Work", text: jobLine, tags: [.career, .progress])
         }
         let traitLine = firstJobTraitLine(for: trait, state: state)
-        let text = "\(jobLine) \(traitLine)"
-        return DomainNote(title: "First Real Work", text: text, tags: [.career, .progress])
+        var finalText = "\(jobLine) \(traitLine)"
+
+        // Engine2: Recent intense activity colors the "first real job" feeling
+        if state.correlationLedger.recentActivityLevel >= 50 {
+            finalText += " The momentum (or exhaustion) from the last stretch is walking in with you."
+        }
+
+        return DomainNote(title: "First Real Work", text: finalText, tags: [.career, .progress])
     }
 
     private func firstJobTraitLine(for trait: PersonalityTrait, state: GameState) -> String {
@@ -235,6 +284,14 @@ struct ContinuityThreadEngine {
             return "\(subject) was already talking about what the job could become before the first shift settled."
         case .burnoutProne:
             return "\(subject) started hard, fast, and a little too far over the limit."
+        case .workaholic:
+            return "\(subject) stayed late on the first day. The office is already starting to feel like home."
+        case .resilient:
+            return "The first day nerves didn't touch \(subject). \(useFirstPerson ? "You've" : "\(name) has") seen harder rooms than this."
+        case .unreliable:
+            return "\(subject) was a few minutes late. The commitment to the role is already feeling optional."
+        case .ptsd:
+            return "The loud environment of the workplace is a constant background noise \(subject) has to manage."
         }
     }
 

@@ -97,6 +97,16 @@ struct StoryletSystem {
             add(["career", "chance", "risk"], weight: 5, to: &weights)
         case .credentialedProfessional:
             add(["career", "money", "school"], weight: 4, to: &weights)
+        case .militaryService:
+            add(["career", "military", "routine"], weight: 5, to: &weights)
+        case .medicalProfessional:
+            add(["career", "health", "school"], weight: 6, to: &weights)
+        case .legalProfessional:
+            add(["career", "social", "school"], weight: 5, to: &weights)
+        case .techSpecialist:
+            add(["career", "technology", "money"], weight: 5, to: &weights)
+        case .financialExpert:
+            add(["career", "money", "risk"], weight: 5, to: &weights)
         }
 
         switch state.career.workIdentity {
@@ -203,7 +213,17 @@ struct StoryletSystem {
             case .visionary:
                 add(["career", "chance", "money"], weight: 4, to: &weights)
             case .burnoutProne:
-                add(["health", "career", "routine"], weight: 4, to: &weights)
+                add(["health", "routine"], weight: 8, to: &weights)
+            case .workaholic:
+                add(["career", "money"], weight: 10, to: &weights)
+                add(["social", "romance"], weight: -6, to: &weights)
+            case .resilient:
+                add(["risk", "health"], weight: 5, to: &weights)
+            case .unreliable:
+                add(["routine"], weight: -10, to: &weights)
+                add(["social", "chance"], weight: 5, to: &weights)
+            case .ptsd:
+                add(["health", "risk"], weight: 12, to: &weights)
             }
         }
 

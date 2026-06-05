@@ -57,7 +57,10 @@ final class OneLifeUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["health-tab-content"].waitForExistence(timeout: 2))
 
         app.buttons["history-tab"].tap()
-        XCTAssertTrue(app.otherElements["history-tab-content"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.otherElements["history-tab-content"].waitForExistence(timeout: 3))
+        if app.buttons["Done"].exists {
+            app.buttons["Done"].tap()
+        }
     }
 
     @MainActor

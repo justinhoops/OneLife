@@ -294,7 +294,7 @@ struct DebugTestingCoordinator {
         state.finance.annualNetIncome = 39_000
         state.finance.annualTotalExpenses = 24_500
         state.finance.lastYearBalanceDelta = 5_200
-        state.relationships.romanticPartner = Relationship(name: "Micah", type: .romantic, status: .active, bond: 82, yearsKnown: 4, stage: .committed, isCohabiting: false, commitmentAlignment: 74)
+        state.relationships.romanticPartners = [Relationship(name: "Micah", type: .romantic, status: .active, bond: 82, yearsKnown: 4, stage: .committed, isCohabiting: false, commitmentAlignment: 74)]
         state.relationships.friends = [
             Relationship(name: "Sofia", type: .friend, status: .active, bond: 64, yearsKnown: 7, stage: .dating, isCohabiting: false, commitmentAlignment: 0)
         ]
@@ -327,9 +327,11 @@ struct DebugTestingCoordinator {
         state.finance.annualTotalExpenses = 31_700
         state.finance.lastYearBalanceDelta = -1_500
         state.finance.financialStress = 56
-        state.relationships.romanticPartner = Relationship(name: "Owen", type: .romantic, status: .active, bond: 77, yearsKnown: 5, stage: .married, isCohabiting: true, commitmentAlignment: 80)
+        state.relationships.romanticPartners = [Relationship(name: "Owen", type: .romantic, status: .active, bond: 77, yearsKnown: 5, stage: .married, isCohabiting: true, commitmentAlignment: 80)]
         state.family.children = [
-            ChildRecord(name: "Ivy", age: 1, livesAtHome: true, otherParentName: "Owen", supportLoad: 64)
+            ChildRecord(name: "Ivy", age: 1, livesAtHome: true, otherParentName: "Owen", supportLoad: 64, temperament: .sensitive, bondWithPlayer: 71, curiosity: 58, emotionalSensitivity: 74, developmentNotes: ["First smiles came easily."]),
+            // Phase 2.3 test adult child
+            ChildRecord(name: "Theo", age: 27, livesAtHome: false, otherParentName: "Owen", supportLoad: 0, temperament: .independent, bondWithPlayer: 48, curiosity: 72, emotionalSensitivity: 41, leftHomeAtAge: 19, adultProfile: AdultChildProfile(outcome: .stable, relationshipQuality: 52, lifeVibe: "steady job in logistics, lives two states away", keyStories: ["Left at 19 after a quiet fight.", "Called on your 55th birthday."]))
         ]
         state.family.pregnancy = PregnancyState(phase: .thirdTrimester, otherParentName: "Owen", isPlanned: true, isHighRisk: false, yearsActive: 1)
         state.family.pregnancyIntent = .trying

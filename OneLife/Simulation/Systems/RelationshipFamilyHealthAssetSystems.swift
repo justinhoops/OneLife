@@ -32,8 +32,42 @@ struct RelationshipSystem {
             relationshipName: "friendship",
             result: &result
         )
-        if let existingPartner = relationships.romanticPartner {
-            let partner = existingPartner
+        
+        // Discovery Logic for Affairs
+        let discoveryRoll = Int.random(in: 0...100)
+        let foundAffair = relationships.romanticPartners.contains { $0.isSecret } && discoveryRoll < (relationships.activeRumorHeat / 4)
+        
+        if foundAffair {
+            result.notes.append(DomainNote(title: "Affair Discovered", text: "Your secret relationship was exposed. The fallout was immediate and devastating.", tags: [.relationships, .lifeEvent]))
+            relationships.activeRumorHeat += 40
+            relationships.publicReputation -= 30
+            relationships.privateReputation -= 40
+            
+            // Mark all secrets as public
+            for i in relationships.romanticPartners.indices {
+                relationships.romanticPartners[i].isSecret = false
+            }
+            
+            // Severe bond hit to primary partner
+            if let primaryIndex = relationships.romanticPartners.firstIndex(where: { $0.stage == .married || $0.stage == .engaged || $0.stage == .committed }) {
+                relationships.romanticPartners[primaryIndex].bond -= 50
+                relationships.romanticPartners[primaryIndex].status = .strained
+                addOrMergeTension(
+                    into: &relationships,
+                    headline: "Trust is shattered",
+                    impactLine: "The discovery of your infidelity has left the relationship in ruins.",
+                    severity: 85,
+                    source: .rumor,
+                    target: .partner,
+                    createdAge: player.age,
+                    targetName: relationships.romanticPartners[primaryIndex].name,
+                    impactedDomains: [.relationships, .health]
+                )
+            }
+        }
+
+        var agedPartners: [Relationship] = []
+        for partner in relationships.romanticPartners {
             let childPressure = family.childCount > 0 ? max(1, family.childCount) : 0
             let cohabitationPressure = partner.isCohabiting ? max(0, (financialStress - 38) / 10) : 0
             let adultStressPenalty = player.age >= 18 ? max(0, (financialStress - 45) / 10) : 0
@@ -44,7 +78,8 @@ struct RelationshipSystem {
             case .engaged: commitmentBonus = 2
             case .married: commitmentBonus = 3
             }
-            let drift =
+            
+            var drift =
                 ((player.happiness - 50) / 12) +
                 ((health.mentalWellness - 50) / 10) +
                 commitmentBonus +
@@ -56,11 +91,19 @@ struct RelationshipSystem {
                 adultStressPenalty -
                 childPressure -
                 (family.postpartumYearsRemaining > 0 ? 2 : 0)
-            relationships.romanticPartner = agePartner(partner, drift: drift, result: &result)
+            
+            if partner.isSecret {
+                drift -= 2 // Stress of keeping it secret
+            }
+
+            if let aged = agePartner(partner, drift: drift, result: &result) {
+                agedPartners.append(aged)
+            }
         }
+        relationships.romanticPartners = agedPartners
 
         if player.age >= 18,
-           let partner = relationships.romanticPartner,
+           let partner = relationships.primaryPartner,
            partner.isCohabiting,
            financialStress >= 48,
            partner.status == .strained {
@@ -95,31 +138,31 @@ struct RelationshipSystem {
             adjustStrongestBond(in: &relationships.friends, delta: friendChange)
         }
 
-        if effect.startDating == true, relationships.romanticPartner == nil {
-            let name = nextName(from: partnerNames, avoiding: relationships.friends.map(\.name))
-            relationships.romanticPartner = Relationship(name: name, type: .romantic, status: .active, bond: 55, yearsKnown: 0, stage: .dating, isCohabiting: false, commitmentAlignment: 50, personality: NPCPersonality.allCases.randomElement() ?? .loyal)
+        if effect.startDating == true, relationships.primaryPartner == nil {
+            let name = nextName(from: partnerNames, avoiding: (relationships.friends.map(\.name) + relationships.romanticPartners.map(\.name)))
+            relationships.romanticPartners.append(Relationship(name: name, type: .romantic, status: .active, bond: 55, yearsKnown: 0, stage: .dating, isCohabiting: false, commitmentAlignment: 50, personality: NPCPersonality.allCases.randomElement() ?? .loyal))
         }
 
         if let partnerChange = effect.partnerChange {
             adjustPartnerBond(in: &relationships, delta: partnerChange)
         }
 
-        if let commitmentAlignmentChange = effect.commitmentAlignmentChange,
-           var partner = relationships.romanticPartner {
-            partner.commitmentAlignment = (partner.commitmentAlignment + commitmentAlignmentChange).clamped(to: 0...100)
-            relationships.romanticPartner = partner
-        }
+        if let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+            var partner = relationships.romanticPartners[index]
+            
+            if let commitmentAlignmentChange = effect.commitmentAlignmentChange {
+                partner.commitmentAlignment = (partner.commitmentAlignment + commitmentAlignmentChange).clamped(to: 0...100)
+            }
 
-        if let stage = effect.setPartnerStage,
-           var partner = relationships.romanticPartner {
-            partner.stage = stage
-            relationships.romanticPartner = partner
-        }
+            if let stage = effect.setPartnerStage {
+                partner.stage = stage
+            }
 
-        if let setCohabiting = effect.setCohabiting,
-           var partner = relationships.romanticPartner {
-            partner.isCohabiting = setCohabiting
-            relationships.romanticPartner = partner
+            if let setCohabiting = effect.setCohabiting {
+                partner.isCohabiting = setCohabiting
+            }
+            
+            relationships.romanticPartners[index] = partner
         }
 
         if effect.loseFriend == true, !relationships.friends.isEmpty {
@@ -127,7 +170,8 @@ struct RelationshipSystem {
         }
 
         if effect.breakup == true {
-            if let formerPartner = relationships.romanticPartner {
+            if let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+                let formerPartner = relationships.romanticPartners[index]
                 addOrMergeTension(
                     into: &relationships,
                     headline: "The breakup did not clear",
@@ -139,8 +183,8 @@ struct RelationshipSystem {
                     targetName: formerPartner.name,
                     impactedDomains: [.relationships, .health]
                 )
+                relationships.romanticPartners.remove(at: index)
             }
-            relationships.romanticPartner = nil
         }
 
         relationships.publicReputation = (relationships.publicReputation + (effect.publicReputationChange ?? 0)).clamped(to: 0...100)
@@ -151,16 +195,20 @@ struct RelationshipSystem {
         }
 
         relationships.friends.indices.forEach { relationships.friends[$0].bond = relationships.friends[$0].bond.clamped(to: 0...100) }
-        if var partner = relationships.romanticPartner {
-            partner.bond = partner.bond.clamped(to: 0...100)
-            partner.commitmentAlignment = partner.commitmentAlignment.clamped(to: 0...100)
-            relationships.romanticPartner = partner
+        relationships.romanticPartners.indices.forEach { 
+            relationships.romanticPartners[$0].bond = relationships.romanticPartners[$0].bond.clamped(to: 0...100)
+            relationships.romanticPartners[$0].commitmentAlignment = relationships.romanticPartners[$0].commitmentAlignment.clamped(to: 0...100)
         }
         relationships.clampSocialSignals()
     }
 
-    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, relationships: inout RelationshipState, family: inout FamilyState) -> DomainYearResult {
+    func applyAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
         var result = DomainYearResult()
+        var player = state.player
+        var relationships = state.relationships
+        var family = state.family
+        var finance = state.finance
+        var assets = state.assets
 
         switch choiceID {
         case .reachOut:
@@ -182,11 +230,10 @@ struct RelationshipSystem {
                 )
             )
         case .strengthenBond:
-            if var partner = relationships.romanticPartner {
-                partner.bond = (partner.bond + 7).clamped(to: 0...100)
-                partner.commitmentAlignment = (partner.commitmentAlignment + 4).clamped(to: 0...100)
-                partner.status = .active
-                relationships.romanticPartner = partner
+            if let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+                relationships.romanticPartners[index].bond = (relationships.romanticPartners[index].bond + 7).clamped(to: 0...100)
+                relationships.romanticPartners[index].commitmentAlignment = (relationships.romanticPartners[index].commitmentAlignment + 4).clamped(to: 0...100)
+                relationships.romanticPartners[index].status = .active
                 relationships.privateReputation += 4
                 relationships.recentSocialLift = "The relationship felt steadier."
                 resolveTension(in: &relationships, matching: [.partner, .future, .household], relief: 18)
@@ -199,7 +246,8 @@ struct RelationshipSystem {
                 )
             }
         case .discussFuture:
-            guard var partner = relationships.romanticPartner else { return result }
+            guard let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) else { return result }
+            var partner = relationships.romanticPartners[index]
             partner.commitmentAlignment = (partner.commitmentAlignment + 10).clamped(to: 0...100)
             partner.bond = (partner.bond + 4).clamped(to: 0...100)
             let previousStage = partner.stage
@@ -207,10 +255,8 @@ struct RelationshipSystem {
                 partner.stage = .committed
             } else if partner.stage == .committed, player.age >= 21, partner.bond >= 82, partner.yearsKnown >= 3, partner.commitmentAlignment >= 68 {
                 partner.stage = .engaged
-            } else if partner.stage == .engaged, player.age >= 22, partner.bond >= 88, partner.yearsKnown >= 4, partner.commitmentAlignment >= 74 {
-                partner.stage = .married
             }
-            relationships.romanticPartner = partner
+            relationships.romanticPartners[index] = partner
             relationships.privateReputation += 2
             relationships.futureAlignment.activeConflictHeadline = nil
             resolveTension(in: &relationships, matching: [.future], relief: 14)
@@ -230,12 +276,105 @@ struct RelationshipSystem {
                 noteText = "You put the future on the table. Even without a milestone, the relationship got clearer."
             }
             result.notes.append(DomainNote(title: "Relationship Focus", text: noteText, tags: [.relationships, .lifeEvent]))
+
+        case .startAffair:
+            let name = nextName(from: partnerNames, avoiding: (relationships.friends.map(\.name) + relationships.romanticPartners.map(\.name)))
+            let affair = Relationship(name: name, type: .romantic, bond: 45, isSecret: true)
+            relationships.romanticPartners.append(affair)
+            relationships.activeRumorHeat += 15
+            result.notes.append(DomainNote(title: "New Secret", text: "You started seeing someone on the side. The thrill is real, and so is the risk.", tags: [.relationships, .risk]))
+            
+        case .endAffair:
+            relationships.romanticPartners.removeAll { $0.isSecret }
+            result.notes.append(DomainNote(title: "Secret Ended", text: "You broke off your secret connection. The weight of the double life lifted immediately.", tags: [.relationships]))
+
+        case .buyEngagementRing:
+            let cost = 5000 + (finance.cashOnHand / 10).clamped(to: 0...20000)
+            if finance.cashOnHand >= cost {
+                finance.cashOnHand -= cost
+                result.notes.append(DomainNote(title: "Engagement Ring", text: "You bought a ring that represents a real commitment. The year got tighter, but the future felt closer.", tags: [.finance, .relationships]))
+                // Hidden flag or just trust the player to propose next
+            } else {
+                result.notes.append(DomainNote(title: "Engagement Ring", text: "You looked at rings, but the cash margin just was not there yet."))
+            }
+
+        case .signPrenup:
+            guard let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) else { return result }
+            if relationships.romanticPartners[index].commitmentAlignment >= 60 {
+                relationships.romanticPartners[index].hasPrenup = true
+                relationships.romanticPartners[index].bond -= 15
+                result.notes.append(DomainNote(title: "Prenuptial Agreement", text: "You secured a legal agreement to keep finances separate. It protected your assets, but the conversation left a visible mark on the bond.", tags: [.finance, .relationships]))
+            } else {
+                relationships.romanticPartners[index].bond -= 25
+                result.notes.append(DomainNote(title: "Prenup Rejected", text: "Your partner refused to sign the agreement. The suggestion created a deep rift of distrust.", tags: [.relationships]))
+            }
+
+        case .proposeMarriage:
+            guard let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) else { return result }
+            var partner = relationships.romanticPartners[index]
+            if partner.stage == .engaged && partner.bond >= 75 {
+                result.notes.append(DomainNote(title: "Wedding Planned", text: "They said yes! Now comes the actual event.", tags: [.relationships, .lifeEvent]))
+            } else {
+                partner.bond -= 10
+                relationships.romanticPartners[index] = partner
+                result.notes.append(DomainNote(title: "Proposal Failed", text: "The timing was off. They are not ready for that kind of permanence yet.", tags: [.relationships]))
+            }
+
+        case .planWedding:
+            guard let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) else { return result }
+            let cost = 15000 + (finance.cashOnHand / 5).clamped(to: 0...50000)
+            if finance.cashOnHand >= cost {
+                finance.cashOnHand -= cost
+                relationships.romanticPartners[index].stage = .married
+                relationships.romanticPartners[index].bond += 15
+                relationships.publicReputation += 10
+                relationships.socialCapital += 30
+                result.notes.append(DomainNote(title: "The Wedding", text: "You hosted a celebration of your union. It was a massive financial hit, but the social lift was undeniable.", tags: [.finance, .relationships, .lifeEvent]))
+            } else {
+                result.notes.append(DomainNote(title: "Wedding Delayed", text: "You wanted to plan the big day, but the cash floor was too thin."))
+            }
+
+        case .fileForDivorce:
+            guard let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret && $0.stage == .married }) else { return result }
+            let partner = relationships.romanticPartners[index]
+            
+            if !partner.hasPrenup {
+                // Asset Splitting logic
+                let halfCash = finance.cashOnHand / 2
+                finance.cashOnHand -= halfCash
+                
+                if assets.ownsHome {
+                    let homeEquity = assets.primaryResidence?.equity ?? 0
+                    let buyoutCost = homeEquity / 2
+                    if finance.cashOnHand >= buyoutCost {
+                        finance.cashOnHand -= buyoutCost
+                        result.notes.append(DomainNote(title: "Divorce: Buyout", text: "You paid out half the home's equity to keep the property.", tags: [.finance, .housing]))
+                    } else {
+                        // Force sale
+                        let homeNotes = HomeOwnershipSystem().sellPrimaryHome(home: assets.primaryResidence!, finance: &finance, assets: &assets, housing: &state.housing, distressSale: true)
+                        result.notes.append(contentsOf: homeNotes)
+                        finance.cashOnHand /= 2 // Split the recovered cash too
+                        result.notes.append(DomainNote(title: "Divorce: Forced Sale", text: "You could not afford the buyout, forcing a sale of the home and a split of the remains.", tags: [.finance, .housing]))
+                    }
+                }
+            }
+            
+            if family.childCount > 0 {
+                result.financeEffects = FinanceEffects(dependentCostDelta: 5000) // Child support
+                result.notes.append(DomainNote(title: "Child Support", text: "The divorce added a permanent child support obligation to your annual costs.", tags: [.finance]))
+            }
+            
+            relationships.romanticPartners.remove(at: index)
+            relationships.publicReputation -= 15
+            result.notes.append(DomainNote(title: "Divorce Finalized", text: "The marriage is over. You are navigating the emotional and financial remains.", tags: [.relationships, .finance, .lifeEvent]))
+
         case .moveInTogether:
-            guard var partner = relationships.romanticPartner else { return result }
+            guard let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) else { return result }
+            var partner = relationships.romanticPartners[index]
             if player.age >= 20, partner.bond >= 74, partner.commitmentAlignment >= 62 {
                 partner.isCohabiting = true
                 partner.bond = (partner.bond + 3).clamped(to: 0...100)
-                relationships.romanticPartner = partner
+                relationships.romanticPartners[index] = partner
                 relationships.futureAlignment.cohabitationReadiness = min(100, relationships.futureAlignment.cohabitationReadiness + 10)
                 relationships.futureAlignment.activeConflictHeadline = nil
                 resolveTension(in: &relationships, matching: [.household, .future], relief: 20)
@@ -258,7 +397,7 @@ struct RelationshipSystem {
             }
         case .tryForBaby:
             family.pregnancyIntent = .trying
-            if relationships.romanticPartner != nil {
+            if let primary = relationships.primaryPartner {
                 addOrMergeTension(
                     into: &relationships,
                     headline: "The family question got heavier",
@@ -267,7 +406,7 @@ struct RelationshipSystem {
                     source: .familyPlanning,
                     target: .future,
                     createdAge: player.age,
-                    targetName: relationships.partnerName,
+                    targetName: primary.name,
                     impactedDomains: [.relationships, .lifeEvent, .finance]
                 )
             }
@@ -306,7 +445,7 @@ struct RelationshipSystem {
             
         case .findYourCrowd:
             if relationships.friends.count < 2 {
-                let existing = relationships.friends.map(\.name)
+                let existing = (relationships.friends.map(\.name) + relationships.romanticPartners.map(\.name))
                 let name = nextName(from: friendNames, avoiding: existing)
                 relationships.friends.append(Relationship(name: name, type: .friend, status: .active, bond: 57, personality: NPCPersonality.allCases.randomElement() ?? .loyal))
             } else if let index = relationships.friends.indices.max(by: { relationships.friends[$0].bond < relationships.friends[$1].bond }) {
@@ -327,13 +466,13 @@ struct RelationshipSystem {
                 )
             )
         case .dateCarefully:
-            if relationships.romanticPartner == nil, player.age >= 15 {
-                let name = nextName(from: partnerNames, avoiding: relationships.friends.map(\.name))
-                relationships.romanticPartner = Relationship(name: name, type: .romantic, bond: 54, stage: .dating, isCohabiting: false, commitmentAlignment: 52)
-            } else if var partner = relationships.romanticPartner {
-                partner.bond = (partner.bond + 4).clamped(to: 0...100)
-                partner.commitmentAlignment = (partner.commitmentAlignment + 3).clamped(to: 0...100)
-                relationships.romanticPartner = partner
+            if relationships.primaryPartner == nil, player.age >= 15 {
+                let existing = (relationships.friends.map(\.name) + relationships.romanticPartners.map(\.name))
+                let name = nextName(from: partnerNames, avoiding: existing)
+                relationships.romanticPartners.append(Relationship(name: name, type: .romantic, bond: 54, stage: .dating, isCohabiting: false, commitmentAlignment: 52))
+            } else if let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+                relationships.romanticPartners[index].bond = (relationships.romanticPartners[index].bond + 4).clamped(to: 0...100)
+                relationships.romanticPartners[index].commitmentAlignment = (relationships.romanticPartners[index].commitmentAlignment + 3).clamped(to: 0...100)
             }
             relationships.publicReputation += 2
             relationships.privateReputation += 3
@@ -399,10 +538,10 @@ struct RelationshipSystem {
             )
         case .keepDistance:
             result.coreEffects = CoreStatEffects(happiness: -1)
-            if var partner = relationships.romanticPartner {
-                partner.bond = (partner.bond - 5).clamped(to: 0...100)
-                partner.commitmentAlignment = (partner.commitmentAlignment - 4).clamped(to: 0...100)
-                relationships.romanticPartner = partner
+            if let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+                let partner = relationships.romanticPartners[index]
+                relationships.romanticPartners[index].bond = (partner.bond - 5).clamped(to: 0...100)
+                relationships.romanticPartners[index].commitmentAlignment = (partner.commitmentAlignment - 4).clamped(to: 0...100)
                 addOrMergeTension(
                     into: &relationships,
                     headline: "The relationship cooled instead of healing",
@@ -436,11 +575,10 @@ struct RelationshipSystem {
                 )
             )
         case .repairTension:
-            if var partner = relationships.romanticPartner, partner.status == .strained {
-                partner.bond = (partner.bond + 9).clamped(to: 0...100)
-                partner.commitmentAlignment = (partner.commitmentAlignment + 6).clamped(to: 0...100)
-                partner.status = .active
-                relationships.romanticPartner = partner
+            if let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret && $0.status == .strained }) {
+                relationships.romanticPartners[index].bond = (relationships.romanticPartners[index].bond + 9).clamped(to: 0...100)
+                relationships.romanticPartners[index].commitmentAlignment = (relationships.romanticPartners[index].commitmentAlignment + 6).clamped(to: 0...100)
+                relationships.romanticPartners[index].status = .active
             } else if let index = relationships.friends.indices.first(where: { relationships.friends[$0].status == .strained }) {
                 relationships.friends[index].bond = (relationships.friends[index].bond + 8).clamped(to: 0...100)
                 relationships.friends[index].status = .active
@@ -456,9 +594,118 @@ struct RelationshipSystem {
                     tags: [.relationships]
                 )
             )
+        // D2: Relationships depth statics (per-friend, rivalry, rep split)
+        case .deepenSpecificBond:
+            if !relationships.friends.isEmpty {
+                let idx = 0
+                relationships.friends[idx].bond = (relationships.friends[idx].bond + 8).clamped(to: 0...100)
+                result.notes.append(DomainNote(title: "Deep Bond", text: "You poured real time into one person. That friendship now carries more weight than the rest combined.", tags: [.relationships]))
+            } else if relationships.hasPartner {
+                // fallback to partner
+                if let p = relationships.primaryPartner {
+                    // mutate via index or direct
+                }
+            }
+        case .fuelRivalry:
+            relationships.activeRumorHeat = min(100, relationships.activeRumorHeat + 6)
+            result.coreEffects = CoreStatEffects(happiness: -1)
+            result.notes.append(DomainNote(title: "Rivalry Fueled", text: "You turned a peer into competition. The heat is motivating — and dangerous.", tags: [.relationships, .risk]))
+        case .splitReputation:
+            relationships.publicReputation = (relationships.publicReputation + 5).clamped(to: 0...100)
+            relationships.privateReputation = max(0, relationships.privateReputation - 4)
+            result.notes.append(DomainNote(title: "Rep Split", text: "Public you is polished. Private you paid a small price in authenticity.", tags: [.relationships, .identity]))
+
+        // Phase 2.2: Parenting mechanics — simple levers with real texture and trade-offs
+        case .spendTimeWithKids:
+            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
+            var totalBondGain = 0
+            for i in family.children.indices where family.children[i].livesAtHome {
+                let gain = Int.random(in: 4...8)
+                family.children[i].bondWithPlayer = (family.children[i].bondWithPlayer + gain).clamped(to: 5...95)
+                totalBondGain += gain
+                // Sensitive kids love this; independent kids appreciate it less dramatically
+                if family.children[i].temperament == .sensitive {
+                    family.children[i].bondWithPlayer = (family.children[i].bondWithPlayer + 2).clamped(to: 5...95)
+                }
+            }
+            // Trade-off: real presence costs mental bandwidth
+            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: -2))
+            result.notes.append(DomainNote(title: "Parenting", text: "You gave them hours that actually belonged to them. The house felt a little warmer, and you felt a little more tired in the best way.", tags: [.relationships]))
+        case .enforceRoutine:
+            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
+            for i in family.children.indices where family.children[i].livesAtHome {
+                let child = family.children[i]
+                var bondDelta = -1
+                var sensitivityDelta = -2
+                if child.temperament == .spirited || child.temperament == .intense {
+                    bondDelta = 3   // they actually needed the container
+                    sensitivityDelta = -4
+                } else if child.temperament == .independent {
+                    bondDelta = -4  // they pushed back
+                }
+                family.children[i].bondWithPlayer = (child.bondWithPlayer + bondDelta).clamped(to: 5...95)
+                family.children[i].emotionalSensitivity = (child.emotionalSensitivity + sensitivityDelta).clamped(to: 10...90)
+            }
+            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: -1, stressManagement: 2))
+            result.notes.append(DomainNote(title: "Parenting", text: "You held the line on bedtime, screen time, and structure. For some of them it landed as safety. For others it landed as a fight. Either way, the year had more shape.", tags: [.relationships]))
+        // D1: Light family statics — always available small anchors (dossier flavor)
+        case .familyMeal:
+            guard family.childCount > 0 else { return result }
+            for i in family.children.indices {
+                family.children[i].bondWithPlayer = (family.children[i].bondWithPlayer + 3).clamped(to: 5...95)
+            }
+            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: 3))
+            result.notes.append(DomainNote(title: "Family Meal", text: "The table was loud in the good way. Even the difficult child laughed once. The year remembered it belonged to all of you.", tags: [.family, .relationships]))
+        case .storyTime:
+            guard family.childCount > 0 else { return result }
+            for i in family.children.indices {
+                let d = family.children[i]
+                var bond = 4
+                if let playerD = state.childhoodDossier, playerD.aptitudes.social >= 55 {
+                    bond += 2 // your social wiring helps the story land
+                }
+                family.children[i].bondWithPlayer = (d.bondWithPlayer + bond).clamped(to: 5...95)
+                // tiny development note seed
+                family.children[i].developmentNotes.append("Heard stories about where you came from.")
+            }
+            result.notes.append(DomainNote(title: "Story Time", text: "You told them something true about before they were here. The thread got a little longer tonight.", tags: [.family, .identity]))
+        case .encourageIndependence:
+            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
+            for i in family.children.indices where family.children[i].livesAtHome {
+                let child = family.children[i]
+                var bondDelta = 1
+                var curiosityDelta = 4
+                if child.temperament == .independent || child.temperament == .spirited {
+                    bondDelta = 3
+                    curiosityDelta = 6
+                } else if child.temperament == .sensitive {
+                    bondDelta = -2
+                }
+                family.children[i].bondWithPlayer = (child.bondWithPlayer + bondDelta).clamped(to: 5...95)
+                family.children[i].curiosity = (child.curiosity + curiosityDelta).clamped(to: 15...90)
+            }
+            result.notes.append(DomainNote(title: "Parenting", text: "You stepped back on purpose. Some of them rose to it and seemed older by the end of the year. One or two seemed a little more distant. That was the point.", tags: [.relationships]))
+        case .checkInOnChild:
+            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
+            for i in family.children.indices where family.children[i].livesAtHome {
+                let child = family.children[i]
+                var bondGain = 5
+                if child.temperament == .sensitive || child.temperament == .intense {
+                    bondGain = 8
+                }
+                family.children[i].bondWithPlayer = (child.bondWithPlayer + bondGain).clamped(to: 5...95)
+            }
+            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: -3)) // emotional labor
+            result.notes.append(DomainNote(title: "Parenting", text: "You sat down and actually asked how they were doing — not just what they needed. The answers were sometimes heavier than you expected. The connection got deeper anyway.", tags: [.relationships, .health]))
         default:
-            return result
+            break
         }
+        
+        state.player = player
+        state.relationships = relationships
+        state.family = family
+        state.finance = finance
+        state.assets = assets
 
         relationships.clampSocialSignals()
         return result
@@ -503,10 +750,11 @@ struct RelationshipSystem {
     }
 
     private func adjustPartnerBond(in relationships: inout RelationshipState, delta: Int) {
-        guard var partner = relationships.romanticPartner else { return }
+        guard let index = relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) else { return }
+        var partner = relationships.romanticPartners[index]
         partner.bond = (partner.bond + delta).clamped(to: 0...100)
         partner.status = partner.bond < 45 ? .strained : .active
-        relationships.romanticPartner = partner
+        relationships.romanticPartners[index] = partner
     }
 
     private func adjustStrongestBond(in relationships: inout [Relationship], delta: Int) {
@@ -670,7 +918,7 @@ struct RelationshipSystem {
         financialStress: Int,
         result: inout DomainYearResult
     ) {
-        guard let partner = relationships.romanticPartner else {
+        guard let partner = relationships.primaryPartner else {
             relationships.futureAlignment = FutureAlignmentState()
             return
         }
@@ -841,7 +1089,9 @@ struct FamilySystem {
             relationships: input.relationships,
             family: &family,
             health: input.health,
-            finance: input.finance
+            finance: input.finance,
+            worldEra: input.worldEra,
+            resilience: input.player._resilience
         )
     }
 
@@ -850,11 +1100,15 @@ struct FamilySystem {
         relationships: RelationshipState,
         family: inout FamilyState,
         health: HealthState,
-        finance: FinanceState
+        finance: FinanceState,
+        worldEra: WorldEra = .stable,
+        resilience: LifeResilience = .resilient
     ) -> DomainYearResult {
         var result = DomainYearResult()
 
-        ageChildren(family: &family, result: &result)
+        // Econ3: Pass era + resilience so children feel the macro economy + parent's life path differently
+        let parentStress = max(0, finance.financialStress + (health.mentalWellness < 40 ? 15 : 0))
+        ageChildren(family: &family, result: &result, worldEra: worldEra, resilience: resilience, parentFinancialStress: parentStress, parentIsSpecialCareer: /* rough signal */ finance.annualTotalExpenses > 45000)
         family.postpartumYearsRemaining = max(0, family.postpartumYearsRemaining - 1)
 
         guard player.age >= 18 else { return result }
@@ -885,18 +1139,28 @@ struct FamilySystem {
                 family.pregnancy = pregnancy
             case .thirdTrimester:
                 let childName = nextChildName(avoiding: family.children.map(\.name))
-                family.children.append(ChildRecord(name: childName, age: 0, livesAtHome: true, otherParentName: pregnancy.otherParentName, supportLoad: pregnancy.isPlanned ? 58 : 64))
+                let newborn = makeNewborn(
+                    name: childName,
+                    pregnancy: pregnancy,
+                    player: player,
+                    relationships: relationships,
+                    health: health,
+                    finance: finance
+                )
+                family.children.append(newborn)
                 family.pregnancy = nil
                 family.postpartumYearsRemaining = 2
                 result.financeEffects = FinanceEffects(cashDelta: -1_400, livingCostDelta: nil, educationCostDelta: nil, dependentCostDelta: 2_400, discretionaryCostDelta: nil, financialStressDelta: 5, setRegionPolicyID: nil)
                 result.healthEffects = HealthEffects(physical: -5, mental: pregnancy.isPlanned ? -2 : -4, exercise: nil, nutrition: nil, stressManagement: -4, addCondition: nil, removeCondition: nil, hasPrimaryCare: nil)
                 result.relationshipEffects = RelationshipEffects(partnerChange: pregnancy.isPlanned ? 3 : -2, commitmentAlignmentChange: pregnancy.isPlanned ? 2 : -3)
-                result.notes.append(DomainNote(title: "Birth", text: "You welcomed \(childName) this year, and life immediately became more expensive, more fragile, and more real.", tags: [.lifeEvent, .finance, .health, .relationships]))
+
+                let arrivalFlavor = birthArrivalFlavor(for: newborn, wasPlanned: pregnancy.isPlanned)
+                result.notes.append(DomainNote(title: "Birth", text: arrivalFlavor, tags: [.lifeEvent, .finance, .health, .relationships]))
             }
             return result
         }
 
-        guard let partner = relationships.romanticPartner,
+        guard let partner = relationships.primaryPartner,
               partner.status == .active else { return result }
 
         let conceptionChance = conceptionChance(player: player, relationships: relationships, family: family, health: health, finance: finance)
@@ -921,13 +1185,342 @@ struct FamilySystem {
         return result
     }
 
-    private func ageChildren(family: inout FamilyState, result: inout DomainYearResult) {
+    private func ageChildren(family: inout FamilyState, result: inout DomainYearResult, worldEra: WorldEra = .stable, resilience: LifeResilience = .resilient, parentFinancialStress: Int = 0, parentIsSpecialCareer: Bool = false) {
         guard !family.children.isEmpty else { return }
-        family.children.indices.forEach { family.children[$0].age += 1 }
-        for index in family.children.indices where family.children[index].age >= 19 && family.children[index].livesAtHome {
-            family.children[index].livesAtHome = false
-            result.notes.append(DomainNote(title: "Family", text: "\(family.children[index].name) became old enough to stop depending on your household full-time.", tags: [.lifeEvent, .finance]))
+
+        let isBadEconomy = (worldEra == .recession || worldEra == .highInflation)
+        let isBoomEconomy = (worldEra == .bullMarket || worldEra == .techBoom)
+        let isCrisis = (worldEra == .wartime || worldEra == .pandemic)
+        let isGrounded = (resilience == .grounded)
+
+        for index in family.children.indices {
+            var child = family.children[index]
+            child.age += 1
+
+            // Econ3: Economic era + resilience dramatically shape child development
+            var householdStress = max(0, (result.financeEffects?.financialStressDelta ?? 0) + 12 + parentFinancialStress / 3)
+            if isBadEconomy {
+                householdStress = Int(Double(householdStress) * (isGrounded ? 1.45 : 1.15))
+            } else if isBoomEconomy {
+                householdStress = Int(Double(householdStress) * 0.75)
+            }
+            if isCrisis {
+                householdStress += (isGrounded ? 18 : 10)
+            }
+            if parentIsSpecialCareer && isBadEconomy {
+                householdStress += (isGrounded ? 22 : 12) // high-variance parent careers amplify economic pain for kids in grounded mode
+            }
+
+            let stability = 50 - householdStress / 2
+
+            // Bond drifts with stability + random life texture. Sensitive/intense kids swing more.
+            // Econ3: Grounded mode in bad economies creates much harsher bond damage
+            let baseBondSwing = (stability - 50) / 9
+            let econBondPenalty = isBadEconomy ? (isGrounded ? -6 : -2) : (isBoomEconomy ? 2 : 0)
+            let bondSwing = baseBondSwing + econBondPenalty
+            let sensitivityMultiplier: Double = (child.temperament == .sensitive || child.temperament == .intense) ? 1.35 : 0.85
+            let newBond = (Double(child.bondWithPlayer) + Double(bondSwing) * sensitivityMultiplier + Double.random(in: -3.5...3.5)).clamped(to: 5...95)
+            child.bondWithPlayer = Int(newBond)
+
+            // Curiosity grows with lower stress and higher existing curiosity (spirited/independent bias).
+            let curiosityDrift = Int.random(in: -2...4) + (stability > 55 ? 2 : -1)
+            child.curiosity = (child.curiosity + curiosityDrift).clamped(to: 15...90)
+
+            // Sensitivity slowly moderates toward the mean unless the year was rough.
+            // Econ3: Bad economies + grounded mode make sensitive kids carry more lasting emotional load
+            let sensDrift = (stability > 60 ? -1 : 1) + Int.random(in: -2...2)
+            let econSensExtra = (isBadEconomy && isGrounded) ? 2 : 0
+            child.emotionalSensitivity = (child.emotionalSensitivity + sensDrift + econSensExtra).clamped(to: 10...95)
+
+            // Support load slowly eases as kids get older / more independent, but spikes with household stress.
+            let ageRelief = child.age >= 6 ? 2 : 1
+            child.supportLoad = (child.supportLoad - ageRelief + max(0, householdStress - 40) / 7).clamped(to: 25...85)
+
+            // Econ3: "Raised in recession / boom / crisis" development notes + special career parent flavor
+            if Int.random(in: 0...100) < 32 || (child.age == 5 || child.age == 13 || child.age == 18) {
+                var note = developmentNote(for: child, stability: stability)
+
+                // Major economic origin story notes (permanent narrative texture)
+                if isBadEconomy && child.age <= 6 && !child.developmentNotes.contains(where: { $0.contains("recession") || $0.contains("hard years") }) {
+                    let econNote = isGrounded ?
+                        "\(child.name) was born into hard years. The house felt tighter, the adults quieter." :
+                        "\(child.name) grew up while the world was tight with money. They learned early what 'making do' meant."
+                    note = econNote
+                } else if isBoomEconomy && child.age <= 8 && !child.developmentNotes.contains(where: { $0.contains("boom") || $0.contains("plenty") }) {
+                    note = "\(child.name) was a child of the good years. The house felt lighter, opportunities felt normal."
+                } else if isCrisis && child.age <= 10 {
+                    note = "\(child.name) was a child during the national crisis. The news was always on. The adults were always worried or angry."
+                }
+
+                // Special career parent flavor during economic stress (the "my parent was fighting the economy" stories)
+                if parentIsSpecialCareer && isBadEconomy && Int.random(in: 0...100) < 35 {
+                    let parentNote = "My parent was fighting to keep everything together that year."
+                    if !child.developmentNotes.contains(parentNote) {
+                        child.developmentNotes.append(parentNote)
+                    }
+                }
+
+                // CE3 criminal family spillover temporarily disabled for build stability (references top-level GameState not available in this helper scope).
+                // The feature can be properly threaded via additional parameters if needed.
+
+                if !note.isEmpty {
+                    child.developmentNotes.append(note)
+                    if child.developmentNotes.count > 5 { child.developmentNotes.removeFirst() }
+                }
+            }
+
+            family.children[index] = child
+
+            // Emancipation at 19 + Phase 2.3 adult outcome seeding
+            if child.age >= 19 && child.livesAtHome {
+                family.children[index].livesAtHome = false
+                family.children[index].leftHomeAtAge = child.age
+
+                // Seed long-term adult profile based on childhood investment (bond + temperament + some history)
+                let profile = seedAdultProfile(from: child)
+                family.children[index].adultProfile = profile
+
+                let leavingNote = adultLeavingNote(for: child, profile: profile)
+                result.notes.append(DomainNote(title: "Family", text: leavingNote, tags: [.lifeEvent, .relationships]))
+            }
+
+            // Phase 2.3: Adult child milestones and texture (for those who have left home)
+            if !child.livesAtHome, let profile = child.adultProfile, child.age >= 22 {
+                if let updated = advanceAdultMilestone(child: child, currentProfile: profile, resilience: resilience) {
+                    family.children[index].adultProfile = updated.profile
+                    if let noteText = updated.note {
+                        result.notes.append(DomainNote(title: "Family", text: noteText, tags: [.lifeEvent, .relationships]))
+                    }
+                    // Small late-game emotional ripples
+                    if child.age >= 40 {
+                        let ripple = adultRippleMental(for: updated.profile.outcome, relQuality: updated.profile.relationshipQuality)
+                        if ripple != 0 {
+                            let existing = result.healthEffects
+                            result.healthEffects = HealthEffects(
+                                physical: existing?.physical,
+                                mental: (existing?.mental ?? 0) + ripple,
+                                exercise: existing?.exercise,
+                                nutrition: existing?.nutrition,
+                                stressManagement: existing?.stressManagement,
+                                addCondition: existing?.addCondition,
+                                removeCondition: existing?.removeCondition,
+                                hasPrimaryCare: existing?.hasPrimaryCare
+                            )
+                        }
+                    }
+                }
+            }
         }
+
+        // Small player-facing ripples from having children this year (the "visible development impact").
+        // These are intentionally modest so they feel like texture, not punishment/reward.
+        let dependentCount = family.children.filter(\.livesAtHome).count
+        if dependentCount > 0 {
+            let avgBond = family.children.filter(\.livesAtHome).map(\.bondWithPlayer).reduce(0, +) / max(1, dependentCount)
+            let avgSensitivity = family.children.filter(\.livesAtHome).map(\.emotionalSensitivity).reduce(0, +) / max(1, dependentCount)
+
+            // High bond in a chaotic house can still be emotionally taxing; low bond hurts more.
+            var mentalDelta = 0
+            if avgBond >= 70 { mentalDelta += 1 }
+            if avgBond <= 40 { mentalDelta -= 2 }
+            if avgSensitivity >= 68 && dependentCount >= 2 { mentalDelta -= 1 }
+
+            if mentalDelta != 0 {
+                let existing = result.healthEffects
+                result.healthEffects = HealthEffects(
+                    physical: existing?.physical,
+                    mental: (existing?.mental ?? 0) + mentalDelta,
+                    exercise: existing?.exercise,
+                    nutrition: existing?.nutrition,
+                    stressManagement: existing?.stressManagement,
+                    addCondition: existing?.addCondition,
+                    removeCondition: existing?.removeCondition,
+                    hasPrimaryCare: existing?.hasPrimaryCare
+                )
+            }
+
+            // Very high support load or many dependents adds quiet financial pressure.
+            let highLoadCount = family.children.filter { $0.livesAtHome && $0.supportLoad >= 68 }.count
+            if highLoadCount >= 2 || dependentCount >= 3 {
+                // Use existing pattern: create a small effect and let the caller / later merge handle it.
+                // For now we directly adjust the stress delta if one exists, otherwise set a modest one.
+                if var fin = result.financeEffects {
+                    fin.financialStressDelta = (fin.financialStressDelta ?? 0) + 2
+                    result.financeEffects = fin
+                } else {
+                    result.financeEffects = FinanceEffects(financialStressDelta: 2)
+                }
+            }
+        }
+    }
+
+    private func developmentNote(for child: ChildRecord, stability: Int) -> String {
+        let name = child.name
+        let age = child.age
+        switch child.temperament {
+        case .easygoing:
+            if age <= 4 { return stability > 55 ? "\(name) was an easy little kid this year." : "\(name) took the chaos in stride." }
+            return stability > 55 ? "\(name) rolled with the year without much drama." : "\(name) stayed steady even when things felt unsettled."
+        case .spirited:
+            if age <= 6 { return "\(name) turned every day into an adventure (and sometimes a negotiation)." }
+            return stability > 60 ? "\(name) brought a lot of life and noise into the house this year." : "\(name) had some big feelings; the house felt louder."
+        case .sensitive:
+            if stability < 45 { return "\(name) seemed to absorb every tense moment this year." }
+            if age >= 10 { return "\(name) was carrying more of the emotional weather than usual." }
+            return "\(name) was especially tuned in to how everyone else was doing."
+        case .independent:
+            if age >= 8 { return "\(name) wanted more space and handled more on their own." }
+            return "\(name) was quietly figuring things out in their own corner."
+        case .intense:
+            if stability > 55 { return "\(name) threw themselves into everything with full force." }
+            return "\(name) had a hard year — the highs were high and the lows were heavy."
+        }
+    }
+
+    // MARK: - Phase 2.3 Adult Child Long-term Outcomes
+
+    private func seedAdultProfile(from child: ChildRecord) -> AdultChildProfile {
+        let finalBond = child.bondWithPlayer
+        let temp = child.temperament
+
+        var outcome: AdultChildOutcome
+        var relQuality = finalBond
+
+        // Temperament + investment bias the long-term path
+        let investmentScore = finalBond + (child.developmentNotes.count * 3)
+
+        switch investmentScore {
+        case 95...: outcome = .thriving
+        case 70..<95: outcome = (temp == .intense || temp == .sensitive) ? .stable : .thriving
+        case 50..<70: outcome = .stable
+        case 35..<50: outcome = (temp == .easygoing) ? .stable : .struggling
+        default:      outcome = .distant
+        }
+
+        // Independent kids often do "fine but distant"
+        if temp == .independent && outcome == .thriving { outcome = .stable }
+        if temp == .intense && outcome == .distant { outcome = .struggling }
+
+        var lifeVibe: String
+        switch outcome {
+        case .thriving:
+            lifeVibe = ["solid career", "doing really well", "building something meaningful"].randomElement()!
+        case .stable:
+            lifeVibe = ["steady job", "making it work", "quietly getting by"].randomElement()!
+        case .struggling:
+            lifeVibe = ["hit some rough patches", "still figuring it out", "carrying more than their share"].randomElement()!
+        case .distant:
+            lifeVibe = ["lives far away now", "keeps to themselves", "the calls got shorter over the years"].randomElement()!
+        }
+
+        if temp == .sensitive { lifeVibe += ", sensitive like always" }
+        if temp == .spirited { lifeVibe += ", still full of energy" }
+
+        // Econ3: Intergenerational economic origin stories + starting modifiers
+        // Children carry the economic weather of their childhood into adulthood as permanent texture and slight starting bias.
+        var keyStories = ["Left home at \(child.age)."]
+        let econNotes = child.developmentNotes.filter { $0.contains("recession") || $0.contains("hard years") || $0.contains("boom") || $0.contains("crisis") || $0.contains("good years") || $0.contains("national crisis") }
+        if !econNotes.isEmpty {
+            keyStories.append(econNotes.first!)
+            // Small but real starting bias in adult lifeVibe based on childhood economy
+            if econNotes.contains(where: { $0.contains("recession") || $0.contains("hard years") }) {
+                if outcome == .thriving { lifeVibe += " — the hard years made them tougher and more resourceful" }
+                else if outcome == .struggling { lifeVibe += " — some of the old tightness never fully left" }
+            } else if econNotes.contains(where: { $0.contains("boom") || $0.contains("good years") }) {
+                if outcome == .thriving { lifeVibe += " — grew up expecting the world to be generous" }
+                else { lifeVibe += " — the good times set a high bar that later reality had to meet" }
+            }
+        }
+
+        return AdultChildProfile(
+            outcome: outcome,
+            relationshipQuality: relQuality,
+            lifeVibe: lifeVibe,
+            keyStories: keyStories
+        )
+    }
+
+    private func adultLeavingNote(for child: ChildRecord, profile: AdultChildProfile) -> String {
+        let name = child.name
+        let temp = child.temperament.shortDescription
+        let outcomeWord = profile.outcome == .thriving ? "with real promise" : profile.outcome == .struggling ? "with some visible weight" : "ready to find their own shape"
+
+        // P3 D4: player focus history flavors the leaving (stance residue, life shape echo in child's view of "normal")
+        let driftEcho = child.developmentNotes.contains(where: { $0.lowercased().contains("drift") || $0.lowercased().contains("loose") }) ? " (They swore this would look different than what they grew up watching.)" : ""
+        return "\(name) (\(temp)) moved out \(outcomeWord). The house felt different that night.\(driftEcho)"
+    }
+
+    private func advanceAdultMilestone(child: ChildRecord, currentProfile: AdultChildProfile, resilience: LifeResilience) -> (profile: AdultChildProfile, note: String?)? {
+        // Only trigger occasionally for texture
+        guard Int.random(in: 0...100) < 22 else { return nil }
+
+        var profile = currentProfile
+        let name = child.name
+        var note: String? = nil
+
+        let age = child.age
+        let temp = child.temperament
+
+        // Milestone windows
+        if age == 23 || (age % 5 == 0 && age > 25 && age < 55) {
+            switch profile.outcome {
+            case .thriving:
+                profile.relationshipQuality = (profile.relationshipQuality + 4).clamped(to: 20...95)
+                profile.keyStories.append(age == 23 ? "\(name) landed a good job and sounded proud on the phone." : "\(name) is doing well — called with real news.")
+                note = "\(name) is thriving. The updates lately have had a warmth to them."
+            case .stable:
+                profile.keyStories.append("\(name) is hanging in there, steady as ever.")
+                if temp == .sensitive { profile.relationshipQuality = (profile.relationshipQuality + 2).clamped(to: 10...90) }
+            case .struggling:
+                profile.relationshipQuality = (profile.relationshipQuality - 3).clamped(to: 5...80)
+                profile.keyStories.append(age == 30 ? "\(name) hit a rough patch and reached out for the first time in a while." : "\(name) is going through it again.")
+                note = "You got a call from \(name). It was heavier than you hoped."
+            case .distant:
+                if Int.random(in: 0...10) < 3 {
+                    profile.relationshipQuality = (profile.relationshipQuality + 5).clamped(to: 5...70)
+                    profile.keyStories.append("\(name) called out of the blue. It was brief, but it happened.")
+                    note = "\(name) reached out. The silence had been long."
+                }
+            }
+        }
+
+        // Occasional major life events (marriage, own kids, big setback)
+        if age == 28 || age == 35 || (age % 7 == 0 && age > 30) {
+            if profile.outcome != .distant && Int.random(in: 0...100) < 35 {
+                if profile.outcome == .thriving || (profile.outcome == .stable && temp != .sensitive) {
+                    profile.keyStories.append("\(name) has a kid of their own now.")
+                    profile.relationshipQuality = (profile.relationshipQuality + 6).clamped(to: 20...95)
+                    // Phase 5: Long-term resonance of the parent's Life Feel choice
+                    var circleNote = "\(name) became a parent. The circle turned in a way that felt both obvious and impossible."
+                    // Note: resilience context from caller; defaulting for scope in this slice
+                    circleNote += " The parent's Life Feel still echoes here."
+                    note = circleNote
+                } else if profile.outcome == .struggling {
+                    profile.keyStories.append("\(name) is dealing with a lot — asked if you were okay too.")
+                    note = "Hearing \(name) struggle made something in your chest tighten."
+                }
+            }
+        }
+
+        if note != nil || !profile.keyStories.isEmpty {
+            if profile.keyStories.count > 5 { profile.keyStories.removeFirst() }
+            return (profile, note)
+        }
+
+        return nil
+    }
+
+    private func adultRippleMental(for outcome: AdultChildOutcome, relQuality: Int) -> Int {
+        var delta = 0
+        switch outcome {
+        case .thriving: delta += 2
+        case .stable: delta += 0
+        case .struggling: delta -= 2
+        case .distant: delta -= 1
+        }
+        if relQuality < 30 { delta -= 2 }
+        if relQuality > 75 { delta += 1 }
+        return delta
     }
 
     func conceptionChance(
@@ -937,7 +1530,7 @@ struct FamilySystem {
         health: HealthState,
         finance: FinanceState
     ) -> Int {
-        guard let partner = relationships.romanticPartner else { return 0 }
+        guard let partner = relationships.primaryPartner else { return 0 }
         if player.age < 18 || player.age > 45 { return 0 }
         var chance: Int
         switch family.pregnancyIntent {
@@ -980,6 +1573,81 @@ struct FamilySystem {
     private func nextChildName(avoiding existing: [String]) -> String {
         childNames.first(where: { !existing.contains($0) }) ?? "New Baby"
     }
+
+    // MARK: - Phase 2 (Family 2.1): Context-aware newborn creation
+
+    private func makeNewborn(
+        name: String,
+        pregnancy: PregnancyState,
+        player: Player,
+        relationships: RelationshipState,
+        health: HealthState,
+        finance: FinanceState
+    ) -> ChildRecord {
+        // Base personality influenced by pregnancy story + parental context.
+        // This is the moment the child starts feeling like *their* kid, not a generic number.
+
+        var temperament: ChildTemperament
+        let plannedBonus = pregnancy.isPlanned ? 8 : 0
+        let relationshipQuality = relationships.primaryPartner?.bond ?? 50
+        let stress = finance.financialStress + (health.activeConditions.count * 8)
+        let parentalAgeFactor = (player.age < 23 || player.age > 37) ? -6 : 4
+
+        let temperamentRoll = Int.random(in: 0...100) + plannedBonus + (relationshipQuality - 55) / 3 - stress / 12 + parentalAgeFactor
+
+        switch temperamentRoll {
+        case ...35:  temperament = .intense
+        case 36...48: temperament = .sensitive
+        case 49...62: temperament = .spirited
+        case 63...78: temperament = .independent
+        default:      temperament = .easygoing
+        }
+
+        // Bond starts higher for planned / stable situations, lower for chaotic ones.
+        var bond = 48 + (pregnancy.isPlanned ? 14 : -6)
+        bond += (relationshipQuality - 50) / 4
+        bond -= max(0, finance.financialStress - 40) / 6
+        bond += (health.mentalWellness - 50) / 10
+        bond = bond.clamped(to: 28...78)
+
+        // Curiosity and sensitivity have natural variation but are nudged by context.
+        var curiosity = 45 + Int.random(in: -12...18) + (plannedBonus / 2)
+        curiosity = curiosity.clamped(to: 22...82)
+
+        var sensitivity = 48 + Int.random(in: -14...14)
+        if temperament == .sensitive || temperament == .intense { sensitivity += 12 }
+        if temperament == .easygoing { sensitivity -= 10 }
+        sensitivity = sensitivity.clamped(to: 18...85)
+
+        var supportLoad = pregnancy.isPlanned ? 56 : 66
+        supportLoad += max(0, stress - 45) / 5
+        supportLoad = supportLoad.clamped(to: 45...78)
+
+        return ChildRecord(
+            name: name,
+            age: 0,
+            livesAtHome: true,
+            otherParentName: pregnancy.otherParentName,
+            supportLoad: supportLoad,
+            temperament: temperament,
+            bondWithPlayer: bond,
+            curiosity: curiosity,
+            emotionalSensitivity: sensitivity,
+            developmentNotes: ["Arrived in a \(pregnancy.isPlanned ? "planned" : "surprising") moment."]
+        )
+    }
+
+    private func birthArrivalFlavor(for child: ChildRecord, wasPlanned: Bool) -> String {
+        let temp = child.temperament.shortDescription
+        let bondWord = child.bondWithPlayer >= 68 ? "already felt like a deep attachment" : child.bondWithPlayer <= 42 ? "arrived with some distance in the room" : "landed as a complicated new gravity"
+        let stressWord = child.supportLoad >= 70 ? " and the practical weight was immediate" : ""
+
+        if wasPlanned {
+            return "You welcomed \(child.name) — a \(temp) baby who \(bondWord)\(stressWord)."
+        } else {
+            return "\(child.name) arrived — a \(temp) baby who \(bondWord)\(stressWord). The surprise rearranged more than just the calendar."
+        }
+    }
 }
 
 struct HealthSystem {
@@ -1002,20 +1670,26 @@ struct HealthSystem {
         case .student: workStress = -1
         case .partTime: workStress = 1
         case .fullTime: workStress = 3
+        case .military: workStress = 4
         case .unemployed: workStress = 2
         }
 
         let socialSupport = relationships.friends.count + (relationships.hasPartner ? 1 : 0)
+        // Use player's mirrored resilience dampener (synced from GameState at key points).
+        let effectiveDampener = player.healthDeclineDampener
+        let conditionDrag = Int(Double(health.activeConditions.reduce(0) { $0 + max(1, $1.severity / 20) }) * effectiveDampener)
+        let workStressDrag = Int(Double(workStress) * effectiveDampener)
+
         let physicalShift =
             ((health.habits.exercise - 50) / 8) +
             ((health.habits.nutrition - 50) / 8) -
-            (health.activeConditions.reduce(0) { $0 + max(1, $1.severity / 20) }) -
-            workStress
+            conditionDrag -
+            workStressDrag
         let mentalShift =
             ((health.habits.stressManagement - 45) / 6) +
             ((player.happiness - 50) / 10) +
             socialSupport -
-            workStress -
+            workStressDrag -
             healthcarePressure -
             (housing.livingArrangement == .couchSurfing ? 4 : 0) +
             (housing.housingStability >= 70 ? 1 : 0)
@@ -1153,6 +1827,19 @@ struct HealthSystem {
                     tags: [.health, .finance]
                 )
             )
+        // D2 health mastery
+        case .recurringTherapy:
+            health.mentalWellness = (health.mentalWellness + 7).clamped(to: 0...100)
+            result.financeEffects = FinanceEffects(cashDelta: -150)
+            result.notes.append(DomainNote(title: "Therapy Loop", text: "The regular appointment is starting to change how you talk to yourself. Conditions feel a little less in charge.", tags: [.health, .finance]))
+        case .manageMeds:
+            health.physicalWellness = (health.physicalWellness + 4).clamped(to: 0...100)
+            health.mentalWellness = (health.mentalWellness + 3).clamped(to: 0...100)
+            result.financeEffects = FinanceEffects(cashDelta: -80)
+            result.notes.append(DomainNote(title: "Meds Management", text: "You kept the regimen. Symptoms quieter, side effects and bill now part of the year.", tags: [.health, .finance]))
+        case .bodyConditioning:
+            health.physicalWellness = (health.physicalWellness + 6).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Body Work", text: "You treated the body like the career asset it is. Athlete/creator paths feel the edge.", tags: [.health, .career]))
         default:
             return result
         }
@@ -1161,6 +1848,80 @@ struct HealthSystem {
         player.clampStats()
         health.clamp()
         return result
+    }
+
+    // MARK: - Frictionless Instant Reaction (Health Autonomy)
+
+    /// Lightweight synchronous reaction when player takes a health instant action.
+    /// Makes "Protect Sleep", "Rest", etc. feel like the body/world immediately responds.
+    mutating func reactToPlayerHealthAction(
+        _ choiceID: ActionChoiceID,
+        state: inout GameState
+    ) -> [DomainNote] {
+        var notes: [DomainNote] = []
+
+        switch choiceID {
+        case .protectSleep, .rest:
+            // Phase 5: Stronger "fighting back" texture, especially in Grounded when already low
+            let isGrounded = state.resilience == .grounded
+            let lowHealth = state.player.health < 42 || state.healthProfile.mentalWellness < 42
+            let recoveryBonus: Int = {
+                if isGrounded { return lowHealth ? 8 : 5 }
+                return lowHealth ? 5 : 3
+            }()
+
+            if state.healthProfile.activeConditions.isEmpty {
+                state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + recoveryBonus).clamped(to: 0...100)
+                state.healthProfile.physicalWellness = (state.healthProfile.physicalWellness + max(1, recoveryBonus / 2)).clamped(to: 0...100)
+                state.player.health = ((state.healthProfile.physicalWellness * 2) + state.healthProfile.mentalWellness) / 3
+                state.player.clampStats()
+                let text = isGrounded
+                    ? "In a Grounded life, choosing rest felt like a real act of defiance. The body noticed."
+                    : "Your choice to rest registered. A little more clarity returned faster than expected."
+                notes.append(
+                    DomainNote(
+                        title: "Body Responded",
+                        text: text,
+                        tags: [.health, .progress]
+                    )
+                )
+            } else {
+                for i in state.healthProfile.activeConditions.indices {
+                    let relief = isGrounded ? 6 : 4
+                    state.healthProfile.activeConditions[i].severity = max(1, state.healthProfile.activeConditions[i].severity - relief)
+                }
+                let text = isGrounded
+                    ? "Protecting your energy in a Grounded run eased one of the weights. It mattered more because the margins are thinner."
+                    : "Protecting your energy eased one of the weights you've been carrying."
+                notes.append(
+                    DomainNote(
+                        title: "Recovery Momentum",
+                        text: text,
+                        tags: [.health]
+                    )
+                )
+            }
+
+        case .seeDoctor:
+            if !state.healthProfile.hasPrimaryCare {
+                let isGrounded = state.resilience == .grounded
+                let text = isGrounded
+                    ? "In a Grounded life, reaching for care felt like claiming ground back. The future just got a little less sharp."
+                    : "Scheduling care shifted how future health events might land. The system noticed the intention."
+                notes.append(
+                    DomainNote(
+                        title: "Proactive Step",
+                        text: text,
+                        tags: [.health]
+                    )
+                )
+            }
+
+        default:
+            break
+        }
+
+        return notes
     }
 }
 
@@ -1193,11 +1954,117 @@ struct HomeOwnershipSystem {
 
     func isHomeAction(_ choiceID: ActionChoiceID?) -> Bool {
         switch choiceID {
-        case .saveForDownPayment, .buyStarterHome, .refinanceMortgage, .buildMaintenanceReserve, .sellHome:
+        case .saveForDownPayment, .depositToHouseFund, .buyStarterHome, .refinanceMortgage, .buildMaintenanceReserve, .topUpHouseReserve, .sellHome:
             return true
         default:
             return false
         }
+    }
+
+    func isInstantHomeAction(_ choiceID: ActionChoiceID) -> Bool {
+        switch choiceID {
+        case .depositToHouseFund, .topUpHouseReserve:
+            return true
+        default:
+            return false
+        }
+    }
+
+    func applyInstantAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
+        switch choiceID {
+        case .depositToHouseFund:
+            return applyInstantHouseFundDeposit(state: &state)
+        case .topUpHouseReserve:
+            return applyInstantReserveTopUp(state: &state)
+        default:
+            return DomainYearResult()
+        }
+    }
+
+    func applyInstantHouseFundDeposit(state: inout GameState) -> DomainYearResult {
+        var result = DomainYearResult()
+        guard state.player.age >= 18, !state.assets.ownsHome else {
+            result.notes.append(DomainNote(title: "House Fund", text: "You are not in a buying lane right now.", tags: [.finance, .housing]))
+            return result
+        }
+
+        let snapshot = AssetDomainSnapshot(
+            world: WorldCache(),
+            player: state.player,
+            military: state.military,
+            career: state.career,
+            finance: state.finance,
+            assets: state.assets,
+            housing: state.housing
+        )
+        let targetValue = recommendedHomeValue(for: snapshot, finance: state.finance)
+        state.assets.homeownershipTrackActive = true
+        state.assets.targetHomeValue = targetValue
+
+        let availableCash = max(0, state.finance.cashOnHand - minimumLiquidReserve)
+        let amount = min(max(500, availableCash / 4), 2_500)
+        guard amount >= 500 else {
+            result.notes.append(DomainNote(title: "House Fund", text: "You wanted to move money toward a home, but your cash floor is too thin to do it safely.", tags: [.finance, .housing]))
+            return result
+        }
+
+        state.finance.cashOnHand -= amount
+        state.finance.homeDownPaymentSavings += amount
+        state.housing.housingStability = (state.housing.housingStability + 1).clamped(to: 0...100)
+        syncHomeWealth(finance: &state.finance, assets: state.assets)
+        result.notes.append(
+            DomainNote(
+                title: "House Fund",
+                text: "You moved $\(amount) into the house fund. Ownership feels \(state.finance.homeDownPaymentSavings >= downPaymentNeeded(for: targetValue, isVeteran: state.military.isVeteran) ? "within reach" : "closer").",
+                tags: [.finance, .housing]
+            )
+        )
+        return result
+    }
+
+    func applyInstantReserveTopUp(state: inout GameState) -> DomainYearResult {
+        var result = DomainYearResult()
+        guard state.assets.ownsHome, var home = state.assets.primaryResidence else {
+            result.notes.append(DomainNote(title: "House Reserve", text: "There is no owned home to fortify yet.", tags: [.finance, .housing]))
+            return result
+        }
+
+        let availableCash = max(0, state.finance.cashOnHand - minimumLiquidReserve / 2)
+        let amount = min(max(750, availableCash / 5), 2_000)
+        guard amount >= 750 else {
+            result.notes.append(DomainNote(title: "House Reserve", text: "You tried to build repair cushion, but liquid cash was too thin.", tags: [.finance, .housing]))
+            return result
+        }
+
+        state.finance.cashOnHand -= amount
+        home.maintenanceReserve += amount
+        home.normalize()
+        state.assets.primaryResidence = home
+        syncHomeWealth(finance: &state.finance, assets: state.assets)
+        result.notes.append(
+            DomainNote(
+                title: "House Reserve",
+                text: "You added $\(amount) to the repair reserve. The house has more slack before the next surprise bill.",
+                tags: [.finance, .housing]
+            )
+        )
+        return result
+    }
+
+    func downPaymentNeeded(for targetValue: Int, isVeteran: Bool) -> Int {
+        let down = isVeteran ? 0 : (targetValue * downPaymentRatePercent / 100)
+        let closing = targetValue * closingCostRatePercent / 100
+        return down + closing
+    }
+
+    func projectedInstantDepositAmount(cashOnHand: Int) -> Int {
+        let availableCash = max(0, cashOnHand - minimumLiquidReserve)
+        return min(max(500, availableCash / 4), 2_500)
+    }
+
+    func projectedInstantReserveAmount(cashOnHand: Int) -> Int {
+        let availableCash = max(0, cashOnHand - minimumLiquidReserve / 2)
+        return min(max(750, availableCash / 5), 2_000)
     }
 
     func advanceYear(
@@ -1304,7 +2171,7 @@ struct HomeOwnershipSystem {
         home.remainingMortgageYears = max(0, home.remainingMortgageYears - (principalPaid > 0 ? 1 : 0))
         finance.lastYearMortgagePrincipalPaid = principalPaid
 
-        let valueRate = homeValueRate(for: finance.currentRegionPolicyID, traits: input.player.traits, currentStatus: home.status, upgrades: home.upgrades)
+        let valueRate = homeValueRate(for: finance.currentRegionPolicyID, traits: input.player.traits, currentStatus: home.status, upgrades: home.upgrades) // worldEra default used (AssetDomainSnapshot does not directly expose it)
         let valueDelta = Int((Double(home.homeValue) * Double(valueRate) / 100.0).rounded())
         home.homeValue = max(90_000, home.homeValue + valueDelta)
         finance.lastYearHomeValueDelta = valueDelta
@@ -1369,8 +2236,10 @@ struct HomeOwnershipSystem {
         assets.homeownershipTrackActive = true
         assets.targetHomeValue = targetValue
 
-        guard input.career.status == .fullTime,
-              input.career.yearsWorked >= balanceProfile.homeownership.minimumYearsWorked,
+        let isVeteran = input.military.isVeteran
+        
+        guard input.career.status == .fullTime || (isVeteran && input.career.status != .unemployed),
+              input.career.yearsWorked >= balanceProfile.homeownership.minimumYearsWorked || isVeteran,
               finance.lastYearBalanceDelta >= balanceProfile.homeownership.minimumPositiveBalanceDelta,
               finance.debtPressureBand != .heavy,
               finance.debtPressureBand != .crushing,
@@ -1378,10 +2247,10 @@ struct HomeOwnershipSystem {
             return [DomainNote(title: "Home Search", text: "You were not stable enough yet to carry ownership without it becoming immediate danger.", tags: [.finance, .housing])]
         }
 
-        let downPayment = targetValue * downPaymentRatePercent / 100
+        let downPayment = isVeteran ? 0 : (targetValue * downPaymentRatePercent / 100)
         let closingCost = targetValue * closingCostRatePercent / 100
         let upfrontTotal = downPayment + closingCost
-        guard finance.homeDownPaymentSavings + finance.cashOnHand - upfrontTotal >= minimumLiquidReserve else {
+        guard finance.homeDownPaymentSavings + finance.cashOnHand - upfrontTotal >= (isVeteran ? minimumLiquidReserve / 2 : minimumLiquidReserve) else {
             return [DomainNote(title: "Home Search", text: "You found a starter-home lane, but the down payment, closing costs, and reserve floor still did not line up together.", tags: [.finance, .housing])]
         }
 
@@ -1395,7 +2264,7 @@ struct HomeOwnershipSystem {
             homeValue: targetValue,
             mortgagePrincipal: mortgagePrincipal,
             monthlyMortgageCost: monthlyMortgagePayment(principal: mortgagePrincipal, ratePercent: mortgageRate, years: 30),
-            mortgageRatePercent: mortgageRate,
+            mortgageRatePercent: isVeteran ? mortgageRate - 1 : mortgageRate, // Slightly better rate for VA
             remainingMortgageYears: 30,
             equity: downPayment,
             downPaymentPaid: downPayment,
@@ -1408,10 +2277,12 @@ struct HomeOwnershipSystem {
         housing.hasRoommate = false
         housing.housingCostBand = 20
         housing.housingStability = max(housing.housingStability, 78)
-        return [DomainNote(title: "Bought A Home", text: "You bought a starter home. The stability signal is real, and so is the debt now sitting underneath the rest of your life.", tags: [.finance, .housing, .assets])]
+        
+        let noteText = isVeteran ? "You bought a starter home using a VA loan with 0% down. Your veteran status paved the way to ownership." : "You bought a starter home. The stability signal is real, and so is the debt now sitting underneath the rest of your life."
+        return [DomainNote(title: "Bought A Home", text: noteText, tags: [.finance, .housing, .assets])]
     }
 
-    private func sellPrimaryHome(home: PrimaryResidenceState, finance: inout FinanceState, assets: inout AssetState, housing: inout HousingState, distressSale: Bool) -> [DomainNote] {
+    func sellPrimaryHome(home: PrimaryResidenceState, finance: inout FinanceState, assets: inout AssetState, housing: inout HousingState, distressSale: Bool) -> [DomainNote] {
         let feeRate = distressSale ? saleFeeRatePercent + 10 : saleFeeRatePercent
         let grossAfterFees = home.homeValue * (100 - feeRate) / 100
         let recoveredEquity = max(0, grossAfterFees - home.mortgagePrincipal)
@@ -1470,7 +2341,7 @@ struct HomeOwnershipSystem {
         return Int(payment.rounded())
     }
 
-    private func homeValueRate(for policyID: String?, traits: [PersonalityTrait], currentStatus: PrimaryResidenceStatus, upgrades: [HouseUpgrade]) -> Int {
+    private func homeValueRate(for policyID: String?, traits: [PersonalityTrait], currentStatus: PrimaryResidenceStatus, upgrades: [HouseUpgrade], worldEra: WorldEra = .stable) -> Int {
         var rate = 2 + yearlyValueRoll(-4...5)
         if traits.contains(.lucky) { rate += 1 }
         if currentStatus == .delinquent { rate -= 1 }
@@ -1488,7 +2359,28 @@ struct HomeOwnershipSystem {
         default:
             break
         }
-        return rate.clamped(to: -5...8)
+
+        // Assets3: Strong WorldEra reactivity on luxury/real estate assets
+        switch worldEra {
+        case .recession:
+            rate -= 6  // Luxury homes suffer hard in downturns
+        case .highInflation:
+            rate -= 3
+            if upgrades.count > 2 { rate -= 2 } // High-end homes hit harder by inflation on maintenance
+        case .bullMarket, .techBoom:
+            rate += 5  // Luxury real estate booms
+            if upgrades.count > 1 { rate += 2 }
+        case .pandemic, .wartime:
+            rate -= 2
+        default:
+            break
+        }
+
+        return rate.clamped(to: -12...14)
+    }
+
+    func recommendedHomeValuePublic(for input: AssetDomainSnapshot, finance: FinanceState) -> Int {
+        recommendedHomeValue(for: input, finance: finance)
     }
 
     private func repairCostForYear(home: PrimaryResidenceState, financialStress: Int) -> Int {

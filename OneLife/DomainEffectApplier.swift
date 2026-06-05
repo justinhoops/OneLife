@@ -8,6 +8,7 @@ struct DomainEffectApplier {
         educationSystem: EducationSystem,
         careerSystem: CareerSystem,
         specialCareerSystem: SpecialCareerSystem,
+        militarySystem: MilitarySystem,
         crimeSystem: CrimeSystem,
         financeSystem: FinanceSystem,
         relationshipSystem: RelationshipSystem,
@@ -31,6 +32,8 @@ struct DomainEffectApplier {
         if let specialCareerEffects = result.specialCareerEffects {
             if let track = specialCareerEffects.setTrack {
                 state.specialCareer.track = track
+                // Dossier integration: event-granted special careers still get childhood-biased starting state
+                SpecialCareerSystem.biasSeedingForTrack(track, into: &state.specialCareer, dossier: state.childhoodDossier)
             }
             if let tier = specialCareerEffects.tier {
                 state.specialCareer.tier = tier
@@ -60,6 +63,48 @@ struct DomainEffectApplier {
                 state.specialCareer = SpecialCareerState()
             }
             state.specialCareer.clamp()
+        }
+
+        // Fame Web F1
+        if let fameEffects = result.fameEffects {
+            if let cf = fameEffects.culturalFame {
+                state.fame.culturalFame = (state.fame.culturalFame + cf).clamped(to: 0...100)
+            }
+            if let noto = fameEffects.notoriety {
+                state.fame.notoriety = (state.fame.notoriety + noto).clamped(to: 0...100)
+            }
+            if let tag = fameEffects.addKnownFor, !tag.isEmpty, !state.fame.knownFor.contains(tag) {
+                state.fame.knownFor.append(tag)
+            }
+            state.fame.clamp()
+        }
+
+        if let militaryEffects = result.militaryEffects {
+            if let fitness = militaryEffects.fitness {
+                state.military.fitness += fitness
+            }
+            if let discipline = militaryEffects.discipline {
+                state.military.discipline += discipline
+            }
+            if let heat = militaryEffects.heat {
+                state.military.heat += heat
+            }
+            if let rankLevel = militaryEffects.rankLevel {
+                state.military.rankLevel = rankLevel
+            }
+            if let contractYearsRemaining = militaryEffects.contractYearsRemaining {
+                state.military.contractYearsRemaining = contractYearsRemaining
+            }
+            if let setDeploymentStatus = militaryEffects.setDeploymentStatus {
+                state.military.deploymentStatus = setDeploymentStatus
+            }
+            if let isAWOL = militaryEffects.isAWOL {
+                state.military.isAWOL = isAWOL
+            }
+            if let addMedal = militaryEffects.addMedal {
+                state.military.medals.append(addMedal)
+            }
+            state.military.clamp()
         }
 
         if let crimeEffects = result.crimeEffects {

@@ -1,0 +1,152 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Start a New Life",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "You're 14. This is where it starts.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 75
+        }
+      },
+      {
+        "comment": "",
+        "key": "BEGIN LIFE",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 104
+        }
+      },
+      {
+        "comment": "",
+        "key": "NEXT STEP",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 123
+        }
+      },
+      {
+        "comment": "",
+        "key": "Go Back",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": "Identity",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 163
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter a name...",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 165
+        }
+      },
+      {
+        "comment": "",
+        "key": "Starting Background",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 192
+        }
+      },
+      {
+        "comment": "",
+        "key": "Randomize Details",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 270
+        }
+      },
+      {
+        "comment": "",
+        "key": "Economic Region",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 237
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stat Bias",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 258
+        }
+      },
+      {
+        "comment": "",
+        "key": "Starting Trait",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 282
+        }
+      },
+      {
+        "comment": "",
+        "key": "Surprise Me",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 289
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 328
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age 14",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 358
+        }
+      },
+      {
+        "comment": "",
+        "key": "You can always start another life with a different feel. Every run is a fresh story.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 448
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Feel",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 405
+        }
+      },
+      {
+        "comment": "",
+        "key": "How much bite do you want in this life?",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 407
+        }
+      }
+    ]
+  },
+  "version": 1
+}

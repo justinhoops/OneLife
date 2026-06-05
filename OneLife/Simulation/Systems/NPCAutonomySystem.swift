@@ -4,8 +4,9 @@ struct NPCAutonomySystem {
     func advanceYear(state: inout GameState) -> [GameEvent] {
         var generatedEvents: [GameEvent] = []
         
-        // 1. Process Romantic Partner
-        if var partner = state.relationships.romanticPartner {
+        // 1. Process Romantic Partners
+        for i in 0..<state.relationships.romanticPartners.count {
+            var partner = state.relationships.romanticPartners[i]
             if shouldProcessAutonomy(for: partner, currentAge: state.player.age) {
                 let events = processAutonomy(for: &partner, type: .romantic, player: state.player, state: state)
                 generatedEvents.append(contentsOf: events)
@@ -13,7 +14,7 @@ struct NPCAutonomySystem {
                     state.consequences.narrativeFlags["npc_autonomy_pulse", default: 0] = 1
                 }
             }
-            state.relationships.romanticPartner = partner
+            state.relationships.romanticPartners[i] = partner
         }
         
         // 2. Process Friends (Only those scheduled for this year)
@@ -30,12 +31,68 @@ struct NPCAutonomySystem {
         // 3. System Interventions (Cross-Domain)
         if let intervention = checkForInterventions(state: state) {
             generatedEvents.append(intervention)
+            state.correlationLedger.publish(CorrelationSignal(kind: .npcAutonomyPulse, domain: "relationships", strength: 14, age: state.player.age))
+        }
+
+        // D4: stance-reactive NPC autonomy (if last focus was protectHealth, softer interventions; drift -> more resentment spikes)
+        if let stance = state.yearlyStance.lastCompletedStance {
+            if stance == .protectHealth {
+                // bias toward supportive rather than confrontational
+                for i in 0..<state.relationships.romanticPartners.count {
+                    var p = state.relationships.romanticPartners[i]
+                    if p.hiddenResentment > 20 { p.hiddenResentment = max(0, p.hiddenResentment - 3) }
+                    state.relationships.romanticPartners[i] = p
+                }
+            } else if stance == .letYearDrift {
+                for i in 0..<state.relationships.friends.count {
+                    if Int.random(in: 0...100) < 30 {
+                        state.relationships.friends[i].hiddenResentment = min(100, state.relationships.friends[i].hiddenResentment + 4)
+                    }
+                }
+            }
+        }
+
+        // Engine3: Make NPCs reactive to recent intense instant activity (low-overhead)
+        let recentHeat = state.correlationLedger.recentActivityLevel
+        if recentHeat >= 55 {
+            // High recent instant/autonomous churn → seed relationship tension or interventions
+            state.correlationLedger.publish(CorrelationSignal(kind: .npcAutonomyPulse, domain: "relationships", strength: 8, age: state.player.age))
+            for i in 0..<state.relationships.romanticPartners.count {
+                var partner = state.relationships.romanticPartners[i]
+                if partner.bond < 60 && partner.status == .active {
+                    partner.hiddenResentment = min(100, partner.hiddenResentment + (recentHeat / 8))
+                    state.relationships.romanticPartners[i] = partner
+                }
+            }
+            // Occasionally force an earlier autonomy check for friends
+            for i in 0..<state.relationships.friends.count {
+                if Int.random(in: 0...100) < 25 {
+                    state.relationships.friends[i].nextAutonomyYear = min(
+                        state.relationships.friends[i].nextAutonomyYear ?? state.player.age + 1,
+                        state.player.age + 1
+                    )
+                }
+            }
         }
         
         return generatedEvents
     }
 
     private func checkForInterventions(state: GameState) -> GameEvent? {
+        let recentHeat = state.correlationLedger.recentActivityLevel
+
+        // Engine3: Recent intense instant activity makes relationship interventions more likely
+        let heatBonus = recentHeat / 10   // 0-10 extra chance/severity
+
+        // D4: stance-reactive bias on intervention weight and flavor
+        var weightBonus = heatBonus
+        var stanceFlavor = ""
+        if let stance = state.yearlyStance.lastCompletedStance {
+            if stance == .protectHealth { weightBonus -= 6 } // care focus makes partners gentler
+            if stance == .pushCareer { weightBonus += 5 }
+            if stance == .letYearDrift { weightBonus += 8; stanceFlavor = " The years of coasting made this conversation inevitable." }
+        }
+
         // Career Burnout Intervention (High Career + Low Health + Low Partner Bond)
         if state.career.performance >= 80 && state.healthProfile.mentalWellness <= 35 && state.relationships.partnerBond <= 45 && state.relationships.hasPartner {
             return GameEvent(
@@ -44,8 +101,10 @@ struct NPCAutonomySystem {
                 tags: ["health", "relationships", "career", "intervention"],
                 severity: .critical,
                 title: "Breaking Point",
-                text: "Your partner sits you down. 'I barely see you, and when I do, you're a ghost,' they say. 'This job is eating you alive. Something has to change, or I can't stay.' You realize your physical and mental health are at a critical low despite your career success.",
-                minAge: 22, maxAge: 100, weight: 20, cooldownYears: 10,
+                text: (recentHeat >= 50 
+                    ? "Your partner sits you down. 'You’ve been moving non-stop and I barely see you anymore. This pace is eating you alive.'"
+                    : "Your partner sits you down. 'I barely see you, and when I do, you're a ghost,' they say. 'This job is eating you alive. Something has to change, or I can't stay.'") + stanceFlavor,
+                minAge: 22, maxAge: 100, weight: 20 + weightBonus, cooldownYears: 10,
                 requirements: [],
                 choices: [
                     EventChoice(
@@ -68,6 +127,39 @@ struct NPCAutonomySystem {
                 ]
             )
         }
+
+        // New Engine3 intervention: "You're becoming someone I don't recognize" when heavy recent flexing + relationship
+        if recentHeat >= 60 && state.assets.lifestyleScore >= 65 && state.relationships.partnerBond < 55 && state.relationships.hasPartner {
+            return GameEvent(
+                id: "intervention_lifestyle_drift",
+                category: .relationships,
+                tags: ["relationships", "lifestyle", "intervention"],
+                severity: .critical,
+                title: "The Person You're Becoming",
+                text: "Your partner says quietly, 'Every time you show off the new thing or post about the win, I feel like I'm watching someone I used to know. Is this who we are now?'",
+                minAge: 25, maxAge: 100, weight: 15 + heatBonus,
+                cooldownYears: 8,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Slow down the flexing",
+                        effects: ChoiceEffects(
+                            relationship: RelationshipEffects(partnerChange: 18)
+                            // lifestyleScoreDelta effect removed — AssetEffects no longer supports direct delta here
+                        ),
+                        microBeat: "Choosing the relationship over the performance."
+                    ),
+                    EventChoice(
+                        text: "They just don't get it",
+                        effects: ChoiceEffects(
+                            relationship: RelationshipEffects(partnerChange: -25)
+                        ),
+                        microBeat: "The gap widens."
+                    )
+                ]
+            )
+        }
+
         return nil
     }
     
@@ -153,19 +245,9 @@ struct NPCAutonomySystem {
     }
 
     private func applyCorrelationImpressions(to npc: inout Relationship, state: GameState) {
-        let impressions = state.correlationLedger.npcImpressions[npc.id.uuidString, default: [:]]
-        let reachable = impressions["reachable", default: 0] + impressions["available", default: 0]
-        let unavailable = impressions["absent", default: 0] + impressions["overworked", default: 0]
-
-        if reachable > 0 {
-            npc.hiddenNeedLevel = max(0, npc.hiddenNeedLevel - min(10, reachable * 2))
-            npc.hiddenResentment = max(0, npc.hiddenResentment - min(10, reachable * 2))
-        }
-
-        if unavailable > 0 {
-            npc.hiddenNeedLevel = min(100, npc.hiddenNeedLevel + min(12, unavailable * 2))
-            npc.hiddenResentment = min(100, npc.hiddenResentment + min(12, unavailable * 2))
-        }
+        // Temporarily disabled: old .npcImpressions API was on legacy CorrelationLedger.
+        // SystemCorrelationLedger (Engine1+) uses a much smaller signal set. Feature can be re-mapped later.
+        _ = state.correlationLedger.recentActivityLevel   // touch to avoid unused warning
     }
     
     private func assignGoal(for npc: Relationship) -> String {
@@ -434,4 +516,92 @@ struct NPCAutonomySystem {
              ]
          )
      }
+
+    // MARK: - Frictionless Instant Reaction (the missing bridge)
+
+    /// Lightweight, synchronous reaction when the player takes a social instant/quick action.
+    /// This makes "Reach Out", "Repair Tension", etc. feel like the autonomous world
+    /// responded *right now*, instead of only on the next Age Up.
+    ///
+    /// Returns DomainNotes that can be surfaced immediately in the activity pulse / history.
+    mutating func reactToPlayerSocialAction(
+        _ choiceID: ActionChoiceID,
+        state: inout GameState
+    ) -> [DomainNote] {
+        var notes: [DomainNote] = []
+
+        // Only react on high-signal social actions
+        guard [.reachOut, .repairTension, .findYourCrowd, .protectYourEnergy].contains(choiceID) else {
+            return notes
+        }
+
+        let isRepair = choiceID == .repairTension
+
+        // Pick the most relevant contact (partner > best friend)
+        var target: Relationship?
+        var isPartner = false
+
+        if state.relationships.hasPartner, let index = state.relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+            target = state.relationships.romanticPartners[index]
+            isPartner = true
+        } else if !state.relationships.friends.isEmpty {
+            // Pick strongest bond friend for the "they noticed" feel
+            if let idx = state.relationships.friends.indices.max(by: {
+                state.relationships.friends[$0].bond < state.relationships.friends[$1].bond
+            }) {
+                target = state.relationships.friends[idx]
+            }
+        }
+
+        guard var contact = target else { return notes }
+
+        // Compute a small immediate autonomous "they responded" shift
+        let baseShift = isRepair ? 8 : 5
+        let moodBonus = max(0, (state.healthProfile.mentalWellness - 40) / 10) // Player mood affects reception
+        let shift = baseShift + moodBonus
+
+        if isPartner {
+            contact.bond = (contact.bond + shift).clamped(to: 0...100)
+            if let index = state.relationships.romanticPartners.firstIndex(where: { !$0.isSecret }) {
+                state.relationships.romanticPartners[index] = contact
+            }
+
+            notes.append(
+                DomainNote(
+                    title: "\(contact.name) Responded",
+                    text: isRepair
+                        ? "The conversation landed. They feel a little more seen."
+                        : "They appreciated you reaching out. The thread between you tightened.",
+                    tags: [.relationships, .progress]
+                )
+            )
+        } else {
+            // Update the friend in place
+            if let idx = state.relationships.friends.firstIndex(where: { $0.id == contact.id }) {
+                state.relationships.friends[idx].bond = (state.relationships.friends[idx].bond + shift).clamped(to: 0...100)
+
+                notes.append(
+                    DomainNote(
+                        title: "\(contact.name) Texted Back",
+                        text: "Your gesture registered. They seem warmer than they have in a while.",
+                        tags: [.relationships]
+                    )
+                )
+            }
+        }
+
+        // Small chance of a secondary autonomous ripple (very lightweight)
+        if Int.random(in: 0...100) > 75 {
+            state.consequences.narrativeFlags["recent_social_nudge", default: 0] = state.player.age
+            notes.append(
+                DomainNote(
+                    title: "Word Spread",
+                    text: "Someone else noticed you making the effort. Small social capital gained.",
+                    tags: [.relationships, .progress]
+                )
+            )
+        }
+
+        return notes
+    }
 }

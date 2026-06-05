@@ -1,0 +1,30 @@
+{
+  "/Users/justinjeffery/Developer/OneLife/OneLife/CharacterCreationView.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/CharacterCreationView.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/ContentView.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/ContentView.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/DomainActionRegistry.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainActionRegistry.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainActionRegistry.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainActionRegistry.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainActionRegistry.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/DomainActionRegistry.swiftdeps"
+  },
+  "/Users/justinjeffery/Developer/OneLife/OneLife/LifeConsoleView.swift" : {
+    "const-values" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.swiftconstvalues",
+    "dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.d",
+    "diagnostics" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.dia",
+    "object" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.o",
+    "swift-dependencies" : "/Users/justinjeffery/Developer/OneLife/tmp/DerivedDataCoachMovieBuild/Build/Intermediates.noindex/OneLife.build/Debug-iphonesimulator/OneLife.build/Objects-normal/arm64/LifeConsoleView.swiftdeps"
+  }
+}

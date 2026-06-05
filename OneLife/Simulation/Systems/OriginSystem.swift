@@ -79,8 +79,9 @@ struct OriginSystem {
     private let traitSystem = TraitSystem()
     private let friendNames = ["Maya", "Jordan", "Riley", "Sam", "Taylor", "Casey", "Quinn", "Avery", "Parker", "Skyler"]
 
-    func makePreview(mode: StartMode, templateID: OriginTemplateID?, narrativeArcSystem: NarrativeArcSystem = NarrativeArcSystem(), meta: MetaState) -> GameState {
+    func makePreview(mode: StartMode, templateID: OriginTemplateID?, narrativeArcSystem: NarrativeArcSystem = NarrativeArcSystem(), meta: MetaState, resilience: LifeResilience = .resilient) -> GameState {
         var state = GameState()
+        state.resilience = resilience
         let usesDeterministicTemplateSeed = mode == .template && templateID != nil
         let resolvedTemplate = resolvedTemplateID(for: mode, templateID: templateID)
         let childhoodInfluences = makeChildhoodInfluences(for: resolvedTemplate, deterministic: usesDeterministicTemplateSeed)
@@ -100,11 +101,22 @@ struct OriginSystem {
         state.career.status = .student
         state.career.roleID = nil
         state.originProfile = profile
+        state.syncResilienceToPlayer()
         state.openingSummary = openingSummary(for: profile, childhoodInfluences: childhoodInfluences)
         state.startupState = .choosingOrigin
         state.player.traits = usesDeterministicTemplateSeed
             ? deterministicInitialTraits(preferredTraits: profile.starterTraitBias)
             : traitSystem.generateInitialTraits(preferredTraits: profile.starterTraitBias)
+
+        // Wire dossier generation here so the live "Your Character at 14" preview (and final state)
+        // carries real CareerAptitude DNA + narrative hints. This is what makes childhood origin
+        // mechanically matter for special career qualification, starting power, and "Echoes of What Could Be".
+        let dossierEngine = ChildhoodGenerationEngine()
+        state.childhoodDossier = dossierEngine.generate(
+            templateID: resolvedTemplate,
+            traits: state.player.traits,
+            deterministic: usesDeterministicTemplateSeed
+        )
 
         state.player.clampStats()
         state.education.clamp()
@@ -112,6 +124,17 @@ struct OriginSystem {
         state.housing.clamp()
         narrativeArcSystem.populatePreviewArcs(for: &state)
         return state
+    }
+
+    /// Re-generates the dossier for a preview state after a trait override (or other late tweak to traits/template).
+    /// Keeps the live creation preview's "Starting Shape" and future-path hints in sync with player choices.
+    func regenerateDossier(for state: inout GameState, templateID: OriginTemplateID, deterministic: Bool) {
+        let dossierEngine = ChildhoodGenerationEngine()
+        state.childhoodDossier = dossierEngine.generate(
+            templateID: templateID,
+            traits: state.player.traits,
+            deterministic: deterministic
+        )
     }
 
     private func resolvedTemplateID(for mode: StartMode, templateID: OriginTemplateID?) -> OriginTemplateID {
@@ -351,6 +374,32 @@ struct OriginSystem {
             state.player.smarts += 5
             state.education.schoolStanding += 5
         }
+
+        // P4: D4 life-shape + stance + focus scar meta progression (stronger effects on next-life start)
+        if meta.generationFlags.contains("drifted_through_life") || meta.generationFlags.contains("left_loose_ends") {
+            state.player.happiness += 4
+            state.healthProfile.mentalWellness += 6
+            state.education.credentialStrength = max(15, state.education.credentialStrength - 12)
+            state.career.performance = max(20, state.career.performance - 5)
+        }
+        if meta.generationFlags.contains("lived_driven") || meta.generationFlags.contains("passed_on_the_drive") {
+            state.player.smarts += 4
+            state.career.performance += 10
+            state.correlationLedger.publish(CorrelationSignal(kind: .focusStance, domain: "career", strength: 30, age: 14))
+            state.education.credentialStrength = min(100, state.education.credentialStrength + 8)
+        }
+        if meta.generationFlags.contains("modeled_steady_care") {
+            state.healthProfile.mentalWellness += 8
+            state.relationships.socialCapital += 15
+        }
+        if meta.generationFlags.contains("stuck_in_a_rut_once") || meta.generationFlags.contains("scars_from_the_fast_lane") {
+            state.healthProfile.mentalWellness = max(20, state.healthProfile.mentalWellness - 8)
+            state.career.burnout += 10
+        }
+        if meta.generationFlags.contains("scars_of_the_strong") {
+            state.player.smarts += 3
+            state.correlationLedger.publish(CorrelationSignal(kind: .focusStance, domain: "health", strength: 20, age: 14))
+        }
         
         // Legacy Point Upgrades (Example)
         if meta.legacyPoints > 0 {
@@ -359,6 +408,17 @@ struct OriginSystem {
         }
         
         state.player.clampStats()
+
+        // P4: replay hooks - starting notes based on previous D4 shapes/scars so "one more life" feels different immediately
+        if meta.generationFlags.contains("drifted_through_life") || meta.generationFlags.contains("left_loose_ends") {
+            state.history.insert(HistoryEntry(age: 14, title: "Echo from Before", text: "You start this life already knowing what it feels like to let years slide. The comfort is familiar, the cost too.", tags: [.lifeEvent]), at: 0)
+        }
+        if meta.generationFlags.contains("lived_driven") || meta.generationFlags.contains("passed_on_the_drive") {
+            state.history.insert(HistoryEntry(age: 14, title: "Echo from Before", text: "Something in you already expects the next year to be a grind worth winning. The shape feels familiar.", tags: [.lifeEvent]), at: 0)
+        }
+        if meta.generationFlags.contains("scars_from_the_fast_lane") || meta.generationFlags.contains("scars_of_the_strong") {
+            state.history.insert(HistoryEntry(age: 14, title: "Echo from Before", text: "The last life left marks. You start with a little less margin and a little more hunger.", tags: [.lifeEvent]), at: 0)
+        }
     }
 
     private func applyTemplate(_ templateID: OriginTemplateID, to state: inout GameState, deterministic: Bool) {

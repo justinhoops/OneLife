@@ -302,6 +302,19 @@ struct PersistenceCoordinator {
         if copy.history.count > PerformanceBudgets.maxPersistedHistoryItems {
             copy.history = Array(copy.history.prefix(PerformanceBudgets.maxPersistedHistoryItems))
         }
+
+        // P5-2: Longevity perf — cap adult child keyStories for huge families or very long lives (keeps save/UI light without losing the last emotional beats)
+        if copy.family.children.count > 5 || copy.player.age >= 75 {
+            for i in copy.family.children.indices {
+                if !copy.family.children[i].livesAtHome, var prof = copy.family.children[i].adultProfile {
+                    if prof.keyStories.count > 4 {
+                        prof.keyStories = Array(prof.keyStories.suffix(4))
+                    }
+                    copy.family.children[i].adultProfile = prof
+                }
+            }
+        }
+
         // Align with FinanceState decoding, which normalizes balances (including peak wealth) after load.
         copy.finance.normalizeInvestmentBalances()
         return copy

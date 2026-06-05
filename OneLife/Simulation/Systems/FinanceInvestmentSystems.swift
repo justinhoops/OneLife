@@ -410,6 +410,7 @@ struct FinanceSystem {
             finance.stockPortfolioBalance = 0
             finance.investedBalance = 0
             finance.costBasis = 0
+            finance.portfolio = InvestmentPortfolio() // Wipe active portfolio too
             finance.cashOnHand = max(0, finance.cashOnHand - 500)
             finance.financialStress = (finance.financialStress + 10).clamped(to: 0...100)
             finance.debtDelinquencyRisk = 72
@@ -423,12 +424,186 @@ struct FinanceSystem {
                     tags: [.finance]
                 )
             )
+            
+        case .buyStocks, .buyIndex:
+            InvestmentSystem().applyAction(.buyStocks, finance: &finance, player: player, result: &result)
+        // D2 collector statics - base cash/lifestyle hit, flavor from reactTo
+        case .curateCollection, .hostSignatureEvent, .maintainAsset:
+            finance.cashOnHand = max(0, finance.cashOnHand - 400)
+            finance.financialStress = (finance.financialStress + 1).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Asset Focus", text: "You invested time and cash into the things that signal who you are.", tags: [.finance, .assets]))
+        case .sellStocks, .sellPosition:
+            InvestmentSystem().applyAction(.sellStocks, finance: &finance, player: player, result: &result)
+        case .buyCrypto:
+            InvestmentSystem().applyAction(.buyCrypto, finance: &finance, player: player, result: &result)
+        case .sellCrypto:
+            InvestmentSystem().applyAction(.sellCrypto, finance: &finance, player: player, result: &result)
+        case .buyRentalProperty:
+            InvestmentSystem().applyAction(.buyRentalProperty, finance: &finance, player: player, result: &result)
+        case .sellRentalProperty:
+            InvestmentSystem().applyAction(.sellRentalProperty, finance: &finance, player: player, result: &result)
+        case .manageRentals:
+            InvestmentSystem().applyAction(.manageRentals, finance: &finance, player: player, result: &result)
+        case .checkPortfolio, .rebalancePortfolio, .researchTip:
+            break
+            
         default:
             return result
         }
 
         refreshDebtState(for: &finance)
         return result
+    }
+
+    // MARK: - Frictionless Instant Reaction (Finance Autonomy)
+
+    /// Lightweight synchronous reaction for finance instant actions.
+    /// Debt actions, hustles, and relief spending now feel like they ripple into the broader financial world immediately.
+    mutating func reactToPlayerFinanceAction(
+        _ choiceID: ActionChoiceID,
+        state: inout GameState
+    ) -> [DomainNote] {
+        var notes: [DomainNote] = []
+
+        switch choiceID {
+        case .minimumPayments, .payDownDebt, .consolidateDebt:
+            // Creditor / system notices responsible behavior
+            let stressDrop = min(3, state.finance.financialStress / 20)
+            state.finance.financialStress = (state.finance.financialStress - stressDrop).clamped(to: 0...100)
+
+            notes.append(
+                DomainNote(
+                    title: "Financial System Noticed",
+                    text: "Making the payment registered with whoever holds the paper. A tiny bit of pressure lifted.",
+                    tags: [.finance, .progress]
+                )
+            )
+
+        case .smallHustle, .cutSpending:
+            if state.finance.financialStress >= 55 {
+                notes.append(
+                    DomainNote(
+                        title: "Resourcefulness Echo",
+                        text: "Your hustle or discipline sent a small signal. Future money events may land a hair softer.",
+                        tags: [.finance]
+                    )
+                )
+            }
+
+        case .spendForRelief, .spendToCope:
+            // Small chance of short-term relief having an autonomy downside (feels real)
+            if Int.random(in: 0...100) > 70 {
+                notes.append(
+                    DomainNote(
+                        title: "Relief Aftermath",
+                        text: "The spending helped in the moment, but something in the background feels a little more fragile now.",
+                        tags: [.finance, .health]
+                    )
+                )
+            }
+
+        // Econ4: Rich era + path aware economic instant reactions
+        case .panicSell:
+            if state.currentEra == .recession || state.currentEra == .highInflation {
+                notes.append(DomainNote(title: "Forced Liquidation", text: "You sold at the worst possible moment. The relief is real but the scar will show up in next year's numbers.", tags: [.finance, .risk]))
+                state.finance.financialStress = max(0, state.finance.financialStress - 8)
+            } else {
+                notes.append(DomainNote(title: "Early Exit", text: "You locked in what you could. It wasn't elegant, but it was yours.", tags: [.finance]))
+            }
+
+        case .aggressiveSideHustle:
+            notes.append(DomainNote(title: "Hustle Tax", text: "The extra money came from somewhere. Your body and calendar both noticed.", tags: [.finance, .health]))
+            state.player.health = max(20, state.player.health - 3)
+
+        case .bigLifestylePurchase:
+            if state.currentEra == .bullMarket || state.currentEra == .techBoom {
+                notes.append(DomainNote(title: "Victory Lap", text: "The purchase felt like proof the good times were permanent. The world treated you differently for a week.", tags: [.finance, .relationships]))
+            } else {
+                notes.append(DomainNote(title: "Expensive Comfort", text: "It bought a feeling that didn't last as long as the bill.", tags: [.finance, .health]))
+            }
+
+        case .rideTheWave:
+            if state.currentEra == .bullMarket || state.currentEra == .techBoom {
+                notes.append(DomainNote(title: "Wave Rider", text: "You leaned all the way in. The momentum feels dangerous and addictive at the same time.", tags: [.finance, .career]))
+                state.specialCareer.audience = min(100, state.specialCareer.audience + 5)
+            } else {
+                notes.append(DomainNote(title: "Mis-timed Aggression", text: "The wave wasn't there. You just made yourself more visible while the tide was going out.", tags: [.finance, .risk]))
+            }
+
+        case .quietFinancialQuit:
+            notes.append(DomainNote(title: "Strategic Retreat", text: "You stopped trying to win the game everyone else is still playing. The quiet feels expensive but necessary.", tags: [.finance, .health]))
+            state.finance.financialStress = max(0, state.finance.financialStress - 6)
+
+        // Assets3 instant reactions
+        case .flexLuxuryAsset:
+            if state.currentEra == .recession || state.currentEra == .highInflation {
+                notes.append(DomainNote(title: "Tone-Deaf Flex", text: "You showed off the toys. Some people were impressed. More people were annoyed.", tags: [.social, .risk]))
+                state.specialCareer.heat = min(100, state.specialCareer.heat + 6)
+            } else {
+                notes.append(DomainNote(title: "The Flex Landed", text: "People noticed. The right rooms got a little more open.", tags: [.social]))
+                state.fame.culturalFame = min(100, state.fame.culturalFame + 3)
+            }
+
+        case .liquidateLuxury:
+            notes.append(DomainNote(title: "Lifestyle Reset", text: "You cashed out the symbols. The money feels cleaner, but the house feels a little emptier.", tags: [.finance, .progress]))
+
+        // Econ1 (Stock Market)
+        case .checkPortfolio:
+            let totalValue = state.finance.portfolio.totalValue
+            let profit = state.finance.portfolio.stocks.reduce(0) { $0 + $1.totalProfit }
+            let profitText = profit >= 0 ? "up $\(profit)" : "down $\(abs(profit))"
+            notes.append(DomainNote(title: "Portfolio Status", text: "Total Value: $\(totalValue). You are currently \(profitText) on your stock positions.", tags: [.finance]))
+
+        case .rebalancePortfolio:
+            state.finance.cashOnHand -= 250 // Rebalance fee
+            state.finance.financialStress = max(0, state.finance.financialStress - 3)
+            notes.append(DomainNote(title: "Risk Rebalanced", text: "You adjusted your weights. The peace of mind cost $\(250), but you feel more in control.", tags: [.finance]))
+
+        case .researchTip:
+            let roll = Int.random(in: 0...100)
+            if roll < 30 {
+                notes.append(DomainNote(title: "Hot Tip", text: "You found something. The Tech sector looks undervalued based on recent patents.", tags: [.finance, .career]))
+            } else {
+                notes.append(DomainNote(title: "Market Noise", text: "A lot of data, but no clear edge today. You'll have to rely on broader trends.", tags: [.finance]))
+            }
+
+        case .buyIndex, .buyStocks:
+            notes.append(DomainNote(title: "Market Pulse", text: "Order executed. You're now more exposed to the current \(state.economy.marketCycle) cycle.", tags: [.finance]))
+
+        case .sellPosition, .sellStocks:
+            notes.append(DomainNote(title: "Position Liquidated", text: "You locked in the value. The cash hit your account immediately.", tags: [.finance]))
+
+        case .upgradeCollection:
+            notes.append(DomainNote(title: "Escalation", text: "You made the toys better. Now you have to live up to them.", tags: [.finance, .social]))
+
+        case .hostAtSignatureEstate:
+            notes.append(DomainNote(title: "Power Gathering", text: "You opened the big house. The right people came. Favors were traded over good wine.", tags: [.social, .career]))
+
+        // D2: Collector loops - path/era aware, maintenance + prestige
+        case .curateCollection:
+            // Spend on maintenance, boost lifestyle/prestige, era sensitive
+            state.finance.annualLivingCost += 800
+            // lifestyleScore may be computed; use prestige or skip direct assign for now
+            if state.specialCareer.track != .inactive {
+                state.fame.culturalFame = min(100, state.fame.culturalFame + 2)
+            }
+            notes.append(DomainNote(title: "Curated", text: "You spent time and money making the collection speak for you. The right eyes notice.", tags: [.assets, .finance, .fame]))
+        case .hostSignatureEvent:
+            state.finance.annualLivingCost += 1200
+            state.relationships.publicReputation = min(100, state.relationships.publicReputation + 6)
+            if state.currentEra == .bullMarket || state.currentEra == .techBoom {
+                state.specialCareer.audience = min(100, state.specialCareer.audience + 4)
+            }
+            notes.append(DomainNote(title: "Signature Host", text: "The house did the talking. Connections were made over the view and the vintage.", tags: [.social, .assets]))
+        case .maintainAsset:
+            state.finance.cashOnHand = max(0, state.finance.cashOnHand - 600)
+            notes.append(DomainNote(title: "Maintained", text: "The toys stay sharp. Neglect would have cost more later.", tags: [.assets, .finance]))
+
+        default:
+            break
+        }
+
+        return notes
     }
 
     private func effectiveTaxRate(for grossIncome: Int, statePolicy: StateFinancePolicy?) -> Int {
@@ -988,18 +1163,12 @@ struct InvestmentSystem {
 
     func isInvestmentAction(_ choiceID: ActionChoiceID?) -> Bool {
         switch choiceID {
-        case .buildEmergencyFund, .buyIndexFund, .speculateStocks, .holdPositions, .sellToCover:
+        case .buildEmergencyFund, .buyIndexFund, .speculateStocks, .holdPositions, .sellToCover,
+             .buyStocks, .sellStocks, .buyCrypto, .sellCrypto, .buyRentalProperty, .sellRentalProperty, .manageRentals:
             return true
         default:
             return false
         }
-    }
-
-    func canAccessInvestments(input: InvestmentDomainSnapshot) -> Bool {
-        input.player.age >= 18 && (
-            input.finance.hasInvestments ||
-            input.finance.isEligibleToCompound(emergencyReserve: emergencyReserve, profile: balanceProfile)
-        )
     }
 
     func advanceYear(
@@ -1009,7 +1178,6 @@ struct InvestmentSystem {
     ) -> DomainYearResult {
         var result = DomainYearResult()
         let previousTotalWealth = finance.totalWealth
-        finance.normalizeInvestmentBalances()
         finance.lastYearInvestmentDelta = 0
 
         guard input.player.age >= 18 else {
@@ -1017,165 +1185,161 @@ struct InvestmentSystem {
             return result
         }
 
-        let availableCash = max(0, finance.cashOnHand - emergencyReserve)
-        let isStable = finance.isEligibleToCompound(emergencyReserve: emergencyReserve, profile: balanceProfile)
+        // 1. Process Planned Action (Legacy index fund logic)
         let action = isInvestmentAction(plannedAction) ? plannedAction : nil
-
-        switch action {
-        case .buyIndexFund:
-            guard isStable, availableCash >= 1_500 else {
-                result.notes.append(DomainNote(title: "Investing", text: "You looked at index investing, but your cash reserve was still too thin to commit safely.", tags: [.finance]))
-                finance.investmentRiskProfile = resolvedRiskProfile(for: finance, fallback: .defensive)
-                return result
-            }
-            let contribution = min(max(1_200, finance.lastYearBalanceDelta / 4), max(0, availableCash / 3))
+        if action == .buyIndexFund {
+            let contribution = min(max(1_200, finance.lastYearBalanceDelta / 4), max(0, (finance.cashOnHand - emergencyReserve) / 3))
             if contribution > 0 {
                 finance.cashOnHand -= contribution
                 finance.indexFundBalance += contribution
                 finance.costBasis += contribution
-                finance.investmentRiskProfile = .conservative
-                result.notes.append(DomainNote(title: "Investing", text: "You moved some surplus into index funds, trading easy cash access for slower compounding.", tags: [.finance]))
+                result.notes.append(DomainNote(title: "Investing", text: "You moved some surplus into index funds.", tags: [.finance]))
             }
-        case .speculateStocks:
-            guard finance.stabilityStreakYears >= 4, isStable, availableCash >= 5_000 else {
-                result.notes.append(DomainNote(title: "Investing", text: "You wanted to speculate, but the year never got stable enough to risk real money.", tags: [.finance]))
-                finance.investmentRiskProfile = resolvedRiskProfile(for: finance, fallback: .defensive)
-                return result
-            }
-            let contributionCap = input.player.traits.contains(.impulsive) ? availableCash / 3 : availableCash / 5
-            let contribution = min(max(1_500, finance.lastYearBalanceDelta / 5), max(0, contributionCap))
-            if contribution > 0 {
-                finance.cashOnHand -= contribution
-                finance.stockPortfolioBalance += contribution
-                finance.costBasis += contribution
-                finance.investmentRiskProfile = .speculative
-                result.notes.append(DomainNote(title: "Investing", text: "You took a stock-market swing this year. The upside is real, and so is the risk.", tags: [.finance]))
-            }
-        case .sellToCover:
-            let shortfall = max(0, emergencyReserve - finance.cashOnHand) + max(0, -finance.lastYearBalanceDelta)
-            if finance.hasInvestments {
-                let targetSale = max(1_500, shortfall)
-                let sold = sellInvestments(targetGross: targetSale, finance: &finance)
-                if sold.gross > 0 {
-                    finance.lastYearInvestmentDelta -= sold.fee
-                    finance.financialStress = (finance.financialStress + min(6, sold.fee / 250)).clamped(to: 0...100)
-                    result.notes.append(DomainNote(title: "Investing", text: "You sold part of the portfolio to rebuild cash, sacrificing some future upside to protect the floor under the year.", tags: [.finance]))
-                }
-            }
-            finance.investmentRiskProfile = resolvedRiskProfile(for: finance, fallback: .defensive)
-        case .buildEmergencyFund:
-            finance.investmentRiskProfile = .defensive
-            if finance.hasInvestments {
-                result.notes.append(DomainNote(title: "Investing", text: "You left investing alone and focused on keeping your emergency buffer solid.", tags: [.finance]))
-            }
-        case .holdPositions:
-            finance.investmentRiskProfile = resolvedRiskProfile(for: finance, fallback: .balanced)
-        default:
-            finance.investmentRiskProfile = resolvedRiskProfile(for: finance, fallback: .defensive)
         }
 
-        let indexDelta = applyReturn(ratePercent: indexReturnRate(for: input.player.traits), to: &finance.indexFundBalance)
-        let stockDelta = applyReturn(ratePercent: stockReturnRate(for: input.player.traits, plannedAction: action), to: &finance.stockPortfolioBalance)
-        finance.lastYearInvestmentDelta += indexDelta + stockDelta
-        finance.normalizeInvestmentBalances()
+        // 2. Portfolio Fluctuations (Phase 2 - Crypto & Rentals)
+        let era = input.worldEra
+        var totalDelta = 0
+        
+        // Crypto (High Volatility)
+        for i in finance.portfolio.crypto.indices {
+            let volatility = Double(indexRoll(-25...35)) / 100.0
+            let eraMod = era == .techBoom ? 0.4 : (era == .recession ? -0.3 : 0.0)
+            let priceChange = 1.0 + volatility + eraMod
+            let oldVal = finance.portfolio.crypto[i].totalValue
+            finance.portfolio.crypto[i].currentPrice *= priceChange
+            totalDelta += (finance.portfolio.crypto[i].totalValue - oldVal)
+        }
+        
+        // Rentals
+        var rentalIncome = 0
+        for i in finance.portfolio.rentals.indices {
+            let rental = finance.portfolio.rentals[i]
+            // Property value growth
+            let growth = 1.0 + (Double(indexRoll(1...5) + era.houseValueRateMod) / 100.0)
+            finance.portfolio.rentals[i].propertyValue = Int(Double(rental.propertyValue) * growth)
+            
+            // Net Income (Alreay accounts for mortgage and maintenance in the computed property)
+            rentalIncome += rental.annualNetIncome
+            
+            // Random repair shock
+            if Int.random(in: 0...100) < 15 {
+                let repair = Int.random(in: 1500...5000)
+                finance.cashOnHand -= repair
+                result.notes.append(DomainNote(title: "Rental Repair", text: "An urgent repair at \(rental.name) cost you $\(repair).", tags: [.finance, .housing]))
+            }
+        }
+        
+        if rentalIncome > 0 {
+            finance.cashOnHand += rentalIncome
+            result.notes.append(DomainNote(title: "Rental Income", text: "You collected $\(rentalIncome) in net rent from your properties.", tags: [.finance]))
+        }
+
+        // Legacy Index/Stock balances (black box)
+        let indexReturn = Double(indexReturnRate(for: input.player.traits)) / 100.0
+        let stockReturn = Double(stockReturnRate(for: input.player.traits, plannedAction: action)) / 100.0
+        
+        let indexDelta = Int(Double(finance.indexFundBalance) * indexReturn)
+        let stockDelta = Int(Double(finance.stockPortfolioBalance) * stockReturn)
+        
+        finance.indexFundBalance += indexDelta
+        finance.stockPortfolioBalance += stockDelta
+        finance.lastYearInvestmentDelta = totalDelta + indexDelta + stockDelta
 
         if finance.lastYearInvestmentDelta < 0 {
-            finance.financialStress = (finance.financialStress + min(8, abs(finance.lastYearInvestmentDelta) / 1_200)).clamped(to: 0...100)
-            if abs(finance.lastYearInvestmentDelta) >= 1_200 {
-                result.notes.append(DomainNote(title: "Market Loss", text: "Your investments took a real hit this year, reminding you that compounding cuts both ways.", tags: [.finance]))
-            }
-        } else if finance.lastYearInvestmentDelta > 0 {
-            finance.financialStress = (finance.financialStress - min(3, finance.lastYearInvestmentDelta / 2_500)).clamped(to: 0...100)
-            if finance.lastYearInvestmentDelta >= 1_200 {
-                result.notes.append(DomainNote(title: "Market Gain", text: "Your investments compounded upward this year and gave your long-term money some real traction.", tags: [.finance]))
-            }
+            finance.financialStress = (finance.financialStress + min(8, abs(finance.lastYearInvestmentDelta) / 2_000)).clamped(to: 0...100)
+        } else if finance.lastYearInvestmentDelta > 5000 {
+            result.notes.append(DomainNote(title: "Market Gain", text: "Your portfolio had a breakout year, growing by $\(finance.lastYearInvestmentDelta).", tags: [.finance]))
         }
 
-        if !finance.hasInvestments {
-            finance.investmentRiskProfile = .defensive
-        } else {
-            finance.investmentRiskProfile = resolvedRiskProfile(for: finance, fallback: finance.investmentRiskProfile)
-        }
+        finance.investmentRiskProfile = resolvedRiskProfile(for: finance, fallback: .balanced)
         finance.accumulateWealthDelta(from: previousTotalWealth)
 
         return result
     }
 
-    private func sellInvestments(targetGross: Int, finance: inout FinanceState) -> (gross: Int, fee: Int) {
-        finance.normalizeInvestmentBalances()
-        guard targetGross > 0, finance.investedBalance > 0 else { return (0, 0) }
-
-        let gross = min(targetGross, finance.investedBalance)
-        let totalBefore = finance.investedBalance
-        var indexSold = Int((Double(finance.indexFundBalance) / Double(totalBefore) * Double(gross)).rounded())
-        indexSold = min(indexSold, finance.indexFundBalance)
-        var stockSold = gross - indexSold
-        stockSold = min(stockSold, finance.stockPortfolioBalance)
-
-        if indexSold + stockSold < gross {
-            let remainder = gross - indexSold - stockSold
-            if finance.stockPortfolioBalance - stockSold >= remainder {
-                stockSold += remainder
-            } else {
-                indexSold += remainder
+    func applyAction(_ choiceID: ActionChoiceID, finance: inout FinanceState, player: Player, result: inout DomainYearResult) {
+        switch choiceID {
+        case .buyStocks:
+            let cost = 5000
+            if finance.cashOnHand >= cost {
+                finance.cashOnHand -= cost
+                let sectors = ["TECH", "ENERGY", "RETAIL", "HEALTH"]
+                let sector = sectors.randomElement() ?? "TECH"
+                let value = Double(cost)
+                finance.portfolio.stocks.append(StockHolding(tickerOrSector: sector, sharesOrValue: value, entryBasis: value, volatilityFactor: 1.5))
+                result.notes.append(DomainNote(title: "Investment", text: "You bought $\(cost) worth of \(sector). Expected volatility: High.", tags: [.finance]))
             }
+        case .buyIndex:
+            let cost = 10000
+            if finance.cashOnHand >= cost {
+                finance.cashOnHand -= cost
+                let sector = "INDEX"
+                let value = Double(cost)
+                finance.portfolio.stocks.append(StockHolding(tickerOrSector: sector, sharesOrValue: value, entryBasis: value, volatilityFactor: 0.8))
+                result.notes.append(DomainNote(title: "Index Buy", text: "You bought $\(cost) worth of a broad market index. Expected volatility: Low.", tags: [.finance]))
+            }
+        case .buyCrypto:
+            let cost = 2000
+            if finance.cashOnHand >= cost {
+                finance.cashOnHand -= cost
+                let symbol = ["BTC", "ETH", "SOL", "DOGE"].randomElement() ?? "CRYP"
+                let price = Double(Int.random(in: 1000...60000))
+                let coins = Double(cost) / price
+                finance.portfolio.crypto.append(CryptoAsset(symbol: symbol, coins: coins, averageCost: price, currentPrice: price))
+                result.notes.append(DomainNote(title: "Speculation", text: "You bought $\(cost) worth of \(symbol). Hold on tight.", tags: [.finance]))
+            }
+        case .buyRentalProperty:
+            let propertyValue = 250000
+            let downPayment = 50000
+            if finance.cashOnHand >= downPayment {
+                finance.cashOnHand -= downPayment
+                let property = RentalProperty(
+                    name: "Rental on Main St",
+                    propertyValue: propertyValue,
+                    mortgagePrincipal: propertyValue - downPayment,
+                    monthlyRent: 1800,
+                    monthlyMaintenance: 300
+                )
+                finance.portfolio.rentals.append(property)
+                result.notes.append(DomainNote(title: "Real Estate", text: "You purchased a rental property. Passive income is now flowing.", tags: [.finance, .housing]))
+            }
+        case .sellStocks, .sellPosition:
+            if let stock = finance.portfolio.stocks.popLast() {
+                let val = stock.totalValue
+                finance.cashOnHand += val
+                result.notes.append(DomainNote(title: "Divested", text: "You sold your positions in \(stock.tickerOrSector) for $\(val).", tags: [.finance]))
+            }
+        case .sellCrypto:
+            if let crypto = finance.portfolio.crypto.popLast() {
+                let val = crypto.totalValue
+                finance.cashOnHand += val
+                result.notes.append(DomainNote(title: "Divested", text: "You sold your \(crypto.symbol) for $\(val).", tags: [.finance]))
+            }
+        case .sellRentalProperty:
+            if let rental = finance.portfolio.rentals.popLast() {
+                let equity = rental.equity
+                finance.cashOnHand += equity
+                result.notes.append(DomainNote(title: "Divested", text: "You sold your rental property and recovered $\(equity) in equity.", tags: [.finance]))
+            }
+        default: break
         }
-
-        finance.indexFundBalance -= indexSold
-        finance.stockPortfolioBalance -= stockSold
-
-        let basisReduction = totalBefore > 0 ? Int((Double(finance.costBasis) * Double(gross) / Double(totalBefore)).rounded()) : 0
-        finance.costBasis = max(0, finance.costBasis - basisReduction)
-
-        let fee = gross * sellFeeRatePercent / 100
-        finance.cashOnHand += gross - fee
-        finance.normalizeInvestmentBalances()
-        return (gross, fee)
-    }
-
-    private func applyReturn(ratePercent: Int, to balance: inout Int) -> Int {
-        guard balance > 0 else { return 0 }
-        let delta = Int((Double(balance) * Double(ratePercent) / 100.0).rounded())
-        balance = max(0, balance + delta)
-        return delta
     }
 
     private func indexReturnRate(for traits: [PersonalityTrait]) -> Int {
         var rate = 4 + indexRoll(-6...7)
         if traits.contains(.lucky) { rate += 2 }
-        if traits.contains(.anxious) { rate -= 1 }
         return rate.clamped(to: -6...11)
     }
 
     private func stockReturnRate(for traits: [PersonalityTrait], plannedAction: ActionChoiceID?) -> Int {
-        var low = -24
-        var high = 20
-        if traits.contains(.lucky) {
-            low += 2
-            high += 4
-        }
-        if traits.contains(.impulsive) {
-            low -= 4
-            high += 5
-        }
-        if plannedAction == .speculateStocks {
-            low -= 3
-            high += 3
-        }
-        let rate = 3 + stockRoll(low...high)
+        let rate = 3 + stockRoll(-20...20)
         return rate.clamped(to: -30...24)
     }
 
     private func resolvedRiskProfile(for finance: FinanceState, fallback: InvestmentRiskProfile) -> InvestmentRiskProfile {
-        if finance.stockPortfolioBalance > finance.indexFundBalance && finance.stockPortfolioBalance > 0 {
-            return .speculative
-        }
-        if finance.stockPortfolioBalance > 0 && finance.indexFundBalance > 0 {
-            return .balanced
-        }
-        if finance.indexFundBalance > 0 {
-            return .conservative
-        }
-        return fallback
+        if !finance.portfolio.crypto.isEmpty { return .speculative }
+        if !finance.portfolio.stocks.isEmpty { return .balanced }
+        return .conservative
     }
 }

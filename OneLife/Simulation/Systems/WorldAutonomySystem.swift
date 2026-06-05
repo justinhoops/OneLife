@@ -32,11 +32,24 @@ struct WorldAutonomySystem {
         // 4. World Opportunities (Autonomous Popups)
         if let opportunity = generateWorldOpportunity(state: state) {
             result.events.append(opportunity)
+            // Low-overhead cross-engine signal: other engines (Silent/Continuity) can react to world movement
+            state.correlationLedger.publish(CorrelationSignal(kind: .worldAutonomyPulse, domain: "world", strength: 12, age: state.player.age))
+        }
+
+        // Engine3: Recent intense instant activity biases world opportunities
+        let recentHeat = state.correlationLedger.recentActivityLevel
+        if recentHeat >= 50 && Int.random(in: 0...100) < 18 {
+            // High recent churn → more "regret" or "second chance" style opportunities
+            if let regretOpportunity = generateRegretOpportunity(state: state) {
+                result.events.append(regretOpportunity)
+                state.correlationLedger.publish(CorrelationSignal(kind: .worldAutonomyPulse, domain: "world", strength: 18, age: state.player.age))
+            }
         }
 
         // 5. Resolve Past Bets (Correlation)
         if let betAge = state.consequences.narrativeFlags["speculative_bet"], betAge > 0, state.player.age > betAge {
             resolvePastSpeculation(state: &state, result: &result)
+            state.correlationLedger.publish(CorrelationSignal(kind: .worldAutonomyPulse, domain: "world", strength: 8, age: state.player.age))
         }
 
         // 6. Ghost Ships: Resolve Declined Opportunities (Regret System)
@@ -114,9 +127,46 @@ struct WorldAutonomySystem {
         state.consequences.narrativeFlags["speculative_bet"] = 0
     }
 
+    // Engine3: Lightweight regret/echo opportunity seeded by recent intense instant activity
+    private func generateRegretOpportunity(state: GameState) -> GameEvent? {
+        let recentHeat = state.correlationLedger.recentActivityLevel
+        if recentHeat < 45 { return nil }
+
+        return GameEvent(
+            id: "regret_echo_\(state.player.age)",
+            category: .career,
+            tags: ["opportunity", "regret", "echo"],
+            severity: .consequential,
+            title: "An Old Door Cracks Open",
+            text: "Someone from your recent aggressive period reaches out. The timing feels like the universe noticed how hard you were pushing.",
+            minAge: 25, maxAge: 100, weight: 10,
+            cooldownYears: 6,
+            requirements: [],
+            choices: [
+                EventChoice(text: "See what they want", effects: ChoiceEffects(), microBeat: "Maybe not everything is finished."),
+                EventChoice(text: "Let it go", effects: ChoiceEffects(), microBeat: "Some chapters are better left closed.")
+            ]
+        )
+    }
+
     private func generateWorldOpportunity(state: GameState) -> GameEvent? {
         let roll = Int.random(in: 0...100)
-        guard roll > 88 else { return nil }
+        var threshold: Int = 88
+
+        // D4: stance-reactive autonomy bias (highest leverage for making focus feel alive to the world)
+        if let stance = state.yearlyStance.lastCompletedStance {
+            switch stance {
+            case .stabilizeMoney:
+                threshold -= 6 // more world finance chances after money focus
+            case .letYearDrift:
+                threshold += 4 // drift makes world feel more punishing / missed chances
+            case .protectHealth:
+                threshold -= 3 // health focus slightly more "second chance" style world events
+            default:
+                break
+            }
+        }
+        guard roll > threshold else { return nil }
 
         switch state.currentEra {
         case .bullMarket, .techBoom:
@@ -126,7 +176,7 @@ struct WorldAutonomySystem {
                 tags: ["money", "chance", "world_autonomy"],
                 severity: .consequential,
                 title: "Market Euphoria",
-                text: "The markets are white-hot. Everyone is talking about a new speculative index. You have an opportunity to move a significant portion of your cash into this high-growth (but high-risk) vehicle.",
+                text: "The markets are white-hot. Everyone is talking about a new speculative index. You have an opportunity to move a significant portion of your cash into this high-growth (but high-risk) vehicle." + (state.yearlyStance.lastCompletedStance == .stabilizeMoney ? " After all that stabilizing, the itch to swing feels sharper." : ""),
                 minAge: 18, maxAge: 100, weight: 10, cooldownYears: 5,
                 requirements: [],
                 choices: [
@@ -156,7 +206,7 @@ struct WorldAutonomySystem {
                 tags: ["career", "money", "world_autonomy"],
                 severity: .consequential,
                 title: "The Side Hustle Pivot",
-                text: "With the main job market cooling, a freelance gig economy is booming for those willing to work the margins. It's a grind, but it could offset your financial stress.",
+                text: "With the main job market cooling, a freelance gig economy is booming for those willing to work the margins. It's a grind, but it could offset your financial stress." + (state.yearlyStance.lastCompletedStance == .letYearDrift ? " The years of letting things slide make this feel like a last rope." : ""),
                 minAge: 18, maxAge: 100, weight: 10, cooldownYears: 4,
                 requirements: [],
                 choices: [
@@ -219,7 +269,9 @@ struct WorldAutonomySystem {
             .bullMarket: 20,
             .recession: 20,
             .highInflation: 10,
-            .techBoom: 10
+            .techBoom: 10,
+            .wartime: 5,
+            .pandemic: 5
         ]
         
         // Prevent repeating the same era if possible
@@ -232,6 +284,10 @@ struct WorldAutonomySystem {
         } else if current == .recession {
             weights[.bullMarket]? += 30
             weights[.stable]? += 20
+            weights[.wartime]? += 10
+        } else if current == .pandemic {
+            weights[.recession]? += 40
+            weights[.highInflation]? += 10
         }
         
         let total = weights.values.reduce(0, +)
@@ -252,6 +308,8 @@ struct WorldAutonomySystem {
         case .recession: return "Economic Recession"
         case .highInflation: return "High Inflation"
         case .techBoom: return "Tech Boom"
+        case .wartime: return "Geopolitical Conflict"
+        case .pandemic: return "Global Pandemic"
         }
     }
     
@@ -262,6 +320,8 @@ struct WorldAutonomySystem {
         case .recession: return "The economy is contracting. Job security plummets, and hiring freezes. Cash is king."
         case .highInflation: return "The cost of everything is rising rapidly. Cash savings are losing value, and rent is spiking."
         case .techBoom: return "A massive innovation wave. Founder valuations skyrocket, but so does the cost of living."
+        case .wartime: return "International tensions have boiled over. The military is on high alert. Industry is pivoting to defense."
+        case .pandemic: return "A global health crisis has stalled movement. Healthcare is under pressure, and isolation is the new norm."
         }
     }
     
@@ -275,22 +335,131 @@ struct WorldAutonomySystem {
                 state.finance.investedBalance += Int(Double(state.finance.investedBalance) * 0.05)
             }
             state.finance.annualLivingCost += Int(Double(state.finance.annualLivingCost) * 0.02)
+
+            // Econ1: Bull market effects on deep special careers
+            if state.specialCareer.track == .founder {
+                state.specialCareer.audience = min(100, state.specialCareer.audience + 8)
+                state.specialCareer.founder.personalLegend = min(95, state.specialCareer.founder.personalLegend + 3)
+            }
+            if state.specialCareer.track == .contentCreator {
+                state.specialCareer.creator.audience = min(100, state.specialCareer.creator.audience + 7)
+                state.specialCareer.creator.brandDealValue = min(100, state.specialCareer.creator.brandDealValue + 6)
+            }
+            if state.specialCareer.track == .politics {
+                state.specialCareer.politics.donorBase = min(100, state.specialCareer.politics.donorBase + 5)
+                state.specialCareer.politics.approvalRating = min(100, state.specialCareer.politics.approvalRating + 3)
+            }
+            if state.specialCareer.track == .athlete {
+                state.specialCareer.fame = min(100, state.specialCareer.fame + 6)
+                state.specialCareer.athlete.personalBrand = min(100, state.specialCareer.athlete.personalBrand + 4)
+            }
+
         case .recession:
             // Job security tanks, investments bleed
             state.career.jobSecurity = max(10, state.career.jobSecurity - 10)
             if state.finance.hasInvestments {
                 state.finance.investedBalance -= Int(Double(state.finance.investedBalance) * 0.08)
             }
+
+            // Econ1: Recession hits deep special careers hard (differentiated pain)
+            if state.specialCareer.track == .founder {
+                state.specialCareer.audience = max(5, state.specialCareer.audience - 12)
+                state.specialCareer.founder.founderMentalLoad = min(95, state.specialCareer.founder.founderMentalLoad + 8)
+                state.specialCareer.founder.teamHealth = max(10, state.specialCareer.founder.teamHealth - 6)
+            }
+            if state.specialCareer.track == .contentCreator {
+                state.specialCareer.creator.audience = max(5, state.specialCareer.creator.audience - 10)
+                state.specialCareer.creator.brandDealValue = max(0, state.specialCareer.creator.brandDealValue - 12)
+                state.specialCareer.creator.burnout = min(95, state.specialCareer.creator.burnout + 7)
+            }
+            if state.specialCareer.track == .politics {
+                state.specialCareer.politics.approvalRating = max(10, state.specialCareer.politics.approvalRating - 8)
+                state.specialCareer.politics.donorBase = max(5, state.specialCareer.politics.donorBase - 10)
+                state.specialCareer.politics.scandalHeat = min(100, state.specialCareer.politics.scandalHeat + 6)
+            }
+            if state.specialCareer.track == .athlete {
+                state.specialCareer.fame = max(0, state.specialCareer.fame - 8)
+                state.specialCareer.athlete.personalBrand = max(5, state.specialCareer.athlete.personalBrand - 6)
+                state.specialCareer.athlete.fanLoyalty = max(10, state.specialCareer.athlete.fanLoyalty - 5)
+            }
+
         case .highInflation:
             // Massive living cost spikes, cash devaluation
             state.finance.annualLivingCost += Int(Double(state.finance.annualLivingCost) * 0.08)
             state.finance.financialStress += 5
+
+            // Econ1: Inflation pressure on high-burn paths
+            if state.specialCareer.track == .founder {
+                state.specialCareer.founder.founderMentalLoad = min(95, state.specialCareer.founder.founderMentalLoad + 5)
+            }
+            if state.specialCareer.track == .contentCreator {
+                state.specialCareer.creator.burnout = min(95, state.specialCareer.creator.burnout + 4)
+            }
+            if state.specialCareer.track == .politics {
+                state.specialCareer.politics.burnout = min(95, state.specialCareer.politics.burnout + 4)
+            }
+
         case .techBoom:
             // Special career (Founder) massive boost, high living costs
             if state.specialCareer.track == .founder {
                 state.specialCareer.audience += 15 // Valuation spike
+                state.specialCareer.founder.personalLegend = min(95, state.specialCareer.founder.personalLegend + 5)
             }
             state.finance.annualLivingCost += Int(Double(state.finance.annualLivingCost) * 0.05)
+
+            // Econ1: Tech boom also lifts creators and certain politicians/athletes
+            if state.specialCareer.track == .contentCreator {
+                state.specialCareer.creator.audience = min(100, state.specialCareer.creator.audience + 10)
+                state.specialCareer.creator.brandDealValue = min(100, state.specialCareer.creator.brandDealValue + 8)
+            }
+            if state.specialCareer.track == .politics {
+                state.specialCareer.politics.donorBase = min(100, state.specialCareer.politics.donorBase + 6)
+            }
+            if state.specialCareer.track == .athlete {
+                state.specialCareer.fame = min(100, state.specialCareer.fame + 7)
+                state.specialCareer.athlete.personalBrand = min(100, state.specialCareer.athlete.personalBrand + 5)
+            }
+
+        case .wartime:
+            // Military deployments are forced or spiked
+            if state.military.track != .inactive && state.military.deploymentStatus != .activeCombat {
+                let deploymentRoll = Int.random(in: 0...100)
+                if deploymentRoll < 40 {
+                    state.military.deploymentStatus = .activeCombat
+                    result.notes.append(DomainNote(title: "Drafted/Deployed", text: "Due to the global conflict, your unit has been sent directly to the front lines.", tags: [.career, .military]))
+                }
+            }
+            state.finance.annualLivingCost += Int(Double(state.finance.annualLivingCost) * 0.04)
+
+            // Econ1: Wartime boosts certain politicians and athletes (national pride)
+            if state.specialCareer.track == .politics {
+                state.specialCareer.politics.approvalRating = min(100, state.specialCareer.politics.approvalRating + 6)
+                state.specialCareer.politics.charisma = min(95, state.specialCareer.politics.charisma + 3)
+            }
+            if state.specialCareer.track == .athlete {
+                state.specialCareer.fame = min(100, state.specialCareer.fame + 5)
+            }
+
+        case .pandemic:
+            // Health risks up, mental wellness down, work from home
+            state.healthProfile.physicalWellness -= 5
+            state.healthProfile.mentalWellness -= 8
+            if state.healthProfile.physicalWellness < 40 && Int.random(in: 0...100) < 30 {
+                state.healthProfile.activeConditions.append(HealthCondition(name: "Viral Infection", severity: 45))
+                result.notes.append(DomainNote(title: "Pandemic Illness", text: "You caught the virus. The recovery will be long and expensive.", tags: [.health, .finance]))
+            }
+
+            // Econ1: Pandemic crushes creators and live-event politicians/athletes
+            if state.specialCareer.track == .contentCreator {
+                state.specialCareer.creator.audience = max(5, state.specialCareer.creator.audience - 8)
+                state.specialCareer.creator.burnout = min(95, state.specialCareer.creator.burnout + 6)
+            }
+            if state.specialCareer.track == .politics {
+                state.specialCareer.politics.approvalRating = max(10, state.specialCareer.politics.approvalRating - 5)
+            }
+            if state.specialCareer.track == .athlete {
+                state.specialCareer.athlete.fanLoyalty = max(10, state.specialCareer.athlete.fanLoyalty - 6)
+            }
         }
     }
     

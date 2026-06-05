@@ -89,25 +89,30 @@ final class DomainCacheGenerationCoordinator {
     func refreshArtifacts(for snapshot: WorldSnapshot) {
         let artifacts = builder.buildArtifacts(for: snapshot)
         queue.async {
-            for artifact in artifacts {
-                do {
-                    if let existing = try self.store.load(key: artifact.key),
-                       self.store.isValid(existing, for: artifact.key, contentHash: artifact.contentHash) {
-                        continue
-                    }
-                    try self.store.write(artifact)
-                } catch {
-                    #if DEBUG
-                    print("OneLife domain cache write failed: \(error)")
-                    #endif
-                }
-            }
+            self.persist(artifacts)
         }
     }
 
     func refreshOnIdle(for snapshot: WorldSnapshot) {
+        let artifacts = builder.buildArtifacts(for: snapshot)
         queue.asyncAfter(deadline: .now() + 0.35) {
-            self.refreshArtifacts(for: snapshot)
+            self.persist(artifacts)
+        }
+    }
+
+    private func persist(_ artifacts: [DomainCacheArtifact]) {
+        for artifact in artifacts {
+            do {
+                if let existing = try store.load(key: artifact.key),
+                   store.isValid(existing, for: artifact.key, contentHash: artifact.contentHash) {
+                    continue
+                }
+                try store.write(artifact)
+            } catch {
+                #if DEBUG
+                print("OneLife domain cache write failed: \(error)")
+                #endif
+            }
         }
     }
 }

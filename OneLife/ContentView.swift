@@ -31,6 +31,16 @@ private enum HeaderOccupationCopy {
             return ("", "briefcase.fill")
         case .entertainment:
             return ("Entertainment", "star.fill")
+        case .movieActor:
+            return ("Movie Actor", "theatermasks.fill")
+        case .musicProducer:
+            return ("Producer", "slider.horizontal.3")
+        case .movieProducer:
+            return ("Movie Producer", "film.fill")
+        case .recordLabelOwner:
+            return ("Record Label", "music.mic")
+        case .coach:
+            return ("Program Coach", "sportscourt.fill")
         case .crime:
             return ("Street Career", "flame.fill")
         case .founder:
@@ -45,6 +55,14 @@ private enum HeaderOccupationCopy {
             return ("Venture", "dollarsign.arrow.circlepath")
         case .corporateRaider:
             return ("Corporate Raider", "building.columns.fill")
+        case .contentCreator:
+            return ("Creator", "camera.fill")
+        case .politics:
+            return ("Politics", "person.3.fill")
+        case .military:
+            return ("Military", "shield.fill")
+        default:
+            return ("Career", "briefcase.fill")
         }
     }
 }
@@ -272,6 +290,15 @@ struct ActivityPulse: Equatable {
     let tone: PlannerTone
 }
 
+/// Represents a floating delta that appears when an instant action has immediate visible impact.
+/// This is core to making the frictionless system feel responsive.
+struct FloatingDelta: Identifiable, Equatable {
+    let id = UUID()
+    let text: String
+    let tone: PlannerTone
+    let domain: ActionDomain?
+}
+
 struct AgeUpRiskSignal: Identifiable, Hashable {
     let title: String
     let symbol: String
@@ -367,25 +394,28 @@ final class GameViewModel: ObservableObject {
     enum Tab: String, CaseIterable, Identifiable {
         case home, occupation, assets, relationships, history
 
+        /// Primary BitLife-style dock (journal/health live in the thumb-zone menu).
+        static let dockTabs: [Tab] = [.home, .occupation, .assets, .relationships]
+
         var id: String { rawValue }
 
         var title: String {
             switch self {
-            case .home: return "Home"
-            case .occupation: return "Occupation"
-            case .assets: return "Assets"
-            case .relationships: return "Relationships"
-            case .history: return "History"
+            case .home: return "Life"
+            case .occupation: return "Work"
+            case .assets: return "Money"
+            case .relationships: return "Social"
+            case .history: return "Journal"
             }
         }
 
         var symbol: String {
             switch self {
-            case .home: return "figure.play"
+            case .home: return "figure.stand"
             case .occupation: return "briefcase.fill"
             case .assets: return "dollarsign.circle.fill"
             case .relationships: return "heart.fill"
-            case .history: return "scroll.fill"
+            case .history: return "book.closed.fill"
             }
         }
 
@@ -423,15 +453,24 @@ final class GameViewModel: ObservableObject {
     @Published var presentedCard: InteractionCardPayload?
     @Published var microBeatOverlay: String? = nil
     @Published var actionFrictionJitter: Bool = false
+    /// Set immediately on popup button press (scrim/choice/continue). Causes processing/loading UI to appear
+    /// (via Task.yield before heavy yearly resolve/refresh/save) so the card does not appear frozen.
+    /// Mirrors the isStartingNewLife + loading pattern used for fresh game beginLifeSafely.
+    @Published var isResolvingInteraction: Bool = false
+    /// Optional context (e.g. event title) to show in the processing UI while isResolvingInteraction.
+    @Published var resolvingInteractionContext: String? = nil
     @Published var selectedTab: Tab = .home {
         didSet {
             guard oldValue != selectedTab else { return }
             if returnPrompt?.tab != selectedTab {
                 returnPrompt = nil
             }
+            showingHealthConsole = false
         }
     }
     @Published var showingSettings: Bool = false
+    /// Health console overlay (BitLife "Mind & Body" — not a main dock tab).
+    @Published var showingHealthConsole: Bool = false
     @Published var autoLifePace: AutoLifePace = .guided
     @Published private(set) var autopilotYearsAdvanced: Int = 0
     @Published var selectedStartMode: StartMode = .quickStart
@@ -443,9 +482,109 @@ final class GameViewModel: ObservableObject {
     @Published var pendingCharName: String = ""
     @Published var pendingRegionID: String = "mountain_standard"
     @Published var pendingTraitOverride: PersonalityTrait? = nil
+    @Published var selectedResilience: LifeResilience = .resilient   // Player-chosen "Life Feel" for replayability
+    /// Recent autonomous "world reactions" from instant/quick actions. Powers the live frictionless feedback strip.
+    @Published private(set) var recentInstantReactions: [String] = []
+    @Published var autonomyToasts: [AutonomyToast] = []
+
+    /// Currently visible floating deltas from instant actions (Phase 1 of UI overhaul).
+    @Published private(set) var floatingDeltas: [FloatingDelta] = []
+
+    func clearInstantReactions() {
+        recentInstantReactions = []
+    }
+
+    /// Spawns floating delta visuals for instant actions (Phase 1 frictionless feedback polish).
+    /// Now produces higher-quality, domain-aware deltas with better variety.
+    func spawnFloatingDeltas(from result: DomainYearResult, domain: ActionDomain) {
+        var newDeltas: [FloatingDelta] = []
+
+        // Core stat deltas
+        if let core = result.coreEffects {
+            if let h = core.happiness, h != 0 {
+                newDeltas.append(FloatingDelta(text: "\(h > 0 ? "+" : "")\(h) Happiness", tone: h > 0 ? .positive : .warning, domain: domain))
+            }
+            if let s = core.smarts, s != 0 {
+                newDeltas.append(FloatingDelta(text: "\(s > 0 ? "+" : "")\(s) Smarts", tone: s > 0 ? .positive : .warning, domain: domain))
+            }
+            if let l = core.looks, l != 0 {
+                newDeltas.append(FloatingDelta(text: "\(l > 0 ? "+" : "")\(l) Looks", tone: l > 0 ? .positive : .warning, domain: domain))
+            }
+            if let h = core.health, h != 0 {
+                newDeltas.append(FloatingDelta(text: "\(h > 0 ? "+" : "")\(h) Health", tone: h > 0 ? .positive : .warning, domain: domain))
+            }
+        }
+
+        // Autonomous world reaction deltas (these feel the most "alive")
+        for note in result.notes where note.tags.contains(.progress) {
+            let isReaction = note.title.contains("Responded") || note.title.contains("Noticed") || 
+                            note.title.contains("Momentum") || note.title.contains("Body Responded") ||
+                            note.title.contains("Financial System") || note.title.contains("Resourcefulness Echo")
+            if isReaction {
+                newDeltas.append(FloatingDelta(text: note.title, tone: .positive, domain: domain))
+            }
+        }
+
+        // Health-specific autonomous boosts
+        if let health = result.healthEffects {
+            if let m = health.mental, m != 0 {
+                newDeltas.append(FloatingDelta(text: "\(m > 0 ? "+" : "")\(m) Mental", tone: m > 0 ? .positive : .warning, domain: domain))
+            }
+        }
+
+        guard !newDeltas.isEmpty else { return }
+
+        // Limit concurrent deltas for visual cleanliness
+        let maxConcurrent = 5
+        if floatingDeltas.count + newDeltas.count > maxConcurrent {
+            floatingDeltas.removeFirst(max(0, floatingDeltas.count + newDeltas.count - maxConcurrent))
+        }
+
+        floatingDeltas.append(contentsOf: newDeltas)
+
+        // Staggered auto-removal for nicer feel
+        let removalDelay = 2.4
+        DispatchQueue.main.asyncAfter(deadline: .now() + removalDelay) { [weak self] in
+            guard let self = self else { return }
+            self.floatingDeltas.removeAll { delta in newDeltas.contains { $0.id == delta.id } }
+        }
+    }
+
+    // P2: Universal deltas + pulses for yearly changes (parity with instant layer strength)
+    func spawnYearlyDeltas(from summary: YearlyOutcomeSummary) {
+        var newDeltas: [FloatingDelta] = []
+        if let m = summary.momentum {
+            newDeltas.append(FloatingDelta(text: "Momentum: \(m.title)", tone: .positive, domain: .career))
+        }
+        if let f = summary.focusOutcome {
+            newDeltas.append(FloatingDelta(text: "Focus: \(f.title)", tone: .positive, domain: .career))
+        }
+        if let s = summary.yearlyStanceOutcome {
+            newDeltas.append(FloatingDelta(text: "Stance: \(s.title)", tone: .positive, domain: .career))
+        }
+        if let t = summary.mainTradeoff {
+            newDeltas.append(FloatingDelta(text: t.title, tone: .warning, domain: .career))
+        }
+        if let p = summary.nextYearPressure {
+            newDeltas.append(FloatingDelta(text: p.title, tone: .warning, domain: .career))
+        }
+        guard !newDeltas.isEmpty else { return }
+        let maxConcurrent = 5
+        if floatingDeltas.count + newDeltas.count > maxConcurrent {
+            floatingDeltas.removeFirst(max(0, floatingDeltas.count + newDeltas.count - maxConcurrent))
+        }
+        floatingDeltas.append(contentsOf: newDeltas)
+        AppFeedback.impact(.medium)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            guard let self = self else { return }
+            self.floatingDeltas.removeAll { delta in newDeltas.contains { $0.id == delta.id } }
+        }
+    }
+
     @Published var persistenceAlert: PersistenceAlertContext?
     @Published var showingDebugLab: Bool = false
     @Published var plannerDetail: PlannerDetailDestination?
+    @Published var isStartingNewLife: Bool = false   // Prevents white screen during heavy fresh-game activation
     @Published var selectedInsight: ChangeInsightTopic?
     @Published private(set) var originTab: Tab?
     @Published private(set) var originPlannerDetail: PlannerDetailDestination?
@@ -462,6 +601,27 @@ final class GameViewModel: ObservableObject {
             defaults.set(animationSetting.rawValue, forKey: PreferenceKeys.animationSetting)
         }
     }
+
+    // P2: current life shape (D4, for reactive UI subtitles)
+    var currentLifeShape: String {
+        let recent = state.yearlyStance.recentStances
+        guard !recent.isEmpty else { return "" }
+        var pragmatic = 0, careful = 0, loose = 0, driven = 0
+        for s in recent {
+            switch s {
+            case .stabilizeMoney: pragmatic += 1
+            case .protectHealth: careful += 1
+            case .letYearDrift: loose += 1
+            case .pushCareer, .soldierStance, .studentStance: driven += 1
+            default: pragmatic += 1
+            }
+        }
+        if loose > max(pragmatic, careful, driven) { return "loose edges" }
+        if careful > max(pragmatic, loose, driven) { return "careful shape" }
+        if driven > max(pragmatic, careful, loose) { return "driven current" }
+        return "pragmatic"
+    }
+
     @Published var colorEmphasisSetting: ColorEmphasisSetting {
         didSet {
             defaults.set(colorEmphasisSetting.rawValue, forKey: PreferenceKeys.colorEmphasisSetting)
@@ -527,21 +687,21 @@ final class GameViewModel: ObservableObject {
             configureStartupStateForLoadedGame()
             orchestrator.hydrateRuntimeCaches(for: result.state)
         case .noSave:
+            // Fresh game: start in lightweight character creation flow immediately.
+            // Defer ALL heavy setup (preview, beginLife, refresh, caches) to avoid main thread block / white screen.
             self.state = GameState()
-            self.originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
-            self.beginLife()
+            self.charCreationStep = .name
+            // originPreview and heavy work kicked off in onAppear / beginLifeSafely
         case .failed(let primaryError, let errors, let timingSnapshot):
             self.state = GameState()
-            self.originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
-            self.beginLife()
+            self.charCreationStep = .name
             self.lastTimingSnapshot = timingSnapshot
             self.persistenceAlert = PersistenceAlertContext(
                 title: "Couldn't Recover Saved Progress",
                 message: persistenceMessage(for: primaryError, fallbacks: errors)
             )
         }
-        refreshDerivedState()
-        restoreActiveChapterIfNeeded()
+        // NO refresh or restore here in init - defer to views
 
         if let scenarioID = debugConfiguration.scenarioID {
             applyDebugPayload(
@@ -553,13 +713,21 @@ final class GameViewModel: ObservableObject {
         }
     }
 
+    func setupFreshGameIfNeeded() {
+        if originPreview == nil && state.startupState != .active {
+            originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
+            refreshDerivedState()
+            restoreActiveChapterIfNeeded()
+        }
+    }
+
     func newLife() {
+        // Reset to lightweight character creation immediately (avoid blocking launch with heavy beginLife work).
         state = GameState()
-        originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
+        originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState, resilience: selectedResilience)
         autoLifePace = .guided
         selectedStartMode = .quickStart
         selectedTemplate = .stableHomeAverageMeans
-        // Reset character creation state
         charCreationStep = .name
         pendingCharName = ""
         pendingRegionID = "mountain_standard"
@@ -568,6 +736,8 @@ final class GameViewModel: ObservableObject {
         presentedCard = nil
         interactionCards.reset()
         activityPulse = nil
+        isResolvingInteraction = false
+        resolvingInteractionContext = nil
         selectedTab = .home
         plannerDetail = nil
         selectedInsight = nil
@@ -575,8 +745,14 @@ final class GameViewModel: ObservableObject {
         originPlannerDetail = nil
         returnPrompt = nil
         persistenceBanner = nil
-        refreshDerivedState()
-        save()
+        isStartingNewLife = false
+        clearPopupStateIfNeeded()
+        // Heavy work (activatePreview, caches, etc.) will happen when user finishes creation via beginLifeSafely()
+    }
+
+    // Ensure loading flag is cleared on any full reset path
+    func resetStartingLifeFlag() {
+        isStartingNewLife = false
     }
 
     func ageUp() {
@@ -586,6 +762,7 @@ final class GameViewModel: ObservableObject {
             return
         }
         activityPulse = nil
+        recentInstantReactions = []   // Clear instant reaction momentum on year turn (keeps focus on the new chapter)
         autopilotYearsAdvanced = 0
         captureReturnOrigin()
         AppFeedback.impact(.medium)
@@ -594,14 +771,93 @@ final class GameViewModel: ObservableObject {
         let outcome = orchestrator.beginYearChapter(state: &state)
         if let summary = outcome.summary {
             latestYearSummary = summary
+            surfaceFightingBackPulseIfNeeded(from: summary)
+            evaluateSoftRunGoal(after: summary)
         }
+        surfaceAutonomySignalsFromLedger()
         updateFirstLifeOnboarding(after: outcome)
+        refreshSoftRunGoal()
+        maintainDiscoverabilityAndResilienceJournal()
         present(cards: outcome.cards)
         refreshDerivedState()
+        refreshSoftRunGoal()
         save()
     }
 
+    /// Tier 1 Phase 4–5: contextual coaching flags + evolving resilience journal entries.
+    func maintainDiscoverabilityAndResilienceJournal() {
+        if let reflection = state.resilience.journalReflection(forAge: state.player.age),
+           !state.discoverability.resilienceJournalAges.contains(state.player.age) {
+            state.discoverability.resilienceJournalAges.insert(state.player.age)
+            state.history.insert(
+                HistoryEntry(age: state.player.age, title: reflection.title, text: reflection.text, tags: [.progress]),
+                at: 0
+            )
+        }
+    }
+
+    func markLongPressCoachSeen() {
+        guard !state.discoverability.seenLongPressCoach else { return }
+        state.discoverability.markLongPressSeen()
+        markMVPOnboardingHoldBeatIfNeeded()
+        save()
+    }
+
+    func markMomentumCoachSeen() {
+        guard !state.discoverability.seenMomentumCoach else { return }
+        state.discoverability.markMomentumSeen()
+        save()
+    }
+
+    func markResilienceExplainSeen() {
+        guard !state.discoverability.seenResilienceExplain else { return }
+        state.discoverability.markResilienceExplainSeen()
+        save()
+    }
+
+    func markAdultChildrenCoachSeen() {
+        guard !state.discoverability.seenAdultChildrenCoach else { return }
+        state.discoverability.markAdultChildrenSeen()
+        save()
+    }
+
+    func markInstantYearlyCoachSeen() {
+        guard !state.discoverability.seenInstantYearlyCoach else { return }
+        state.discoverability.markInstantYearlySeen()
+        save()
+    }
+
+    /// Phase 5: Make "Fighting Back" land visibly when stabilizing choices pay off under pressure.
+    private func surfaceFightingBackPulseIfNeeded(from summary: YearlyOutcomeSummary) {
+        let fightingBack = (summary.spillovers + summary.headlines).first { $0.title == "Fighting Back" }
+        guard let fightingBack else { return }
+        let tone: PlannerTone = .positive
+        activityPulse = ActivityPulse(
+            title: fightingBack.title,
+            detail: fightingBack.detail,
+            tone: tone
+        )
+        showTransientActivityPulse()
+        AppFeedback.notify(.success)
+    }
+
     func recommendedYearlyStance() -> YearlyStanceID {
+        // Side addition: dossier makes yearly focus feel like natural extension of childhood wiring (esp. in teen/early adult for immersion)
+        if let d = state.childhoodDossier, state.player.age <= 22, state.education.stage != .inactive {
+            if d.aptitudes.physical >= 60 {
+                return .protectHealth  // body-first kids get nudged toward protecting the vehicle
+            }
+            if d.aptitudes.entrepreneurial >= 60 {
+                return .stabilizeMoney // hustlers naturally gravitate to money focus
+            }
+            if d.aptitudes.social >= 60 {
+                return .repairPeople
+            }
+            if d.aptitudes.creative >= 60 {
+                return .studentStance // creative wiring makes academic focus feel more alive
+            }
+        }
+
         switch dominantFeedDomain() {
         case .finance:
             return .stabilizeMoney
@@ -613,6 +869,12 @@ final class GameViewModel: ObservableObject {
             return .pushCareer
         case .crime:
             return .protectHealth
+        case .military:
+            return .pushCareer
+        case .family:
+            return .repairPeople
+        case .identity:
+            return .stabilizeMoney
         }
     }
 
@@ -645,24 +907,39 @@ final class GameViewModel: ObservableObject {
 
     func choose(_ choice: EventChoice) {
         guard case .event(let ev)? = presentedCard else { return }
+        guard !isResolvingInteraction else { return }
 
+        // Immediately signal processing so the popup UI can swap to loading/spinner (preventing "frozen on the popup" visual).
+        // The actual (heavy) work is deferred via Task.yield so SwiftUI can commit the loading state first.
+        isResolvingInteraction = true
+        resolvingInteractionContext = ev.title
         let feedback = feedbackCoordinator.actionResponse(for: choice.baseFriction, microBeat: choice.microBeat)
-        guard !feedback.shouldReturnEarly else { return }
-        applyFeedback(feedback)
-
-        if state.activeYearChapter != nil {
-            let outcome = orchestrator.resolveYearChapter(choice: choice, state: &state)
-            latestYearSummary = outcome.summary ?? latestYearSummary
-            present(cards: outcome.cards)
-            refreshDerivedState()
-            save()
+        guard !feedback.shouldReturnEarly else {
+            isResolvingInteraction = false
+            resolvingInteractionContext = nil
             return
         }
-        orchestrator.apply(choice: choice, event: ev, state: &state)
-        advancePresentedCard()
-        orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
-        refreshDerivedState()
-        save()
+        applyFeedback(feedback)
+
+        Task { @MainActor in
+            await Task.yield()
+            if state.activeYearChapter != nil {
+                let outcome = orchestrator.resolveYearChapter(choice: choice, state: &state)
+                latestYearSummary = outcome.summary ?? latestYearSummary
+                maintainDiscoverabilityAndResilienceJournal()
+                present(cards: outcome.cards)
+                refreshDerivedState()
+                save()
+            } else {
+                orchestrator.apply(choice: choice, event: ev, state: &state)
+                advancePresentedCard()
+                orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
+                refreshDerivedState()
+                save()
+            }
+            isResolvingInteraction = false
+            resolvingInteractionContext = nil
+        }
     }
 
     private func applyGuidedPlanIfNeeded() {
@@ -767,53 +1044,90 @@ final class GameViewModel: ObservableObject {
     }
 
     func resolveCrisis(_ choice: CrisisChoice) {
-        if choice.isBuyBack {
-            state.hasUsedCrisisBuyBack = true
-            // Apply Penalty logic
-            if choice.id.contains("health") {
-                state.player.health = 20
-                state.healthProfile.physicalWellness = 20
-                state.healthProfile.activeConditions.append(HealthCondition(name: "Chronic Fragility", severity: 40))
-                state.relationships.socialCapital = max(0, state.relationships.socialCapital - 80)
-            } else if choice.id.contains("finance") {
-                state.finance.cashOnHand = 10000
-                state.finance.financialStress = 70
-                state.assets.ownsHome = false
-                state.finance.indexFundBalance = 0
-                state.finance.stockPortfolioBalance = 0
-                state.finance.investedBalance = 0
+        guard !isResolvingInteraction else { return }
+
+        isResolvingInteraction = true
+        resolvingInteractionContext = "crisis resolution"
+
+        Task { @MainActor in
+            await Task.yield()
+            if choice.isBuyBack {
+                state.hasUsedCrisisBuyBack = true
+                // Apply Penalty logic
+                if choice.id.contains("health") {
+                    state.player.health = 20
+                    state.healthProfile.physicalWellness = 20
+                    state.healthProfile.activeConditions.append(HealthCondition(name: "Chronic Fragility", severity: 40))
+                    state.relationships.socialCapital = max(0, state.relationships.socialCapital - 80)
+                } else if choice.id.contains("finance") {
+                    state.finance.cashOnHand = 10000
+                    state.finance.financialStress = 70
+                    state.assets.ownsHome = false
+                    state.finance.indexFundBalance = 0
+                    state.finance.stockPortfolioBalance = 0
+                    state.finance.investedBalance = 0
+                }
+                
+                AppFeedback.notify(.success)
+                microBeatOverlay = "A heavy price paid for time."
+            } else {
+                state.isGameOver = true
+                AppFeedback.notify(.warning)
             }
             
-            AppFeedback.notify(.success)
-            microBeatOverlay = "A heavy price paid for time."
-        } else {
-            state.isGameOver = true
-            AppFeedback.notify(.warning)
+            // Core of dismiss (bypass the public guard since we manage the flag here)
+            let currentCard = presentedCard
+            let shouldCompleteLife = state.isGameOver && (currentCard != nil && isResolutionCard(currentCard!))
+            advancePresentedCard()
+            orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
+            if presentedCard == nil {
+                if shouldCompleteLife {
+                    state.startupState = .inheritingLegacy
+                } else {
+                    restoreInteractionOriginIfNeeded()
+                }
+            }
+            refreshDerivedState()
+            save()
+            clearPopupStateIfNeeded()
+            isResolvingInteraction = false
+            resolvingInteractionContext = nil
         }
-        
-        dismissPresentedCard()
-        refreshDerivedState()
-        save()
     }
 
     func resolvePitch(_ choice: PitchDeckChoice) {
-        state.specialCareer.track = .founder
-        state.specialCareer.sector = choice.sector
-        state.specialCareer.equityOwned = 1.0
-        state.specialCareer.audience = 15
-        state.specialCareer.fame = 10
-        state.specialCareer.heat = 20
-        state.specialCareer.yearsActive = 0
-        state.specialCareer.burnout = 10
-        
-        AppFeedback.notify(.success)
-        microBeatOverlay = "Launched: \(choice.text)"
-        
-        state.pendingActions.removeAll { $0.choiceID == .startCompany }
-        
-        dismissPresentedCard()
-        refreshDerivedState()
-        save()
+        guard !isResolvingInteraction else { return }
+
+        isResolvingInteraction = true
+        resolvingInteractionContext = "pitch deck"
+
+        Task { @MainActor in
+            await Task.yield()
+            // Go through the system activate so dossier bias (from childhood origin) seeds the founder state.
+            SpecialCareerSystem.activateSpecialCareerForPitch(track: .founder, sector: choice.sector, into: &state.specialCareer, dossier: state.childhoodDossier)
+            // ensure the pitch-specific starting numbers
+            state.specialCareer.equityOwned = 1.0
+            state.specialCareer.audience = max(state.specialCareer.audience, 15)
+            state.specialCareer.fame = max(state.specialCareer.fame, 10)
+            state.specialCareer.heat = max(state.specialCareer.heat, 20)
+            state.specialCareer.burnout = max(state.specialCareer.burnout, 10)
+            
+            AppFeedback.notify(.success)
+            microBeatOverlay = "Launched: \(choice.text)"
+            
+            state.pendingActions.removeAll { $0.choiceID == .startCompany }
+            
+            // Core of dismiss (bypass guard)
+            advancePresentedCard()
+            orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
+            if presentedCard == nil {
+                restoreInteractionOriginIfNeeded()
+            }
+            refreshDerivedState()
+            save()
+            isResolvingInteraction = false
+            resolvingInteractionContext = nil
+        }
     }
 
     func advancePresentedCard() {
@@ -822,27 +1136,74 @@ final class GameViewModel: ObservableObject {
 
     func dismissPresentedCard() {
         guard let currentCard = presentedCard else { return }
-        
+        guard !isResolvingInteraction else { return }
+
+        // Immediately signal processing for continue-style popups (summary, resolution, etc.).
+        isResolvingInteraction = true
+        resolvingInteractionContext = (currentCard as? CustomStringConvertible)?.description ?? "year outcome"
+
         // If we are dismissing a resolution card and the game is over, complete the life
         let shouldCompleteLife = state.isGameOver && isResolutionCard(currentCard)
-        
-        advancePresentedCard()
-        orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
-        
-        if presentedCard == nil {
-            if shouldCompleteLife {
-                completeLife()
-            } else {
-                restoreInteractionOriginIfNeeded()
+
+        Task { @MainActor in
+            await Task.yield()
+            advancePresentedCard()
+            orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
+
+            if presentedCard == nil {
+                if shouldCompleteLife {
+                    state.startupState = .inheritingLegacy
+                } else {
+                    restoreInteractionOriginIfNeeded()
+                }
             }
+            refreshDerivedState()
+            save()
+            clearPopupStateIfNeeded()
+            isResolvingInteraction = false
+            resolvingInteractionContext = nil
         }
+    }
+
+    func switchToChild(_ child: ChildRecord) {
+        let parentState = state
+        orchestrator.completeLife(state: parentState, meta: &metaState)
+        try? persistence.saveMeta(metaState)
+        state = orchestrator.inheritLegacy(child: child, parentState: parentState)
         refreshDerivedState()
         save()
     }
 
+    func finishLegacyWithoutSuccessor() {
+        completeLife()
+    }
     private func isResolutionCard(_ card: InteractionCardPayload) -> Bool {
         if case .resolution = card { return true }
         return false
+    }
+
+    func isChoiceCard(_ card: InteractionCardPayload) -> Bool {
+        switch card {
+        case .event, .crisis, .pitchDeck:
+            return true
+        case .forecast, .yearSummary, .reaction, .consequence, .resolution:
+            return false
+        }
+    }
+
+    /// Safety net called on shell changes / after heavy work to prevent stuck popups or desynced chapter/card state.
+    func clearPopupStateIfNeeded() {
+        if isResolvingInteraction { return } // let the resolving Task finish
+        if presentedCard != nil {
+            presentedCard = nil
+        }
+        if interactionCards.queuedCount > 0 {
+            interactionCards.reset()
+        }
+        if state.activeYearChapter != nil && presentedCard == nil {
+            // If no more cards but chapter lingered, clear it so next ageUp isn't confused.
+            state.activeYearChapter = nil
+        }
     }
 
     private func completeLife() {
@@ -893,7 +1254,7 @@ final class GameViewModel: ObservableObject {
     // MARK: - Character Creation Navigation (Codex IX)
 
     func advanceCreation() {
-        let allSteps: [CharacterCreationStep] = [.name, .origin, .trait]
+        let allSteps: [CharacterCreationStep] = [.name, .origin, .trait, .resilience]
         guard let current = allSteps.firstIndex(of: charCreationStep),
               current + 1 < allSteps.count else { return }
         // Auto-generate an origin preview when entering the origin step if none exists
@@ -905,7 +1266,7 @@ final class GameViewModel: ObservableObject {
     }
 
     func retreatCreation() {
-        let allSteps: [CharacterCreationStep] = [.name, .origin, .trait]
+        let allSteps: [CharacterCreationStep] = [.name, .origin, .trait, .resilience]
         guard let current = allSteps.firstIndex(of: charCreationStep), current > 0 else { return }
         charCreationStep = allSteps[current - 1]
     }
@@ -918,6 +1279,11 @@ final class GameViewModel: ObservableObject {
         traits.removeAll { $0 == trait }
         traits.insert(trait, at: 0)
         preview.player.traits = Array(traits.prefix(3))
+        // Re-gen dossier so aptitudes + visibleHints + future seeds in the rich creation preview update live.
+        if let templateID = preview.originProfile?.templateID {
+            let deterministic = selectedStartMode == .template
+            orchestrator.regenerateDossierInPreview(&preview, templateID: templateID, deterministic: deterministic)
+        }
         originPreview = preview
     }
 
@@ -934,6 +1300,10 @@ final class GameViewModel: ObservableObject {
             preview.originProfile?.startMode = .custom
         }
         preview.mvpOnboarding.activate(at: preview.player.age)
+        preview.discoverability = DiscoverabilityState()
+        preview.softRunGoal = nil
+        preview.resilience = selectedResilience
+        preview.syncResilienceToPlayer()
         autoLifePace = .guided
 
         latestYearSummary = nil
@@ -942,6 +1312,27 @@ final class GameViewModel: ObservableObject {
         activityPulse = nil
         let initialEvent = orchestrator.activatePreview(state: &preview)
         state = preview
+
+        // Surface the player's chosen Life Feel immediately in the journal for transparency + replay reflection
+        if state.history.isEmpty || state.history.first?.title != "Life Began" {
+            let feelLine = state.resilience == .resilient
+                ? "Chose a Resilient path — more room to recover when life gets heavy."
+                : "Chose the Grounded path — full Life Killer weight, no safety nets."
+            state.history.insert(
+                HistoryEntry(age: state.player.age, title: "Life Began", text: feelLine, tags: [.progress]),
+                at: 0
+            )
+        }
+
+        // Phase 4 Discoverability: Lightweight first-time teaching of the two speeds
+        if state.history.count <= 1 {
+            let teachingLine = "Two speeds here: Quick actions (and some Family choices) give instant feedback and small world reactions. Age Up commits to a full year of consequences that compound."
+            state.history.insert(
+                HistoryEntry(age: state.player.age, title: "How This Life Works", text: teachingLine, tags: [.progress]),
+                at: 0
+            )
+        }
+
         originPreview = nil
         selectedTab = .home
         plannerDetail = nil
@@ -953,7 +1344,20 @@ final class GameViewModel: ObservableObject {
             present(cards: [.event(initialEvent)])
         }
         refreshDerivedState()
+        refreshSoftRunGoal()
         save()
+    }
+
+    /// Safe wrapper for fresh game confirmation.
+    /// Sets loading flag *before* the heavy synchronous work so the UI can show an overlay instead of white.
+    func beginLifeSafely() {
+        guard !isStartingNewLife else { return }
+        isStartingNewLife = true
+        Task { @MainActor in
+            await Task.yield()
+            beginLife()
+            isStartingNewLife = false
+        }
     }
 
     func save() {
@@ -1030,6 +1434,12 @@ final class GameViewModel: ObservableObject {
 
     /// Primary occupation / education / special-career badge for the life header.
     func headerOccupationHighlight() -> (title: String, symbol: String, tone: PlannerTone) {
+        if state.military.track != .inactive {
+            return (state.military.rank, "shield.fill", .positive)
+        }
+        if state.relationships.isMarried {
+            return ("Married to \(state.relationships.partnerName ?? "Partner")", "heart.fill", .positive)
+        }
         if state.specialCareer.track != .inactive {
             let pair = HeaderOccupationCopy.specialCareer(state.specialCareer.track)
             return (pair.title, pair.symbol, .warning)
@@ -1147,13 +1557,482 @@ final class GameViewModel: ObservableObject {
         (presentedCard == nil ? 0 : 1) + interactionCards.queuedCount
     }
 
-    func feedUrgencyItems() -> [PlannerInsight] {
-        [
+    /// Mid/late life: many systems active — use collapsible console + fewer default rows.
+    /// BitLife-style condensed shell: one scroll surface, compact dock, actions-first panels.
+    var prefersBitLifeShell: Bool { true }
+
+    var prefersCompactLateGameUI: Bool {
+        let adultChildren = state.family.children.filter { !$0.livesAtHome }.count
+        let heavyFamily = state.family.childCount >= 2 || adultChildren > 0
+        let heavyCareer = state.specialCareer.track != .inactive
+            || state.career.yearsWorked >= 8
+            || state.military.track != .inactive
+        return prefersBitLifeShell || state.player.age >= 40 || (state.player.age >= 32 && (heavyFamily || heavyCareer))
+    }
+
+    func dockLabel(for tab: Tab) -> String {
+        switch tab {
+        case .occupation where showingEducationAsPrimaryTab:
+            return "School"
+        default:
+            return tab.title
+        }
+    }
+
+    func dockSymbol(for tab: Tab) -> String {
+        switch tab {
+        case .occupation where showingEducationAsPrimaryTab:
+            return "book.closed.fill"
+        default:
+            return tab.symbol
+        }
+    }
+
+    /// One-line late-game context for the Life console ribbon.
+    func lateGameContextRibbon() -> String? {
+        guard prefersCompactLateGameUI else { return nil }
+        var parts: [String] = []
+        let adults = state.family.children.filter { !$0.livesAtHome }
+        let atHome = state.family.children.filter { $0.livesAtHome }
+        if !adults.isEmpty {
+            parts.append("\(adults.count) adult \(adults.count == 1 ? "child" : "children")")
+        }
+        if !atHome.isEmpty {
+            parts.append("\(atHome.count) at home")
+        }
+        if state.progress.legacyScore > 0 {
+            parts.append("Legacy \(state.progress.legacyScore)")
+        }
+        if let loud = feedUrgencyItems().first(where: { $0.tone == .warning }) {
+            parts.append(loud.title)
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    struct AdultChildGlanceItem: Identifiable, Equatable {
+        let id: String
+        let name: String
+        let age: Int
+        let outcomeLabel: String
+    }
+
+    func adultChildrenGlanceItems(limit: Int = 3) -> [AdultChildGlanceItem] {
+        state.family.children
+            .filter { !$0.livesAtHome }
+            .prefix(limit)
+            .map { child in
+                let outcome = child.adultProfile?.outcome
+                let label: String
+                switch outcome {
+                case .thriving: label = "Thriving"
+                case .stable: label = "Stable"
+                case .struggling: label = "Struggling"
+                case .distant: label = "Distant"
+                case .none: label = "Adult"
+                }
+                return AdultChildGlanceItem(
+                    id: child.id.uuidString,
+                    name: child.name,
+                    age: child.age,
+                    outcomeLabel: label
+                )
+            }
+    }
+
+    // MARK: - Tier A: Now lane, soft goals, cast, autonomy toasts
+
+    func nowLaneSnapshot() -> NowLaneSnapshot {
+        if let presentedCard {
+            return NowLaneSnapshot(
+                headline: nextDecisionPrompt(),
+                detail: nextDecisionDetail(),
+                quickActionTitle: nil,
+                quickActionDomain: nil,
+                quickActionChoice: nil,
+                ageUpHint: "Finish this card stack first.",
+                tone: .warning,
+                showsQuickAction: false
+            )
+        }
+
+        if state.activeYearChapter != nil {
+            return NowLaneSnapshot(
+                headline: chapterStatus(),
+                detail: nextDecisionDetail(),
+                quickActionTitle: nil,
+                quickActionDomain: nil,
+                quickActionChoice: nil,
+                ageUpHint: "Resolve the year beat before acting elsewhere.",
+                tone: .neutral,
+                showsQuickAction: false
+            )
+        }
+
+        if let housingLane = housingNowLaneSnapshot() {
+            return housingLane
+        }
+
+        if let script = state.mvpOnboarding.scriptedDirective(
+            age: state.player.age,
+            performedQuickAction: state.discoverability.performedFirstQuickAction,
+            seenHoldCoach: state.discoverability.seenLongPressCoach,
+            hasYearStance: state.yearlyStance.selectedStance != nil
+        ) {
+            let chip = homeQuickActionChips().first
+            return NowLaneSnapshot(
+                headline: "First life",
+                detail: script,
+                quickActionTitle: chip.map { ActionChoiceCatalog.definition(for: $0.choiceID).title },
+                quickActionDomain: chip?.domain,
+                quickActionChoice: chip?.choiceID,
+                ageUpHint: "Age Up commits a full year after you set a goal on the forecast.",
+                tone: .positive,
+                showsQuickAction: chip != nil
+            )
+        }
+
+        let chip = guidedRecommendation() ?? recommendedActionChips().first
+        let fallback = homeQuickActionChips().first
+        let domain = chip?.domain ?? fallback?.domain
+        let choice = chip?.choiceID ?? fallback?.choiceID
+        let title = chip?.title ?? fallback.map { ActionChoiceCatalog.definition(for: $0.choiceID).title }
+
+        let headline: String
+        let detail: String
+        if let goal = state.softRunGoal, goal.status == .inProgress {
+            headline = "Goal: \(goal.title)"
+            detail = goal.progressHint
+        } else if let loud = feedUrgencyItems(limit: 1).first(where: { $0.tone == .warning }) {
+            headline = loud.title
+            detail = loud.value
+        } else {
+            headline = "This year"
+            detail = pendingActionSummary()
+        }
+
+        return NowLaneSnapshot(
+            headline: headline,
+            detail: detail,
+            quickActionTitle: title,
+            quickActionDomain: domain,
+            quickActionChoice: choice,
+            ageUpHint: state.yearlyStance.selectedStance == nil
+                ? "Age Up → forecast → pick what you are protecting."
+                : "Age Up when quick moves and year plan feel set.",
+            tone: feedUrgencyItems().contains(where: { $0.tone == .warning }) ? .warning : .positive,
+            showsQuickAction: choice != nil
+        )
+    }
+
+    private func housingNowLaneSnapshot() -> NowLaneSnapshot? {
+        if state.assets.primaryResidence?.status == .delinquent {
+            return NowLaneSnapshot(
+                headline: "Mortgage under strain",
+                detail: "Catch up or refinance before the year turns this into a forced sale.",
+                quickActionTitle: "Repair Reserve",
+                quickActionDomain: .finance,
+                quickActionChoice: .topUpHouseReserve,
+                ageUpHint: "Set Refinance or Build Reserve in Year Plan, then Age Up.",
+                tone: .warning,
+                showsQuickAction: housingInstantReserveAmount() >= 750
+            )
+        }
+
+        if !state.assets.ownsHome,
+           state.player.age >= 18,
+           state.finance.homeDownPaymentSavings > 0 || state.assets.homeownershipTrackActive {
+            let needed = housingDownPaymentNeeded()
+            let saved = state.finance.homeDownPaymentSavings
+            return NowLaneSnapshot(
+                headline: "House fund $\(saved) / $\(needed)",
+                detail: "Target ~$\(housingTargetHomeValue()) starter home in \(housingArrangementLabel()).",
+                quickActionTitle: "House Fund",
+                quickActionDomain: .finance,
+                quickActionChoice: .depositToHouseFund,
+                ageUpHint: saved + state.finance.cashOnHand >= needed
+                    ? "You may be ready to Buy Home on the year plan."
+                    : "Deposit now, then commit Save For Home before Age Up.",
+                tone: saved >= needed / 2 ? .positive : .neutral,
+                showsQuickAction: housingInstantDepositAmount() >= 500
+            )
+        }
+
+        return nil
+    }
+
+    func refreshSoftRunGoal() {
+        guard state.startupState == .active, !state.isGameOver else { return }
+        let stance = state.yearlyStance.selectedStance ?? recommendedYearlyStance()
+        let choice = stance.preferredAction(for: state)
+        let actionTitle = choice.map { ActionChoiceCatalog.definition(for: $0).title } ?? "a matching quick action"
+        state.softRunGoal = SoftRunGoal(
+            id: "soft-goal-\(stance.rawValue)-\(state.player.age)",
+            title: stance.title,
+            detail: softGoalDetail(for: stance),
+            progressHint: "Now: \(actionTitle) · Year: commit on forecast",
+            domain: stance.domain ?? .health,
+            suggestedChoice: choice,
+            setAtAge: state.player.age,
+            status: .inProgress
+        )
+    }
+
+    private func softGoalDetail(for stance: YearlyStanceID) -> String {
+        switch stance {
+        case .protectHealth:
+            return "Keep recovery ahead of burnout before the next year closes."
+        case .stabilizeMoney:
+            return "Stop cash leaks and build one year of money stability."
+        case .repairPeople:
+            return "Repair one bond that is carrying into the forecast."
+        case .pushCareer:
+            return "Stack career momentum without letting health snap."
+        case .soldierStance:
+            return "Hold the line — discipline and duty before drift."
+        case .studentStance:
+            return "Protect school momentum while the year stays loud."
+        case .letYearDrift:
+            return "Survive the year with minimal damage — small stabilizing moves count."
+        }
+    }
+
+    func evaluateSoftRunGoal(after summary: YearlyOutcomeSummary?) {
+        guard var goal = state.softRunGoal, goal.status == .inProgress else { return }
+        guard let summary else {
+            goal.status = .missed
+            state.softRunGoal = goal
+            return
+        }
+        let stance = state.yearlyStance.lastCompletedStance
+        let stanceOutcomePositive = summary.yearlyStanceOutcome?.tone == .positive
+        let helpedDomain = summary.headlines.contains { $0.domain == historyDomain(for: goal.domain) && $0.tone == .positive }
+            || summary.spillovers.contains { $0.title == "Fighting Back" }
+        if stanceOutcomePositive || helpedDomain {
+            goal.status = .met
+        } else if summary.topProblem?.tone == .warning {
+            goal.status = .missed
+        } else {
+            goal.status = .met
+        }
+        _ = stance
+        state.softRunGoal = goal
+    }
+
+    private func historyDomain(for domain: ActionDomain) -> HistoryDomainTag {
+        switch domain {
+        case .health: return .health
+        case .finance: return .finance
+        case .relationships: return .relationships
+        case .career: return .career
+        case .education: return .education
+        case .military: return .military
+        case .crime: return .crime
+        case .family: return .family
+        case .identity: return .progress
+        }
+    }
+
+    func castStripMembers(limit: Int = 3) -> [CastStripMember] {
+        var members: [CastStripMember] = []
+        if let partner = state.relationships.primaryPartner {
+            members.append(
+                CastStripMember(
+                    id: "partner-\(partner.name)",
+                    name: partner.name,
+                    roleLabel: "Partner",
+                    line: partner.bond < 50 ? "Bond needs attention" : "In your corner",
+                    icon: "heart.fill"
+                )
+            )
+        }
+        for contact in state.relationships.ambientContacts.sorted(by: { $0.bond > $1.bond }).prefix(2) {
+            let role: String
+            switch contact.role {
+            case .partner: role = "Partner"
+            case .mentor: role = "Mentor"
+            case .guardian: role = "Family"
+            case .friend: role = "Friend"
+            }
+            members.append(
+                CastStripMember(
+                    id: contact.id,
+                    name: contact.name,
+                    roleLabel: role,
+                    line: "Watching how this year lands",
+                    icon: "person.wave.2.fill"
+                )
+            )
+        }
+        for child in state.family.children.filter({ !$0.livesAtHome }).prefix(1) {
+            members.append(
+                CastStripMember(
+                    id: child.id.uuidString,
+                    name: child.name,
+                    roleLabel: "Adult child",
+                    line: child.adultProfile?.lifeVibe.isEmpty == false ? (child.adultProfile?.lifeVibe ?? "Still your story") : "Grown — still connected",
+                    icon: "figure.2.and.child.holdinghands"
+                )
+            )
+        }
+        return Array(members.prefix(limit))
+    }
+
+    func pushAutonomyToast(title: String, detail: String, tone: PlannerTone = .neutral) {
+        let toast = AutonomyToast(title: title, detail: detail, tone: tone)
+        autonomyToasts.insert(toast, at: 0)
+        if autonomyToasts.count > 2 {
+            autonomyToasts = Array(autonomyToasts.prefix(2))
+        }
+        let toastID = toast.id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7) { [weak self] in
+            self?.autonomyToasts.removeAll { $0.id == toastID }
+        }
+    }
+
+    func surfaceAutonomySignalsFromLedger() {
+        let npc = state.correlationLedger.recentSignals(kind: .npcAutonomyPulse, minStrength: 5).first
+        let world = state.correlationLedger.recentSignals(kind: .worldAutonomyPulse, minStrength: 5).first
+        if let npc {
+            pushAutonomyToast(
+                title: "Someone noticed",
+                detail: npcAutonomyPulse() ?? "People in your life reacted to how you've been living.",
+                tone: .warning
+            )
+        } else if let world {
+            pushAutonomyToast(
+                title: "World shifted",
+                detail: state.currentEra == .stable ? "Background systems moved while you weren't looking." : "\(state.currentEra.displayName) is bending the year.",
+                tone: world.strength >= 14 ? .warning : .neutral
+            )
+        }
+    }
+
+    private func markMVPOnboardingQuickBeatIfNeeded() {
+        guard state.mvpOnboarding.isActive(at: state.player.age) else { return }
+        state.mvpOnboarding.beatQuickActionDone = true
+    }
+
+    private func markMVPOnboardingHoldBeatIfNeeded() {
+        guard state.mvpOnboarding.isActive(at: state.player.age) else { return }
+        state.mvpOnboarding.beatHoldPreviewDone = true
+    }
+
+    func markMVPOnboardingForecastBeatIfNeeded() {
+        guard state.mvpOnboarding.isActive(at: state.player.age) else { return }
+        state.mvpOnboarding.beatForecastCommitDone = true
+    }
+
+    func performNowLaneQuickAction() {
+        let lane = nowLaneSnapshot()
+        guard let domain = lane.quickActionDomain, let choice = lane.quickActionChoice else { return }
+        performQuickAction(choice, for: domain)
+    }
+
+    func feedUrgencyItems(limit: Int? = nil) -> [PlannerInsight] {
+        var items = [
             PlannerInsight(title: "Money Pressure", value: pressureStatus(domain: "finance", fallback: moneyPressureStatus()), tone: moneyPressureTone()),
             PlannerInsight(title: showingEducationAsPrimaryTab ? "School Momentum" : "Work Stability", value: pressureStatus(domain: showingEducationAsPrimaryTab ? "education" : "career", fallback: schoolOrWorkStatus()), tone: schoolOrWorkTone()),
             PlannerInsight(title: "Social Life", value: npcAutonomyPulse() ?? pressureStatus(domain: "relationships", fallback: socialLifeStatus()), tone: socialLifeTone()),
             PlannerInsight(title: "Burnout", value: pressureStatus(domain: "health", fallback: burnoutStatus()), tone: burnoutTone())
         ]
+        
+        if state.military.track != .inactive {
+            if state.military.contractYearsRemaining <= 1 {
+                items.append(PlannerInsight(title: "Military", value: "Contract Ending", tone: .warning))
+            }
+            if state.military.combatTrauma > 50 {
+                items.append(PlannerInsight(title: "Mental Health", value: "Trauma High", tone: .warning))
+            }
+        }
+        
+        if let limit {
+            return Array(items.prefix(limit))
+        }
+        return items
+    }
+
+    func activeEffects() -> [ActiveEffect] {
+        var effects: [ActiveEffect] = []
+        
+        if state.military.hasGIBill {
+            effects.append(ActiveEffect(title: "GI Bill", detail: "Free University Tuition", tone: .positive))
+        }
+        if state.military.hasPension {
+            effects.append(ActiveEffect(title: "Military Pension", detail: "+$25,000 Annual Passive Income", tone: .positive))
+        }
+        if state.education.pathway == .rotc {
+            effects.append(ActiveEffect(title: "ROTC", detail: "Stipend Active. Commission Guaranteed.", tone: .neutral))
+        }
+        if state.military.combatTrauma > 0 {
+            effects.append(ActiveEffect(title: "Combat Trauma", detail: "-\(state.military.combatTrauma/10) Health/yr", tone: .warning))
+        }
+        
+        return effects
+    }
+
+    func projectedNetFlow() -> Int {
+        var income = state.career.annualIncome
+        if state.military.hasPension { income += 25000 }
+        if state.education.pathway == .rotc { income += 4000 }
+        
+        // Investment Income
+        income += state.finance.portfolio.rentals.reduce(0) { $0 + $1.annualNetIncome }
+        
+        var expenses = 12000 // Base living cost
+        if let home = state.assets.primaryResidence {
+            expenses += home.monthlyMortgageCost * 12
+        } else if state.housing.livingArrangement == .soloRenting {
+            expenses += 18000
+        }
+        
+        return income - expenses
+    }
+
+    func previewAction(_ choiceID: ActionChoiceID) -> [String] {
+        let housingLines = housingPreviewLines(for: choiceID)
+        if !housingLines.isEmpty {
+            var previews = housingLines
+            if let note = orchestrator.previewInstantAction(choiceID, domain: .finance, state: state).first {
+                previews.append(note)
+            }
+            return previews
+        }
+
+        let result = orchestrator.previewAction(choiceID, state: state)
+        
+        var previews: [String] = []
+        
+        if let core = result.coreEffects {
+            if let h = core.happiness, h != 0 { previews.append("\(h > 0 ? "+" : "")\(h) Happiness") }
+            if let s = core.smarts, s != 0 { previews.append("\(s > 0 ? "+" : "")\(s) Smarts") }
+            if let l = core.looks, l != 0 { previews.append("\(l > 0 ? "+" : "")\(l) Looks") }
+            if let hl = core.health, hl != 0 { previews.append("\(hl > 0 ? "+" : "")\(hl) Health") }
+        }
+        
+        if let mil = result.militaryEffects {
+            if let f = mil.fitness, f != 0 { previews.append("\(f > 0 ? "+" : "")\(f) Fitness") }
+            if let d = mil.discipline, d != 0 { previews.append("\(d > 0 ? "+" : "")\(d) Discipline") }
+            if let h = mil.heat, h != 0 { previews.append("\(h > 0 ? "+" : "")\(h) Heat") }
+        }
+        
+        if let career = result.careerEffects {
+            // performanceDelta / burnoutDelta removed in effects refactor — previews limited to other domains for build
+        }
+        
+        if let fin = result.financeEffects {
+            // cashOnHandDelta removed in effects refactor
+        }
+        
+        // P2-3: stronger previews with D4 shape/legacy impact
+        let shape = currentLifeShape
+        if !shape.isEmpty {
+            previews.append("Shapes your life (\(shape)) + legacy echoes")
+        }
+        if result.notes.contains(where: { $0.tags.contains(.progress) || $0.title.lowercased().contains("focus") }) {
+            previews.append("Carries into future focus & quiet years")
+        }
+        
+        return previews
     }
 
     func backgroundPulseItems() -> [BackgroundPulseItem] {
@@ -1239,10 +2118,19 @@ final class GameViewModel: ObservableObject {
     func yearlyStanceChips() -> [YearlyStanceChip] {
         YearlyStanceID.allCases.map { stance in
             let actionTitle = stance.preferredAction(for: state).map { ActionChoiceCatalog.definition(for: $0).title } ?? "No forced action"
+            let resilienceHint = stance.yearGoalHint(for: state)
+            let detail = [actionTitle, resilienceHint].compactMap { $0 }.joined(separator: " · ")
+            // D4: surface residue/repeat for the chosen focus
+            var chipDetail = detail
+            if state.yearlyStance.selectedStance == stance, let last = state.yearlyStance.lastCompletedStance, last == stance, state.yearlyStance.repeatCount >= 2 {
+                chipDetail += " · repeated \(state.yearlyStance.repeatCount)x (rut forming)"
+            } else if state.yearlyStance.lastCompletedStance == stance, !state.yearlyStance.recentStances.isEmpty {
+                chipDetail += " · recent shape still active"
+            }
             return YearlyStanceChip(
                 id: stance,
                 title: stance.title,
-                detail: actionTitle,
+                detail: chipDetail,
                 tone: state.yearlyStance.selectedStance == stance ? .positive : (harmfulPatternLabel(for: stance) == nil ? .neutral : .warning),
                 isSelected: state.yearlyStance.selectedStance == stance
             )
@@ -1251,6 +2139,8 @@ final class GameViewModel: ObservableObject {
 
     func setYearlyStance(_ stance: YearlyStanceID) {
         state.yearlyStance.selectedStance = stance
+        markMVPOnboardingForecastBeatIfNeeded()
+        refreshSoftRunGoal()
         if let domain = stance.domain, let action = stance.preferredAction(for: state), actionChoices(for: domain).contains(action) {
             setAction(action, for: domain)
         } else {
@@ -1259,6 +2149,24 @@ final class GameViewModel: ObservableObject {
             refreshDerivedState()
             save()
         }
+    }
+
+    /// Stances surfaced on the forecast commit beat (contextual, not the full home grid).
+    func forecastStanceChips() -> [YearlyStanceChip] {
+        var allowed: [YearlyStanceID] = [.stabilizeMoney, .protectHealth, .repairPeople, .pushCareer, .letYearDrift]
+        if state.military.track != .inactive {
+            allowed.insert(.soldierStance, at: 0)
+        }
+        if state.player.age < 22, state.education.pathway == .student {
+            allowed.insert(.studentStance, at: min(1, allowed.count))
+        }
+        let all = yearlyStanceChips()
+        return allowed.compactMap { id in all.first { $0.id == id } }
+    }
+
+    func prepareForecastCommitmentIfNeeded() {
+        guard state.yearlyStance.selectedStance == nil else { return }
+        setYearlyStance(recommendedYearlyStance())
     }
 
     func keepLastYearlyStance() {
@@ -1388,7 +2296,20 @@ final class GameViewModel: ObservableObject {
     }
 
     func quickActionBlockReason(_ choiceID: ActionChoiceID, domain: ActionDomain) -> String? {
+        if choiceID == .depositToHouseFund {
+            guard state.player.age >= 18, !state.assets.ownsHome else { return "Not in a home-buying lane right now." }
+            if housingInstantDepositAmount() < 500 { return "Need more cash above your safety floor." }
+        }
+        if choiceID == .topUpHouseReserve {
+            guard state.assets.ownsHome else { return "No owned home to fortify yet." }
+            if housingInstantReserveAmount() < 750 { return "Need more cash for a reserve top-up." }
+        }
         guard quickActionChoices(for: domain).contains(choiceID) else { return "Unavailable right now." }
+        // Static core instant actions (BitLife-style always-click taps for domains/subdomains) can always be clicked.
+        // They instantly calculate via the instant path and are exempt from the quick action memory limit.
+        if makeActionRegistry().isStaticCoreInstantAction(choiceID, domain: domain) {
+            return nil
+        }
         var memory = state.quickActionMemory
         return memory.blockReason(for: PlayerYearAction(domain: domain, choiceID: choiceID), age: state.player.age)
     }
@@ -1397,6 +2318,11 @@ final class GameViewModel: ObservableObject {
         var memory = state.quickActionMemory
         memory.rolloverIfNeeded(age: state.player.age)
         return memory.completedThisAge.contains { $0.domain == domain && $0.choiceID == choiceID }
+    }
+
+    // Frictionless UI: Instant preview computation for any action
+    func previewForAction(_ choiceID: ActionChoiceID, domain: ActionDomain) -> [String] {
+        orchestrator.previewInstantAction(choiceID, domain: domain, state: state)
     }
 
     func performQuickAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
@@ -1413,13 +2339,60 @@ final class GameViewModel: ObservableObject {
 
         AppFeedback.impact(.light)
         state.quickActionMemory.record(action, age: state.player.age)
-        let result = orchestrator.applyImmediateAction(choiceID, domain: domain, state: &state)
+        if !state.discoverability.performedFirstQuickAction {
+            state.discoverability.performedFirstQuickAction = true
+            markMVPOnboardingQuickBeatIfNeeded()
+        }
+
+        // Use the frictionless path that lets autonomous systems react immediately
+        let result = orchestrator.applyInstantActionWithAutonomousReaction(choiceID, domain: domain, state: &state)
+        
+        // Very aggressive QoL: High lifestyle gives small social boost on relationship actions
+        if domain == .relationships && state.assets.lifestyleScore > 50 {
+            if state.relationships.hasPartner {
+                // Small invisible prestige bonus
+            }
+            // Boost the instant reaction strength slightly
+            // (This would ideally be in the coordinator, but for demo)
+        }
 
         activityPulse = activityPulseFromDomainResult(
             result,
             fallbackTitle: QuickActionCatalog.title(for: choiceID),
             fallbackDetail: result.notes.first?.text ?? definition.identityLine
         )
+
+        // Make autonomous world reactions stand out in the pulse for that delicious "it computed instantly" feeling
+        let worldReactionNotes = result.notes.filter { $0.tags.contains(.progress) && ($0.title.contains("Responded") || $0.title.contains("Noticed") || $0.title.contains("Momentum") || $0.title.contains("Echo") || $0.title.contains("Body Responded") || $0.title.contains("Financial System") || $0.title.contains("Resourcefulness")) }
+
+        if !worldReactionNotes.isEmpty {
+            let enhanced = activityPulse!
+            activityPulse = ActivityPulse(title: "Action + World Reaction", detail: enhanced.detail, tone: enhanced.tone)
+            if let first = worldReactionNotes.first {
+                pushAutonomyToast(title: first.title, detail: first.text, tone: .neutral)
+            }
+
+            // Feed the persistent frictionless feedback strip
+            for note in worldReactionNotes.prefix(2) {
+                let short = "\(note.title): \(note.text)"
+                if !recentInstantReactions.contains(short) {
+                    recentInstantReactions.insert(short, at: 0)
+                }
+            }
+            if recentInstantReactions.count > 3 {
+                recentInstantReactions = Array(recentInstantReactions.prefix(3))
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 18) { [weak self] in
+                guard let self = self else { return }
+                if !self.recentInstantReactions.isEmpty {
+                    self.recentInstantReactions.removeLast()
+                }
+            }
+        }
+
+        // Spawn floating deltas for immediate visual feedback (Phase 1)
+        spawnFloatingDeltas(from: result, domain: domain)
+
         showTransientActivityPulse()
 
         orchestrator.applyAmbientPressureSync(state: &state)
@@ -1438,13 +2411,24 @@ final class GameViewModel: ObservableObject {
 
         AppFeedback.impact(.light)
 
-        let result = orchestrator.applyImmediateAction(choiceID, domain: domain, state: &state)
+        // Frictionless instant path with autonomous world reaction
+        let result = orchestrator.applyInstantActionWithAutonomousReaction(choiceID, domain: domain, state: &state)
 
         activityPulse = activityPulseFromDomainResult(
             result,
             fallbackTitle: "Action Complete",
             fallbackDetail: result.notes.first?.text ?? definition.identityLine
         )
+
+        // Highlight when autonomous systems reacted instantly
+        if result.notes.contains(where: { $0.tags.contains(.progress) && ($0.title.contains("Responded") || $0.title.contains("Noticed") || $0.title.contains("Momentum") || $0.title.contains("Echo") || $0.title.contains("Body Responded")) }) {
+            let enhanced = activityPulse!
+            activityPulse = ActivityPulse(title: "Action + World Reaction", detail: enhanced.detail, tone: enhanced.tone)
+        }
+
+        // Spawn floating deltas
+        spawnFloatingDeltas(from: result, domain: domain)
+
         showTransientActivityPulse()
 
         orchestrator.applyAmbientPressureSync(state: &state)
@@ -1569,7 +2553,7 @@ final class GameViewModel: ObservableObject {
             if result.count >= 8 { break }
         }
         if result.count < 6 {
-            outer: for domain in [ActionDomain.education, .career, .finance, .relationships, .health, .crime] {
+            outer: for domain in [ActionDomain.education, .career, .finance, .relationships, .health, .crime, .identity] { // D1: include self work
                 for choice in actionChoices(for: domain) where !seen.contains(choice) {
                     result.append((domain, choice))
                     seen.insert(choice)
@@ -1616,6 +2600,7 @@ final class GameViewModel: ObservableObject {
         let tags = definition.previewTags.joined(separator: ", ")
         switch definition.baseFriction {
         case .warning: return ("High leverage", "real fallout")
+        case .danger: return ("Critical stakes", "extreme risk")
         case .resistance: return ("Pressure relief", "energy cost")
         case .locked: return ("Not ready", "locked")
         case .none: return (tags.isEmpty ? "Small stabilizer" : tags, "low friction")
@@ -1704,7 +2689,13 @@ final class GameViewModel: ObservableObject {
         state.finance.cashOnHand -= cost
         state.assets.vehicles.append(vehicle)
         
-        AppFeedback.notify(.success)
+        // QoL: Richer feedback for asset acquisition (ties into our frictionless system)
+        AppFeedback.impact(.medium)
+        floatingDeltas.append(FloatingDelta(text: "+\(vehicle.name)", tone: .positive, domain: .finance))
+        state.history.insert(
+            HistoryEntry(age: state.player.age, title: "Acquired Asset", text: "Bought \(vehicle.name) for $\(cost).", tags: [.progress]),
+            at: 0
+        )
         refreshDerivedState()
         save()
     }
@@ -1728,6 +2719,14 @@ final class GameViewModel: ObservableObject {
         state.finance.cashOnHand -= upgrade.cost
         state.assets.primaryResidence?.upgrades.append(upgrade)
         
+        // QoL improvement: Satisfying feedback for meaningful asset upgrades
+        AppFeedback.impact(.light)
+        floatingDeltas.append(FloatingDelta(text: "Home Upgraded", tone: .positive, domain: .finance))
+        state.history.insert(
+            HistoryEntry(age: state.player.age, title: "Home Improvement", text: "Upgraded residence.", tags: [.progress]),
+            at: 0
+        )
+        
         AppFeedback.notify(.success)
         refreshDerivedState()
         save()
@@ -1750,13 +2749,100 @@ final class GameViewModel: ObservableObject {
         save()
     }
 
+    // MARK: - Housing Hub (Tier A)
+
+    private var homeOwnershipSystem: HomeOwnershipSystem { HomeOwnershipSystem() }
+
+    func housingTargetHomeValue() -> Int {
+        let snapshot = AssetDomainSnapshot(
+            world: WorldCache(),
+            player: state.player,
+            military: state.military,
+            career: state.career,
+            finance: state.finance,
+            assets: state.assets,
+            housing: state.housing
+        )
+        if state.assets.targetHomeValue > 0 { return state.assets.targetHomeValue }
+        return homeOwnershipSystem.recommendedHomeValuePublic(for: snapshot, finance: state.finance)
+    }
+
+    func housingDownPaymentNeeded() -> Int {
+        homeOwnershipSystem.downPaymentNeeded(for: housingTargetHomeValue(), isVeteran: state.military.isVeteran)
+    }
+
+    func housingFundProgress() -> Double {
+        let needed = max(1, housingDownPaymentNeeded())
+        return min(1.0, Double(state.finance.homeDownPaymentSavings) / Double(needed))
+    }
+
+    func housingInstantDepositAmount() -> Int {
+        homeOwnershipSystem.projectedInstantDepositAmount(cashOnHand: state.finance.cashOnHand)
+    }
+
+    func housingInstantReserveAmount() -> Int {
+        homeOwnershipSystem.projectedInstantReserveAmount(cashOnHand: state.finance.cashOnHand)
+    }
+
+    func shouldExpandHomeYearPlan() -> Bool {
+        state.assets.homeownershipTrackActive
+            || state.finance.homeDownPaymentSavings > 0
+            || state.assets.primaryResidence?.status == .delinquent
+    }
+
+    func housingArrangementLabel() -> String {
+        switch state.housing.livingArrangement {
+        case .familyHome: return "Family home"
+        case .roommates: return "Roommates"
+        case .soloRenting: return "Renting solo"
+        case .couchSurfing: return "Couch surfing"
+        case .ownerOccupied: return "Owner occupied"
+        }
+    }
+
+    private func housingPreviewLines(for choiceID: ActionChoiceID) -> [String] {
+        switch choiceID {
+        case .depositToHouseFund:
+            let amount = housingInstantDepositAmount()
+            return [
+                "−$\(amount) cash",
+                "+$\(amount) house fund",
+                "Target home ~$\(housingTargetHomeValue())"
+            ]
+        case .topUpHouseReserve:
+            let amount = housingInstantReserveAmount()
+            return ["−$\(amount) cash", "+$\(amount) repair reserve"]
+        case .saveForDownPayment:
+            return ["Auto-save during the year", "Tightens flexible cash", "Fund grows toward ~$\(housingDownPaymentNeeded())"]
+        case .buyStarterHome:
+            return ["−~$\(housingDownPaymentNeeded()) upfront", "+ownership & stability", "Adds mortgage weight"]
+        case .refinanceMortgage:
+            return ["−$1,500 fees", "Lower monthly if eligible", "Needs rate ≥6% today"]
+        case .buildMaintenanceReserve:
+            return ["Year-end reserve build", "Less surprise repair pain", "Uses spare cash"]
+        case .sellHome:
+            if let home = state.assets.primaryResidence {
+                return ["+equity back to cash", "−housing stability", "Value ~$\(home.totalValue)"]
+            }
+            return ["Turn equity into cash", "Lose owner stability"]
+        default:
+            return []
+        }
+    }
+
     func buyJewelry(_ item: Jewelry) {
         guard state.finance.cashOnHand >= item.cost else { return }
         
         state.finance.cashOnHand -= item.cost
         state.assets.jewelry.append(item)
         
-        AppFeedback.notify(.success)
+        // QoL: Distinct feedback for luxury/collectible assets
+        AppFeedback.impact(.light)
+        floatingDeltas.append(FloatingDelta(text: "+\(item.name)", tone: .positive, domain: .finance))
+        state.history.insert(
+            HistoryEntry(age: state.player.age, title: "Luxury Purchase", text: "Acquired \(item.name).", tags: [.progress]),
+            at: 0
+        )
         refreshDerivedState()
         save()
     }
@@ -1806,7 +2892,100 @@ final class GameViewModel: ObservableObject {
         let item = state.assets.marine[index]
         state.finance.cashOnHand += item.resaleValue
         state.assets.marine.remove(at: index)
+        
+        // Aggressive QoL: Consistent rich feedback for all asset transactions
         AppFeedback.impact(.medium)
+        floatingDeltas.append(FloatingDelta(text: "Sold \(item.name)", tone: .neutral, domain: .finance))
+        state.history.insert(
+            HistoryEntry(age: state.player.age, title: "Asset Sale", text: "Sold \(item.name) for $\(item.resaleValue).", tags: [.progress]),
+            at: 0
+        )
+        refreshDerivedState()
+        save()
+    }
+
+    // Assets2: Signature Asset support (career-specific high-status holdings)
+    func buySignatureAsset(_ item: SignatureAsset) {
+        guard state.finance.cashOnHand >= item.cost else { return }
+        // Only allow if the player is on the matching special career track
+        guard state.specialCareer.track == item.associatedTrack else { return }
+
+        state.finance.cashOnHand -= item.cost
+        state.assets.signatureAssets.append(item)
+
+        AppFeedback.notify(.success)
+        floatingDeltas.append(FloatingDelta(text: "+\(item.name)", tone: .positive, domain: .finance))
+        state.history.insert(
+            HistoryEntry(age: state.player.age, title: "Signature Asset Acquired", text: "Acquired \(item.name) — a major statement for your path.", tags: [.progress, .finance]),
+            at: 0
+        )
+        refreshDerivedState()
+        save()
+    }
+
+    func sellSignatureAsset(_ id: UUID) {
+        guard let index = state.assets.signatureAssets.firstIndex(where: { $0.id == id }) else { return }
+        let item = state.assets.signatureAssets[index]
+        state.finance.cashOnHand += item.resaleValue
+        state.assets.signatureAssets.remove(at: index)
+
+        AppFeedback.impact(.medium)
+        floatingDeltas.append(FloatingDelta(text: "Sold \(item.name)", tone: .neutral, domain: .finance))
+        state.history.insert(
+            HistoryEntry(age: state.player.age, title: "Signature Asset Sold", text: "Sold \(item.name) for $\(item.resaleValue).", tags: [.progress]),
+            at: 0
+        )
+        refreshDerivedState()
+        save()
+    }
+    
+    // Very aggressive QoL: Bulk sell low-value items
+    func sellLowValueAssets() {
+        var soldValue = 0
+        var soldCount = 0
+        
+        // Sell cheap jewelry
+        state.assets.jewelry.removeAll { item in
+            if item.resaleValue < 3000 {
+                soldValue += item.resaleValue
+                soldCount += 1
+                return true
+            }
+            return false
+        }
+        
+        // Sell cheap vehicles (conservative estimate)
+        state.assets.vehicles.removeAll { vehicle in
+            let estimatedValue = 5000 + vehicle.upgrades.count * 2000
+            if estimatedValue < 8000 {
+                soldValue += estimatedValue
+                soldCount += 1
+                return true
+            }
+            return false
+        }
+        
+        if soldCount > 0 {
+            state.finance.cashOnHand += soldValue
+            assetTransactionFeedback(
+                title: "Bulk Liquidation",
+                detail: "Sold \(soldCount) low-value items for $\(soldValue).",
+                deltaText: "+\(soldValue)",
+                haptic: .light
+            )
+        }
+    }
+    
+    // Helper for consistent high-quality asset transaction feedback (QoL)
+    private func assetTransactionFeedback(title: String, detail: String, deltaText: String? = nil, haptic: AppFeedback.ImpactStyle = .medium) {
+        AppFeedback.impact(haptic)
+        if let delta = deltaText {
+            floatingDeltas.append(FloatingDelta(text: delta, tone: .positive, domain: .finance))
+        }
+        state.history.insert(
+            HistoryEntry(age: state.player.age, title: title, text: detail, tags: [.progress]),
+            at: 0
+        )
         refreshDerivedState()
         save()
     }
@@ -1881,6 +3060,22 @@ final class GameViewModel: ObservableObject {
             sources.append(("Social drift", 58))
         }
 
+        // Side addition for immersion (teen/early adulthood): childhood dossier makes certain pressures feel personal and differentiated, not generic "life is hard"
+        if let d = state.childhoodDossier, (state.player.age <= 22 && state.education.stage != .inactive) {
+            if d.aptitudes.entrepreneurial >= 55 && state.finance.financialStress >= 30 {
+                sources.append(("Hustle pressure (your wiring turns money stress into drive)", state.finance.financialStress / 2))
+            }
+            if d.aptitudes.physical >= 55 && (state.healthProfile.mentalWellness < 50 || state.healthProfile.physicalWellness < 50) {
+                sources.append(("Body pressure (early physical edge makes recovery feel familiar)", max(100 - state.healthProfile.mentalWellness, 100 - state.healthProfile.physicalWellness) / 2))
+            }
+            if d.aptitudes.social >= 55 && state.education.schoolBelonging < 45 {
+                sources.append(("Social wiring pressure (belonging gaps hit different when you're naturally magnetic)", 100 - state.education.schoolBelonging))
+            }
+            if d.aptitudes.creative >= 55 && state.education.engagement < 50 {
+                sources.append(("Creative friction (your spark makes low-engagement years feel especially flat)", 100 - state.education.engagement))
+            }
+        }
+
         return Array(sources.sorted { $0.1 > $1.1 }.prefix(3).map(\.0))
     }
 
@@ -1912,6 +3107,10 @@ final class GameViewModel: ObservableObject {
         }
         if state.player.age < 22 {
             unlocks.append("21-22: completion or redirection")
+        }
+        // Dossier immersion: your 14-year-old wiring is already shaping the teen/early adult lane
+        for spark in teenAptitudeSparks() {
+            unlocks.append(spark)
         }
         return unlocks
     }
@@ -1950,6 +3149,29 @@ final class GameViewModel: ObservableObject {
             ("Stress", "\(stress)", stress >= 55 ? .warning : .neutral),
             ("Condition Risk", "\(conditionRisk)", conditionRisk >= 40 ? .warning : .neutral)
         ]
+    }
+
+    /// Dossier-driven "your wiring from 14 is showing up here" for teen/early adult immersion.
+    /// Makes the school years feel like the special career seeds are already sprouting.
+    func teenAptitudeSparks() -> [String] {
+        guard let d = state.childhoodDossier, isTeenExperience || (state.player.age <= 22 && state.education.stage != .inactive) else { return [] }
+        var sparks: [String] = []
+        if d.aptitudes.physical >= 58 {
+            sparks.append("Physical edge active in sports/gym — coaches see it")
+        }
+        if d.aptitudes.entrepreneurial >= 58 {
+            sparks.append("Hustle instinct in side moves or projects")
+        }
+        if d.aptitudes.creative >= 58 {
+            sparks.append("Creative current in clubs, writing, or performances")
+        }
+        if d.aptitudes.social >= 58 {
+            sparks.append("Social current — rooms and groups bend toward you")
+        }
+        if d.aptitudes.analytical >= 58 || d.aptitudes.technical >= 58 {
+            sparks.append("Sharp mind showing in the work that actually clicks")
+        }
+        return sparks
     }
 
     func chapterStatus() -> String {
@@ -2161,6 +3383,8 @@ final class GameViewModel: ObservableObject {
             switch definition.baseFriction {
             case .warning:
                 frictionSignal = AgeUpRiskSignal(title: "This action carries real fallout", symbol: "exclamationmark.triangle.fill", tone: .warning)
+            case .danger:
+                frictionSignal = AgeUpRiskSignal(title: "CRITICAL RISK ACTIVE", symbol: "exclamationmark.shield.fill", tone: .warning)
             case .resistance:
                 frictionSignal = AgeUpRiskSignal(title: "This action will cost energy", symbol: "flame.fill", tone: .warning)
             case .locked:
@@ -2423,12 +3647,15 @@ final class GameViewModel: ObservableObject {
         presentedCard = nil
         interactionCards.reset()
         activityPulse = nil
+        isResolvingInteraction = false
+        resolvingInteractionContext = nil
         showingDebugLab = false
         plannerDetail = nil
         selectedInsight = nil
         originTab = nil
         originPlannerDetail = nil
         returnPrompt = nil
+        clearPopupStateIfNeeded()
         persistenceBanner = nil
 
         switch modal {
@@ -2439,11 +3666,13 @@ final class GameViewModel: ObservableObject {
         case .yearSummary:
             latestYearSummary = payload.yearSummary
             if let yearSummary = payload.yearSummary {
+                spawnYearlyDeltas(from: yearSummary)
                 present(cards: [.yearSummary(yearSummary)])
             }
         case .none:
             if let yearSummary = payload.yearSummary {
                 latestYearSummary = yearSummary
+                spawnYearlyDeltas(from: yearSummary)
                 present(cards: [.yearSummary(yearSummary)])
             } else if let event = payload.event {
                 present(cards: [.event(event)])
@@ -2464,10 +3693,13 @@ final class GameViewModel: ObservableObject {
         switch domain {
         case .education: return "School"
         case .career: return "Work"
+        case .military: return "Military"
         case .crime: return "Crime"
         case .finance: return "Money"
         case .relationships: return "Social"
         case .health: return "Health"
+        case .family: return "Family"
+        case .identity: return "Identity"
         }
     }
 
@@ -2824,6 +4056,30 @@ extension GameViewModel {
                 tone: .warning,
                 destination: .lifeHousing
             )
+        case .military:
+            pressure = PressureSummary(
+                symbol: "shield.fill",
+                title: "Military Duty",
+                detail: "Service and discipline are the backbone of your year.",
+                tone: .neutral,
+                destination: .careerOverview
+            )
+        case .family:
+            pressure = PressureSummary(
+                symbol: "person.2.fill",
+                title: "Family Burden",
+                detail: "Parenthood and family ties are shaping your path.",
+                tone: .neutral,
+                destination: .relationshipsFamily
+            )
+        case .identity:
+            pressure = PressureSummary(
+                symbol: "person.fill",
+                title: "Identity & Direction",
+                detail: "You're figuring out who you are and what matters.",
+                tone: .neutral,
+                destination: .lifeHistory
+            )
         }
 
         return TabOverviewModel(
@@ -2924,7 +4180,7 @@ extension GameViewModel {
             title: "Education",
             symbol: "book.closed.fill",
             status: state.education.stage == .university ? "University load" : (state.education.stage == .tradeTraining ? "Trade training" : "Student life"),
-            summary: state.education.burnoutRisk >= 55 ? "School is still active, but recovery is becoming part of the academic problem." : "Education is the main lane right now, so school momentum decides what opens next.",
+            summary: state.education.burnoutRisk >= 55 ? "School is still active, but recovery is becoming part of the academic problem." : (state.education.academicTrack == .honors ? "Honors track: prestige + pressure. Longevity high." : (state.education.academicTrack == .vocational ? "Trade: fast practical ramp, creds hold via practice." : "Education is the main lane right now, so school momentum decides what opens next.")),
             tone: tone,
             trendLabel: educationTrendLabel(),
             detailDestination: .educationOverview,
@@ -3532,7 +4788,7 @@ extension GameViewModel {
         if let pregnancy = state.family.pregnancy {
             return "Pregnant with \(pregnancy.otherParentName)"
         }
-        if let partner = state.relationships.romanticPartner {
+        if let partner = state.relationships.primaryPartner {
             switch partner.stage {
             case .married: return "Married to \(partner.name)"
             case .engaged: return "Engaged to \(partner.name)"
@@ -3549,6 +4805,10 @@ extension GameViewModel {
         if state.player.health >= 65 { return "Body holding steady" }
         return "Recovery needs help"
     }
+
+    // MARK: - Phase 1 Frictionless Visuals
+
+
 
     private func housingStatusShort() -> String {
         switch state.housing.livingArrangement {
@@ -3573,6 +4833,64 @@ extension GameViewModel {
         if strongest >= 75 { return .positive }
         if strongest < 35 { return .warning }
         return .neutral
+    }
+}
+
+// MARK: - Phase 1: High-Quality Floating Deltas Overlay (Frictionless Visual Polish)
+
+private struct FloatingDeltasOverlay: View {
+    let deltas: [FloatingDelta]
+
+    var body: some View {
+        GeometryReader { geo in
+            ForEach(Array(deltas.enumerated()), id: \.element.id) { index, delta in
+                let baseY: CGFloat = 65
+                let spacing: CGFloat = 30
+                let yPos = baseY + CGFloat(index) * spacing
+                let xPos = geo.size.width * 0.62 + CGFloat(index % 2) * 8  // slight stagger
+
+                HStack(spacing: 6) {
+                    if let domain = delta.domain {
+                        Image(systemName: iconForDomain(domain))
+                            .font(.caption2.weight(.bold))
+                    }
+                    Text(delta.text)
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(delta.tone.color)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill(delta.tone.fill)
+                        .overlay(
+                            Capsule()
+                                .stroke(delta.tone.color.opacity(0.35), lineWidth: 1)
+                        )
+                )
+                .shadow(color: delta.tone.color.opacity(0.25), radius: 3, y: 1)
+                .offset(x: xPos, y: yPos)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.6).combined(with: .opacity).combined(with: .move(edge: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.7))
+                ))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func iconForDomain(_ domain: ActionDomain) -> String {
+        switch domain {
+        case .health: return "heart.fill"
+        case .finance: return "dollarsign.circle.fill"
+        case .relationships: return "person.2.fill"
+        case .career: return "briefcase.fill"
+        case .education: return "book.fill"
+        case .crime: return "exclamationmark.triangle.fill"
+        case .military: return "shield.fill"
+        case .family: return "person.2.fill"
+        case .identity: return "person.fill"
+        }
     }
 }
 
@@ -3634,12 +4952,14 @@ enum AppFeedback {
     enum NoticeType {
         case success
         case warning
+        case error
 
         #if canImport(UIKit)
         var uiKitType: UINotificationFeedbackGenerator.FeedbackType {
             switch self {
             case .success: return .success
             case .warning: return .warning
+            case .error: return .error
             }
         }
         #endif
@@ -3655,16 +4975,323 @@ struct GameBouncyButtonStyle: ButtonStyle {
     }
 }
 
+/// Primary thumb-zone control — BitLife-weighted, shows the year you are stepping into.
+private struct AgeUpChromeButton: View {
+    @ObservedObject var vm: GameViewModel
+    let isEnabled: Bool
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var nextAge: Int { vm.state.player.age + 1 }
+
+    private var enabledGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(red: 0.28, green: 0.78, blue: 0.52),
+                Color(red: 0.14, green: 0.55, blue: 0.36),
+                Color(red: 0.08, green: 0.38, blue: 0.24)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var glowColor: Color {
+        Color(red: 0.2, green: 0.7, blue: 0.45).opacity(colorScheme == .dark ? 0.55 : 0.35)
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    if !vm.state.isGameOver {
+                        Text("NEXT YEAR")
+                            .font(.system(size: 9, weight: .heavy))
+                            .tracking(1.1)
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
+                    Text(vm.state.isGameOver ? "Life Ended" : "Age Up")
+                        .font(.system(size: 19, weight: .black))
+                        .foregroundStyle(.white)
+                    if !vm.state.isGameOver {
+                        HStack(spacing: 5) {
+                            Text("Age \(vm.state.player.age)")
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 9, weight: .black))
+                            Text("\(nextAge)")
+                                .font(.system(size: 13, weight: .black))
+                        }
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.92))
+                    } else {
+                        // P5-1: Edge shine on game over button — shows final legacy (shape already in strip/summary)
+                        let leg = vm.state.progress.legacyScore
+                        Text(leg > 0 ? "Legacy \(leg) — The story closes." : "The story closes.")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [.white.opacity(0.35), .white.opacity(0.08)],
+                                center: .topLeading,
+                                startRadius: 2,
+                                endRadius: 28
+                            )
+                        )
+                        .frame(width: 48, height: 48)
+                    Circle()
+                        .strokeBorder(.white.opacity(0.35), lineWidth: 1.5)
+                        .frame(width: 48, height: 48)
+                    Image(systemName: vm.state.isGameOver ? "xmark" : "plus")
+                        .font(.system(size: 22, weight: .black))
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 13)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .background(buttonBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [.white.opacity(isEnabled ? 0.45 : 0.15), .white.opacity(0.05)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: isEnabled ? glowColor : .clear, radius: 14, x: 0, y: 7)
+            .shadow(color: isEnabled ? Color.black.opacity(0.12) : .clear, radius: 4, x: 0, y: 2)
+        }
+        .buttonStyle(GameBouncyButtonStyle())
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.5)
+        .animation(.easeOut(duration: 0.2), value: isEnabled)
+        .accessibilityIdentifier("age-up-button")
+        .accessibilityLabel(vm.state.isGameOver ? "Life ended" : "Age up to \(nextAge)")
+        .accessibilityHint(vm.state.isGameOver ? "View final legacy and shape of this life" : "Commit the year. Hold actions for previews.")
+    }
+
+    @ViewBuilder
+    private var buttonBackground: some View {
+        if vm.state.isGameOver {
+            LinearGradient(
+                colors: [Color(white: 0.35), Color(white: 0.22)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        } else if isEnabled {
+            enabledGradient
+        } else {
+            LinearGradient(
+                colors: [
+                    DesignSystem.Colors.positive.opacity(0.45),
+                    DesignSystem.Colors.positive.opacity(0.28)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+}
+
+/// BitLife-style bottom chrome: Age Up, four domain tabs, health/journal shortcuts.
+private struct BitLifeGameChrome: View {
+    @ObservedObject var vm: GameViewModel
+    var onOpenFeed: () -> Void
+    var onOpenJournal: () -> Void
+    var safeAreaBottom: CGFloat
+
+    private var canAct: Bool {
+        vm.presentedCard == nil && vm.state.activeYearChapter == nil && !vm.state.isGameOver
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            if let last = vm.state.yearlyStance.lastCompletedStance,
+               vm.state.yearlyStance.selectedStance == nil,
+               canAct {
+                Button {
+                    vm.keepLastYearlyStance()
+                    AppFeedback.impact(.light)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "repeat.circle.fill")
+                        Text("Continue \(last.title)")
+                            .font(.caption.weight(.black))
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text(vm.state.yearlyStance.lastOutcomeLine ?? "worked last year")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(PlannerTone.positive.fill)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("bottom-continue-stance-button")
+            }
+
+            AgeUpChromeButton(
+                vm: vm,
+                isEnabled: canAct && !vm.state.isGameOver && !vm.isResolvingInteraction
+            ) {
+                vm.ageUp()
+                if vm.state.isGameOver {
+                    AppFeedback.notify(.warning)
+                }
+            }
+
+            HStack(spacing: 4) {
+                ForEach(GameViewModel.Tab.dockTabs) { tab in
+                    dockTabButton(tab)
+                }
+            }
+            .accessibilityIdentifier("bottom-domain-strip")
+
+            HStack(spacing: 8) {
+                secondaryChromeButton(
+                    title: "Health",
+                    symbol: "heart.text.square.fill",
+                    isActive: vm.showingHealthConsole,
+                    accessibilityId: "body-tab"
+                ) {
+                    vm.showingHealthConsole = true
+                    vm.selectedTab = .home
+                }
+
+                secondaryChromeButton(
+                    title: "Journal",
+                    symbol: "book.closed.fill",
+                    isActive: false,
+                    accessibilityId: "history-tab"
+                ) {
+                    onOpenJournal()
+                }
+
+                Menu {
+                    Button {
+                        onOpenFeed()
+                    } label: {
+                        Label("Life Feed", systemImage: "rectangle.stack.person.crop.fill")
+                    }
+                    Button {
+                        vm.showingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "gearshape.fill")
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "ellipsis.circle.fill")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("More")
+                            .font(.system(size: 10, weight: .heavy))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .foregroundStyle(.primary)
+                    .background(Color.primary.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .accessibilityIdentifier("bottom-actions-menu")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 8)
+        .padding(.bottom, max(safeAreaBottom, 6))
+        .background(.ultraThinMaterial)
+        .accessibilityIdentifier("bottom-game-bar")
+    }
+
+    @ViewBuilder
+    private func dockTabButton(_ tab: GameViewModel.Tab) -> some View {
+        let selected = vm.selectedTab == tab && !vm.showingHealthConsole
+        Button {
+            AppFeedback.impact(.light)
+            vm.showingHealthConsole = false
+            vm.selectedTab = tab
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: vm.dockSymbol(for: tab))
+                    .font(.system(size: 15, weight: .bold))
+                Text(vm.dockLabel(for: tab))
+                    .font(.system(size: 9, weight: .heavy))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 7)
+            .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.85))
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(selected ? DesignSystem.Colors.accent : Color.primary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(tab.uiTestTabIdentifier)
+    }
+
+    @ViewBuilder
+    private func secondaryChromeButton(
+        title: String,
+        symbol: String,
+        isActive: Bool,
+        accessibilityId: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: {
+            AppFeedback.impact(.light)
+            action()
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 13, weight: .bold))
+                Text(title)
+                    .font(.system(size: 10, weight: .heavy))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .foregroundStyle(isActive ? Color.white : Color.primary.opacity(0.9))
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isActive ? DesignSystem.Colors.accent.opacity(0.92) : Color.primary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(accessibilityId)
+    }
+}
+
 struct ContentView: View {
     @StateObject private var vm = GameViewModel()
     @State private var isPulsing = false
     @State private var showLifeFeedSheet = false
+    @State private var showLifeJournalSheet = false
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                ZStack(alignment: .bottom) {
+                ZStack {
+                    Color.clear
+                        .onAppear {
+                            if vm.state.startupState != .active {
+                                vm.setupFreshGameIfNeeded()
+                            }
+                        }
                     plannerBackground
                         .ignoresSafeArea()
                         .saturation(vm.state.narrativeTone.saturation * vm.colorEmphasisSetting.saturation)
@@ -3692,37 +5319,56 @@ struct ContentView: View {
                         )
                         .offset(x: vm.actionFrictionJitter ? 4 : 0)
                         .animation(vm.actionFrictionJitter ? .default.repeatCount(3, autoreverses: true) : .default, value: vm.actionFrictionJitter)
+                        .safeAreaInset(edge: .bottom, spacing: 0) {
+                            if vm.presentedCard == nil,
+                               vm.state.activeYearChapter == nil,
+                               !vm.state.isGameOver {
+                                BitLifeGameChrome(
+                                    vm: vm,
+                                    onOpenFeed: { showLifeFeedSheet = true },
+                                    onOpenJournal: { showLifeJournalSheet = true },
+                                    safeAreaBottom: geometry.safeAreaInsets.bottom
+                                )
+                                .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
+                            }
+                        }
+                        .onAppear {
+                            if vm.selectedTab == .history {
+                                vm.selectedTab = .home
+                            }
+                        }
+
+                        // Phase 1: Polished floating deltas for instant action feedback (above persistent controls)
+                        FloatingDeltasOverlay(deltas: vm.floatingDeltas)
+                            .allowsHitTesting(false)
+
+                        AutonomyToastOverlay(toasts: vm.autonomyToasts)
+                            .zIndex(48)
+
+                        // Micro-beat (transient reaction text) -- suppressed during popup resolving to keep focus on the processing card/loading.
+                        if !vm.isResolvingInteraction, let beat = vm.microBeatOverlay {
+                            VStack {
+                                Spacer()
+                                Text(beat)
+                                    .font(.headline.italic())
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 14)
+                                    .background(Color.black.opacity(0.85))
+                                    .clipShape(Capsule())
+                                    .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
+                                    .padding(.bottom, 160)  // above BitLife chrome + any card bottom content
+                            }
+                            .ignoresSafeArea()
+                            .zIndex(50)
+                        }
+                    } else if vm.state.startupState == .inheritingLegacy {
+                        LegacySelectionView(vm: vm)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                     } else {
                         CharacterCreationView(vm: vm)
                             .padding(.top, 14)
                             .padding(.bottom, geometry.safeAreaInsets.bottom + 28)
-                    }
-
-                    if vm.state.startupState == .active, let presentedCard = vm.presentedCard {
-                        CompactInteractionOverlay(
-                            card: presentedCard,
-                            state: vm.state,
-                            onAdvance: {
-                                AppFeedback.impact(.light)
-                                vm.dismissPresentedCard()
-                            },
-                            onPick: { choice in
-                                vm.choose(choice)
-                                if vm.state.isGameOver {
-                                    AppFeedback.notify(.warning)
-                                }
-                            },
-                            onCrisisPick: { choice in
-                                vm.resolveCrisis(choice)
-                            },
-                            onPitchPick: { choice in
-                                vm.resolvePitch(choice)
-                            }
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, geometry.safeAreaInsets.bottom + 12)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .zIndex(40)
                     }
 
                     if let saveStatusBanner = vm.saveStatusBanner, vm.state.startupState == .active {
@@ -3731,26 +5377,97 @@ struct ContentView: View {
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
 
-                    // Micro-Beat Overlay
-                    if let beat = vm.microBeatOverlay {
-                        VStack {
-                            Spacer()
-                            Text(beat)
-                                .font(.headline.italic())
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 14)
-                                .background(Color.black.opacity(0.85))
-                                .clipShape(Capsule())
-                                .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
-                                .padding(.bottom, geometry.safeAreaInsets.bottom + 110)
+                    // Popup card / processing overlay at ROOT level (outside the startupState if/TabView branch and its .overlays).
+                    // This decouples popups from the main shell (TabView vs Legacy vs Creation) so life-end resolution
+                    // transitions (setting inheritingLegacy or calling newLife) don't remove the gesture/overlay that
+                    // triggered them, preventing "stuck on one screen".
+                    // Scrim blocks all underlying (including native tab bar + age-up controls + domain content).
+                    // When isResolvingInteraction (set sync on button press, before Task.yield + heavy), we show
+                    // processing UI immediately so user doesn't see frozen old popup buttons while yearly sim/refresh/save runs.
+                    // (See also the two-speeds comment in LifeSimulationOrchestrator.swift around resolvePreparedYearChapter.)
+                    if vm.presentedCard != nil || vm.isResolvingInteraction {
+                        ZStack(alignment: .bottom) {
+                            // Full dimming scrim (root level ensures it covers TabView content + bar + everything).
+                            Color.black.opacity(0.55)
+                                .ignoresSafeArea()
+                                .allowsHitTesting(true)
+                                .onTapGesture {
+                                    if !vm.isResolvingInteraction, let card = vm.presentedCard, !vm.isChoiceCard(card) {
+                                        AppFeedback.impact(.light)
+                                        vm.dismissPresentedCard()
+                                    }
+                                }
+                                .zIndex(1)
+
+                            if vm.isResolvingInteraction {
+                                // Processing/loading state (visible immediately after button press thanks to flag + yield).
+                                VStack(spacing: 16) {
+                                    ProgressView()
+                                        .tint(.white)
+                                        .scaleEffect(1.2)
+                                    Text(vm.resolvingInteractionContext.map { "Resolving: \($0)" } ?? "Resolving your choice...")
+                                        .font(.headline)
+                                        .foregroundStyle(.white)
+                                    Text("Simulating the year (this can take a moment for complex lives).")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(24)
+                                .background(.ultraThinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .padding(.bottom, geometry.safeAreaInsets.bottom + 80)
+                                .zIndex(2)
+                            } else if let card = vm.presentedCard {
+                                CompactInteractionOverlay(
+                                    card: card,
+                                    state: vm.state,
+                                    stakes: vm.state.activeYearChapter?.stakes,
+                                    stanceChips: vm.forecastStanceChips(),
+                                    recommendedStance: vm.recommendedYearlyStance(),
+                                    onSelectStance: { vm.setYearlyStance($0) },
+                                    onPrepareForecast: { vm.prepareForecastCommitmentIfNeeded() },
+                                    onAdvance: {
+                                        AppFeedback.impact(.light)
+                                        vm.dismissPresentedCard()
+                                    },
+                                    onPick: { choice in
+                                        vm.choose(choice)
+                                        if vm.state.isGameOver {
+                                            AppFeedback.notify(.warning)
+                                        }
+                                    },
+                                    onCrisisPick: { choice in
+                                        vm.resolveCrisis(choice)
+                                    },
+                                    onPitchPick: { choice in
+                                        vm.resolvePitch(choice)
+                                    }
+                                )
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, geometry.safeAreaInsets.bottom + 58)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                                .zIndex(2)
+                            }
                         }
-                        .ignoresSafeArea()
-                        .zIndex(100)
+                        .zIndex(150)
                     }
-                }
-                .safeAreaInset(edge: .bottom) {
-                    EmptyView()
+
+                    // Loading overlay during fresh game activation (prevents white screen)
+                    if vm.isStartingNewLife {
+                        ZStack {
+                            Color.black.opacity(0.6).ignoresSafeArea()
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(1.2)
+                                Text("Generating your life...")
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .zIndex(200)
+                        .transition(.opacity)
+                    }
                 }
             }
             .modifier(HidePlannerNavigationBar())
@@ -3770,14 +5487,29 @@ struct ContentView: View {
                     ChangeInsightSheet(insight: insight)
                 }
             }
+            .sheet(isPresented: $showLifeJournalSheet) {
+                NavigationStack {
+                    LifeLogView(history: vm.state.history)
+                        .accessibilityIdentifier("history-tab-content")
+                        .navigationTitle("Journal")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") { showLifeJournalSheet = false }
+                            }
+                        }
+                }
+                .presentationDetents([.medium, .large])
+            }
             .sheet(isPresented: $showLifeFeedSheet) {
                 NavigationStack {
                     ScrollView(showsIndicators: false) {
                         FeedHomeTab(
                             state: vm.state,
+                            compactMode: vm.prefersCompactLateGameUI,
                             signals: topSignals(),
                             summaryItems: vm.feedSummaryItems(),
-                            urgencyItems: vm.feedUrgencyItems(),
+                            urgencyItems: vm.feedUrgencyItems(limit: vm.prefersCompactLateGameUI ? 3 : nil),
                             nextDecisionTitle: vm.nextDecisionPrompt(),
                             nextDecisionDetail: vm.nextDecisionDetail(),
                             queuedInteractionCount: vm.interactionQueueDepth,
@@ -4028,14 +5760,29 @@ struct ContentView: View {
     }
 
     private func activityPulseBanner(_ pulse: ActivityPulse) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: pulse.tone == .warning ? "flame.fill" : "sparkles")
-                .foregroundStyle(pulse.tone.color)
+        let isWorldReaction = pulse.title.contains("World Reaction") || pulse.title.contains("Action +")
+
+        return HStack(alignment: .top, spacing: 12) {
+            Image(systemName: isWorldReaction ? "globe" : (pulse.tone == .warning ? "flame.fill" : "sparkles"))
+                .foregroundStyle(isWorldReaction ? Color.purple : pulse.tone.color)
                 .padding(.top, 2)
+                .scaleEffect(isWorldReaction ? 1.1 : 1.0)
 
             VStack(alignment: .leading, spacing: 4) {
+                if isWorldReaction {
+                    Text("WORLD REACTED")
+                        .font(.caption2.weight(.black))
+                        .foregroundStyle(Color.purple)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Color.purple.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+
                 Text(pulse.title)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isWorldReaction ? Color.primary : .primary)
+
                 Text(pulse.detail)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -4047,14 +5794,15 @@ struct ContentView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(OLTheme.cardFill(colorScheme))
+                .fill(isWorldReaction ? Color.purple.opacity(0.06) : OLTheme.cardFill(colorScheme))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(pulse.tone.fill, lineWidth: 1)
+                .stroke(isWorldReaction ? Color.purple.opacity(0.35) : pulse.tone.fill, lineWidth: isWorldReaction ? 1.5 : 1)
         )
-        .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 12, x: 0, y: 6)
+        .shadow(color: isWorldReaction ? Color.purple.opacity(0.15) : Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: isWorldReaction ? 16 : 12, x: 0, y: 6)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: pulse.title)
         .accessibilityIdentifier("activity-pulse-banner")
     }
 
@@ -4070,7 +5818,7 @@ struct ContentView: View {
                 Capsule()
                     .stroke(PlannerTone.positive.fill, lineWidth: 1)
             )
-            .padding(.bottom, safeAreaBottom + 74)
+            .padding(.bottom, safeAreaBottom + 168)
     }
 
     @ViewBuilder
@@ -4139,12 +5887,29 @@ struct ContentView: View {
     private var activeTabContent: some View {
         switch vm.selectedTab {
         case .home:
+            let compactHome = vm.prefersCompactLateGameUI
             VStack(alignment: .leading, spacing: 20) {
+                if let ribbon = vm.lateGameContextRibbon() {
+                    PlannerSectionCard(
+                        title: "Life Chapter",
+                        symbol: "clock.arrow.circlepath",
+                        status: ribbon,
+                        tone: .neutral
+                    ) {
+                        Text("Tap sections below to expand. The Life tab keeps quick actions up front.")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityIdentifier("home-late-game-ribbon")
+                }
+
                 PlannerSectionCard(
                     title: "Auto-Life Pace",
                     symbol: "forward.end.fill",
                     status: vm.autoLifePace.title,
-                    tone: vm.autoLifePace == .autopilot ? .positive : .neutral
+                    tone: vm.autoLifePace == .autopilot ? .positive : .neutral,
+                    collapsible: compactHome,
+                    startsCollapsed: compactHome
                 ) {
                     VStack(alignment: .leading, spacing: 12) {
                         Picker("Auto-Life Pace", selection: $vm.autoLifePace) {
@@ -4189,11 +5954,36 @@ struct ContentView: View {
                 PlannerSectionCard(
                     title: "Year Goal",
                     symbol: "scope",
-                    status: vm.state.yearlyStance.selectedStance?.title ?? "Recommended: \(vm.recommendedYearlyStance().title)",
+                    status: yearGoalStatusLine(vm: vm),
                     tone: vm.state.yearlyStance.selectedStance == nil ? .neutral : .positive
                 ) {
                     VStack(alignment: .leading, spacing: 10) {
-                        if let last = vm.state.yearlyStance.lastCompletedStance {
+                        if let selected = vm.state.yearlyStance.selectedStance {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .foregroundStyle(PlannerTone.positive.color)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(selected.title)
+                                        .font(.caption.weight(.heavy))
+                                    Text("Locked in for this year. Change it on the forecast when you age up.")
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(10)
+                            .background(PlannerTone.positive.fill)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .accessibilityIdentifier("home-year-goal-committed")
+                        } else {
+                            Text("Commit on the forecast when you age up — swipe the stakes, then pick what you are protecting.")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("home-year-goal-hint")
+                        }
+
+                        if let last = vm.state.yearlyStance.lastCompletedStance,
+                           vm.state.yearlyStance.selectedStance == nil {
                             Button {
                                 vm.keepLastYearlyStance()
                             } label: {
@@ -4208,6 +5998,13 @@ struct ContentView: View {
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.7)
                                     }
+                                    // D4 residue
+                                    if vm.state.yearlyStance.recentStances.count >= 2 {
+                                        let echo = vm.state.yearlyStance.recentStances.prefix(2).map { $0.title }.joined(separator: " → ")
+                                        Text("Recent: \(echo)")
+                                            .font(.caption2.italic())
+                                            .foregroundStyle(.tertiary)
+                                    }
                                 }
                                 .padding(10)
                                 .background(PlannerTone.positive.fill)
@@ -4215,31 +6012,6 @@ struct ContentView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("keep-yearly-stance-button")
-                        }
-
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                            ForEach(Array(vm.yearlyStanceChips().prefix(4))) { stance in
-                                Button {
-                                    vm.setYearlyStance(stance.id)
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(stance.title)
-                                            .font(.caption.weight(.heavy))
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.78)
-                                        Text(stance.detail)
-                                            .font(.caption2.weight(.semibold))
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(2)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(10)
-                                    .background(stance.isSelected ? PlannerTone.positive.fill : Color.white.opacity(0.72))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("yearly-stance-\(stance.id.rawValue)")
-                            }
                         }
                     }
                 }
@@ -4289,16 +6061,18 @@ struct ContentView: View {
                 .accessibilityIdentifier("home-quick-actions")
 
                 PlannerSectionCard(
-                    title: "Top Status",
+                    title: compactHome ? "Signals" : "Top Status",
                     symbol: "exclamationmark.bubble.fill",
                     status: vm.feedUrgencyItems().first(where: { $0.tone == .warning })?.value
                         ?? vm.feedUrgencyItems().first?.value
                         ?? "Glance",
-                    tone: vm.feedUrgencyItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral
+                    tone: vm.feedUrgencyItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral,
+                    collapsible: compactHome,
+                    startsCollapsed: compactHome
                 ) {
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 10) {
-                            ForEach(Array(vm.feedUrgencyItems().prefix(3))) { item in
+                            ForEach(vm.feedUrgencyItems(limit: compactHome ? 2 : nil)) { item in
                                 Button {
                                     if let dest = vm.plannerDestination(forUrgencyItemTitle: item.title) {
                                         AppFeedback.impact(.light)
@@ -4322,7 +6096,9 @@ struct ContentView: View {
                     title: "Background Pulse",
                     symbol: "waveform.path.ecg",
                     status: vm.backgroundPulseItems().first?.detail ?? "Quiet",
-                    tone: vm.backgroundPulseItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral
+                    tone: vm.backgroundPulseItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral,
+                    collapsible: compactHome,
+                    startsCollapsed: true
                 ) {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(vm.backgroundPulseItems()) { item in
@@ -4422,7 +6198,24 @@ struct ContentView: View {
             .padding(.horizontal, 18)
 
         case .assets:
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 16) {
+                // QoL visual header for Assets tab
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Net Worth")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text("$\(vm.state.finance.totalWealth)")
+                            .font(.title3.weight(.black))
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                    Image(systemName: "shippingbox.fill")
+                        .font(.title2)
+                        .foregroundStyle(Color.purple.opacity(0.8))
+                }
+                .padding(.horizontal, 4)
+                
                 FinancePlannerTab(
                     state: vm.state,
                     isTeenExperience: vm.isTeenExperience,
@@ -4449,7 +6242,10 @@ struct ContentView: View {
                     onBuyAviation: { vm.buyAviation($0) },
                     onSellAviation: { vm.sellAviation($0) },
                     onBuyMarine: { vm.buyMarine($0) },
-                    onSellMarine: { vm.sellMarine($0) }
+                    onSellMarine: { vm.sellMarine($0) },
+                    // Assets2
+                    onBuySignature: { vm.buySignatureAsset($0) },
+                    onSellSignature: { vm.sellSignatureAsset($0) }
                 )
 
                 AssetsHousingLegacySection(state: vm.state, openDetail: vm.openDetail(_:))
@@ -4477,152 +6273,6 @@ struct ContentView: View {
             .padding(.horizontal, 18)
             .accessibilityIdentifier("history-tab-content")
         }
-    }
-
-    @ViewBuilder
-    private var bottomGameBar: some View {
-        VStack(spacing: 8) {
-            if vm.presentedCard == nil,
-               vm.state.activeYearChapter == nil,
-               let last = vm.state.yearlyStance.lastCompletedStance,
-               vm.state.yearlyStance.selectedStance == nil {
-                Button {
-                    vm.keepLastYearlyStance()
-                    AppFeedback.impact(.light)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "repeat.circle.fill")
-                        Text("Continue \(last.title)")
-                            .font(.caption.weight(.heavy))
-                            .lineLimit(1)
-                        Spacer(minLength: 0)
-                        Text(vm.state.yearlyStance.lastOutcomeLine ?? "worked last year")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .background(PlannerTone.positive.fill)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("bottom-continue-stance-button")
-            }
-
-            HStack(spacing: 10) {
-                Menu {
-                    ForEach(GameViewModel.Tab.allCases) { tab in
-                        Button {
-                            vm.selectedTab = tab
-                            AppFeedback.impact(.light)
-                        } label: {
-                            Label(vm.tabTitle(for: tab), systemImage: vm.tabSymbol(for: tab))
-                        }
-                        .accessibilityIdentifier(tab.uiTestTabIdentifier)
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "list.bullet.rectangle.portrait.fill")
-                            .font(.system(size: 18, weight: .bold))
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Actions")
-                                .font(.system(size: 13, weight: .black))
-                            Text(vm.tabTitle(for: vm.selectedTab))
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                    .padding(.horizontal, 14)
-                    .background(OLTheme.subtleFill(colorScheme))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("bottom-actions-menu")
-
-                Button {
-                    vm.ageUp()
-                    if vm.state.isGameOver {
-                        AppFeedback.notify(.warning)
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: vm.state.isGameOver ? "xmark" : "arrow.up.circle.fill")
-                            .font(.system(size: 20, weight: .bold))
-                        Text(vm.state.isGameOver ? "Ended" : "Age Up")
-                            .font(.system(size: 15, weight: .black))
-                            .lineLimit(1)
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(vm.state.isGameOver ? Color.gray : DesignSystem.Colors.positive)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .shadow(color: DesignSystem.Colors.positive.opacity(isPulsing ? 0.35 : 0.16), radius: isPulsing ? 10 : 5, y: 4)
-                    .scaleEffect(isPulsing && !vm.state.isGameOver && vm.interactionQueueDepth == 0 ? 1.015 : 1.0)
-                    .animation(.easeInOut(duration: 1.15).repeatForever(autoreverses: true), value: isPulsing)
-                    .onAppear { isPulsing = true }
-                }
-                .buttonStyle(GameBouncyButtonStyle())
-                .disabled(vm.state.isGameOver || vm.presentedCard != nil || vm.state.activeYearChapter != nil)
-                .accessibilityLabel(vm.state.isGameOver ? "Life ended" : "Age up one year")
-                .accessibilityHint("Advances one year in the simulation.")
-                .accessibilityIdentifier("age-up-button")
-            }
-
-            HStack(spacing: 8) {
-                Text(vm.interactionQueueDepth > 0 ? "\(vm.interactionQueueDepth) cards live" : vm.pendingActionSummary())
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(
-                        vm.state.activeYearChapter != nil
-                            ? PlannerTone.warning.color
-                            : (vm.interactionQueueDepth > 0 ? PlannerTone.positive.color : .secondary)
-                    )
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                Spacer(minLength: 0)
-                Text(vm.chapterStatus())
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            HStack(spacing: 4) {
-                ForEach(GameViewModel.Tab.allCases) { tab in
-                    bottomDomainButton(tab)
-                }
-            }
-            .accessibilityIdentifier("bottom-domain-strip")
-
-            if vm.presentedCard == nil, vm.state.activeYearChapter == nil {
-                AgeUpRiskPreviewStrip(signals: vm.ageUpRiskPreviewSignals())
-            }
-        }
-        .accessibilityIdentifier("bottom-game-bar")
-    }
-
-    private func bottomDomainButton(_ tab: GameViewModel.Tab) -> some View {
-        Button {
-            vm.selectedTab = tab
-            AppFeedback.impact(.light)
-        } label: {
-            VStack(spacing: 2) {
-                Image(systemName: vm.tabSymbol(for: tab))
-                    .font(.system(size: 14, weight: .bold))
-                Text(vm.navShortTitle(for: tab))
-                    .font(.system(size: 9, weight: .heavy))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .frame(maxWidth: .infinity, minHeight: 42)
-            .foregroundStyle(vm.selectedTab == tab ? DesignSystem.Colors.accent : Color.primary.opacity(0.48))
-            .background(vm.selectedTab == tab ? DesignSystem.Colors.accent.opacity(0.12) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(vm.tabTitle(for: tab))
-        .accessibilityIdentifier(tab.uiTestTabIdentifier)
     }
 
     private func topSignals() -> [SignalSummary] {
@@ -4765,7 +6415,11 @@ private struct PlannerSectionCard<Content: View>: View {
     let detailTitle: String?
     let detailIdentifier: String?
     let detailAction: (() -> Void)?
+    let collapsible: Bool
+    let startsCollapsed: Bool
     @ViewBuilder let content: () -> Content
+
+    @State private var isExpanded = true
 
     init(
         title: String,
@@ -4775,6 +6429,8 @@ private struct PlannerSectionCard<Content: View>: View {
         detailTitle: String? = nil,
         detailIdentifier: String? = nil,
         detailAction: (() -> Void)? = nil,
+        collapsible: Bool = false,
+        startsCollapsed: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
@@ -4784,6 +6440,8 @@ private struct PlannerSectionCard<Content: View>: View {
         self.detailTitle = detailTitle
         self.detailIdentifier = detailIdentifier
         self.detailAction = detailAction
+        self.collapsible = collapsible
+        self.startsCollapsed = startsCollapsed
         self.content = content
     }
 
@@ -4792,25 +6450,30 @@ private struct PlannerSectionCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
-                HStack(spacing: 10) {
-                    Image(systemName: symbol)
-                        .foregroundStyle(tone.color)
-                        .frame(width: 36, height: 36)
-                        .background(tone.fill)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(title)
-                            .font(.title3.weight(.semibold))
-                        if let status {
-                            Text(status)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(tone.color)
+                Group {
+                    if collapsible {
+                        Button {
+                            AppFeedback.impact(.light)
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                                isExpanded.toggle()
+                            }
+                        } label: {
+                            headerLabel
                         }
+                        .buttonStyle(.plain)
+                    } else {
+                        headerLabel
                     }
                 }
 
                 Spacer()
+
+                if collapsible {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 8)
+                }
 
                 if let detailTitle, let detailAction {
                     Button(detailTitle, action: detailAction)
@@ -4824,7 +6487,18 @@ private struct PlannerSectionCard<Content: View>: View {
                 }
             }
 
-            content()
+            if !collapsible || isExpanded {
+                content()
+                    .transition(.opacity)
+            }
+        }
+        .onAppear {
+            isExpanded = collapsible ? !startsCollapsed : true
+        }
+        .onChange(of: startsCollapsed) { _, collapsed in
+            if collapsible, collapsed {
+                isExpanded = false
+            }
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -4838,6 +6512,28 @@ private struct PlannerSectionCard<Content: View>: View {
         )
         .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 18, x: 0, y: 8)
         .accessibilityElement(children: .contain)
+    }
+
+    private var headerLabel: some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .foregroundStyle(tone.color)
+                .frame(width: 36, height: 36)
+                .background(tone.fill)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
+                if let status {
+                    Text(status)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(tone.color)
+                        .lineLimit(2)
+                }
+            }
+        }
     }
 }
 
@@ -5151,11 +6847,54 @@ private struct ContinuityHubSection: View {
     }
 }
 
+private struct AutonomyToastOverlay: View {
+    let toasts: [AutonomyToast]
+
+    var body: some View {
+        VStack {
+            if !toasts.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(toasts) { toast in
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(toast.tone.color)
+                                .padding(.top, 2)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(toast.title)
+                                    .font(.caption.weight(.black))
+                                Text(toast.detail)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(3)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(12)
+                        .background(toast.tone.fill)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.12), radius: 8, y: 4)
+                        .accessibilityIdentifier("autonomy-toast")
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+            Spacer()
+        }
+        .allowsHitTesting(false)
+        .accessibilityIdentifier("autonomy-toast-stack")
+    }
+}
+
 private struct FeedHomeTab: View {
     let state: GameState
+    var compactMode: Bool = false
     let signals: [SignalSummary]
     let summaryItems: [YearlyOutcomeItem]
     let urgencyItems: [PlannerInsight]
+
+    @State private var expandedPressureMap = false
     let nextDecisionTitle: String
     let nextDecisionDetail: String
     let queuedInteractionCount: Int
@@ -5185,10 +6924,15 @@ private struct FeedHomeTab: View {
                 title: "Pressure Map",
                 symbol: "exclamationmark.bubble.fill",
                 status: urgencyItems.first?.value ?? "Stable",
-                tone: urgencyItems.contains(where: { $0.tone == .warning }) ? .warning : .neutral
+                tone: urgencyItems.contains(where: { $0.tone == .warning }) ? .warning : .neutral,
+                collapsible: compactMode,
+                startsCollapsed: false
             ) {
                 VStack(alignment: .leading, spacing: 10) {
-                    ForEach(urgencyItems) { item in
+                    let visible = compactMode && !expandedPressureMap
+                        ? Array(urgencyItems.prefix(2))
+                        : urgencyItems
+                    ForEach(visible) { item in
                         HStack(spacing: 10) {
                             Circle()
                                 .fill(item.tone.color)
@@ -5201,6 +6945,13 @@ private struct FeedHomeTab: View {
                                 .foregroundStyle(item.tone.color)
                                 .multilineTextAlignment(.trailing)
                         }
+                    }
+                    if compactMode, urgencyItems.count > 2 {
+                        Button(expandedPressureMap ? "Show fewer" : "Show all pressures") {
+                            withAnimation { expandedPressureMap.toggle() }
+                        }
+                        .font(.caption.weight(.bold))
+                        .accessibilityIdentifier("feed-pressure-expand")
                     }
                 }
             }
@@ -5243,10 +6994,12 @@ private struct FeedHomeTab: View {
                     title: "What Shifted",
                     symbol: "arrow.triangle.branch",
                     status: "Year \(state.player.age)",
-                    tone: summaryItems.contains(where: { PlannerTone($0.tone) == .warning }) ? .warning : .positive
+                    tone: summaryItems.contains(where: { PlannerTone($0.tone) == .warning }) ? .warning : .positive,
+                    collapsible: compactMode,
+                    startsCollapsed: compactMode
                 ) {
                     VStack(alignment: .leading, spacing: 10) {
-                        ForEach(summaryItems) { item in
+                        ForEach(Array(summaryItems.prefix(compactMode ? 2 : summaryItems.count))) { item in
                             let tone = PlannerTone(item.tone)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.title)
@@ -5281,13 +7034,37 @@ private struct FeedHomeTab: View {
     }
 }
 
+private func yearGoalStatusLine(vm: GameViewModel) -> String {
+    let stance = vm.state.yearlyStance.selectedStance?.title ?? "Recommended: \(vm.recommendedYearlyStance().title)"
+    // D4: surface ambient life shape from recent focus residue
+    let recent = vm.state.yearlyStance.recentStances
+    let shape = recent.isEmpty ? "" : (recent.filter { $0 == .letYearDrift }.count > recent.count / 2 ? " · loose shape" : (recent.filter { [.pushCareer, .soldierStance].contains($0) }.count > 1 ? " · driven current" : " · pragmatic"))
+    return "\(stance) · \(vm.state.resilience.shortLabel)\(shape)"
+}
+
+private struct ForecastStakesPage: Identifiable {
+    let id: String
+    let label: String
+    let title: String
+    let detail: String
+    let tone: PlannerTone
+    let icon: String
+}
+
 private struct CompactInteractionOverlay: View {
     let card: InteractionCardPayload
     let state: GameState
+    var stakes: TurnStakesSnapshot? = nil
+    var stanceChips: [YearlyStanceChip] = []
+    var recommendedStance: YearlyStanceID = .protectHealth
+    var onSelectStance: ((YearlyStanceID) -> Void)? = nil
+    var onPrepareForecast: (() -> Void)? = nil
     let onAdvance: () -> Void
     let onPick: (EventChoice) -> Void
     let onCrisisPick: (CrisisChoice) -> Void
     let onPitchPick: (PitchDeckChoice) -> Void
+
+    @State private var stakesPageIndex = 0
 
     var body: some View {
         VStack {
@@ -5355,30 +7132,89 @@ private struct CompactInteractionOverlay: View {
     }
 
     private func summaryView(_ summary: YearlyOutcomeSummary) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Age \(summary.age)")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+        // Phase 6–7: Playable hierarchy + yearly feedback closer to instant layer
+        let resilienceAccent = state.resilience == .grounded ? Color.orange.opacity(0.35) : Color.green.opacity(0.28)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Age \(summary.age)")
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("Year In Brief")
+                    .font(.headline.weight(.bold))
+            }
 
-            Text("Year In Brief")
-                .font(.title3.weight(.bold))
+            if let goal = state.softRunGoal {
+                let goalTone: PlannerTone = goal.status == .met ? .positive : (goal.status == .missed ? .warning : .neutral)
+                let statusText = goal.status == .met ? "Met" : (goal.status == .missed ? "Missed" : "In progress")
+                compactItem(
+                    label: "Run Goal",
+                    title: "\(goal.title) — \(statusText)",
+                    detail: goal.detail,
+                    tone: goalTone
+                )
+                .accessibilityIdentifier("year-summary-soft-goal")
+            }
 
             if let yearlyStanceOutcome = summary.yearlyStanceOutcome {
-                compactItem(label: "Year Goal", title: yearlyStanceOutcome.title, detail: yearlyStanceOutcome.detail, tone: PlannerTone(yearlyStanceOutcome.tone))
+                compactItem(label: "Goal", title: yearlyStanceOutcome.title, detail: yearlyStanceOutcome.detail, tone: PlannerTone(yearlyStanceOutcome.tone))
             }
 
             if let focusOutcome = summary.focusOutcome {
-                compactItem(label: "Pattern Read", title: focusOutcome.title, detail: focusOutcome.detail, tone: PlannerTone(focusOutcome.tone))
+                compactItem(label: "Pattern", title: focusOutcome.title, detail: focusOutcome.detail, tone: PlannerTone(focusOutcome.tone))
             }
 
             if let mainTradeoff = summary.mainTradeoff {
-                compactItem(label: "What It Cost", title: mainTradeoff.title, detail: mainTradeoff.detail, tone: PlannerTone(mainTradeoff.tone))
+                compactItem(label: "Cost", title: mainTradeoff.title, detail: mainTradeoff.detail, tone: PlannerTone(mainTradeoff.tone))
             }
 
             if let nextYearPressure = summary.nextYearPressure {
-                compactItem(label: "Still Active", title: nextYearPressure.title, detail: nextYearPressure.detail, tone: PlannerTone(nextYearPressure.tone))
+                compactItem(label: "Carries Over", title: nextYearPressure.title, detail: nextYearPressure.detail, tone: PlannerTone(nextYearPressure.tone))
             } else if let momentum = summary.momentum {
-                compactItem(label: "Still Active", title: momentum.title, detail: momentum.detail, tone: PlannerTone(momentum.tone))
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "globe")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.purple)
+                        .padding(.top, 2)
+                    compactItem(label: "Momentum", title: momentum.title, detail: momentum.detail, tone: PlannerTone(momentum.tone))
+                }
+                .padding(8)
+                .background(Color.purple.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+
+            if let lesson = summary.actionableLesson(resilience: state.resilience, state: state) {
+                compactItem(
+                    label: "Try Next",
+                    title: lesson.title,
+                    detail: lesson.detail,
+                    tone: PlannerTone(lesson.tone)
+                )
+                .accessibilityIdentifier("year-summary-actionable-lesson")
+            }
+
+            // P1: Yearly feedback parity overhaul - explicit stance, life shape, D4 residue + compressed impact bullets
+            let recentFocus = state.yearlyStance.recentStances.prefix(2).map { $0.title }.joined(separator: " → ")
+            if !recentFocus.isEmpty || state.yearlyStance.lastCompletedStance != nil {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Stance & Shape")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    if let last = state.yearlyStance.lastCompletedStance {
+                        Text("• \(last.title) focus (repeat: \(state.yearlyStance.repeatCount)x)")
+                            .font(.caption2)
+                    }
+                    if !recentFocus.isEmpty {
+                        Text("• Recent: \(recentFocus) — this is writing your life shape.")
+                            .font(.caption2)
+                    }
+                    Text("• The automated world and quiet years are reacting to the shape you're building.")
+                        .font(.caption2.italic())
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(6)
+                .background(Color.gray.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
             CauseTrailStrip(
@@ -5387,35 +7223,225 @@ private struct CompactInteractionOverlay: View {
                 identifier: "year-summary-cause-trail"
             )
 
+            // Keep the primary action large and in the natural thumb zone
             Button("Continue", action: onAdvance)
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .accessibilityIdentifier("year-summary-continue-button")
         }
+        .padding(4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(resilienceAccent, lineWidth: 1)
+        )
+        .onAppear { AppFeedback.impact(.light) }
+        // P2: tighter for dense cards polish
+        .padding(.vertical, -2)
     }
 
     private func forecastView(_ forecast: YearForecastCard) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Forecast")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+        let resilienceAccent = state.resilience == .grounded ? Color.orange.opacity(0.35) : Color.green.opacity(0.28)
+        let pages = forecastStakesPages(forecast: forecast, stakes: stakes)
+        let canStart = state.yearlyStance.selectedStance != nil
 
-            Text(forecast.title)
-                .font(.title3.weight(.bold))
+        return ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Forecast")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(state.resilience.shortLabel)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(state.resilience == .grounded ? .orange : .green)
+                }
 
-            Text(forecast.subtitle)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                Text(forecast.title)
+                    .font(.headline.weight(.bold))
 
-            compactItem(label: "How you're going in", title: forecast.focusTitle, detail: forecast.focusDetail, tone: PlannerTone(forecast.tone))
-            compactItem(label: forecast.pressureLabel, title: "Pressure Read", detail: forecast.pressureDetail, tone: PlannerTone(forecast.tone))
-            compactItem(label: forecast.anticipationTitle, title: "Coming Up", detail: forecast.anticipationDetail, tone: .neutral)
+                Text(forecast.subtitle)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
 
-            Button("Start The Year", action: onAdvance)
-                .buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .accessibilityIdentifier("forecast-continue-button")
+                if let goal = state.softRunGoal, goal.setAtAge == state.player.age || goal.status == .inProgress {
+                    compactItem(
+                        label: "Run Goal",
+                        title: goal.title,
+                        detail: goal.detail,
+                        tone: .positive
+                    )
+                    .accessibilityIdentifier("forecast-soft-goal")
+                }
+
+                if let name = forecast.voiceName, let line = forecast.voiceLine {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "person.wave.2.fill")
+                            .foregroundStyle(Color.purple)
+                            .padding(.top, 2)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(name)
+                                .font(.caption.weight(.black))
+                            Text(line)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(10)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .accessibilityIdentifier("forecast-voice-line")
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What the year is holding")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(.secondary)
+
+                    TabView(selection: $stakesPageIndex) {
+                        ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: page.icon)
+                                        .foregroundStyle(page.tone.color)
+                                    Text(page.label)
+                                        .font(.caption.weight(.black))
+                                        .foregroundStyle(page.tone.color)
+                                }
+                                Text(page.title)
+                                    .font(.subheadline.weight(.bold))
+                                Text(page.detail)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(page.tone.fill)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .tag(index)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .automatic))
+                    .frame(height: 148)
+                    .accessibilityIdentifier("forecast-stakes-pager")
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What are you protecting this year?")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(.secondary)
+
+                    Text("Recommended: \(recommendedStance.title)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                        ForEach(stanceChips) { stance in
+                            Button {
+                                AppFeedback.impact(.light)
+                                onSelectStance?(stance.id)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(stance.title)
+                                        .font(.caption.weight(.heavy))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.75)
+                                    Text(stance.detail)
+                                        .font(.system(size: 9, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(8)
+                                .background(stance.isSelected ? PlannerTone.positive.fill : Color.primary.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(stance.isSelected ? PlannerTone.positive.color.opacity(0.45) : Color.clear, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("forecast-stance-\(stance.id.rawValue)")
+                        }
+                    }
+                }
+                .accessibilityIdentifier("forecast-stance-commit")
+
+                Button("Start The Year", action: onAdvance)
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .disabled(!canStart)
+                    .accessibilityIdentifier("forecast-continue-button")
+            }
         }
+        .frame(maxHeight: 520)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(resilienceAccent, lineWidth: 1)
+        )
+        .onAppear {
+            AppFeedback.impact(.light)
+            onPrepareForecast?()
+        }
+    }
+
+    private func forecastStakesPages(forecast: YearForecastCard, stakes: TurnStakesSnapshot?) -> [ForecastStakesPage] {
+        if let stakes {
+            var pages: [ForecastStakesPage] = [
+                ForecastStakesPage(
+                    id: "focus",
+                    label: stakes.focus.label,
+                    title: stakes.focus.title,
+                    detail: stakes.focus.detail,
+                    tone: PlannerTone(stakes.focus.tone),
+                    icon: "scope"
+                ),
+                ForecastStakesPage(
+                    id: "pressure",
+                    label: stakes.topPressure.label,
+                    title: stakes.topPressure.title,
+                    detail: stakes.topPressure.detail,
+                    tone: PlannerTone(stakes.topPressure.tone),
+                    icon: "exclamationmark.triangle"
+                ),
+                ForecastStakesPage(
+                    id: "opportunity",
+                    label: stakes.topOpportunity.label,
+                    title: stakes.topOpportunity.title,
+                    detail: stakes.topOpportunity.detail,
+                    tone: PlannerTone(stakes.topOpportunity.tone),
+                    icon: "sparkles"
+                ),
+                ForecastStakesPage(
+                    id: "risk",
+                    label: stakes.ignoredRisk.label,
+                    title: stakes.ignoredRisk.title,
+                    detail: stakes.ignoredRisk.detail,
+                    tone: PlannerTone(stakes.ignoredRisk.tone),
+                    icon: "eye.trianglebadge.exclamationmark"
+                )
+            ]
+            if let momentum = stakes.momentum {
+                pages.append(
+                    ForecastStakesPage(
+                        id: "momentum",
+                        label: momentum.label,
+                        title: momentum.title,
+                        detail: momentum.detail,
+                        tone: PlannerTone(momentum.tone),
+                        icon: "globe"
+                    )
+                )
+            }
+            return pages
+        }
+
+        return [
+            ForecastStakesPage(id: "focus", label: "Focus", title: forecast.focusTitle, detail: forecast.focusDetail, tone: PlannerTone(forecast.tone), icon: "scope"),
+            ForecastStakesPage(id: "pressure", label: "Pressure", title: forecast.pressureLabel, detail: forecast.pressureDetail, tone: PlannerTone(forecast.tone), icon: "exclamationmark.triangle"),
+            ForecastStakesPage(id: "next", label: "Next", title: forecast.anticipationTitle, detail: forecast.anticipationDetail, tone: .neutral, icon: "arrow.right.circle")
+        ]
     }
 
     private func eventView(_ event: GameEvent) -> some View {
@@ -5451,14 +7477,20 @@ private struct CompactInteractionOverlay: View {
 
     private func reactionView(_ reaction: YearReactionCard) -> some View {
         let tone = PlannerTone(reaction.tone)
-        return VStack(alignment: .leading, spacing: 12) {
-            Text(reaction.kicker)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
-
-            Text(reaction.title)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(tone.color)
+        let isWorldVoice = reaction.kicker.contains("From ") || reaction.kicker.contains("In your")
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: isWorldVoice ? "person.wave.2.fill" : (tone == .warning ? "exclamationmark.triangle.fill" : "sparkles"))
+                    .foregroundStyle(isWorldVoice ? Color.purple : tone.color)
+                Text(reaction.kicker)
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(isWorldVoice ? Color.purple.opacity(0.9) : .secondary)
+                Spacer()
+                Text(reaction.title)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(tone.color)
+                    .lineLimit(1)
+            }
 
             Text(reaction.detail)
                 .font(.footnote)
@@ -5470,6 +7502,13 @@ private struct CompactInteractionOverlay: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .accessibilityIdentifier("reaction-continue-button")
         }
+        .padding(6)
+        .background(isWorldVoice ? Color.purple.opacity(0.08) : Color.clear)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(isWorldVoice ? Color.purple.opacity(0.35) : tone.color.opacity(0.2), lineWidth: 1)
+        )
+        .onAppear { AppFeedback.impact(.light) }
     }
 
     private func consequenceView(_ preview: ConsequencePreview) -> some View {
@@ -5492,6 +7531,7 @@ private struct CompactInteractionOverlay: View {
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
+        .onAppear { AppFeedback.impact(.light) }
     }
 
     private func resolutionView(_ preview: ResolutionPreview) -> some View {
@@ -5507,6 +7547,18 @@ private struct CompactInteractionOverlay: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .lineLimit(5)
+
+            // Replayability transparency: at the end of a life, gently remind the player what "Life Feel" they chose
+            if preview.title.contains("Life Closed") || preview.title.contains("Life Ended") {
+                HStack(spacing: 6) {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.caption2)
+                    Text("Your Life Feel choice shaped how this story could recover")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 4)
+            }
 
             Button(preview.actionTitle, action: onAdvance)
                 .buttonStyle(.borderedProminent)
@@ -5611,21 +7663,34 @@ private struct CompactInteractionOverlay: View {
     }
 
     private func compactItem(label: String, title: String, detail: String, tone: PlannerTone) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(label)
+        // Phase 6: More glanceable with icon + tighter text
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: iconForCompactLabel(label))
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
-            Text(title)
-                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(tone.color)
-            Text(detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(tone.color)
+                    .lineLimit(1)
+                Text(detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
-        .padding(12)
+        .padding(8)
         .background(tone.fill)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func iconForCompactLabel(_ label: String) -> String {
+        if label.lowercased().contains("focus") { return "target" }
+        if label.lowercased().contains("pressure") { return "exclamationmark.triangle" }
+        if label.lowercased().contains("next") || label.lowercased().contains("coming") { return "calendar" }
+        return "circle"
     }
 
     private func causeTrailItems(from summary: YearlyOutcomeSummary) -> [CauseTrailItem] {
@@ -5768,6 +7833,15 @@ private struct PlannerDetailSheet: View {
                     ("Qualified jobs", "\(qualifiedCareerRoles.count)"),
                     ("Special bridge", specialBridgeStatus)
                 ])
+                // D3: show regular archetype (when no deep special) with curve hint
+                if state.specialCareer.track == .inactive, let arch = state.career.regularArchetype {
+                    let curve = arch == .corporateClimber ? "Steady security, political" :
+                                arch == .gigFreelancer ? "Variance + freedom, faster fade" :
+                                arch == .skilledTrades ? "Durable demand, low burnout" :
+                                arch == .publicService ? "Pension security, mission" :
+                                arch == .techEngineer ? "Skill ceiling, intensity" : "Network variance"
+                    DetailMetricRow(items: [("Archetype", arch.displayName), ("Curve", curve)])
+                }
                 DetailBodyText(text: "Career remains the main stability engine for adult years. When performance and income drift apart, the planner starts flagging that strain early.")
             }
             DetailCard(title: "Qualified Regular Jobs", subtitle: "Passive income options") {
@@ -5788,6 +7862,23 @@ private struct PlannerDetailSheet: View {
                     ("Heat", "\(max(state.crime.heat, state.specialCareer.heat))"),
                     ("Audience / notoriety", "\(max(state.specialCareer.audience, state.crime.notoriety))")
                 ])
+                // CE2: Expose key CriminalEnterpriseState metrics when on a deep crime path
+                if state.specialCareer.track == .crime || state.crime.status == .active {
+                    let ent = state.specialCareer.enterprise
+                    DetailMetricRow(items: [
+                        ("Loyalty", "\(ent.loyalty)"),
+                        ("Clean $", "\(ent.cleanMoneyRatio)%"),
+                        ("Network", "\(ent.networkStrength)")
+                    ])
+                }
+                // CE4: Subtype voice hint in the Risk Track
+                if state.specialCareer.track == .crime {
+                    let flavor = state.specialCareer.enterprise.subtype == .shadowOperative ? "Ghost work" :
+                                 state.specialCareer.enterprise.subtype == .streetCrime ? "Street arithmetic" :
+                                 state.specialCareer.enterprise.subtype == .grayMarketTrader ? "Gray ledger" :
+                                 state.specialCareer.enterprise.subtype == .ventureCapitalist ? "Quiet capital" : "Hostile precision"
+                    DetailMetricRow(items: [("Voice", flavor)])
+                }
             }
         case .careerHistory:
             DetailHistoryList(entries: historyDigest.all)
@@ -5802,6 +7893,20 @@ private struct PlannerDetailSheet: View {
                     ("Track", state.education.academicTrack.rawValue.capitalized),
                     ("Stage", state.education.stage.rawValue.capitalized),
                     ("Path", state.education.pathway.rawValue.capitalized)
+                ])
+                // D3: credential strength + decay status (trade decays slow via practice, honors lingers, standard faster fade)
+                let cred = state.education.credentialStrength
+                let yrs = state.education.yearsSinceCredential
+                let decayNote: String = {
+                    if state.education.academicTrack == .vocational { return "Trade: holds via use" }
+                    if state.education.academicTrack == .honors { return "Honors: prestige lingers" }
+                    if yrs > 5 { return "Fading — refresh or lose edge" }
+                    return "Standard track"
+                }()
+                DetailMetricRow(items: [
+                    ("Credential", "\(cred)"),
+                    ("Age", "\(yrs)y"),
+                    ("Value", decayNote)
                 ])
             }
         case .educationClimate:
@@ -5896,21 +8001,7 @@ private struct PlannerDetailSheet: View {
                 DetailBulletList(items: state.relationships.tensions.prefix(3).map { "\($0.headline) • \($0.impactLine)" }.isEmpty ? ["No loose ends are active right now."] : Array(state.relationships.tensions.prefix(3).map { "\($0.headline) • \($0.impactLine)" }))
             }
         case .relationshipsFamily:
-            DetailCard(title: "Family Planning", subtitle: state.family.isPregnant ? "Pregnancy active" : "Current load") {
-                DetailMetricRow(items: [
-                    ("Intent", state.family.pregnancyIntent.rawValue.capitalized),
-                    ("Children", "\(state.family.childCount)"),
-                    ("Infants", "\(state.family.infantCount)")
-                ])
-                DetailMetricRow(items: [
-                    ("Postpartum", "\(state.family.postpartumYearsRemaining)"),
-                    ("Partner", state.relationships.partnerName ?? "None"),
-                    ("Cohabiting", state.relationships.hasCohabitingPartner ? "Yes" : "No")
-                ])
-                if !state.family.children.isEmpty {
-                    DetailBulletList(items: state.family.children.map { "\($0.name), age \($0.age), support \($0.supportLoad)" })
-                }
-            }
+            FamilyDetailCard(state: state)
         case .relationshipsHistory:
             DetailHistoryList(entries: historyDigest.relationships)
         case .healthOverview:
@@ -6001,7 +8092,7 @@ private struct PlannerDetailSheet: View {
 
     private var topConnections: [String] {
         var items: [String] = []
-        if let partner = state.relationships.romanticPartner {
+        if let partner = state.relationships.primaryPartner {
             items.append("\(partner.name) • bond \(partner.bond) • \(partner.status.rawValue)")
         }
         items.append(contentsOf: state.relationships.friends.prefix(4).map { "\($0.name) • bond \($0.bond) • \($0.status.rawValue)" })
@@ -6292,7 +8383,7 @@ private struct ActionChoiceRow: View {
 
     private var rowTone: PlannerTone {
         switch definition.baseFriction {
-        case .warning, .resistance, .locked:
+        case .warning, .resistance, .danger, .locked:
             return .warning
         case .none:
             return .neutral
@@ -6339,7 +8430,7 @@ private struct ActionSelectionModule: View {
                 if !instantChoices.isEmpty {
                     actionSection(
                         title: "Right now",
-                        subtitle: "Instant",
+                        subtitle: "Instant — ALWAYS",
                         headerSymbol: "bolt.fill",
                         choices: instantChoices,
                         immediate: true
@@ -6745,6 +8836,26 @@ private struct EducationPlannerTab: View {
                 .accessibilityIdentifier("education-overview-pressure")
             }
 
+            // Teen/early adult dossier immersion: your 14 wiring is already shaping the lane (sparks come through teenUnlocks)
+            if (isTeenExperience || (state.player.age <= 22 && state.education.stage != .inactive)) && !nextUnlocks.filter({ $0.contains("edge") || $0.contains("instinct") || $0.contains("current") || $0.contains("mind") || $0.contains("Physical") || $0.contains("Hustle") || $0.contains("Creative") || $0.contains("Social") || $0.contains("Sharp") }).isEmpty {
+                PlannerSectionCard(
+                    title: "Wiring from 14",
+                    symbol: "sparkles",
+                    status: "Childhood shape showing up",
+                    tone: .positive,
+                    detailTitle: "See more",
+                    detailIdentifier: "teen-wiring-detail",
+                    detailAction: { openDetail(.educationOverview) }
+                ) {
+                    ChipStrip(
+                        title: "Early edges",
+                        items: Array(nextUnlocks.filter { $0.contains("edge") || $0.contains("instinct") || $0.contains("current") || $0.contains("mind") || $0.contains("Physical") || $0.contains("Hustle") || $0.contains("Creative") || $0.contains("Social") || $0.contains("Sharp") }.prefix(3)),
+                        tone: .positive,
+                        identifier: "teen-wiring-strip"
+                    )
+                }
+            }
+
             ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
         }
         .accessibilityIdentifier("education-tab-content")
@@ -6758,6 +8869,7 @@ private struct EducationPlannerTab: View {
             case .training: return "In training"
             case .dropout: return "Off track"
             case .student: return state.education.schoolStanding >= 70 ? "On track" : "School under pressure"
+            default: return "On track"
             }
         case .university:
             return state.education.hasScholarship ? "University with aid" : "University under load"
@@ -6783,7 +8895,7 @@ private struct EducationPlannerTab: View {
                 : "University is active, and the real question is whether fit, cost, and burnout can all hold."
         }
         if state.education.stage == .tradeTraining {
-            return "Training is giving you a practical lane into adulthood, with less prestige and more immediate payoff."
+            return "Training is giving you a practical lane into adulthood, with less prestige and more immediate payoff. (D3: fast income handoff, credential decays slower if you stay hands-on.)"
         }
         if state.education.stage == .adultEd {
             return "This is a slower rebuilding route. It buys time, but it does not buy comfort."
@@ -6886,6 +8998,28 @@ private struct CareerPlannerTab: View {
                 }
             }
 
+            // Fame Web F3: Recognition card with flavor and downside hints
+            let f = state.fame
+            if f.recognition > 24 {
+                let label = f.isInfamous ? "Infamous" : (f.isHouseholdName ? "Household Name" : (f.recognition > 55 ? "Widely Known" : "Name Travels"))
+                let tone: PlannerTone = f.isInfamous ? .warning : (f.culturalFame > f.notoriety ? .positive : .neutral)
+                let recognitionItems: [(String, String, PlannerTone)] = {
+                    var items: [(String, String, PlannerTone)] = [
+                        ("Fame", "\(f.culturalFame)", f.culturalFame >= 55 ? .positive : .neutral),
+                        ("Notoriety", "\(f.notoriety)", f.notoriety >= 45 ? .warning : .neutral)
+                    ]
+                    if f.isInfamous {
+                        items.append(("Scrutiny", "High", .warning))
+                    } else if f.isHouseholdName {
+                        items.append(("Expectations", "Heavy", .neutral))
+                    }
+                    return items
+                }()
+                PlannerSectionCard(title: "Recognition", symbol: "star.fill", status: label, tone: tone) {
+                    MetricRow(metrics: recognitionItems)
+                }
+            }
+
             if showsCrimeCareerSection {
                 PlannerSectionCard(
                     title: "Crime",
@@ -6944,12 +9078,30 @@ private struct CareerPlannerTab: View {
                 return "The spotlight finally paid this year, but entertainment money still looks volatile rather than safe."
             }
             return "You are pursuing attention-based work where visibility matters more than comfort and consistency."
+        case .movieActor:
+            return "You are building a screen career. Craft, auditions, credits, public image, and typecast risk decide whether the camera becomes income or just another expensive dream."
+        case .recordLabelOwner:
+            return "You own the music machine now. Roster trust, catalog depth, tour upside, and cashflow pressure decide whether the label becomes a home for artists or another extractive room with better furniture."
+        case .coach:
+            return "Diamond Career: you manage a sports program now. Recruiting, staff, scheme, locker room trust, boosters, and season results decide whether you climb or get fired."
+        case .movieProducer:
+            return "Diamond Career: you manage scripts, casts, budgets, distribution, and production chaos. The upside is bigger than acting work, but unfinished projects can burn cash fast."
+        case .musicProducer:
+            return "You are building the sound behind the artist. Credits, studio quality, network, royalties, and credit disputes decide whether your name becomes a tag, a catalog, or a cautionary story."
         case .inactive:
             break
         case .crime:
             break
-        case .founder, .athlete, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider:
-            return "Your special track is moving fast and carrying more volatility than a normal career lane."
+        case .founder, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider:
+            return "You are building something from nothing. Vision and execution are your weapons. Every dollar raised, every key hire, every board meeting is a negotiation between control, growth, and your own sanity."
+        case .contentCreator:
+            return "You are farming attention in the attention economy. Every post is a bet. Algorithm favor, personal brand, and burnout are your real stats. One clip can change everything — or destroy it."
+        case .politics:
+            return "You are playing the longest game there is. Approval is oxygen. Scandals are poison. Every decision is a calculation between what is right, what is popular, and what keeps the money flowing."
+        case .athlete:
+            return "Your body is the product. Peak Form is what you have today. Potential is the ceiling you were born with. Brand is what the world decides you are worth when the lights go out. Accolades are the only things that survive the decline."
+        default:
+            break
         }
 
         if state.career.status == .unemployed {
@@ -6969,16 +9121,180 @@ private struct CareerPlannerTab: View {
                 ("Audience", "\(state.specialCareer.audience)", state.specialCareer.audience >= 55 ? .positive : .neutral),
                 ("Burnout", "\(state.specialCareer.burnout)", state.specialCareer.burnout >= 70 ? .warning : .neutral)
             ]
+        case .movieActor:
+            let actor = state.specialCareer.movieActor
+            var metrics: [(String, String, PlannerTone)] = [
+                ("Craft", "\(actor.actingSkill)", actor.actingSkill >= 60 ? .positive : .neutral),
+                ("Credits", "\(actor.roleCredits)", actor.roleCredits >= 4 ? .positive : .neutral),
+                ("Draw", "\(actor.boxOfficeDraw)", actor.boxOfficeDraw >= 45 ? .positive : .neutral),
+                ("Agent", "\(actor.agentQuality)", actor.agentQuality >= 55 ? .positive : .neutral),
+                ("Image", "\(actor.publicImage)", actor.publicImage < 35 ? .warning : .neutral)
+            ]
+            if actor.typecastRisk >= 35 {
+                metrics.append(("Typecast", "\(actor.typecastRisk)", actor.typecastRisk >= 60 ? .warning : .neutral))
+            }
+            return metrics
+        case .recordLabelOwner:
+            let label = state.specialCareer.recordLabel
+            var metrics: [(String, String, PlannerTone)] = [
+                ("Roster", "\(label.roster.count)", label.roster.count >= 3 ? .positive : .neutral),
+                ("Catalog", "\(label.catalogStrength)", label.catalogStrength >= 55 ? .positive : .neutral),
+                ("Prestige", "\(label.labelPrestige)", label.labelPrestige >= 55 ? .positive : .neutral),
+                ("Artist Trust", "\(label.artistTrust)", label.artistTrust < 40 ? .warning : (label.artistTrust >= 70 ? .positive : .neutral)),
+                ("Cashflow", "\(label.cashflowPressure)", label.cashflowPressure >= 65 ? .warning : .neutral)
+            ]
+            if label.industryHeat >= 35 {
+                metrics.append(("Heat", "\(label.industryHeat)", label.industryHeat >= 60 ? .warning : .neutral))
+            }
+            if label.tourMachine >= 45 {
+                metrics.append(("Tours", "\(label.tourMachine)", .positive))
+            }
+            return metrics
+        case .coach:
+            let coach = state.specialCareer.coaching
+            var metrics: [(String, String, PlannerTone)] = [
+                ("Diamond", "Coach", .positive),
+                ("Record", "\(coach.seasonWins)-\(coach.seasonLosses)", coach.seasonWins >= 9 ? .positive : (coach.seasonWins <= 4 && coach.seasonLosses > 0 ? .warning : .neutral)),
+                ("Roster", "\(coach.rosterTalent)", coach.rosterTalent >= 60 ? .positive : .neutral),
+                ("Scheme", "\(coach.schemeFit)", coach.schemeFit >= 60 ? .positive : .neutral),
+                ("Locker Room", "\(coach.lockerRoom)", coach.lockerRoom < 40 ? .warning : .neutral),
+                ("Prestige", "\(coach.programPrestige)", coach.programPrestige >= 60 ? .positive : .neutral)
+            ]
+            if coach.boosterPressure >= 35 {
+                metrics.append(("Boosters", "\(coach.boosterPressure)", coach.boosterPressure >= 65 ? .warning : .neutral))
+            }
+            return metrics
+        case .movieProducer:
+            let film = state.specialCareer.movieProducer
+            var metrics: [(String, String, PlannerTone)] = [
+                ("Diamond", "Film", .positive),
+                ("Slate", "\(film.slateCount)", film.slateCount >= 2 ? .positive : .neutral),
+                ("Prestige", "\(film.prestige)", film.prestige >= 55 ? .positive : .neutral),
+                ("Studio Trust", "\(film.studioTrust)", film.studioTrust < 35 ? .warning : .neutral),
+                ("Backend", "\(film.backendCatalog)", film.backendCatalog >= 45 ? .positive : .neutral),
+                ("Chaos", "\(film.productionChaos)", film.productionChaos >= 60 ? .warning : .neutral)
+            ]
+            if film.distributionLeverage >= 40 {
+                metrics.append(("Distribution", "\(film.distributionLeverage)", .positive))
+            }
+            return metrics
+        case .musicProducer:
+            let producer = state.specialCareer.musicProducer
+            var metrics: [(String, String, PlannerTone)] = [
+                ("Credits", "\(producer.credits)", producer.credits >= 8 ? .positive : .neutral),
+                ("Sound", "\(producer.sonicSignature)", producer.sonicSignature >= 60 ? .positive : .neutral),
+                ("Studio", "\(producer.studioQuality)", producer.studioQuality >= 55 ? .positive : .neutral),
+                ("Demand", "\(producer.demand)", producer.demand >= 55 ? .positive : .neutral),
+                ("Royalties", "\(producer.royaltyCatalog)", producer.royaltyCatalog >= 45 ? .positive : .neutral)
+            ]
+            if producer.creditDisputes >= 30 {
+                metrics.append(("Disputes", "\(producer.creditDisputes)", producer.creditDisputes >= 55 ? .warning : .neutral))
+            }
+            return metrics
         case .inactive:
             return nil
         case .crime:
             return nil
-        case .founder, .athlete, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider:
-            return [
+        case .founder, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider:
+            var m: [(String, String, PlannerTone)] = [
                 ("Reach", "\(state.specialCareer.audience)", state.specialCareer.audience >= 55 ? .positive : .neutral),
                 ("Heat", "\(state.specialCareer.heat)", state.specialCareer.heat >= 60 ? .warning : .neutral),
                 ("Burnout", "\(state.specialCareer.burnout)", state.specialCareer.burnout >= 70 ? .warning : .neutral)
             ]
+            // Fame Web F1
+            let fame = state.fame
+            if fame.recognition > 22 {
+                m.append(("Recognition", "\(fame.recognition)", fame.culturalFame > fame.notoriety ? .positive : .neutral))
+            }
+            // E4: Dedicated founder CEO dashboard (rich, glanceable)
+            if state.specialCareer.track == .founder {
+                let fd = state.specialCareer.founder
+                m.append(("Vision", "\(fd.vision)", fd.vision >= 70 ? .positive : .neutral))
+                m.append(("Execution", "\(fd.execution)", fd.execution >= 68 ? .positive : (fd.execution < 45 ? .warning : .neutral)))
+                m.append(("Team", "\(fd.teamHealth)", fd.teamHealth >= 65 ? .positive : (fd.teamHealth < 40 ? .warning : .neutral)))
+                m.append(("Stage", "\(fd.productStage)", fd.productStage >= 70 ? .positive : .neutral))
+                if fd.founderMentalLoad > 55 {
+                    m.append(("Mental Load", "\(fd.founderMentalLoad)", .warning))
+                }
+                if fd.control < 60 {
+                    m.append(("Control", "\(fd.control)", .warning))
+                }
+                if fd.personalLegend >= 50 {
+                    m.append(("Legend", "\(fd.personalLegend)", .positive))
+                }
+            }
+            // C4: Dedicated creator dashboard (rich, glanceable)
+            if state.specialCareer.track == .contentCreator {
+                let c = state.specialCareer.creator
+                m.append(("Audience", "\(c.audience)", c.audience >= 50 ? .positive : .neutral))
+                m.append(("Algorithm", "\(c.algorithmFavor)", c.algorithmFavor >= 65 ? .positive : (c.algorithmFavor < 35 ? .warning : .neutral)))
+                m.append(("Brand", "\(c.personalBrand)", c.personalBrand >= 60 ? .positive : (c.personalBrand < 30 ? .warning : .neutral)))
+                if c.burnout > 50 {
+                    m.append(("Burnout", "\(c.burnout)", .warning))
+                }
+                if c.cancellationRisk > 40 {
+                    m.append(("Cancel Risk", "\(c.cancellationRisk)", .warning))
+                }
+                if c.brandDealValue > 40 {
+                    m.append(("Deals", "\(c.brandDealValue)", .positive))
+                }
+                // Platform flavor
+                let platformLabel = c.platform == .tiktokShorts ? "Shorts" : (c.platform == .youtube ? "YT" : c.platform.rawValue.capitalized)
+                m.append((platformLabel, "", .neutral))
+            }
+            // P4: Dedicated politics dashboard (rich, glanceable)
+            if state.specialCareer.track == .politics {
+                let p = state.specialCareer.politics
+                m.append(("Approval", "\(p.approvalRating)", p.approvalRating >= 55 ? .positive : (p.approvalRating < 35 ? .warning : .neutral)))
+                if p.scandalHeat > 35 {
+                    m.append(("Scandal", "\(p.scandalHeat)", .warning))
+                }
+                m.append(("Ethics", "\(p.ethics)", p.ethics >= 65 ? .positive : (p.ethics < 45 ? .warning : .neutral)))
+                m.append(("Donors", "\(p.donorBase)", p.donorBase >= 50 ? .positive : .neutral))
+                if p.burnout > 50 {
+                    m.append(("Burnout", "\(p.burnout)", .warning))
+                }
+                if p.policyLegacy >= 45 {
+                    m.append(("Legacy", "\(p.policyLegacy)", .positive))
+                }
+                if p.charisma >= 65 {
+                    m.append(("Charisma", "\(p.charisma)", .positive))
+                }
+                // Econ1: Glanceable macro context
+                let eraName = state.currentEra.displayName
+                m.append(("Economy", eraName, state.currentEra.tone))
+            }
+            return m
+        case .athlete:
+            let a = state.specialCareer.athlete
+            var metrics: [(String, String, PlannerTone)] = [
+                ("Peak Form", "\(a.peakPerformance)", a.peakPerformance >= 78 ? .positive : (a.peakPerformance < 50 ? .warning : .neutral)),
+                ("Potential", "\(a.naturalPotential)", a.naturalPotential >= 82 ? .positive : (a.naturalPotential < 60 ? .warning : .neutral)),
+                ("Durability", "\(a.durability)", a.durability >= 68 ? .positive : (a.durability < 42 ? .warning : .neutral)),
+                ("Brand", "\(a.personalBrand)", a.personalBrand >= 65 ? .positive : (a.personalBrand < 35 ? .warning : .neutral)),
+                ("Fan Loyalty", "\(a.fanLoyalty)", a.fanLoyalty >= 65 ? .positive : .neutral)
+            ]
+            if !a.accolades.isEmpty {
+                let count = a.accolades.count
+                let label = count == 1 ? "1 Accolade" : "\(count) Accolades"
+                let tone: PlannerTone = count >= 3 ? .positive : .neutral
+                metrics.append((label, a.accolades.last ?? "", tone))
+            }
+            // Show enhancement heat if active
+            if a.enhancementHeat > 25 {
+                metrics.append(("Edge Heat", "\(a.enhancementHeat)", a.enhancementHeat > 60 ? .warning : .neutral))
+            }
+            // Fame Web F1: unified recognition (the thing that actually travels outside your sport)
+            let f = state.fame
+            if f.recognition > 20 {
+                let recLabel = f.isHouseholdName ? "Household Name" : (f.recognition > 55 ? "Widely Known" : "Rising Name")
+                metrics.append((recLabel, "\(f.recognition)", f.culturalFame >= 60 ? .positive : .neutral))
+            }
+            // Econ1: Glanceable macro context (sponsorships & fan spending are economy-tied)
+            metrics.append(("Economy", state.currentEra.displayName, state.currentEra.tone))
+            return metrics
+        default:
+            return nil
         }
     }
 
@@ -6996,6 +9312,21 @@ private struct CareerPlannerTab: View {
         }
         if SpecialCareerSystem.qualificationIssue(for: .startCompany, state: state) == nil {
             return "Founder ready"
+        }
+        if SpecialCareerSystem.qualificationIssue(for: .startMovieActor, state: state) == nil {
+            return "Actor ready"
+        }
+        if SpecialCareerSystem.qualificationIssue(for: .startMusicProducer, state: state) == nil {
+            return "Producer ready"
+        }
+        if SpecialCareerSystem.qualificationIssue(for: .startMovieProducer, state: state) == nil {
+            return "Diamond ready"
+        }
+        if SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil {
+            return "Label ready"
+        }
+        if SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state) == nil {
+            return "Coach ready"
         }
         if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil {
             return "Capital ready"
@@ -7303,7 +9634,7 @@ private struct RelationshipsPlannerTab: View {
         if let pregnancy = state.family.pregnancy {
             return "Pregnant with \(pregnancy.otherParentName)"
         }
-        if let partner = state.relationships.romanticPartner {
+        if let partner = state.relationships.primaryPartner {
             switch partner.stage {
             case .married:
                 return "Married to \(partner.name)"
@@ -7366,7 +9697,7 @@ private struct RelationshipsPlannerTab: View {
 
     private var connectionPreview: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let partner = state.relationships.romanticPartner {
+            if let partner = state.relationships.primaryPartner {
                 connectionBadge(name: partner.name, status: partner.status, bond: partner.bond)
             }
 
@@ -7535,9 +9866,52 @@ private struct AssetsPlannerTab: View {
     let onBuyMarine: (MarineAsset) -> Void
     let onSellMarine: (UUID) -> Void
 
+    // Assets2
+    let onBuySignature: (SignatureAsset) -> Void
+    let onSellSignature: (UUID) -> Void
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // Very aggressive QoL: Rich visual portfolio + Lifestyle Score
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("LIFESTYLE")
+                                .font(.caption2.weight(.black))
+                                .foregroundStyle(.secondary)
+                            Text("\(state.assets.lifestyleScore)")
+                                .font(.title.weight(.black))
+                                .foregroundStyle(state.assets.lifestyleScore > 60 ? Color.purple : .primary)
+                        }
+                        
+                        Spacer()
+                        
+                        Text("Portfolio Overview")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    HStack(spacing: 16) {
+                        AssetCategoryIcon(count: state.assets.vehicles.count, label: "Vehicles", symbol: "car.fill")
+                        AssetCategoryIcon(count: state.assets.jewelry.count, label: "Jewelry", symbol: "sparkles")
+                        AssetCategoryIcon(count: state.assets.aviation.count, label: "Aviation", symbol: "airplane")
+                        AssetCategoryIcon(count: state.assets.marine.count, label: "Marine", symbol: "sailboat.fill")
+                        AssetCategoryIcon(count: state.assets.firearms.count, label: "Armory", symbol: "shield.fill")
+                        if !state.assets.signatureAssets.isEmpty {
+                            AssetCategoryIcon(count: state.assets.signatureAssets.count, label: "Signature", symbol: "crown.fill")
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+                
+                // Very aggressive QoL: Bulk sell low-value assets (UI hint)
+                if !state.assets.jewelry.isEmpty || !state.assets.vehicles.isEmpty {
+                    Text("Low-value items available to liquidate")
+                        .font(.caption2.italic())
+                        .foregroundStyle(.secondary)
+                }
+                
                 // REAL ESTATE SECTION
                 if let home = state.assets.primaryResidence {
                     PlannerSectionCard(
@@ -7772,9 +10146,143 @@ private struct AssetsPlannerTab: View {
                         }
                     }
                 }
+
+                // Assets2: Signature Holdings — Career-specific high-status assets
+                if state.specialCareer.track == .athlete ||
+                   state.specialCareer.track == .founder ||
+                   state.specialCareer.track == .contentCreator ||
+                   state.specialCareer.track == .politics {
+
+                    PlannerSectionCard(
+                        title: "Signature Holdings",
+                        symbol: "crown.fill",
+                        status: state.assets.signatureAssets.isEmpty ? "No signature assets yet" : "\(state.assets.signatureAssets.count) major holdings",
+                        tone: .positive
+                    ) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if !state.assets.signatureAssets.isEmpty {
+                                ForEach(state.assets.signatureAssets) { item in
+                                    HStack {
+                                        VStack(alignment: .leading) {
+                                            Text(item.name)
+                                                .font(.headline)
+                                            Text("Prestige +\(item.prestigeBonus)")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Spacer()
+                                        Button("Sell") {
+                                            onSellSignature(item.id)
+                                        }
+                                        .font(.caption.bold())
+                                        .foregroundColor(.red)
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                                Divider()
+                            }
+
+                            Text("Available for Your Path")
+                                .font(.headline)
+
+                            // Career-specific signature asset market (Assets2)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    SignatureAssetMarketCards(
+                                        currentTrack: state.specialCareer.track,
+                                        onBuy: onBuySignature
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
             .padding(.bottom, 100)
         }
+    }
+}
+
+// Assets2 helper: Career-specific signature asset market cards
+private struct SignatureAssetMarketCards: View {
+    let currentTrack: SpecialCareerTrack
+    let onBuy: (SignatureAsset) -> Void
+
+    var body: some View {
+        Group {
+            switch currentTrack {
+            case .athlete:
+                SignatureMarketCard(name: "Minority Stake in Expansion Team", category: .athleteTeamStake, cost: 12_000_000, resale: 9_500_000, prestige: 22, track: .athlete, onBuy: onBuy)
+                SignatureMarketCard(name: "Private Performance Institute", category: .athleteTrainingEmpire, cost: 4_800_000, resale: 3_200_000, prestige: 14, track: .athlete, onBuy: onBuy)
+
+            case .founder:
+                SignatureMarketCard(name: "Strategic Stake in AI Competitor", category: .founderStrategicStake, cost: 18_000_000, resale: 14_000_000, prestige: 25, track: .founder, onBuy: onBuy)
+                SignatureMarketCard(name: "Founder Compound (Wyoming)", category: .founderCompound, cost: 9_500_000, resale: 7_800_000, prestige: 18, track: .founder, onBuy: onBuy)
+
+            case .contentCreator:
+                SignatureMarketCard(name: "Personal Production Studio", category: .creatorStudio, cost: 6_200_000, resale: 4_100_000, prestige: 19, track: .contentCreator, onBuy: onBuy)
+                SignatureMarketCard(name: "Signature Content House Portfolio", category: .creatorBrandEstate, cost: 3_400_000, resale: 2_600_000, prestige: 13, track: .contentCreator, onBuy: onBuy)
+
+            case .politics:
+                SignatureMarketCard(name: "Major Donor Retreat Estate", category: .politicsInfluenceHold, cost: 7_800_000, resale: 5_900_000, prestige: 21, track: .politics, onBuy: onBuy)
+                SignatureMarketCard(name: "Legacy Political Foundation HQ", category: .politicsLegacyEstate, cost: 5_100_000, resale: 3_800_000, prestige: 16, track: .politics, onBuy: onBuy)
+
+            // CE3: Criminal/gray enterprise signature assets — prestige with teeth
+            case .crime:
+                SignatureMarketCard(name: "Discreet Waterfront Safehouse", category: .crimeSafehouse, cost: 4_200_000, resale: 3_100_000, prestige: 14, track: .crime, onBuy: onBuy)
+                SignatureMarketCard(name: "Offshore Holdings Portfolio", category: .crimeOffshoreHoldings, cost: 11_500_000, resale: 9_800_000, prestige: 18, track: .crime, onBuy: onBuy)
+                SignatureMarketCard(name: "Quietly Profitable Import Front", category: .crimeFrontBusiness, cost: 2_800_000, resale: 2_100_000, prestige: 11, track: .crime, onBuy: onBuy)
+                SignatureMarketCard(name: "Proxy Luxury Penthouse", category: .crimeLuxuryFront, cost: 6_900_000, resale: 4_900_000, prestige: 17, track: .crime, onBuy: onBuy)
+
+            default:
+                EmptyView()
+            }
+        }
+    }
+}
+
+private struct SignatureMarketCard: View {
+    let name: String
+    let category: SignatureAssetCategory
+    let cost: Int
+    let resale: Int
+    let prestige: Int
+    let track: SpecialCareerTrack
+    let onBuy: (SignatureAsset) -> Void
+
+    var body: some View {
+        Button {
+            let asset = SignatureAsset(
+                name: name,
+                category: category,
+                cost: cost,
+                resaleValue: resale,
+                monthlyMaintenance: cost / 120,
+                prestigeBonus: prestige,
+                associatedTrack: track
+            )
+            onBuy(asset)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.caption.weight(.bold))
+                    .lineLimit(2)
+                    .frame(width: 140, alignment: .leading)
+
+                Text("$\(cost / 1_000_000)M")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.green)
+
+                Text("+ \(prestige) Prestige")
+                    .font(.caption2)
+                    .foregroundStyle(.purple)
+            }
+            .padding(8)
+            .background(Color.black.opacity(0.05))
+            .cornerRadius(6)
+            .frame(width: 150)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -7832,6 +10340,35 @@ private struct JewelryRow: View {
         .padding(8)
         .background(Color.secondary.opacity(0.05))
         .cornerRadius(8)
+    }
+}
+
+// Very aggressive QoL: Reusable visual asset category badge
+private struct AssetCategoryIcon: View {
+    let count: Int
+    let label: String
+    let symbol: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack {
+                Circle()
+                    .fill(count > 0 ? Color.purple.opacity(0.15) : Color.gray.opacity(0.1))
+                    .frame(width: 36, height: 36)
+                
+                Image(systemName: symbol)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(count > 0 ? Color.purple : .gray)
+            }
+            
+            Text("\(count)")
+                .font(.caption2.weight(.black))
+                .foregroundStyle(count > 0 ? .primary : .secondary)
+            
+            Text(label)
+                .font(.system(size: 8, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -8360,6 +10897,20 @@ private struct AssetsHousingLegacySection: View {
                     ("Milestones", "\(state.progress.unlockedMilestones.count)", state.progress.unlockedMilestones.isEmpty ? .warning : .positive)
                 ])
             }
+            
+            // Very aggressive QoL: Lifestyle Score from assets visible in Life tab
+            if state.assets.lifestyleScore > 15 {
+                PlannerSectionCard(
+                    title: "Lifestyle",
+                    symbol: "crown.fill",
+                    status: state.assets.lifestyleScore > 60 ? "High Society" : (state.assets.lifestyleScore > 35 ? "Comfortable" : "Rising"),
+                    tone: state.assets.lifestyleScore > 50 ? .positive : .neutral
+                ) {
+                    Text("Your assets signal \(state.assets.lifestyleScore) prestige. People notice.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .accessibilityIdentifier("assets-housing-legacy-section")
     }
@@ -8398,6 +10949,132 @@ private struct AssetsHousingLegacySection: View {
             return "Current path: \(LifePathCatalog.profile(for: currentPath).title)"
         }
         return "Legacy still forming"
+    }
+}
+
+private struct FamilyDetailCard: View {
+    let state: GameState
+    @State private var showAtHomeDetails = false
+    @State private var showAdultDetails = false
+
+    private var compact: Bool {
+        state.player.age >= 40 || state.family.children.filter { !$0.livesAtHome }.count > 0
+    }
+
+    var body: some View {
+        DetailCard(title: "Family", subtitle: state.family.isPregnant ? "Pregnancy active" : "Household load") {
+            HStack(spacing: 16) {
+                Label("\(state.family.childCount) kids", systemImage: "person.2.fill")
+                    .font(.caption.weight(.semibold))
+                if state.family.infantCount > 0 {
+                    Label("\(state.family.infantCount) infants", systemImage: "baby.fill")
+                        .font(.caption.weight(.semibold))
+                }
+                if state.family.postpartumYearsRemaining > 0 {
+                    Label("Postpartum", systemImage: "heart.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.orange)
+                }
+            }
+            .foregroundStyle(.secondary)
+
+            if state.family.children.isEmpty {
+                Text("No children yet").font(.caption).foregroundStyle(.secondary)
+            } else {
+                let atHome = state.family.children.filter { $0.livesAtHome }
+                let adults = state.family.children.filter { !$0.livesAtHome }
+
+                if !atHome.isEmpty {
+                    familyChildSection(
+                        title: "At Home",
+                        count: atHome.count,
+                        expanded: $showAtHomeDetails,
+                        compact: compact
+                    ) {
+                        ForEach(atHome) { child in
+                            Text("• \(child.name), age \(child.age)")
+                                .font(.caption)
+                        }
+                    }
+                }
+
+                if !adults.isEmpty {
+                    familyChildSection(
+                        title: "Adult Children",
+                        count: adults.count,
+                        expanded: $showAdultDetails,
+                        compact: compact
+                    ) {
+                        ForEach(adults) { child in
+                            let vibe = child.adultProfile?.lifeVibe
+                            let outcome = child.adultProfile?.outcome
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("• \(child.name) (\(child.age))")
+                                    .font(.caption.weight(.semibold))
+                                if let outcome {
+                                    Text(outcome.rawValue.capitalized + (vibe.map { " — \($0)" } ?? ""))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(compact ? 2 : 4)
+                                }
+                            }
+                        }
+                        if compact {
+                            Text("Outcomes grew from how you raised them — tap stories in the journal.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func familyChildSection<Content: View>(
+        title: String,
+        count: Int,
+        expanded: Binding<Bool>,
+        compact: Bool,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if compact {
+                Button {
+                    withAnimation { expanded.wrappedValue.toggle() }
+                } label: {
+                    HStack {
+                        Text(title)
+                            .font(.caption2.weight(.black))
+                            .foregroundStyle(.secondary)
+                        Text("\(count)")
+                            .font(.caption2.weight(.bold))
+                        Spacer()
+                        Image(systemName: expanded.wrappedValue ? "chevron.up" : "chevron.down")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                if expanded.wrappedValue {
+                    content()
+                } else {
+                    Text(summaryLine(title: title, count: count))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text(title).font(.caption2.weight(.black)).foregroundStyle(.secondary)
+                content()
+            }
+        }
+    }
+
+    private func summaryLine(title: String, count: Int) -> String {
+        if title == "Adult Children" {
+            return "\(count) adult \(count == 1 ? "child" : "children") — expand for outcomes"
+        }
+        return "\(count) at home — expand for names"
     }
 }
 
@@ -8953,49 +11630,116 @@ struct StatMeter: View {
 
 struct LifeLogView: View {
     let history: [HistoryEntry]
+    @State private var searchText: String = ""
+    @State private var selectedTag: HistoryDomainTag? = nil
+
+    var filteredHistory: [HistoryEntry] {
+        history.filter { entry in
+            let matchesSearch = searchText.isEmpty || entry.title.localizedCaseInsensitiveContains(searchText) || entry.text.localizedCaseInsensitiveContains(searchText)
+            let matchesTag = selectedTag == nil || entry.tags.contains(selectedTag!)
+            return matchesSearch && matchesTag
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if history.isEmpty {
+            VStack(spacing: 12) {
+                // Search Bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
+                    TextField("Search your story...", text: $searchText)
+                        .font(.subheadline)
+                }
+                .padding(10)
+                .background(Color.primary.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                // Tag Filters
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        filterChip(title: "All", tag: nil)
+                        filterChip(title: "Career", tag: .career)
+                        filterChip(title: "Education", tag: .education)
+                        filterChip(title: "Finance", tag: .finance)
+                        filterChip(title: "Health", tag: .health)
+                        filterChip(title: "Family", tag: .family)
+                        filterChip(title: "Crime", tag: .crime)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(.ultraThinMaterial)
+
+            if filteredHistory.isEmpty {
                 VStack(spacing: 20) {
                     Spacer()
-                    Image(systemName: "book.closed.fill")
+                    Image(systemName: history.isEmpty ? "book.closed.fill" : "doc.text.magnifyingglass")
                         .font(.system(size: 60))
                         .foregroundStyle(.quaternary)
-                    Text("Your story is waiting to be written.")
+                    Text(history.isEmpty ? "Your story is waiting to be written." : "No entries match your filter.")
                         .font(.system(size: 16, weight: .medium, design: .serif))
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, minHeight: 400)
             } else {
-                ForEach(history) { entry in
+                ForEach(filteredHistory) { entry in
                     HStack(alignment: .top, spacing: 16) {
                         Text("\(entry.age)")
                             .font(.system(size: 12, weight: .black, design: .rounded))
                             .foregroundStyle(.secondary)
                             .frame(width: 30, alignment: .trailing)
-                        
+
                         VStack(alignment: .leading, spacing: 4) {
                             Text(entry.title)
                                 .font(.system(size: 15, weight: .bold))
                             Text(entry.text)
                                 .font(.system(size: 14))
                                 .foregroundStyle(.secondary)
+
+                            HStack(spacing: 4) {
+                                ForEach(entry.tags, id: \.self) { tag in
+                                    Text(tag.rawValue.capitalized)
+                                        .font(.system(size: 8, weight: .bold))
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 2)
+                                        .background(Color.primary.opacity(0.1))
+                                        .clipShape(Capsule())
+                                }
+                            }
+                            .padding(.top, 2)
                         }
                     }
                     .padding(.vertical, 12)
                     .padding(.horizontal, 20)
-                    
+
                     Divider()
                         .padding(.leading, 66)
                 }
             }
         }
-        .background(Color.white.opacity(0.5))
+        .background(Color.white.opacity(0.05))
+    }
+
+    private func filterChip(title: String, tag: HistoryDomainTag?) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3)) {
+                selectedTag = tag
+            }
+        } label: {
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(selectedTag == tag ? Color.primary : Color.primary.opacity(0.1))
+                .foregroundStyle(selectedTag == tag ? (Color.primary == .black ? .white : .black) : .primary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
-
 struct ActivityCategoryCard: View {
     let title: String
     let icon: String
@@ -9080,6 +11824,173 @@ private struct PreviewLifeHeaderShell: View {
         .background(Color.gray.opacity(0.12))
         #endif
         .preferredColorScheme(scheme)
+    }
+}
+
+struct LegacySelectionView: View {
+    @ObservedObject var vm: GameViewModel
+
+    private var summary: LifeSummarySnapshot {
+        LifeSummarySystem().build(from: vm.state)
+    }
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text(summary.headline)
+                        .font(.system(size: 28, weight: .black, design: .serif))
+                        .multilineTextAlignment(.center)
+                    Text("Age \(vm.state.player.age)")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.secondary)
+                    Text(summary.closingLine)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 40)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("The Life")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(.secondary)
+
+                    Text(summary.relationshipLine)
+                    Text(summary.reputationLine)
+                        .foregroundStyle(.secondary)
+
+                    HStack {
+                        legacyMetric("Path", summary.lifePathTitle)
+                        Spacer()
+                        legacyMetric("Legacy", "\(summary.legacyScore)")
+                        Spacer()
+                        legacyMetric("Next Life", "+\(summary.legacyPointsEarned)")
+                    }
+                }
+                .padding()
+                .background(Color.white.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.horizontal)
+
+                legacyList(title: "What Lasted", items: summary.achievements, symbol: "sparkles", color: .green)
+                legacyList(title: "What Stayed Unfinished", items: summary.regrets, symbol: "ellipsis.circle.fill", color: .orange)
+                
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Estate & Heritage")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(.secondary)
+                    
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Total Wealth")
+                                .font(.caption.bold())
+                            Text("$\(vm.state.finance.totalWealth)")
+                                .font(.title3.bold())
+                        }
+                        Spacer()
+                        if vm.state.assets.ownsHome {
+                            VStack(alignment: .trailing) {
+                                Text("Property")
+                                    .font(.caption.bold())
+                                Text(vm.state.assets.primaryResidence?.homeValue ?? 0 > 0 ? "Bequeathed" : "None")
+                                    .font(.title3.bold())
+                                    .foregroundStyle(.green)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(vm.state.family.children.isEmpty ? "What Comes Next" : "Choose Your Successor")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(.secondary)
+                    
+                    ForEach(vm.state.family.children) { child in
+                        Button {
+                            withAnimation {
+                                vm.switchToChild(child)
+                            }
+                        } label: {
+                            HStack(spacing: 16) {
+                                Image(systemName: "person.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(.blue)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.blue.opacity(0.1))
+                                    .clipShape(Circle())
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(child.name)
+                                        .font(.headline.bold())
+                                    Text("Age \(child.age) · \(child.temperament.rawValue.capitalized)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding()
+                            .background(Color.white.opacity(0.05))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    Button {
+                        vm.finishLegacyWithoutSuccessor()
+                    } label: {
+                        Text(vm.state.family.children.isEmpty ? "Begin Another Life" : "Start a New Family")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.white.opacity(0.03))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .padding(.top, 10)
+                }
+                .padding(.horizontal)
+            }
+        }
+        .background(Color.black.ignoresSafeArea())
+        .onAppear {
+            vm.clearPopupStateIfNeeded()
+        }
+    }
+
+    private func legacyMetric(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.weight(.bold))
+        }
+    }
+
+    private func legacyList(title: String, items: [String], symbol: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.caption.weight(.black))
+                .foregroundStyle(.secondary)
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                Label(item, systemImage: symbol)
+                    .font(.subheadline)
+                    .foregroundStyle(color)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal)
     }
 }
 

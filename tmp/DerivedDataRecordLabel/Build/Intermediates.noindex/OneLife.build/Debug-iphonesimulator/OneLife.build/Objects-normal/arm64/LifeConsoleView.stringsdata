@@ -1,0 +1,296 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/LifeConsoleView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Active Modifiers",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "Back to %@",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 234
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your circle",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 398
+        }
+      },
+      {
+        "comment": "",
+        "key": "At a glance",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 446
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resilient",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 502
+        }
+      },
+      {
+        "comment": "",
+        "key": "Grounded",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 502
+        }
+      },
+      {
+        "comment": "",
+        "key": "Forecasts and recoveries leave more slack. Spirals are softer — the life still bites, but bends.",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 508
+        }
+      },
+      {
+        "comment": "",
+        "key": "Setbacks hit at full weight. Choosing rest or care in a bad year is a real win, not a given.",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 509
+        }
+      },
+      {
+        "comment": "",
+        "key": "Got It",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 517
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 546
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 547
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life feel: %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 764
+        }
+      },
+      {
+        "comment": "",
+        "key": "Explain momentum",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 613
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 662
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resilient",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 756
+        }
+      },
+      {
+        "comment": "",
+        "key": "Grounded",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 756
+        }
+      },
+      {
+        "comment": "",
+        "key": "Top Pressures",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 779
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Life Pace",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 846
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Life Pace",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 837
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why: %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 869
+        }
+      },
+      {
+        "comment": "",
+        "key": "Autopilot bias",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 863
+        }
+      },
+      {
+        "comment": "",
+        "key": "Guided pick",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 863
+        }
+      },
+      {
+        "comment": "",
+        "key": "Background Pulse",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 894
+        }
+      },
+      {
+        "comment": "",
+        "key": "No background pressure is asking for attention.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 901
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assets",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 937
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ledger",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 940
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1030
+        }
+      },
+      {
+        "comment": "",
+        "key": "More",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1056
+        }
+      },
+      {
+        "comment": "",
+        "key": "Details",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 1056
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Plan",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1179
+        }
+      },
+      {
+        "comment": "",
+        "key": "Adult children",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1188
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld · %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1198
+        }
+      },
+      {
+        "comment": "",
+        "key": "HOLD TO PREVIEW",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1274
+        }
+      },
+      {
+        "comment": "",
+        "key": "ALWAYS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1283
+        }
+      },
+      {
+        "comment": "",
+        "key": "Now",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1445
+        }
+      },
+      {
+        "comment": "",
+        "key": "Quick",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1474
+        }
+      }
+    ]
+  },
+  "version": 1
+}

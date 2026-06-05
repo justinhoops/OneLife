@@ -1,28 +1,33 @@
 import Foundation
 
 struct EducationSystem {
-    func advanceYear(input: EducationDomainSnapshot, player: inout Player, education: inout EducationState, career: inout CareerState) -> DomainYearResult {
+    func advanceYear(input: EducationDomainSnapshot, player: inout Player, education: inout EducationState, military: inout MilitaryState, career: inout CareerState) -> DomainYearResult {
         advanceYear(
             player: &player,
             education: &education,
+            military: &military,
             career: &career,
             finance: input.finance,
             relationships: input.relationships,
             health: input.health,
-            policySupport: input.policySupport
+            policySupport: input.policySupport,
+            childhoodDossier: input.childhoodDossier
         )
     }
 
     func advanceYear(
         player: inout Player,
         education: inout EducationState,
+        military: inout MilitaryState,
         career: inout CareerState,
         finance: FinanceState,
         relationships: RelationshipState,
         health: HealthState,
-        policySupport: Int
+        policySupport: Int,
+        childhoodDossier: ChildhoodDossier? = nil
     ) -> DomainYearResult {
         var result = DomainYearResult()
+        let dossier = childhoodDossier
 
         guard player.age <= 22 else {
             if education.stage != .inactive {
@@ -164,12 +169,66 @@ struct EducationSystem {
                 }
                 result.notes.append(DomainNote(title: "Education", text: "You found a practical training path that could stabilize your future."))
             }
+
+            // Teen immersion (dossier payoff): your childhood aptitudes show up in school life 14-17
+            if let d = dossier, player.age <= 17 {
+                if d.aptitudes.physical >= 55 {
+                    education.activityMomentum = min(100, education.activityMomentum + 3)
+                    education.schoolBelonging = min(100, education.schoolBelonging + 2)
+                    if player.age % 2 == 0 {
+                        result.notes.append(DomainNote(title: "Body in Motion", text: "Your natural physical edge makes gym, sports, or just moving through the day feel easier than for most. Coaches notice.", tags: [.education, .health]))
+                    }
+                }
+                if d.aptitudes.entrepreneurial >= 55 {
+                    education.applicationReadiness = min(100, education.applicationReadiness + 2)
+                    if player.age % 3 == 0 {
+                        result.notes.append(DomainNote(title: "Hustle Instinct", text: "You spot little ways to turn small efforts into small advantages — side opportunities, trades, or favors that add up.", tags: [.education, .finance]))
+                    }
+                }
+                if d.aptitudes.creative >= 55 {
+                    education.engagement = min(100, education.engagement + 2)
+                    education.activityMomentum = min(100, education.activityMomentum + 2)
+                    if player.age % 2 == 1 {
+                        result.notes.append(DomainNote(title: "Creative Spark", text: "Projects, art, writing, or performances pull you in. The work feels less like school and more like something that's yours.", tags: [.education]))
+                    }
+                }
+                if d.aptitudes.social >= 55 {
+                    education.schoolBelonging = min(100, education.schoolBelonging + 3)
+                    education.teacherSupport = min(100, education.teacherSupport + 1)
+                    if player.age % 3 == 1 {
+                        result.notes.append(DomainNote(title: "Social Current", text: "You read the room and the people faster than most. Groups form around you or you slide into them easily.", tags: [.education, .relationships]))
+                    }
+                }
+                if d.aptitudes.analytical >= 55 || d.aptitudes.technical >= 55 {
+                    education.schoolStanding = min(100, education.schoolStanding + 1)
+                    education.applicationReadiness = min(100, education.applicationReadiness + 2)
+                    if player.age % 2 == 0 {
+                        result.notes.append(DomainNote(title: "Sharp Edge", text: "The analytical or technical wiring from early on makes certain classes click. Teachers start treating you like someone who 'gets it'.", tags: [.education]))
+                    }
+                }
+                // Use the actual early interests from dossier for personal texture
+                if !d.earlyInterests.isEmpty, player.age % 4 == 0 {
+                    let interest = d.earlyInterests.first!
+                    result.notes.append(DomainNote(title: "Old Thread", text: "That early interest in \(interest) from before 14 is still quietly steering what grabs you in the hallways and classrooms.", tags: [.education]))
+                }
+            }
         }
 
         if player.age == 18 {
             resolveAgeEighteenTransition(player: &player, education: &education, career: &career, finance: finance, result: &result)
+            // Early adulthood immersion: at the exact moment paths open, your dossier wiring gets called out
+            if let d = dossier {
+                var wiringNotes: [String] = []
+                if d.aptitudes.physical >= 58 { wiringNotes.append("body") }
+                if d.aptitudes.entrepreneurial >= 58 { wiringNotes.append("hustle") }
+                if d.aptitudes.creative >= 58 { wiringNotes.append("voice") }
+                if d.aptitudes.social >= 58 { wiringNotes.append("presence") }
+                if !wiringNotes.isEmpty {
+                    result.notes.append(DomainNote(title: "The Shape You Brought", text: "At 18 the doors are real. The ones that match the wiring you carried at 14 feel a little more open, a little more like they were waiting for you.", tags: [.education, .progress]))
+                }
+            }
         } else if player.age >= 19 {
-            advancePostSecondaryStage(player: player, education: &education, career: &career, finance: finance, health: health, result: &result)
+            advancePostSecondaryStage(player: player, education: &education, military: &military, career: &career, finance: finance, health: health, result: &result, childhoodDossier: dossier)
         }
 
         education.clamp()
@@ -240,8 +299,9 @@ struct EducationSystem {
         education.clamp()
     }
 
-    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, education: inout EducationState) -> DomainYearResult {
+    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, education: inout EducationState, childhoodDossier: ChildhoodDossier? = nil, specialCareer: inout SpecialCareerState) -> DomainYearResult {
         var result = DomainYearResult()
+        let dossier = childhoodDossier
 
         switch choiceID {
         case .studyHard:
@@ -347,6 +407,15 @@ struct EducationSystem {
                     tags: [.education]
                 )
             )
+        case .joinROTC:
+            education.pathway = .rotc
+            education.engagement += 10
+            education.activityMomentum += 15
+            result.notes.append(DomainNote(title: "ROTC", text: "You joined the Reserve Officers' Training Corps. You now have a stipend and mandatory training.", tags: [.education, .career]))
+        case .leaveROTC:
+            education.pathway = .student
+            education.activityMomentum -= 10
+            result.notes.append(DomainNote(title: "ROTC", text: "You left ROTC and returned to regular student life.", tags: [.education]))
         case .layLow:
             education.engagement -= 5
             education.schoolStanding -= 1
@@ -406,8 +475,105 @@ struct EducationSystem {
                     tags: [.education]
                 )
             )
+        // D3: Education branch actions - set track and give immediate buffs, with long-term handoff effects
+        case .pursueTradeCert:
+            education.academicTrack = .vocational
+            education.applicationReadiness += 10
+            education.activityMomentum += 8
+            education.credentialStrength = max(education.credentialStrength, 72)
+            education.yearsSinceCredential = 0
+            result.notes.append(DomainNote(title: "Trade Path", text: "You chose the hands-on route. Faster income, real skills, and a different kind of respect. (Trade creds hold value through practice, slower decay.)", tags: [.education, .career]))
+        case .honorsTrack:
+            education.academicTrack = .honors
+            education.schoolStanding += 8
+            education.engagement += 6
+            education.burnoutRisk += 5
+            education.credentialStrength = max(education.credentialStrength, 85)
+            education.yearsSinceCredential = 0
+            result.notes.append(DomainNote(title: "Honors Lock-In", text: "The elite track. Standing soars, but the pressure is real and the special doors start opening early. (High prestige creds with strong longevity.)", tags: [.education]))
+        case .uniApplication:
+            education.applicationReadiness += 12
+            education.burnoutRisk += 3
+            education.credentialStrength = max(education.credentialStrength, 68)
+            result.notes.append(DomainNote(title: "University Bound", text: "The applications are in. The long academic road begins, with debt and delayed earnings but higher ceiling.", tags: [.education, .finance]))
+        case .lifelongLearning:
+            education.engagement += 5
+            education.applicationReadiness += 4
+            education.credentialStrength = min(100, education.credentialStrength + 4)
+            result.notes.append(DomainNote(title: "Lifelong Learner", text: "You keep the mind sharp beyond the diploma. Small consistent edge that compounds.", tags: [.education, .career]))
+        case .credentialRefresh:
+            education.applicationReadiness += 6
+            education.credentialStrength = min(100, education.credentialStrength + 18)
+            education.yearsSinceCredential = 0
+            result.financeEffects = FinanceEffects(cashDelta: -800)
+            result.notes.append(DomainNote(title: "Credential Refresh", text: "You updated the old paper. It still opens doors, but only if you keep it current.", tags: [.education, .finance]))
+        // Teen 2: Dossier-driven precursors - only meaningful in teen years, give school immersion + early seed to special substates
+        case .teenAthleticDrill:
+            education.activityMomentum += 12
+            education.schoolBelonging += 6
+            education.engagement += 4
+            if specialCareer.athlete.naturalPotential < 80 {
+                specialCareer.athlete.naturalPotential = min(100, specialCareer.athlete.naturalPotential + 5)
+            }
+            specialCareer.athlete.durability = min(100, specialCareer.athlete.durability + 3)
+            result.notes.append(DomainNote(title: "Athletic Drill", text: "You pushed your body hard after school. The reps build more than muscle — your future athletic ceiling just rose a notch.", tags: [.education, .health]))
+        case .teenSideHustle:
+            education.applicationReadiness += 8
+            education.activityMomentum += 8
+            specialCareer.founder.execution = min(100, specialCareer.founder.execution + 4)
+            if specialCareer.track == .inactive {
+                specialCareer.audience = max(specialCareer.audience, 8)
+            }
+            result.notes.append(DomainNote(title: "Side Hustle", text: "You found a small way to turn time into cash or connections. The entrepreneurial muscle memory is forming early.", tags: [.education, .finance]))
+        case .teenCreativeProject:
+            education.engagement += 10
+            education.activityMomentum += 6
+            education.schoolBelonging += 4
+            specialCareer.creator.contentQuality = min(100, specialCareer.creator.contentQuality + 5)
+            specialCareer.creator.personalBrand = min(100, specialCareer.creator.personalBrand + 3)
+            result.notes.append(DomainNote(title: "Creative Project", text: "You poured yourself into something original. The work is amateur but the voice is already yours — this is the seed of a platform.", tags: [.education]))
+        case .teenLeadInitiative:
+            education.schoolBelonging += 10
+            education.teacherSupport += 6
+            education.mentorSupport += 5
+            specialCareer.politics.charisma = min(100, specialCareer.politics.charisma + 5)
+            specialCareer.politics.approvalRating = min(100, specialCareer.politics.approvalRating + 4)
+            result.notes.append(DomainNote(title: "Lead Initiative", text: "You stepped up and organized something. People listened. The social and leadership wiring from childhood is getting real reps.", tags: [.education, .relationships]))
+        case .teenRiskyExperiment:
+            education.reputationRisk += 8
+            education.activityMomentum += 5
+            specialCareer.enterprise.riskTolerance = min(100, specialCareer.enterprise.riskTolerance + 6)
+            specialCareer.enterprise.networkStrength = min(100, specialCareer.enterprise.networkStrength + 3)
+            result.notes.append(DomainNote(title: "Risky Experiment", text: "You tried something that could have gone sideways. The thrill and the lesson both stick — this is how certain paths start in the shadows.", tags: [.education, .risk]))
         default:
             return result
+        }
+
+        // Teen immersion via actions: dossier makes school moves feel personal and seeds the special career "shape" early
+        if player.age <= 17, let d = dossier {
+            switch choiceID {
+            case .joinActivity, .joinClub:
+                if d.aptitudes.physical >= 55 {
+                    education.activityMomentum = min(100, education.activityMomentum + 4)
+                    result.notes.append(DomainNote(title: "Athletic Lean", text: "The physical wiring from your early years made this click. Your body responds fast — this is practice for something bigger.", tags: [.education, .health]))
+                } else if d.aptitudes.social >= 55 || d.aptitudes.creative >= 55 {
+                    education.schoolBelonging = min(100, education.schoolBelonging + 3)
+                    result.notes.append(DomainNote(title: "Fitting the Scene", text: "Whether it's the people or the expression, this activity feels like an extension of who you already were at 14.", tags: [.education, .relationships]))
+                }
+            case .buildPortfolio:
+                if d.aptitudes.entrepreneurial >= 55 || d.aptitudes.creative >= 55 {
+                    education.applicationReadiness = min(100, education.applicationReadiness + 5)
+                    education.activityMomentum = min(100, education.activityMomentum + 3)
+                    result.notes.append(DomainNote(title: "Early Proof", text: "Building something tangible plays to the edge you brought from childhood. This folder is going to matter later.", tags: [.education]))
+                }
+            case .studyHard, .studyConsistently:
+                if d.aptitudes.analytical >= 55 || d.aptitudes.technical >= 55 {
+                    education.schoolStanding = min(100, education.schoolStanding + 2)
+                    result.notes.append(DomainNote(title: "The Mind Likes This", text: "The analytical or technical shape from your early years makes focused study feel almost natural. The edge is quiet but real.", tags: [.education]))
+                }
+            default:
+                break
+            }
         }
 
         education.clamp()
@@ -493,12 +659,32 @@ struct EducationSystem {
                 routeText = "You entered university, opening more doors but also inviting debt and burnout risk."
             }
             result.notes.append(DomainNote(title: "Education", text: routeText, tags: [.education, .finance]))
+            // D3: Honors/uni handoff bonus to career starting (prestige/longevity + special entry bias seed)
+            if education.academicTrack == .honors {
+                career.performance += 10
+                career.jobSecurity += 6
+                career.annualIncome += 1200 // honors starts with slight premium
+                // Honors track gives lasting credential strength carry
+                education.credentialStrength = max(education.credentialStrength, 80)
+            } else {
+                // Standard uni balanced ramp
+                career.annualIncome += 400
+            }
             return
         }
 
         if education.pathway == .graduate && education.applicationReadiness >= 42 {
             education.stage = .adultEd
             education.yearsInStage = 0
+            // D3: Trade/vocational handoff - faster income ramp, stable start, but credential decays if not maintained
+            if education.academicTrack == .vocational {
+                career.performance += 7
+                career.annualIncome += 3800
+                career.jobSecurity += 10
+                education.credentialStrength = max(education.credentialStrength, 70)
+            } else {
+                career.annualIncome += 800
+            }
             education.studyFocus = education.studyFocus ?? .generalStudies
             career.status = .partTime
             result.notes.append(DomainNote(title: "Education", text: "You left school without a clean university launch and moved into a slower adult-ed route."))
@@ -513,11 +699,19 @@ struct EducationSystem {
     private func advancePostSecondaryStage(
         player: Player,
         education: inout EducationState,
+        military: inout MilitaryState,
         career: inout CareerState,
         finance: FinanceState,
         health: HealthState,
-        result: inout DomainYearResult
+        result: inout DomainYearResult,
+        childhoodDossier: ChildhoodDossier? = nil  // D3 for branch flavor
     ) {
+        // GI Bill Benefit
+        if military.hasGIBill && (education.stage == .university || education.stage == .tradeTraining) {
+            result.financeEffects = FinanceEffects(educationCostDelta: -10000) // Cover tuition
+            result.notes.append(DomainNote(title: "GI Bill", text: "Your GI Bill benefits covered your tuition costs this year.", tags: [.education, .finance]))
+        }
+
         switch education.stage {
         case .university:
             let standingShift =
@@ -540,6 +734,55 @@ struct EducationSystem {
                 (education.hasScholarship ? 1 : 0)
             ).clamped(to: 0...100)
 
+            // ROTC Stipend and Discipline
+            if education.pathway == .rotc {
+                var fin = result.financeEffects ?? FinanceEffects()
+                fin.annualIncomeDelta = (fin.annualIncomeDelta ?? 0) + 4000
+                result.financeEffects = fin
+                military.discipline += 5
+                military.fitness += 3
+            }
+
+            // D3: Education branch mechanical effects (trade fast income ramp + slow decay, honors longevity/prestige + special bias, standard balanced with faster fade)
+            education.yearsSinceCredential += 1
+            let eraBoost = 0 // era reactivity wired in finance/career handoff; light here
+            if education.academicTrack == .vocational {
+                education.activityMomentum += 4
+                education.applicationReadiness += 3
+                // Trade: practice maintains credential; slow decay
+                if education.yearsSinceCredential > 6 && education.credentialStrength > 40 {
+                    education.credentialStrength -= 1
+                }
+            } else if education.academicTrack == .honors {
+                education.schoolStanding += 3
+                education.burnoutRisk += 2
+                // Honors: high starting strength, slow decay, prestige lingers
+                if education.yearsSinceCredential > 10 && education.credentialStrength > 50 {
+                    education.credentialStrength -= 1
+                }
+            } else {
+                // Standard/general: balanced but credential fades faster without maintenance
+                if education.yearsSinceCredential > 4 && education.credentialStrength > 30 {
+                    education.credentialStrength -= 2
+                }
+            }
+
+            // P4: D4 life-shape tuning for credential value (driven stances slow decay, loose accelerates; ties education to later career shape)
+            if let d = childhoodDossier, d.aptitudes.analytical >= 60 || d.aptitudes.entrepreneurial >= 60 {
+                if education.yearsSinceCredential > 5 {
+                    education.credentialStrength = max(20, education.credentialStrength - 1) // "driven" origin resists fade less? wait, actually amplify D4
+                }
+            }
+            // Light dossier flavor in branch drift (side effect only)
+            if let d = childhoodDossier {
+                if d.aptitudes.technical >= 60 && education.academicTrack == .vocational {
+                    education.credentialStrength = min(100, education.credentialStrength + 1)
+                }
+                if d.aptitudes.analytical >= 65 && education.academicTrack == .honors {
+                    education.schoolStanding = min(100, education.schoolStanding + 1)
+                }
+            }
+
             if education.burnoutRisk >= 78 && education.schoolStanding < 62 {
                 education.stage = .adultEd
                 education.campusFit = max(35, education.campusFit - 8)
@@ -554,7 +797,22 @@ struct EducationSystem {
                 if !education.credentials.contains("Degree") {
                     education.credentials.append("Degree")
                 }
-                result.notes.append(DomainNote(title: "Education", text: "You completed university. The degree helps, but it did not erase the pressure it took to get there.", tags: [.education, .career]))
+                
+                // Specialized Degree Logic
+                if education.studyFocus == .medicine {
+                    education.credentials.append("MD")
+                } else if education.studyFocus == .law {
+                    education.credentials.append("JD")
+                } else if education.studyFocus == .computerScience {
+                    education.credentials.append("CS Degree")
+                }
+                
+                if education.pathway == .rotc {
+                    result.notes.append(DomainNote(title: "ROTC Commission", text: "You graduated and received your commission as an officer!", tags: [.education, .career]))
+                    // We'll let MilitarySystem handle the actual track change if it detects this state
+                } else {
+                    result.notes.append(DomainNote(title: "Education", text: "You completed university. The degree helps, but it did not erase the pressure it took to get there. (Credential value now set by track: honors lingers, standard fades without refresh. Era swings income ramps in finance layer.)", tags: [.education, .career]))
+                }
             }
         case .tradeTraining:
             education.schoolStanding = (education.schoolStanding + 3 + ((education.disciplineRecord - 60) / 18)).clamped(to: 0...100)
@@ -562,7 +820,9 @@ struct EducationSystem {
             if education.yearsInStage >= 2 && !education.credentials.contains("Trade Certificate") {
                 education.credentials.append("Trade Certificate")
                 education.pathway = .training
-                result.notes.append(DomainNote(title: "Education", text: "You earned a trade certificate that improves your work prospects."))
+                education.credentialStrength = max(education.credentialStrength, 68)
+                education.yearsSinceCredential = 0
+                result.notes.append(DomainNote(title: "Education", text: "You earned a trade certificate that improves your work prospects. (Fast ramp; holds via hands-on use.)"))
             }
             if education.yearsInStage >= 2 {
                 education.stage = .inactive
@@ -651,10 +911,62 @@ struct HousingSystem {
     }
 }
 
+// D1: Minimal identity action handler (light, always instant, dossier + ledger aware)
+private func applyIdentityAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
+    var result = DomainYearResult()
+    let d = state.childhoodDossier
+    switch choiceID {
+    case .morningReflection:
+        state.identityCoherence = (state.identityCoherence + 6).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 4).clamped(to: 0...100)
+        state.correlationLedger.publish(CorrelationSignal(kind: .instantActionPulse, domain: "identity", strength: 18, age: state.player.age))
+        var note = "You sat with the quiet version of yourself for ten minutes. The year felt a fraction more yours."
+        if let d = d, d.aptitudes.analytical >= 55 {
+            note = "The analytical wiring from before 14 made the reflection sharper than usual."
+        }
+        result.notes.append(DomainNote(title: "Reflection", text: note, tags: [.health, .identity]))
+    case .reconcileWithPast:
+        state.identityCoherence = (state.identityCoherence + 8).clamped(to: 0...100)
+        if let d = d {
+            // Dossier reconciliation gives small bond/mental if high social or analytical
+            if d.aptitudes.social >= 50 || d.aptitudes.analytical >= 50 {
+                state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 5).clamped(to: 0...100)
+            }
+        }
+        result.notes.append(DomainNote(title: "Reconciled", text: "You made a little peace with the shape you were given at 14. It stopped fighting you quite so hard.", tags: [.family, .identity]))
+    case .tryNewPersona:
+        state.identityCoherence = (state.identityCoherence + 4).clamped(to: 0...100) // experiment costs a little coherence until it settles
+        state.relationships.publicReputation = (state.relationships.publicReputation + 5).clamped(to: 0...100)
+        state.specialCareer.audience = min(100, state.specialCareer.audience + 3)
+        result.notes.append(DomainNote(title: "New Persona", text: "You tried on a different version of yourself in public. Some people liked it. Some people miss the old one.", tags: [.social, .identity, .risk]))
+    case .publicReset:
+        state.identityCoherence = (state.identityCoherence + 5).clamped(to: 0...100)
+        state.relationships.publicReputation = (state.relationships.publicReputation + 7).clamped(to: 0...100)
+        state.specialCareer.fame = max(0, state.specialCareer.fame - 3) // cost to the old story
+        result.notes.append(DomainNote(title: "Public Reset", text: "You told the world a cleaner version of the story. The old one still exists in the comments.", tags: [.social, .career]))
+    case .therapySession:
+        state.identityCoherence = (state.identityCoherence + 9).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 7).clamped(to: 0...100)
+        result.financeEffects = FinanceEffects(cashDelta: -120)
+        result.notes.append(DomainNote(title: "Therapy", text: "You paid someone to help you hear yourself. It cost money and it cost the story you were telling about not needing help.", tags: [.health, .finance]))
+    case .processCrisis:
+        state.identityCoherence = (state.identityCoherence + 12).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness - 2).clamped(to: 0...100) // painful but clarifying
+        // Slight realign pressure toward protectHealth or repairPeople
+        state.consequences.adjustPressure(domain: "health", delta: 3)
+        result.notes.append(DomainNote(title: "Identity Work", text: "You stopped running from the fracture. The pieces are still sharp, but they are on the table now.", tags: [.health, .identity, .risk]))
+    default:
+        break
+    }
+    state.identityCoherence = state.identityCoherence.clamped(to: 0...100)
+    return result
+}
+
 struct ActionSystem {
     private let educationSystem: EducationSystem
     private let careerSystem: CareerSystem
     private let specialCareerSystem: SpecialCareerSystem
+    private let militarySystem: MilitarySystem
     private let crimeSystem: CrimeSystem
     private let relationshipSystem: RelationshipSystem
     private let familySystem: FamilySystem
@@ -666,6 +978,7 @@ struct ActionSystem {
         educationSystem: EducationSystem = EducationSystem(),
         careerSystem: CareerSystem = CareerSystem(),
         specialCareerSystem: SpecialCareerSystem = SpecialCareerSystem(),
+        militarySystem: MilitarySystem = MilitarySystem(),
         crimeSystem: CrimeSystem = CrimeSystem(),
         familySystem: FamilySystem = FamilySystem(),
         financeSystem: FinanceSystem = FinanceSystem(),
@@ -676,6 +989,7 @@ struct ActionSystem {
         self.educationSystem = educationSystem
         self.careerSystem = careerSystem
         self.specialCareerSystem = specialCareerSystem
+        self.militarySystem = militarySystem
         self.crimeSystem = crimeSystem
         self.familySystem = familySystem
         self.financeSystem = financeSystem
@@ -696,21 +1010,33 @@ struct ActionSystem {
 
             switch action.domain {
             case .education:
-                actionResult = educationSystem.applyAction(action.choiceID, player: &state.player, education: &state.education)
+                actionResult = educationSystem.applyAction(action.choiceID, player: &state.player, education: &state.education, childhoodDossier: state.childhoodDossier, specialCareer: &state.specialCareer)
             case .career:
                 if specialCareerSystem.handles(action.choiceID) {
-                    actionResult = specialCareerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, specialCareer: &state.specialCareer)
+                    actionResult = specialCareerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, specialCareer: &state.specialCareer, childhoodDossier: state.childhoodDossier)
                 } else {
                     actionResult = careerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career)
                 }
+            case .military:
+                actionResult = militarySystem.applyAction(action.choiceID, player: &state.player, military: &state.military, career: &state.career, education: state.education)
             case .crime:
                 actionResult = crimeSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, crime: &state.crime)
             case .finance:
-                actionResult = financeSystem.applyAction(action.choiceID, finance: &state.finance, player: &state.player)
+                let homeOwnershipSystem = HomeOwnershipSystem()
+                if homeOwnershipSystem.isInstantHomeAction(action.choiceID) {
+                    actionResult = homeOwnershipSystem.applyInstantAction(action.choiceID, state: &state)
+                } else {
+                    actionResult = financeSystem.applyAction(action.choiceID, finance: &state.finance, player: &state.player)
+                }
             case .relationships:
-                actionResult = relationshipSystem.applyAction(action.choiceID, player: &state.player, relationships: &state.relationships, family: &state.family)
+                actionResult = relationshipSystem.applyAction(action.choiceID, state: &state)
             case .health:
                 actionResult = healthSystem.applyAction(action.choiceID, player: &state.player, health: &state.healthProfile)
+            case .family:
+                actionResult = DomainYearResult()
+            case .identity:
+                // D1: Light identity apply — always instant self-work with dossier/ledger flavor
+                actionResult = applyIdentityAction(action.choiceID, state: &state)
             }
 
             effectApplier.apply(
@@ -720,6 +1046,7 @@ struct ActionSystem {
                 educationSystem: educationSystem,
                 careerSystem: careerSystem,
                 specialCareerSystem: specialCareerSystem,
+                militarySystem: militarySystem,
                 crimeSystem: crimeSystem,
                 financeSystem: financeSystem,
                 relationshipSystem: relationshipSystem,
@@ -732,6 +1059,7 @@ struct ActionSystem {
         state.education.clamp()
         state.career.clamp()
         state.specialCareer.clamp()
+        state.military.clamp()
         state.crime.clamp()
         state.healthProfile.clamp()
         state.housing.clamp()
@@ -793,7 +1121,13 @@ enum CareerCatalog {
 
         CareerRoleDefinition(id: "sales_associate", title: "Sales Associate", profile: .serviceFrontline, status: .fullTime, level: 3, annualIncome: 26_000, minAge: 18, nextRoleID: "account_rep", primaryExperienceTag: .sales, secondaryExperienceTags: [.service]),
         CareerRoleDefinition(id: "account_rep", title: "Account Rep", profile: .stableAdmin, status: .fullTime, level: 4, annualIncome: 42_000, minAge: 21, nextRoleID: "sales_manager", minimumYearsWorked: 2, primaryExperienceTag: .sales, secondaryExperienceTags: [.admin], bridgeTags: [.sales]),
-        CareerRoleDefinition(id: "sales_manager", title: "Sales Manager", profile: .stableAdmin, status: .fullTime, level: 5, annualIncome: 66_000, minAge: 25, nextRoleID: nil, minimumYearsWorked: 5, primaryExperienceTag: .sales, secondaryExperienceTags: [.management], bridgeTags: [.sales, .management], isManagementRole: true)
+        CareerRoleDefinition(id: "sales_manager", title: "Sales Manager", profile: .stableAdmin, status: .fullTime, level: 5, annualIncome: 66_000, minAge: 25, nextRoleID: nil, minimumYearsWorked: 5, primaryExperienceTag: .sales, secondaryExperienceTags: [.management], bridgeTags: [.sales, .management], isManagementRole: true),
+
+        CareerRoleDefinition(id: "middle_school_coach", title: "Middle School Coach", profile: .serviceFrontline, status: .partTime, level: 2, annualIncome: 8_000, minAge: 18, nextRoleID: "high_school_assistant_coach", requiredCredentials: ["Diploma"], primaryExperienceTag: .coaching, secondaryExperienceTags: [.service]),
+        CareerRoleDefinition(id: "high_school_assistant_coach", title: "High School Assistant Coach", profile: .serviceFrontline, status: .fullTime, level: 3, annualIncome: 28_000, minAge: 21, nextRoleID: "high_school_head_coach", minimumYearsWorked: 2, primaryExperienceTag: .coaching, secondaryExperienceTags: [.management, .service], bridgeTags: [.coaching]),
+        CareerRoleDefinition(id: "high_school_head_coach", title: "High School Head Coach", profile: .stableAdmin, status: .fullTime, level: 4, annualIncome: 46_000, minAge: 24, nextRoleID: "juco_assistant_coach", minimumYearsWorked: 4, primaryExperienceTag: .coaching, secondaryExperienceTags: [.management], bridgeTags: [.coaching, .management], isManagementRole: true),
+        CareerRoleDefinition(id: "juco_assistant_coach", title: "JUCO Assistant Coach", profile: .stableAdmin, status: .fullTime, level: 5, annualIncome: 58_000, minAge: 27, nextRoleID: "university_assistant_coach", requiredCredentials: ["Degree"], minimumYearsWorked: 5, primaryExperienceTag: .coaching, secondaryExperienceTags: [.management, .sales], bridgeTags: [.coaching, .management], isManagementRole: true),
+        CareerRoleDefinition(id: "university_assistant_coach", title: "University Assistant Coach", profile: .credentialedProfessional, status: .fullTime, level: 6, annualIncome: 86_000, minAge: 30, nextRoleID: nil, requiredCredentials: ["Degree"], minimumYearsWorked: 7, primaryExperienceTag: .coaching, secondaryExperienceTags: [.management, .sales], bridgeTags: [.coaching, .management], isManagementRole: true)
     ]
 
     struct ProfileDefinition: Equatable {
@@ -914,7 +1248,8 @@ enum CareerCatalog {
         if education.credentials.contains("Degree"), role.profile == .credentialedProfessional { score += 10 }
         if education.credentials.contains("Trade Certificate"), role.primaryExperienceTag == .technical { score += 10 }
         if player.traits.contains(.disciplined), role.profile == .stableAdmin || role.profile == .credentialedProfessional { score += 6 }
-        if player.traits.contains(.charismatic), role.primaryExperienceTag == .sales || role.primaryExperienceTag == .creative { score += 6 }
+        if player.traits.contains(.charismatic), role.primaryExperienceTag == .sales || role.primaryExperienceTag == .creative || role.primaryExperienceTag == .coaching { score += 6 }
+        if player.traits.contains(.disciplined), role.primaryExperienceTag == .coaching { score += 5 }
         score += aptitudeScore(for: role, player: player, childhoodDossier: childhoodDossier) / 12
         return score
     }
@@ -924,6 +1259,7 @@ enum CareerCatalog {
             switch role.primaryExperienceTag {
             case .technical, .healthcare: return player.smarts
             case .creative, .sales, .service, .admin: return player.happiness
+            case .coaching: return max(player.smarts, player.health)
             case .labor: return player.health
             case .management: return max(player.smarts, player.happiness)
             }
@@ -931,6 +1267,8 @@ enum CareerCatalog {
         switch role.primaryExperienceTag {
         case .service, .sales, .admin, .management:
             return aptitudes.social
+        case .coaching:
+            return max(aptitudes.physical, aptitudes.social, aptitudes.analytical)
         case .labor:
             return aptitudes.physical
         case .technical:
@@ -1007,6 +1345,59 @@ struct CareerSystem {
         }
         applyProfileDrift(to: &career, result: &result)
 
+        // Specialized Career Logic (Phase 5)
+        if let track = career.specializedTrack {
+            switch track {
+            case .medical:
+                if career.professionalRank == "Resident" {
+                    career.burnout += 15
+                    career.performance += 5
+                    if career.yearsWorked >= 4 && career.performance >= 75 {
+                        career.professionalRank = "Attending"
+                        career.annualIncome = 220000
+                        result.notes.append(DomainNote(title: "Board Certified", text: "You completed your residency and are now an Attending Physician. Your salary has increased dramatically.", tags: [.career, .finance, .lifeEvent]))
+                    }
+                } else if career.professionalRank == "Attending" {
+                    if career.performance >= 85 && career.yearsWorked >= 10 {
+                        career.professionalRank = "Surgeon"
+                        career.annualIncome = 450000
+                        result.notes.append(DomainNote(title: "Peak Medicine", text: "You have reached the rank of Surgeon. You are a leader in your field.", tags: [.career, .fame]))
+                    }
+                }
+            case .law:
+                if career.professionalRank == "Law Clerk" {
+                    if education.credentials.contains("JD") && player.smarts >= 75 {
+                        career.professionalRank = "Associate"
+                        career.annualIncome = 160000
+                        result.notes.append(DomainNote(title: "Bar Passed", text: "You passed the Bar and joined the firm as an Associate.", tags: [.career, .finance]))
+                    }
+                } else if career.professionalRank == "Associate" {
+                    if career.performance >= 80 && relationships.socialCapital >= 60 {
+                        career.professionalRank = "Partner"
+                        career.annualIncome = 350000
+                        result.notes.append(DomainNote(title: "Partnered", text: "You have been made Partner. You now own a piece of the firm.", tags: [.career, .finance, .social]))
+                    }
+                }
+            case .tech:
+                if career.professionalRank == "Junior Developer" && career.yearsWorked >= 2 {
+                    career.professionalRank = "Senior Developer"
+                    career.annualIncome = 140000
+                } else if career.professionalRank == "Senior Developer" && player.smarts >= 80 && career.performance >= 80 {
+                    career.professionalRank = "CTO"
+                    career.annualIncome = 280000
+                    result.notes.append(DomainNote(title: "Executive", text: "You have been appointed CTO. The technical direction of the company is in your hands.", tags: [.career, .fame]))
+                }
+            case .corporateFinance:
+                if career.professionalRank == "Analyst" && career.yearsWorked >= 3 {
+                    career.professionalRank = "Associate"
+                    career.annualIncome = 150000
+                } else if career.professionalRank == "Associate" && career.performance >= 85 {
+                    career.professionalRank = "VP"
+                    career.annualIncome = 300000
+                }
+            }
+        }
+
         if let role = CareerCatalog.definition(for: career.roleID) {
             career.profile = role.profile
             career.status = role.status
@@ -1016,6 +1407,22 @@ struct CareerSystem {
             accrueExperience(from: role, on: &career)
             career.unemployedYears = 0
             result.notes.append(DomainNote(title: "Career", text: "Your \(role.title) role is still carrying the year, but the way it presses on your life is getting harder to ignore.", tags: [.career]))
+            if role.primaryExperienceTag == .coaching {
+                let seasonScore = career.performance + career.experience(for: .coaching) * 4 + (childhoodDossier?.aptitudes.social ?? player.happiness) / 5 + (player.smarts - 50) / 4
+                let wins = (seasonScore / 12).clamped(to: 1...11)
+                let losses = max(1, 12 - wins)
+                let seasonLine: String
+                if wins >= 9 {
+                    seasonLine = "Your team went \(wins)-\(losses). Parents are talking, players are buying in, and better programs may eventually notice."
+                    career.performance = min(100, career.performance + 4)
+                } else if wins <= 3 {
+                    seasonLine = "Your team went \(wins)-\(losses). The season exposed roster gaps, thin staff, and how lonely the sideline can get."
+                    career.performance = max(0, career.performance - 3)
+                } else {
+                    seasonLine = "Your team went \(wins)-\(losses). Not a miracle, not a collapse. Just another year of teaching people how to compete."
+                }
+                result.notes.append(DomainNote(title: "Season Summary", text: seasonLine, tags: [.career, .progress]))
+            }
 
             let promotionThreshold = adjustedPromotionThreshold(for: career)
             if career.performance >= promotionThreshold,
@@ -1084,6 +1491,149 @@ struct CareerSystem {
             career.status = .student
             career.annualIncome = 0
             career.level = 0
+        }
+
+        // D3: Regular career archetype-differentiated curves + aging + education credential carry (parity with deep specials)
+        if career.specializedTrack == nil {
+            let credBonus = (education.credentialStrength - 55) / 14   // from D3 edu track strength/decay
+            career.performance = (career.performance + credBonus).clamped(to: 0...100)
+
+            // P3: richer regular career "End of the Road" notes when burnout or age claims the shape
+            if career.burnout >= 80 || (player.age >= 60 && career.performance < 40) {
+                let shapeNote = career.regularArchetype.map { " The \( $0.displayName.lowercased()) life you chose left its mark." } ?? ""
+                result.notes.append(DomainNote(title: "The End of the Road", text: "The work that defined the years is no longer the thing that defines you.\(shapeNote)", tags: [.career, .progress]))
+            }
+
+            switch career.regularArchetype {
+            case .corporateClimber:
+                // Steady climber: high security, slow burnout, political drag, ages gracefully until late
+                career.jobSecurity = (career.jobSecurity + 2).clamped(to: 0...100)
+                if player.age > 50 { career.performance = (career.performance - 1).clamped(to: 0...100) }
+            case .gigFreelancer:
+                // High variance: income swings, burnout higher, security lower, ages faster but can pivot
+                career.jobSecurity = (career.jobSecurity - 1).clamped(to: 0...100)
+                career.burnout = (career.burnout + 1).clamped(to: 0...100)
+                if player.age > 42 { career.performance = (career.performance - 2).clamped(to: 0...100) }
+            case .skilledTrades:
+                // Durable: low burnout, strong security from demand, physical aging but skill holds
+                career.burnout = (career.burnout - 1).clamped(to: 0...100)
+                career.jobSecurity = (career.jobSecurity + 1).clamped(to: 0...100)
+                if player.age > 55 { career.performance = (career.performance - 1).clamped(to: 0...100) }
+            case .publicService:
+                // Mission security: very high security, pension drag on income, ages very slowly
+                career.jobSecurity = (career.jobSecurity + 3).clamped(to: 0...100)
+                career.annualIncome = Int(Double(career.annualIncome) * 0.98)
+                if player.age > 60 { career.performance = (career.performance - 1).clamped(to: 0...100) }
+            case .techEngineer:
+                // High ceiling: perf grows with skill, burnout from intensity, security from scarcity but ages on obsolescence
+                career.performance = (career.performance + 1).clamped(to: 0...100)
+                career.burnout = (career.burnout + 2).clamped(to: 0...100)
+                if player.age > 48 { career.performance = (career.performance - 2).clamped(to: 0...100) }
+            case .salesNetworker, nil:
+                // Balanced/default: mild variance, standard aging
+                if player.age > 45 {
+                    career.performance = (career.performance - 1).clamped(to: 0...100)
+                }
+            }
+
+            // P4: D4 life-shape + stance tuning for regular archetypes (driven stances boost perf temporarily, loose increases burnout variance)
+            // Proxy via burnout/performance (real recentStances tie via ledger in orchestrator calls)
+            if career.burnout < 30 && career.performance > 65 {
+                career.performance = min(100, career.performance + 2) // "driven" proxy
+            } else if career.burnout > 55 {
+                career.burnout = min(100, career.burnout + 2) // "loose" proxy
+            }
+
+            // P4-2: Regular career safety nets + ramps (so "normal" lives have visible agency and don't grind into dead-ends before mid-life).
+            // Archetype specific: Corporate gets political safety (security floor), Gig gets quick recovery variance (can bounce), Trades gets durable low-burn floor.
+            // Modulated by dossier (early wiring) + resilience (grounded gets bigger "earned" ramps when protecting health/steady) + shape proxy.
+            if career.specializedTrack == nil, let arch = career.regularArchetype {
+                let shape = (player.happiness > 65 && career.performance > 60) ? "driven" : (career.burnout > 55 ? "loose" : "steady")
+                let steadyTrait = player.traits.contains(.disciplined) || player.traits.contains(.resilient)
+                let resBonus = (steadyTrait && (arch == .skilledTrades || arch == .publicService)) ? 2 : 0
+
+                switch arch {
+                case .corporateClimber:
+                    // High-sec but political: safety net against manager friction death spiral
+                    if career.managerFriction >= 70 && career.jobSecurity < 45 {
+                        career.jobSecurity = (career.jobSecurity + 6 + resBonus).clamped(to: 0...100)
+                        if player.age % 4 == 0 {
+                            result.notes.append(DomainNote(title: "Internal Safety", text: "The ladder has politics, but your track record bought one more rung.", tags: [.career]))
+                        }
+                    }
+                    if shape == "driven" { career.performance = (career.performance + 1).clamped(to: 0...100) }
+                case .gigFreelancer:
+                    // Variance + fast recovery ramp: when low, a good pivot year can spike income temporarily
+                    if career.jobSecurity < 35 && career.performance > 55 {
+                        career.annualIncome = Int(Double(career.annualIncome) * 1.08)
+                        career.jobSecurity = (career.jobSecurity + 4 + resBonus).clamped(to: 0...100)
+                        if Int.random(in: 0...100) < 18 {
+                            result.notes.append(DomainNote(title: "Gig Pivot Paid", text: "One client or contract turned the variance into a real step up this year.", tags: [.career, .finance]))
+                        }
+                    }
+                    if shape == "loose" { career.burnout = (career.burnout + 1).clamped(to: 0...100) } // loose hurts gigs more
+                case .skilledTrades:
+                    // Durable: safety floor on burnout + physical aging slower ramp
+                    career.burnout = max(5, career.burnout - (1 + resBonus))
+                    if player.age > 50 && career.performance < 50 {
+                        career.performance = (career.performance + 2).clamped(to: 0...100)
+                    }
+                    if shape == "driven" && career.performance > 70 { career.jobSecurity = (career.jobSecurity + 2).clamped(to: 0...100) }
+                case .publicService:
+                    career.jobSecurity = (career.jobSecurity + 1 + resBonus).clamped(to: 0...100)
+                    if career.burnout > 60 {
+                        career.burnout = (career.burnout - 2).clamped(to: 0...100)
+                    }
+                case .techEngineer:
+                    if career.burnout > 70 && career.performance > 50 {
+                        // Tech safety: skill can still save you even if burned
+                        career.performance = (career.performance + 2).clamped(to: 0...100)
+                    }
+                case .salesNetworker:
+                    if career.performance < 40 && career.jobSecurity < 40 {
+                        career.jobSecurity = (career.jobSecurity + 3).clamped(to: 0...100)
+                    }
+                }
+            }
+
+            // D3 side hustle overlap note (from D2 finance collectors)
+            if career.regularArchetype == .gigFreelancer && career.burnout >= 45 {
+                result.notes.append(DomainNote(title: "Side Streams", text: "The gig life keeps multiple plates spinning. Some months sing, others scrape.", tags: [.career, .finance]))
+            }
+        }
+
+        // D3: light dossier + era-tinged flavor for regular (non-special) paths (side immersion, no core cost)
+        if career.specializedTrack == nil, let d = childhoodDossier {
+            if d.aptitudes.entrepreneurial >= 58 && (career.regularArchetype == .gigFreelancer || career.regularArchetype == .salesNetworker) {
+                if player.age % 3 == 1 {
+                    result.notes.append(DomainNote(title: "Wiring from 14", text: "That early side-hustle spark still colors how you spot the next angle.", tags: [.career]))
+                }
+            }
+            if d.aptitudes.social >= 62 && career.regularArchetype == .publicService {
+                result.notes.append(DomainNote(title: "Presence in the System", text: "People remember your face from the early days. It opens quiet doors in the bureaucracy.", tags: [.career, .social]))
+            }
+        }
+
+        // P3: narrative voice for regular archetypes (uniform treatment with specials) — 6 flavors, D4/stance ties
+        if career.specializedTrack == nil, let arch = career.regularArchetype {
+            if Int.random(in: 0...100) < 15 {
+                let voice: String
+                switch arch {
+                case .corporateClimber:
+                    voice = "The ladder is real. So is the view from the rung you just left behind."
+                case .gigFreelancer:
+                    voice = "Freedom is a calendar full of other people's deadlines. You still choose it every invoice."
+                case .skilledTrades:
+                    voice = "The work is honest. The respect is quiet. The body keeps the receipt."
+                case .publicService:
+                    voice = "The system is broken in the same ways it was last year. You are still inside it, still trying."
+                case .techEngineer:
+                    voice = "The code compiles. The version of you that wrote it at 2 a.m. is harder to find these days."
+                case .salesNetworker:
+                    voice = "Every relationship is a bet. Some of them are still paying out. Some of them are just good stories."
+                }
+                result.notes.append(DomainNote(title: "Regular Life Voice", text: voice, tags: [.career]))
+            }
         }
 
         refreshIdentity(on: &career)
@@ -1179,6 +1729,29 @@ struct CareerSystem {
         var result = DomainYearResult()
 
         switch choiceID {
+        case .applyForResidency:
+            career.specializedTrack = .medical
+            career.professionalRank = "Resident"
+            career.status = .fullTime
+            career.profile = .medicalProfessional
+            career.annualIncome = 55000
+            result.notes.append(DomainNote(title: "Residency Match", text: "You matched with a hospital and began your residency. Prepare for years of intense labor.", tags: [.career]))
+            
+        case .passBarExam:
+            career.specializedTrack = .law
+            career.professionalRank = "Law Clerk"
+            career.status = .fullTime
+            career.profile = .legalProfessional
+            career.annualIncome = 65000
+            result.notes.append(DomainNote(title: "The Bar", text: "You took the Bar exam. If your smarts are high enough, you will be sworn in next year.", tags: [.career]))
+
+        case .becomeCTO:
+            if career.specializedTrack == .tech && career.professionalRank == "Senior Developer" {
+                career.professionalRank = "CTO"
+                career.annualIncome = 280000
+                result.notes.append(DomainNote(title: "New Role", text: "You accepted the CTO position.", tags: [.career]))
+            }
+            
         case .workHard:
             career.performance += 8
             career.burnout += max(4, 10 - career.scheduleControl / 20)
@@ -1278,6 +1851,47 @@ struct CareerSystem {
                     )
                 )
             }
+            // D1 veteran bonus lives in the full state path (military top-level); small always-on flavor here
+        // D3: Regular career archetype actions for parity (non-special deep runs) - set persistent archetype + richer curves
+        case .corporateClimb:
+            career.regularArchetype = .corporateClimber
+            career.performance += 6
+            career.jobSecurity += 7
+            career.burnout += 5
+            career.managerFriction += 4
+            result.notes.append(DomainNote(title: "Corporate Climb", text: "You played the internal game. Rank and security rise, but the politics and hours take their toll. (Corporate archetype: high security, steady but political.)", tags: [.career]))
+        case .freelanceHustle:
+            career.regularArchetype = .gigFreelancer
+            career.performance += 4
+            career.annualIncome = Int(Double(career.annualIncome) * 1.12)
+            career.burnout += 6
+            career.scheduleControl -= 5
+            result.notes.append(DomainNote(title: "Freelance Hustle", text: "You own your calendar and your clients. Income is spikier but the freedom is real. (Gig archetype: variance, freedom, brand over pension.)", tags: [.career, .finance]))
+        case .tradesMastery:
+            career.regularArchetype = .skilledTrades
+            career.performance += 7
+            career.jobSecurity += 9
+            career.burnout -= 3
+            result.notes.append(DomainNote(title: "Trades Mastery", text: "Deep skill in something tangible. Steady demand, respect from peers, less corporate nonsense. (Trades: durable security, low burnout, tangible value.)", tags: [.career]))
+        case .pivotToGig:
+            career.regularArchetype = .gigFreelancer
+            career.status = .partTime
+            career.performance += 3
+            career.annualIncome = Int(Double(career.annualIncome) * 0.82)
+            result.notes.append(DomainNote(title: "Gig Pivot", text: "You left the single employer for multiple streams. Flexibility up, predictability down.", tags: [.career, .finance]))
+        case .publicServiceGrind:
+            career.regularArchetype = .publicService
+            career.performance += 4
+            career.jobSecurity += 10
+            career.burnout += 2
+            career.annualIncome = Int(Double(career.annualIncome) * 0.95)
+            result.notes.append(DomainNote(title: "Public Service Grind", text: "Mission-driven stability. Pension path and respect, slower private upside. (Public: security king, mission flavor.)", tags: [.career]))
+        case .techDeepWork:
+            career.regularArchetype = .techEngineer
+            career.performance += 8
+            career.jobSecurity += 4
+            career.burnout += 3
+            result.notes.append(DomainNote(title: "Tech Deep Work", text: "Mastery through focused craft. IP edge and leverage, but isolation and intensity. (Tech: high perf ceiling, skill compounds fast.)", tags: [.career, .education]))
         default:
             return result
         }
@@ -1343,6 +1957,16 @@ struct CareerSystem {
             return .credentialedProfessional
         case .credentialedProfessional:
             return .credentialedProfessional
+        case .militaryService:
+            return .militaryService
+        case .medicalProfessional:
+            return .medicalProfessional
+        case .legalProfessional:
+            return .legalProfessional
+        case .techSpecialist:
+            return .techSpecialist
+        case .financialExpert:
+            return .financialExpert
         }
     }
 
@@ -1571,6 +2195,7 @@ struct CareerSystem {
         case .student: return "Student"
         case .partTime: return "Part-Time Work"
         case .fullTime: return "Full-Time Work"
+        case .military: return "Military Service"
         case .unemployed: return "Looking for work"
         }
     }

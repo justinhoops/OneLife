@@ -1,0 +1,1488 @@
+{
+  "source": "/Users/justinjeffery/Developer/OneLife/OneLife/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Life ended",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 4863
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age up to %lld",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 4863
+        }
+      },
+      {
+        "comment": "",
+        "key": "NEXT YEAR",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4797
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Ended",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 4802
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age Up",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 4802
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 4807
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 4810
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4911
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Feed",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 4970
+        }
+      },
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 4975
+        }
+      },
+      {
+        "comment": "",
+        "key": "More",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4981
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resolving your choice...",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 5189
+        }
+      },
+      {
+        "comment": "",
+        "key": "Simulating the year (this can take a moment for complex lives).",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 5192
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resolving: %@",
+        "location": {
+          "startingColumn": 79,
+          "startingLine": 5189
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resolving your choice...",
+        "location": {
+          "startingColumn": 103,
+          "startingLine": 5189
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generating your life...",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 5244
+        }
+      },
+      {
+        "comment": "",
+        "key": "Journal",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 5275
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 5279
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Feed",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 5305
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 5309
+        }
+      },
+      {
+        "comment": "",
+        "key": "Okay",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 5346
+        }
+      },
+      {
+        "comment": "",
+        "key": "Randomize Details",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 5395
+        }
+      },
+      {
+        "comment": "",
+        "key": "Begin at 14",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 5406
+        }
+      },
+      {
+        "comment": "",
+        "key": "OneLife",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 5420
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start with a compressed backstory, land at age 14, and let the real shaping happen from there.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 5423
+        }
+      },
+      {
+        "comment": "",
+        "key": "WORLD REACTED",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 5554
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap sections below to expand. The Life tab keeps quick actions up front.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5680
+        }
+      },
+      {
+        "comment": "",
+        "key": "Auto-Life Pace",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 5696
+        }
+      },
+      {
+        "comment": "",
+        "key": "Autopilot will favor this",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 5712
+        }
+      },
+      {
+        "comment": "",
+        "key": "Guided pick",
+        "location": {
+          "startingColumn": 108,
+          "startingLine": 5712
+        }
+      },
+      {
+        "comment": "",
+        "key": "Commit on the forecast when you age up — swipe the stakes, then pick what you are protecting.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 5759
+        }
+      },
+      {
+        "comment": "",
+        "key": "Locked in for this year. Change it on the forecast when you age up.",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 5749
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent: %@",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 5785
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep %@",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 5772
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why: %@",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 5825
+        }
+      },
+      {
+        "comment": "",
+        "key": "No background pressure is asking for attention.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 5904
+        }
+      },
+      {
+        "comment": "",
+        "key": "Net Worth",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5986
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5989
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your recent years will land here after your next turn.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 6385
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Life",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 6370
+        }
+      },
+      {
+        "comment": "",
+        "key": "Full History",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 6374
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld • %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show fewer",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 6731
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show all pressures",
+        "location": {
+          "startingColumn": 69,
+          "startingLine": 6731
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life Feed",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 6807
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pressure, timing, and momentum — read fast, tap once to drill down.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 6809
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 7008
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 6920
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year In Brief",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 6924
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stance & Shape",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 6981
+        }
+      },
+      {
+        "comment": "",
+        "key": "• %@ focus (repeat: %lldx)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6985
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Recent: %@ — this is writing your life shape.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 6989
+        }
+      },
+      {
+        "comment": "",
+        "key": "• The automated world and quiet years are reacting to the shape you're building.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 6992
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start The Year",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 7150
+        }
+      },
+      {
+        "comment": "",
+        "key": "Forecast",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7029
+        }
+      },
+      {
+        "comment": "",
+        "key": "What the year is holding",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7076
+        }
+      },
+      {
+        "comment": "",
+        "key": "What are you protecting this year?",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7110
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recommended: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7114
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep Going",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 7279
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fallout",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 7296
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep Going",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 7309
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wrap",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 7318
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Life Feel choice shaped how this story could recover",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 7335
+        }
+      },
+      {
+        "comment": "",
+        "key": "Systemic Crisis",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7353
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pitch Deck",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 7405
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 7526
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Breakdown",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 7979
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why This Changed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 7945
+        }
+      },
+      {
+        "comment": "",
+        "key": "Next Year",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 7964
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 7983
+        }
+      },
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 8044
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feedback Pulse",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 8004
+        }
+      },
+      {
+        "comment": "",
+        "key": "Lifecycle",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 8024
+        }
+      },
+      {
+        "comment": "",
+        "key": "QA",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 8036
+        }
+      },
+      {
+        "comment": "",
+        "key": "Haptics",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 8005
+        }
+      },
+      {
+        "comment": "",
+        "key": "Animation",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 8011
+        }
+      },
+      {
+        "comment": "",
+        "key": "Color Emphasis",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 8017
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start New Life",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 8025
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset Saved Progress",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 8029
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open QA Scenarios",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 8037
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 8048
+        }
+      },
+      {
+        "comment": "",
+        "key": "Traits are still settling into place.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 8061
+        }
+      },
+      {
+        "comment": "",
+        "key": "Applies this choice immediately.",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 8144
+        }
+      },
+      {
+        "comment": "",
+        "key": "Queues this choice until you age up.",
+        "location": {
+          "startingColumn": 77,
+          "startingLine": 8144
+        }
+      },
+      {
+        "comment": "",
+        "key": "NOW",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 8122
+        }
+      },
+      {
+        "comment": "",
+        "key": "QUEUE",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 8122
+        }
+      },
+      {
+        "comment": "",
+        "key": "Recent Consequences",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 8307
+        }
+      },
+      {
+        "comment": "",
+        "key": "Risk Preview",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 8339
+        }
+      },
+      {
+        "comment": "",
+        "key": "School Climate",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 8720
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 9421
+        }
+      },
+      {
+        "comment": "",
+        "key": "Low-value items available to liquidate",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 9615
+        }
+      },
+      {
+        "comment": "",
+        "key": "Portfolio Overview",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9595
+        }
+      },
+      {
+        "comment": "",
+        "key": "LIFESTYLE",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 9585
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 9588
+        }
+      },
+      {
+        "comment": "",
+        "key": "Luxury Upgrades",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 9652
+        }
+      },
+      {
+        "comment": "",
+        "key": "Property Market",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 9667
+        }
+      },
+      {
+        "comment": "",
+        "key": "Equity: $%lld",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 9631
+        }
+      },
+      {
+        "comment": "",
+        "key": "Maintenance: $%lld/mo",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 9633
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL PROPERTY",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 9641
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fine Jewelry",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9698
+        }
+      },
+      {
+        "comment": "",
+        "key": "Aviation Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9728
+        }
+      },
+      {
+        "comment": "",
+        "key": "Marine Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9757
+        }
+      },
+      {
+        "comment": "",
+        "key": "Firearm Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9785
+        }
+      },
+      {
+        "comment": "",
+        "key": "Legal Hardware",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9789
+        }
+      },
+      {
+        "comment": "",
+        "key": "Black Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9799
+        }
+      },
+      {
+        "comment": "",
+        "key": "Exotic & Rare",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9811
+        }
+      },
+      {
+        "comment": "",
+        "key": "Vehicle Market",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 9838
+        }
+      },
+      {
+        "comment": "",
+        "key": "Available for Your Path",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 9890
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sell",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 9879
+        }
+      },
+      {
+        "comment": "",
+        "key": "Prestige +%lld",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 9874
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lldM",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 9977
+        }
+      },
+      {
+        "comment": "",
+        "key": "+ %lld Prestige",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 9981
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10005
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld Value",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10007
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • Resale: $%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10029
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10037
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 10069
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10096
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • Maint: $%lld/mo",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10129
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL ($%lld)",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10137
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10166
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10168
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • Maint: $%lld/mo",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10190
+        }
+      },
+      {
+        "comment": "",
+        "key": "SELL ($%lld)",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10198
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10227
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10229
+        }
+      },
+      {
+        "comment": "",
+        "key": "Spd: %lld / Hnd: %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 10258
+        }
+      },
+      {
+        "comment": "",
+        "key": "Safety: +%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 10261
+        }
+      },
+      {
+        "comment": "",
+        "key": "+ %@ ($%lld)",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 10281
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10314
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10316
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pwr: %lld / Rel: %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10355
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ • %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 10350
+        }
+      },
+      {
+        "comment": "",
+        "key": "+ %@ ($%lld)",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 10373
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10424
+        }
+      },
+      {
+        "comment": "",
+        "key": "ILLICIT",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 10427
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your assets signal %lld prestige. People notice.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 10614
+        }
+      },
+      {
+        "comment": "",
+        "key": "No children yet",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 10687
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld kids",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 10672
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld infants",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 10675
+        }
+      },
+      {
+        "comment": "",
+        "key": "Postpartum",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 10679
+        }
+      },
+      {
+        "comment": "",
+        "key": "• %@, age %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 10700
+        }
+      },
+      {
+        "comment": "",
+        "key": "Outcomes grew from how you raised them — tap stories in the journal.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 10728
+        }
+      },
+      {
+        "comment": "",
+        "key": "• %@ (%lld)",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 10717
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 10755
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld • %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 10864
+        }
+      },
+      {
+        "comment": "",
+        "key": "Testing",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 10929
+        }
+      },
+      {
+        "comment": "",
+        "key": "QA Scenario Lab",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 10890
+        }
+      },
+      {
+        "comment": "",
+        "key": "These seeded states are debug-only. They preserve the production planner layout while making hidden feature bands directly testable.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 10893
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset to Normal Start",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 10919
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Review",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 11057
+        }
+      },
+      {
+        "comment": "",
+        "key": "No year summary available.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 11040
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld Review",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 10979
+        }
+      },
+      {
+        "comment": "",
+        "key": "What Changed",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 10983
+        }
+      },
+      {
+        "comment": "",
+        "key": "What It Touched",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 11020
+        }
+      },
+      {
+        "comment": "",
+        "key": "Coming Out Of The Year",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 11031
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue to Event",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 11048
+        }
+      },
+      {
+        "comment": "",
+        "key": "Year Event",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 11129
+        }
+      },
+      {
+        "comment": "",
+        "key": "No event",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 11124
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life path",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 11269
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open settings",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 11256
+        }
+      },
+      {
+        "comment": "",
+        "key": "Shows debug tools and save management actions.",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 11257
+        }
+      },
+      {
+        "comment": "",
+        "key": "Opens the life feed.",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 11207
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 11209
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current role",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 11227
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cash",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 11239
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld out of 100",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 11332
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 11325
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search your story...",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 11356
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your story is waiting to be written.",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 11386
+        }
+      },
+      {
+        "comment": "",
+        "key": "No entries match your filter.",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 11386
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 11395
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 11549
+        }
+      },
+      {
+        "comment": "",
+        "key": "The Life",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 11560
+        }
+      },
+      {
+        "comment": "",
+        "key": "Estate & Heritage",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 11585
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total Wealth",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 11591
+        }
+      },
+      {
+        "comment": "",
+        "key": "$%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 11593
+        }
+      },
+      {
+        "comment": "",
+        "key": "Property",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 11599
+        }
+      },
+      {
+        "comment": "",
+        "key": "Bequeathed",
+        "location": {
+          "startingColumn": 93,
+          "startingLine": 11601
+        }
+      },
+      {
+        "comment": "",
+        "key": "None",
+        "location": {
+          "startingColumn": 108,
+          "startingLine": 11601
+        }
+      },
+      {
+        "comment": "",
+        "key": "What Comes Next",
+        "location": {
+          "startingColumn": 61,
+          "startingLine": 11614
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose Your Successor",
+        "location": {
+          "startingColumn": 81,
+          "startingLine": 11614
+        }
+      },
+      {
+        "comment": "",
+        "key": "Age %lld · %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 11635
+        }
+      },
+      {
+        "comment": "",
+        "key": "Begin Another Life",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 11654
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start a New Family",
+        "location": {
+          "startingColumn": 88,
+          "startingLine": 11654
+        }
+      }
+    ]
+  },
+  "version": 1
+}

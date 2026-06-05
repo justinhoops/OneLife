@@ -54,6 +54,69 @@ struct OneLifeTests {
         #expect(education.activityMomentum == 0)
     }
 
+    @Test func lifeSummaryReflectsAchievementsRegretsAndRelationships() async throws {
+        var state = GameState()
+        state.player.age = 72
+        state.progress.currentLifePath = .provider
+        state.progress.legacyScore = 55
+        state.progress.unlockedMilestones = [
+            MilestoneUnlock(id: .firstJob, unlockedAtAge: 20),
+            MilestoneUnlock(id: .homeowner, unlockedAtAge: 36)
+        ]
+        state.finance.financialStress = 82
+        state.family.children = [
+            ChildRecord(name: "Maya", age: 32, otherParentName: "Alex", bondWithPlayer: 78)
+        ]
+
+        let summary = LifeSummarySystem().build(from: state)
+
+        #expect(summary.headline == "You Left People Who Remember")
+        #expect(summary.achievements.contains("Made a home of your own"))
+        #expect(summary.regrets.contains("Money pressure consumed too many years"))
+        #expect(summary.relationshipLine.contains("child"))
+        #expect(summary.legacyPointsEarned > 0)
+    }
+
+    @Test func inheritedLifeCarriesParentLegacyContextAndReputationShadow() async throws {
+        let orchestrator = LifeSimulationOrchestrator(eventEngine: EventEngine(events: []))
+        var parent = GameState()
+        parent.player.name = "Jordan"
+        parent.player.age = 81
+        parent.finance.cashOnHand = 120_000
+        parent.relationships.publicReputation = 82
+        parent.fame.culturalFame = 70
+        parent.fame.notoriety = 40
+        parent.progress.finalLifePath = .connector
+        let child = ChildRecord(name: "Avery", age: 28, otherParentName: "Morgan", bondWithPlayer: 76)
+
+        let inherited = orchestrator.inheritLegacy(child: child, parentState: parent)
+
+        #expect(inherited.inheritedLegacy?.parentName == "Jordan")
+        #expect(inherited.inheritedLegacy?.parentDeathAge == 81)
+        #expect(inherited.inheritedLegacy?.parentLegacyHeadline?.isEmpty == false)
+        #expect(inherited.fame.culturalFame == 14)
+        #expect(inherited.fame.notoriety == 10)
+        #expect(inherited.history.first?.title == "Heritage")
+    }
+
+    @Test func choosingSuccessorHarvestsCompletedLifeBeforeHandoff() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        let child = ChildRecord(name: "Sam", age: 24, otherParentName: "Taylor", bondWithPlayer: 70)
+        vm.mutateStateForTesting {
+            $0.player.name = "Taylor"
+            $0.player.age = 68
+            $0.family.children = [child]
+            $0.progress.unlockedMilestones = [MilestoneUnlock(id: .firstJob, unlockedAtAge: 20)]
+        }
+        let livesBefore = vm.metaState.totalLivesPlayed
+
+        vm.switchToChild(child)
+
+        #expect(vm.metaState.totalLivesPlayed == livesBefore + 1)
+        #expect(vm.state.player.name == "Sam")
+        #expect(vm.state.inheritedLegacy?.parentName == "Taylor")
+    }
+
     @Test func ageUpRiskPreviewStaysGlanceableAndQualitative() async throws {
         let vm = makeViewModel(.teenEducationPressure)
 
@@ -279,7 +342,7 @@ struct OneLifeTests {
     }
 
     @Test func characterCreationOnlyExposesImplementedSteps() async throws {
-        #expect(CharacterCreationStep.allCases == [.name, .origin, .trait])
+        #expect(CharacterCreationStep.allCases == [.name, .origin, .trait, .resilience])
     }
 
     @Test func firstLifeOnboardingExpiresAfterThreeYearsOrMajorMoment() async throws {
@@ -299,6 +362,126 @@ struct OneLifeTests {
 
         #expect(!majorOnboarding.isActive(at: 15))
         #expect(majorOnboarding.endedByMajorMoment)
+    }
+
+    @Test func silentYearChapterStillSurfacesReactionBeatsBeforeSummary() async throws {
+        let orchestrator = LifeSimulationOrchestrator(eventEngine: EventEngine(events: []))
+        var state = DebugTestingCoordinator().payload(for: .adultCareerFlow).state
+        state.yearlyStance.selectedStance = .protectHealth
+        state.pendingActions = [PlayerYearAction(domain: .health, choiceID: .rest)]
+
+        let outcome = orchestrator.beginYearChapter(state: &state)
+        #expect(outcome.summary != nil)
+        #expect(!outcome.cards.isEmpty)
+
+        let kinds = outcome.cards.map(cardKind)
+        let summaryIndex = try #require(kinds.firstIndex(of: "yearSummary"))
+        if let reactionIndex = kinds.firstIndex(of: "reaction") {
+            #expect(reactionIndex < summaryIndex)
+        }
+    }
+
+    @Test func discoverabilityCoachAppearsAfterFirstQuickAction() async throws {
+        var flags = DiscoverabilityState()
+        flags.performedFirstQuickAction = true
+        let holdLine = flags.pendingCoachLine(quickActionsAvailable: true, mvpOnboardingActive: false)
+        #expect(holdLine?.contains("Hold") == true)
+        flags.markLongPressSeen()
+        #expect(flags.pendingCoachLine(quickActionsAvailable: true, mvpOnboardingActive: false) == nil)
+
+        var fresh = DiscoverabilityState()
+        let speedLine = fresh.pendingCoachLine(quickActionsAvailable: false, mvpOnboardingActive: true)
+        #expect(speedLine?.contains("Age Up") == true)
+
+        var momentumFlags = DiscoverabilityState()
+        let momentumLine = momentumFlags.pendingCoachLine(
+            quickActionsAvailable: false,
+            mvpOnboardingActive: false,
+            momentumActive: true
+        )
+        #expect(momentumLine?.contains("momentum strip") == true)
+    }
+
+    @Test func instantMomentumBuildHintTargetsWeakestLane() async throws {
+        var momentum = InstantMomentumState()
+        momentum.healthMomentum = 40
+        momentum.financeMomentum = 8
+        momentum.relationshipMomentum = 12
+        momentum.overallStrength = 20
+
+        let hint = momentum.buildHint(resilience: .grounded)
+        #expect(hint.contains("money") == true)
+        #expect(momentum.rankedDomainMomentum.first?.domain == .health)
+    }
+
+    @Test func tierASmokeQuickActionThenAgeUpForecast() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting {
+            $0.player.age = 18
+            $0.startupState = .active
+            $0.yearlyStance.selectedStance = nil
+        }
+
+        let lane = vm.nowLaneSnapshot()
+        #expect(lane.showsQuickAction == true)
+        #expect(lane.quickActionChoice != nil)
+
+        if let domain = lane.quickActionDomain, let choice = lane.quickActionChoice {
+            vm.performQuickAction(choice, for: domain)
+        }
+        #expect(vm.state.discoverability.performedFirstQuickAction == true)
+
+        vm.ageUp()
+        #expect(vm.presentedCard != nil || vm.state.activeYearChapter != nil)
+        #expect(vm.state.softRunGoal != nil)
+    }
+
+    @Test func compactLateGameUIActivatesForMatureLives() async throws {
+        var state = GameState()
+        state.player.age = 42
+        state.family.children = [
+            ChildRecord(name: "Sam", age: 22, livesAtHome: false, otherParentName: "Alex", bondWithPlayer: 60)
+        ]
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting { $0 = state }
+        #expect(vm.prefersCompactLateGameUI == true)
+        #expect(vm.lateGameContextRibbon()?.contains("adult child") == true)
+    }
+
+    @Test func yearlySummaryActionableLessonAppearsOnHarshYears() async throws {
+        var state = GameState()
+        state.resilience = .grounded
+        state.yearlyStance.lastCompletedStance = .protectHealth
+        state.healthProfile.mentalWellness = 30
+
+        var summary = YearlyOutcomeSummary(age: 24)
+        summary.topProblem = YearlyOutcomeItem(
+            title: "Mental Load",
+            detail: "Stress climbed.",
+            domain: .health,
+            tone: .warning,
+            impactScore: -12
+        )
+
+        let lesson = summary.actionableLesson(resilience: .grounded, state: state)
+        #expect(lesson?.title == "Small Win To Try")
+        #expect(lesson?.detail.contains("Grounded") == true)
+    }
+
+    @Test func resilienceJournalReflectionsFireAtMilestoneAges() async throws {
+        #expect(LifeResilience.resilient.journalReflection(forAge: 25)?.title == "Life Feel")
+        #expect(LifeResilience.grounded.journalReflection(forAge: 40)?.text.contains("Grounded") == true)
+        #expect(LifeResilience.resilient.journalReflection(forAge: 30) == nil)
+
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting {
+            $0.player.age = 25
+            $0.resilience = .grounded
+            $0.discoverability.resilienceJournalAges = []
+        }
+        vm.maintainDiscoverabilityAndResilienceJournal()
+        #expect(vm.state.discoverability.resilienceJournalAges.contains(25))
+        #expect(vm.state.history.contains { $0.title == "Life Feel" && $0.age == 25 })
     }
 
     @Test func repeatedChoicesUnlockPlayerIdentityPattern() async throws {
@@ -1326,6 +1509,110 @@ struct OneLifeTests {
         )
 
         #expect(burnedOutState.specialCareer.lastPayout < restedState.specialCareer.lastPayout)
+    }
+
+    @Test func recordLabelOwnerCanActivateFromEntertainmentCred() async throws {
+        let system = SpecialCareerSystem()
+        var state = GameState()
+        state.player.age = 28
+        state.finance.cashOnHand = 12_000
+        state.specialCareer = SpecialCareerState(track: .entertainment, tier: 2, fame: 42, audience: 45, burnout: 15, yearsActive: 4, lastPayout: 2_000)
+
+        #expect(SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil)
+
+        let result = system.applyAction(
+            .startRecordLabel,
+            player: &state.player,
+            career: &state.career,
+            specialCareer: &state.specialCareer,
+            childhoodDossier: state.childhoodDossier
+        )
+
+        #expect(state.specialCareer.track == .recordLabelOwner)
+        #expect(state.specialCareer.recordLabel.roster.count == 1)
+        #expect(state.specialCareer.recordLabel.labelPrestige >= 15)
+        #expect((result.financeEffects?.cashDelta ?? 0) == -8_000)
+    }
+
+    @Test func recordLabelRosterLoopBuildsCatalogAndPrestige() async throws {
+        let system = SpecialCareerSystem()
+        var state = GameState()
+        state.player.age = 30
+        state.specialCareer.track = .recordLabelOwner
+        state.specialCareer.recordLabel.roster = [
+            LabelArtist(name: "Mira Vale", talent: 88, popularity: 70, morale: 75, contractFairness: 60, catalogCount: 0, tourReadiness: 70, yearlyEarnings: 0)
+        ]
+        state.specialCareer.recordLabel.labelPrestige = 55
+        state.specialCareer.recordLabel.artistTrust = 70
+
+        _ = system.applyAction(.signArtist, player: &state.player, career: &state.career, specialCareer: &state.specialCareer)
+        let rosterCount = state.specialCareer.recordLabel.roster.count
+        _ = system.applyAction(.developArtist, player: &state.player, career: &state.career, specialCareer: &state.specialCareer)
+        _ = system.applyAction(.releaseRecord, player: &state.player, career: &state.career, specialCareer: &state.specialCareer)
+
+        #expect(rosterCount >= 2)
+        #expect(state.specialCareer.recordLabel.catalogStrength > 10)
+        #expect(state.specialCareer.recordLabel.roster.contains { $0.catalogCount > 0 })
+        #expect(state.specialCareer.fame > 0)
+    }
+
+    @Test func recordLabelYearPaysFinanceAndArtists() async throws {
+        let system = SpecialCareerSystem()
+        var state = GameState()
+        state.player.age = 34
+        state.specialCareer.track = .recordLabelOwner
+        state.specialCareer.recordLabel = RecordLabelState(
+            roster: [
+                LabelArtist(name: "Saint June", talent: 82, popularity: 76, morale: 68, contractFairness: 58, catalogCount: 3, tourReadiness: 70, yearlyEarnings: 0),
+                LabelArtist(name: "Koa Black", talent: 72, popularity: 52, morale: 61, contractFairness: 55, catalogCount: 2, tourReadiness: 58, yearlyEarnings: 0)
+            ],
+            catalogStrength: 72,
+            tourMachine: 54,
+            artistTrust: 66,
+            cashflowPressure: 24,
+            industryHeat: 18,
+            labelPrestige: 68,
+            artistPayoutPolicy: .standard
+        )
+
+        let result = system.advanceYear(
+            input: WorldSnapshotBuilder().build(from: state).specialCareer,
+            player: &state.player,
+            career: &state.career,
+            specialCareer: &state.specialCareer
+        )
+
+        #expect(result.financeEffects != nil)
+        #expect(state.specialCareer.recordLabel.roster.allSatisfy { $0.yearlyEarnings > 0 })
+        #expect(state.specialCareer.fame > 0)
+    }
+
+    @Test func recordLabelCanCollapseFromLowTrustAndHighHeat() async throws {
+        let system = SpecialCareerSystem()
+        var state = GameState()
+        state.player.age = 38
+        state.specialCareer.track = .recordLabelOwner
+        state.specialCareer.recordLabel = RecordLabelState(
+            roster: [
+                LabelArtist(name: "Noah Rook", talent: 65, popularity: 55, morale: 5, contractFairness: 12, catalogCount: 2, tourReadiness: 40, yearlyEarnings: 0)
+            ],
+            catalogStrength: 40,
+            tourMachine: 35,
+            artistTrust: 5,
+            cashflowPressure: 80,
+            industryHeat: 95,
+            labelPrestige: 35,
+            artistPayoutPolicy: .exploitative
+        )
+
+        _ = system.advanceYear(
+            input: WorldSnapshotBuilder().build(from: state).specialCareer,
+            player: &state.player,
+            career: &state.career,
+            specialCareer: &state.specialCareer
+        )
+
+        #expect(state.specialCareer.track == .inactive)
     }
 
     @Test func highHeatCrimeYearCanTriggerForcedExitAndDownstreamDamage() async throws {
@@ -2881,7 +3168,7 @@ struct OneLifeTests {
 
         var finance = state.finance
         let result = system.advanceYear(
-            input: WorldSnapshotBuilder().build(from: state).investment,
+            input: WorldSnapshotBuilder().build(from: state).investments,
             plannedAction: .buyIndexFund,
             finance: &finance
         )
@@ -2907,7 +3194,7 @@ struct OneLifeTests {
 
         var firstYear = state.finance
         _ = system.advanceYear(
-            input: WorldSnapshotBuilder().build(from: state).investment,
+            input: WorldSnapshotBuilder().build(from: state).investments,
             plannedAction: .holdPositions,
             finance: &firstYear
         )
@@ -2915,7 +3202,7 @@ struct OneLifeTests {
         state.finance = firstYear
         var secondYear = state.finance
         _ = system.advanceYear(
-            input: WorldSnapshotBuilder().build(from: state).investment,
+            input: WorldSnapshotBuilder().build(from: state).investments,
             plannedAction: .holdPositions,
             finance: &secondYear
         )
@@ -2942,7 +3229,7 @@ struct OneLifeTests {
 
         var finance = state.finance
         _ = system.advanceYear(
-            input: WorldSnapshotBuilder().build(from: state).investment,
+            input: WorldSnapshotBuilder().build(from: state).investments,
             plannedAction: .holdPositions,
             finance: &finance
         )
@@ -2967,7 +3254,7 @@ struct OneLifeTests {
 
         var finance = state.finance
         _ = system.advanceYear(
-            input: WorldSnapshotBuilder().build(from: state).investment,
+            input: WorldSnapshotBuilder().build(from: state).investments,
             plannedAction: .sellToCover,
             finance: &finance
         )
@@ -3169,10 +3456,10 @@ struct OneLifeTests {
         state.finance.lastYearBalanceDelta = 4_200
         state.finance.annualGrossIncome = 48_000
 
-        #expect(!system.canAccessInvestments(input: WorldSnapshotBuilder().build(from: state).investment))
+        #expect(!state.finance.isEligibleToCompound())
 
         state.finance.stabilityStreakYears = 2
-        #expect(system.canAccessInvestments(input: WorldSnapshotBuilder().build(from: state).investment))
+        #expect(state.finance.isEligibleToCompound())
     }
 
     @Test func adultFinanceActionsSwitchToInvestmentChoicesOnceStable() async throws {
@@ -3651,6 +3938,33 @@ struct OneLifeTests {
         #expect(reactiveForecast?.focusDetail.contains("reading pressure more than intent") == true)
     }
 
+    @Test func forecastIncludesAmbientVoiceWhenContactsPresent() async throws {
+        let orchestrator = LifeSimulationOrchestrator()
+        var state = GameState()
+        state.startupState = .active
+        state.player.age = 19
+        state.relationships.ambientContacts = [
+            AmbientContact(
+                id: "friend-1",
+                name: "Maya",
+                role: .friend,
+                bond: 82,
+                reliability: 70,
+                cadence: .regular
+            )
+        ]
+
+        let outcome = orchestrator.beginYearChapter(state: &state)
+        let forecast = outcome.cards.compactMap { card -> YearForecastCard? in
+            if case .forecast(let forecast) = card { return forecast }
+            return nil
+        }.first
+
+        #expect(forecast?.voiceName == "Maya")
+        #expect(forecast?.voiceLine?.contains("Maya") == true)
+        #expect(forecast?.voiceLine?.contains("Age 20") == true)
+    }
+
     @Test func yearlySummaryCarriesFocusTradeoffAndNextYearPressure() async throws {
         let aggregator = YearlyOutcomeAggregator()
         var before = GameState()
@@ -3990,9 +4304,8 @@ struct OneLifeTests {
             return
         }
 
-        if let reactionIndex = resolvedKinds.firstIndex(of: "reaction") {
-            #expect(reactionIndex < summaryIndex)
-        }
+        let reactionIndex = try #require(resolvedKinds.firstIndex(of: "reaction"))
+        #expect(reactionIndex < summaryIndex)
         if let consequenceIndex = resolvedKinds.firstIndex(of: "consequence") {
             #expect(summaryIndex < consequenceIndex)
         }
@@ -4248,7 +4561,7 @@ private struct ScriptedBalanceHarness {
             let investmentAction = recommendedInvestmentAction(for: state.finance, lane: lane)
             var snapshot = worldSnapshotBuilder.build(from: state)
             _ = investmentSystem.advanceYear(
-                input: snapshot.investment,
+                input: snapshot.investments,
                 plannedAction: investmentAction,
                 finance: &state.finance
             )
