@@ -1,5 +1,20 @@
 import Foundation
 
+/// Burnout never fully resets — at most 60% recovery per relief action/year.
+private func cappedBurnoutRecovery(current: Int, relief: Int) -> Int {
+    guard current > 0, relief > 0 else { return current }
+    let maxRelief = max(1, Int((Double(current) * 0.6).rounded()))
+    return max(0, current - min(relief, maxRelief))
+}
+
+/// High notoriety makes heat linger — relief is discounted.
+private func cappedHeatReduction(current: Int, relief: Int, notoriety: Int) -> Int {
+    guard current > 0, relief > 0 else { return current }
+    let discount = notoriety >= 70 ? 0.35 : (notoriety >= 50 ? 0.55 : 1.0)
+    let effectiveRelief = max(0, Int((Double(relief) * discount).rounded()))
+    return max(0, current - effectiveRelief)
+}
+
 struct SpecialCareerSystem {
     static func qualificationIssue(for choiceID: ActionChoiceID, state: GameState) -> String? {
         let dossier = state.childhoodDossier
@@ -15,6 +30,13 @@ struct SpecialCareerSystem {
         let eduCred = state.education.credentialStrength
 
         switch choiceID {
+        case .startBoxingCareer, .startMMACareer:
+            if state.player.age < 18 { return "must be 18" }
+            let entryPhysical = dossier?.aptitudes.physical ?? state.player.health
+            if state.player.health < 45 || entryPhysical < 50 { return "physical readiness" }
+            return nil
+        case .startFightEmpire:
+            return CombatCareerSystem.qualifiesForFightEmpire(state: state) ? nil : "retired champion, major record, or elite brand plus $40,000"
         case .startCompany:
             if state.finance.cashOnHand < 5_000 { return "$5,000 cash" }
             let bridge = [
@@ -34,26 +56,46 @@ struct SpecialCareerSystem {
             }
             return nil
         case .manageFund:
-            if state.finance.cashOnHand < 50_000 && state.career.annualIncome < 80_000 { return "capital base" }
+            // Diamond gate for Venture Capitalist (Criminal Enterprise) - high capital + peak founder/creator + ent/anal dossier
+            if state.finance.cashOnHand < 75_000 { return "$75k+ capital (Diamond VC entry)" }
+            let founderPeak = state.specialCareer.track == .founder && state.specialCareer.founder.personalLegend >= 40
+            let creatorPeak = state.specialCareer.track == .contentCreator && state.specialCareer.creator.personalBrand >= 40
             let exp = max(state.career.experience(for: .management), state.career.experience(for: .sales), state.career.experience(for: .technical))
-            let aptitudeCredit = max(entApt, analApt) / 10
-            if exp + aptitudeCredit < 3 {
-                return "deal experience"
+            let aptitudeCredit = max(entApt, analApt) / 8
+            if !founderPeak && !creatorPeak && (exp + aptitudeCredit < 5) {
+                return "peak founder/creator Special or strong deal experience + entrepreneurial/analytical dossier"
             }
             return nil
         case .acquireCompetitor:
-            if state.finance.cashOnHand < 20_000 { return "$20,000 cash" }
-            if state.career.annualIncome < 60_000 { return "executive income" }
+            // Diamond gate for Corporate Raider - capital + peak founder or high management + ent/tech dossier
+            if state.finance.cashOnHand < 40_000 { return "$40k+ capital (Diamond raider entry)" }
+            let founderPeak = state.specialCareer.track == .founder && state.specialCareer.founder.personalLegend >= 35
             let exp = state.career.experience(for: .management)
-            let aptitudeCredit = max(entApt, techApt) / 12
-            if exp + aptitudeCredit < 2 { return "management experience" }
+            let aptitudeCredit = max(entApt, techApt) / 10
+            if !founderPeak && (exp + aptitudeCredit < 4) {
+                return "peak founder Special or strong management experience + entrepreneurial/technical dossier"
+            }
             return nil
         case .gatherIntelligence, .exploitLeverage:
+            // Diamond gate for Shadow Operative - professional access + peak special or high perf + tech/anal/social dossier
+            if state.finance.cashOnHand < 30_000 { return "$30k+ for ops (Diamond shadow entry)" }
             if state.career.status != .fullTime || state.career.profile != .credentialedProfessional { return "professional access" }
+            let founderOrCreatorPeak = (state.specialCareer.track == .founder && state.specialCareer.founder.personalLegend >= 30) || (state.specialCareer.track == .contentCreator && state.specialCareer.creator.personalBrand >= 35)
             let exp = max(state.career.experience(for: .technical), state.career.experience(for: .admin))
-            let aptitudeCredit = max(techApt, analApt) / 12
-            if exp + aptitudeCredit < 2 { return "access experience" }
-            if state.career.performance < 65 { return "trusted performance" }
+            let aptitudeCredit = max(techApt, analApt, socApt) / 10
+            if !founderOrCreatorPeak && (exp + aptitudeCredit < 4) {
+                return "peak founder/creator Special or strong access experience + technical/analytical/social dossier"
+            }
+            if state.career.performance < 70 { return "elite trusted performance" }
+            return nil
+        case .dayTrade:
+            // Diamond gate for Gray Market Trader (Criminal Enterprise) - capital + peak founder/creator or high market exp + ent/anal dossier
+            if state.finance.cashOnHand < 35_000 { return "$35k+ stake capital (Diamond trader entry)" }
+            let founderOrCreatorPeak = (state.specialCareer.track == .founder && state.specialCareer.founder.personalLegend >= 30) || (state.specialCareer.track == .contentCreator && state.specialCareer.creator.personalBrand >= 35)
+            let marketExp = state.career.experience(for: .sales) + state.career.experience(for: .technical) + max(entApt, analApt) / 10
+            if !founderOrCreatorPeak && marketExp < 4 {
+                return "peak founder/creator Special or strong market experience + entrepreneurial/analytical dossier"
+            }
             return nil
         case .chaseSpotlight:
             // D3: honors track or high cred gives creator/politics spotlight entry easier (prestige wiring)
@@ -78,33 +120,44 @@ struct SpecialCareerSystem {
             }
             return nil
         case .startMovieProducer:
-            if state.finance.cashOnHand < 12_000 { return "$12,000 cash" }
-            let actorSuccess = state.specialCareer.track == .movieActor && (state.specialCareer.fame >= 35 || state.specialCareer.movieActor.roleCredits >= 4 || state.specialCareer.movieActor.boxOfficeDraw >= 35)
-            let entertainmentSuccess = state.specialCareer.track == .entertainment && (state.specialCareer.fame >= 40 || state.specialCareer.audience >= 45)
+            // CT1-1: Strengthened Diamond gate — requires significant capital + peak Special (creator/entertainment/actor success) + dossier fit (creative/entrepreneurial/social)
+            if state.finance.cashOnHand < 25_000 { return "$25,000+ cash (Diamond capital requirement)" }
+            let actorPeak = state.specialCareer.track == .movieActor && (state.specialCareer.fame >= 45 || state.specialCareer.movieActor.roleCredits >= 6 || state.specialCareer.movieActor.boxOfficeDraw >= 50)
+            let creatorPeak = state.specialCareer.track == .contentCreator && (state.specialCareer.fame >= 50 || state.specialCareer.audience >= 55 || state.specialCareer.creator.personalBrand >= 45)
+            let entertainmentPeak = state.specialCareer.track == .entertainment && (state.specialCareer.fame >= 50 || state.specialCareer.audience >= 55)
             let producerJob = state.career.roleID == "producer" || state.career.professionalRank == "Producer"
-            let managementCred = state.career.experience(for: .management) + state.career.experience(for: .creative) + max(entApt, socApt, analApt) / 18
-            if !actorSuccess && !entertainmentSuccess && !producerJob && managementCred < 5 {
-                return "film production credibility"
+            let managementCred = state.career.experience(for: .management) + state.career.experience(for: .creative) + max(entApt, socApt, analApt) / 16
+            let dossierFit = (creaApt + entApt + socApt) >= 140
+            if !actorPeak && !creatorPeak && !entertainmentPeak && !producerJob && (managementCred < 6 || !dossierFit) {
+                return "peak creative/entertainment Special + film credibility + creative/entrepreneurial dossier fit"
             }
             return nil
         case .startRecordLabel:
-            if state.finance.cashOnHand < 8_000 { return "$8,000 cash" }
-            let entertainmentCred = state.specialCareer.track == .entertainment && (state.specialCareer.fame >= 35 || state.specialCareer.audience >= 40)
-            let businessCred = max(state.career.experience(for: .creative), state.career.experience(for: .management)) + max(creaApt, entApt, socApt) / 15
-            if !entertainmentCred && businessCred < 4 {
-                return "music credibility"
+            // CT1-1: Diamond gate for record label — higher capital + peak music/creator/entertainment Special + dossier
+            if state.finance.cashOnHand < 18_000 { return "$18,000+ cash (Diamond capital requirement)" }
+            let musicPeak = state.specialCareer.track == .musicProducer && (state.specialCareer.fame >= 45 || state.specialCareer.audience >= 50)
+            let creatorPeak = state.specialCareer.track == .contentCreator && state.specialCareer.creator.personalBrand >= 40
+            let entertainmentPeak = state.specialCareer.track == .entertainment && (state.specialCareer.fame >= 45 || state.specialCareer.audience >= 50)
+            let businessCred = max(state.career.experience(for: .creative), state.career.experience(for: .management)) + max(creaApt, entApt, socApt) / 14
+            let dossierFit = (creaApt + entApt + socApt) >= 135
+            if !musicPeak && !creatorPeak && !entertainmentPeak && (businessCred < 5 || !dossierFit) {
+                return "peak music/creator/entertainment Special + label credibility + creative/entrepreneurial dossier fit"
             }
             return nil
         case .startCoachingCareer:
+            // CT1-1: Strengthened Diamond gate for Program Coach — requires peak athlete or strong specialized/public service cred + capital + disciplined/social dossier
+            if state.finance.cashOnHand < 15_000 { return "$15,000+ cash (Diamond capital for program)" }
             let coachingCred = state.career.experience(for: .coaching)
             let collegeDoor = state.career.roleID == "university_assistant_coach" || coachingCred >= 7
-            let athleteDoor = state.specialCareer.track == .athlete && state.specialCareer.yearsActive >= 5 && (state.specialCareer.athlete.personalBrand >= 35 || state.specialCareer.athlete.accolades.count > 0)
+            let athletePeak = state.specialCareer.track == .athlete && state.specialCareer.yearsActive >= 5 && (state.specialCareer.athlete.personalBrand >= 45 || state.specialCareer.athlete.accolades.count >= 2)
+            let leadershipCred = state.career.experience(for: .management) + state.career.experience(for: .service) + max(socApt, analApt) / 14
             let coachMind = max(state.player.smarts, analApt, socApt)
-            if !collegeDoor && !athleteDoor {
-                return "coaching path or athlete legacy"
+            let dossierFit = (socApt + analApt >= 110) || state.player.traits.contains(.disciplined)
+            if !collegeDoor && !athletePeak && (leadershipCred < 6 || !dossierFit) {
+                return "peak athlete Special or strong leadership/college coaching cred + disciplined/social dossier fit"
             }
             if coachMind < 58 && !state.player.traits.contains(.disciplined) {
-                return "coaching IQ"
+                return "coaching IQ or disciplined trait"
             }
             return nil
         case .intenseTraining, .compete:
@@ -159,7 +212,13 @@ struct SpecialCareerSystem {
         case .founder:
             resolveFounderYear(player: &player, career: &career, specialCareer: &specialCareer, health: input.health, worldEra: input.worldEra, dossier: dossier, result: &result)
         case .athlete:
-            resolveAthleteYear(player: &player, career: &career, specialCareer: &specialCareer, health: input.health, worldEra: input.worldEra, dossier: dossier, result: &result)
+            if specialCareer.athlete.sport == .combatSports, specialCareer.athlete.combat.discipline != nil {
+                result = CombatCareerSystem().advanceCombatYear(player: &player, specialCareer: &specialCareer)
+            } else {
+                resolveAthleteYear(player: &player, career: &career, specialCareer: &specialCareer, health: input.health, worldEra: input.worldEra, dossier: dossier, result: &result)
+            }
+        case .fightEmpire:
+            result = CombatCareerSystem().advanceFightEmpireYear(player: player, specialCareer: &specialCareer)
         case .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .crime:
             resolveCriminalEnterpriseYear(player: &player, career: &career, specialCareer: &specialCareer, health: input.health, worldEra: input.worldEra, result: &result)
         case .military, .inactive:
@@ -172,6 +231,7 @@ struct SpecialCareerSystem {
     }
 
     func handles(_ choiceID: ActionChoiceID) -> Bool {
+        if CombatCareerSystem().handles(choiceID) { return true }
         switch choiceID {
         case .chaseSpotlight, .startMovieActor, .auditionRole, .actingClass, .buildActingReel, .takeIndieRole, .managePublicist,
              .startCompany, .pitchDeck, .pivotBusiness, .raiseCapital, .aggressiveExpansion, .ipoExit, .hireAdvisor,
@@ -190,7 +250,17 @@ struct SpecialCareerSystem {
         }
     }
 
-    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState, specialCareer: inout SpecialCareerState, childhoodDossier: ChildhoodDossier? = nil) -> DomainYearResult {
+    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState, specialCareer: inout SpecialCareerState, childhoodDossier: ChildhoodDossier? = nil, finance: inout FinanceState) -> DomainYearResult {
+        if CombatCareerSystem().handles(choiceID) {
+            return CombatCareerSystem().applyAction(
+                choiceID,
+                player: &player,
+                career: &career,
+                specialCareer: &specialCareer,
+                finance: finance,
+                dossier: childhoodDossier
+            )
+        }
         var result = DomainYearResult()
         guard player.age >= 18 else { return result }
 
@@ -226,18 +296,21 @@ struct SpecialCareerSystem {
             result.notes.append(DomainNote(title: "Strategic Hire", text: "You hired \(advisor.name) as a \(spec.rawValue) advisor.", tags: [.career]))
 
         case .manageFund:
-            activate(.ventureCapitalist, specialCareer: &specialCareer, dossier: childhoodDossier)
+            let enteredDiamond = activate(.ventureCapitalist, specialCareer: &specialCareer, dossier: childhoodDossier, entryAge: player.age)
             specialCareer.capitalUnderManagement += 50000
             specialCareer.notoriety += 10 // Reputation
-            specialCareer.burnout += 8
+            specialCareer.burnout += 12 // CT4-2 Diamond criminal empire balance: higher toll for high finance crime
             result.notes.append(DomainNote(title: "VC Fund", text: "You are now managing a fund. Your career depends on other people's success.", tags: [.career, .finance]))
+            appendDiamondEntryNote(if: enteredDiamond, transitionCount: specialCareer.diamondTransitions, to: &result)
 
         case .acquireCompetitor:
-            activate(.corporateRaider, specialCareer: &specialCareer, dossier: childhoodDossier)
+            let enteredDiamond = activate(.corporateRaider, specialCareer: &specialCareer, dossier: childhoodDossier, entryAge: player.age)
             specialCareer.audience += 25 // Size
             specialCareer.heat += 30 // Debt/Integration
             specialCareer.notoriety += 15 // Fear
+            specialCareer.burnout += 10 // CT4-2 Diamond balance
             result.notes.append(DomainNote(title: "Hostile Takeover", text: "You acquired a rival. You are larger, but more exposed.", tags: [.career, .risk]))
+            appendDiamondEntryNote(if: enteredDiamond, transitionCount: specialCareer.diamondTransitions, to: &result)
 
         case .stripAssets:
             guard specialCareer.track == .corporateRaider else { break }
@@ -274,27 +347,34 @@ struct SpecialCareerSystem {
         case .ipoExit:
             guard specialCareer.track == .founder, specialCareer.audience >= 80 else { break }
             let totalValue = specialCareer.audience * 2500
-            let payout = Int(Double(totalValue) * specialCareer.equityOwned)
-            result.financeEffects = FinanceEffects(cashDelta: payout)
-            
+            let totalPayout = Int(Double(totalValue) * specialCareer.equityOwned)
+
+            // E3 Synergy: Move 70% into stocks, 30% to cash
+            let cashPayout = Int(Double(totalPayout) * 0.3)
+            let stockValue = Double(totalPayout - cashPayout)
+
+            result.financeEffects = FinanceEffects(cashDelta: cashPayout)
+
+            // CT1 fix: finance now always provided
+            finance.portfolio.stocks.append(StockHolding(tickerOrSector: "TECH", sharesOrValue: stockValue, entryBasis: stockValue, volatilityFactor: 1.2))
+
             // E4: Rich post-founder legacy and identity
             let fd = specialCareer.founder
             let exitNote: String
             if fd.personalLegend >= 70 {
-                exitNote = "You rang the bell. The market knows your name now. Whatever you build next will carry this weight."
+                exitNote = "You rang the bell. The market knows your name now. Most of your wealth is now tied to your new 'TECH' holdings."
             } else if fd.founderMentalLoad >= 70 {
-                exitNote = "You rang the bell. The money is life-changing, but the years took something from you that no exit can return."
+                exitNote = "You rang the bell. The money is life-changing, but the years took something from you that no exit can return. Your payout is split between liquid cash and market positions."
             } else {
-                exitNote = "You rang the bell. Legend status secured. The chapter is closed, but the story is just beginning."
+                exitNote = "You rang the bell. Legend status secured. You converted your equity into a mix of cash and a heavy TECH portfolio position."
             }
             result.notes.append(DomainNote(title: "The IPO", text: exitNote, tags: [.career, .finance, .progress]))
-            
+
             // Seed post-founder identity flavor
             if fd.personalLegend >= 60 {
                 specialCareer.fame = min(100, specialCareer.fame + 15)
             }
             exitTrack(on: &specialCareer)
-            
         // E2: Dedicated founder quick static instants (always clickable in founder subdomain)
         case .closeMajorDeal:
             guard specialCareer.track == .founder else { break }
@@ -308,7 +388,7 @@ struct SpecialCareerSystem {
             guard specialCareer.track == .founder else { break }
             specialCareer.founder.teamHealth = min(100, specialCareer.founder.teamHealth + 12)
             specialCareer.founder.execution = min(100, specialCareer.founder.execution + 3)
-            specialCareer.burnout = max(0, specialCareer.burnout - 4)
+            specialCareer.burnout = cappedBurnoutRecovery(current: specialCareer.burnout, relief: 4)
             result.notes.append(DomainNote(title: "All Hands", text: "You stood in front of everyone and reminded them why. The room feels like it can run through a wall — for a week or two.", tags: [.career, .social]))
         case .fundraiseSprint:
             guard specialCareer.track == .founder else { break }
@@ -320,7 +400,7 @@ struct SpecialCareerSystem {
             result.notes.append(DomainNote(title: "Sprint Raise", text: "You sold the vision hard for 10 days straight. The runway lengthened. Your soul is a little thinner.", tags: [.career, .finance]))
         case .takeRealBreak:
             guard specialCareer.track == .founder else { break }
-            specialCareer.burnout = max(0, specialCareer.burnout - 14)
+            specialCareer.burnout = cappedBurnoutRecovery(current: specialCareer.burnout, relief: 14)
             specialCareer.founder.founderMentalLoad = max(0, specialCareer.founder.founderMentalLoad - 10)
             specialCareer.founder.execution = max(0, specialCareer.founder.execution - 3)
             result.healthEffects = HealthEffects(physical: 2, mental: 5, exercise: nil, nutrition: nil, stressManagement: 5)
@@ -465,12 +545,14 @@ struct SpecialCareerSystem {
             specialCareer.musicProducer.network = max(0, specialCareer.musicProducer.network - 2)
             result.notes.append(DomainNote(title: "Credits Protected", text: "The paperwork got less romantic and more correct. Future royalties just got safer.", tags: [.career, .finance]))
         case .startMovieProducer:
-            activate(.movieProducer, specialCareer: &specialCareer, dossier: childhoodDossier)
+            let enteredDiamond = activate(.movieProducer, specialCareer: &specialCareer, dossier: childhoodDossier, entryAge: player.age)
             specialCareer.movieProducer.developmentQuality = max(specialCareer.movieProducer.developmentQuality, 34)
             specialCareer.movieProducer.budgetControl = max(specialCareer.movieProducer.budgetControl, 34)
             specialCareer.movieProducer.studioTrust = max(specialCareer.movieProducer.studioTrust, 32)
             result.financeEffects = FinanceEffects(cashDelta: -12_000)
+            specialCareer.burnout += 10 // CT4-2 Diamond balance: empire building exacts high personal toll
             result.notes.append(DomainNote(title: "Film Slate Opens", text: "The producer title is real now. The money leaves first. The movie may or may not follow.", tags: [.career, .finance, .risk]))
+            appendDiamondEntryNote(if: enteredDiamond, transitionCount: specialCareer.diamondTransitions, to: &result)
         case .optionScript:
             activate(.movieProducer, specialCareer: &specialCareer, dossier: childhoodDossier)
             specialCareer.movieProducer.slateCount += 1
@@ -545,12 +627,13 @@ struct SpecialCareerSystem {
             specialCareer.movieProducer.castRelationships = max(0, specialCareer.movieProducer.castRelationships - 2)
             result.notes.append(DomainNote(title: "Backend Protected", text: "The math got less glamorous and more survivable. Future checks have a better chance of existing.", tags: [.career, .finance]))
         case .startRecordLabel:
-            activate(.recordLabelOwner, specialCareer: &specialCareer, dossier: childhoodDossier)
+            let enteredDiamond = activate(.recordLabelOwner, specialCareer: &specialCareer, dossier: childhoodDossier, entryAge: player.age)
             specialCareer.recordLabel.cashflowPressure = min(100, specialCareer.recordLabel.cashflowPressure + 10)
             specialCareer.recordLabel.labelPrestige = max(specialCareer.recordLabel.labelPrestige, 22)
             specialCareer.recordLabel.artistTrust = max(specialCareer.recordLabel.artistTrust, 55)
             result.financeEffects = FinanceEffects(cashDelta: -8_000)
             result.notes.append(DomainNote(title: "Label Founded", text: "The label exists now. One room, one roster dream, and a bank account that suddenly feels smaller.", tags: [.career, .finance]))
+            appendDiamondEntryNote(if: enteredDiamond, transitionCount: specialCareer.diamondTransitions, to: &result)
         case .signArtist:
             activate(.recordLabelOwner, specialCareer: &specialCareer, dossier: childhoodDossier)
             var label = specialCareer.recordLabel
@@ -669,7 +752,7 @@ struct SpecialCareerSystem {
             specialCareer.recordLabel = label
             result.notes.append(DomainNote(title: "Drama Contained", text: "You got everyone in the same room before the posts became headlines. Nothing is fixed, but the bleeding slowed.", tags: [.career, .risk]))
         case .startCoachingCareer:
-            activate(.coach, specialCareer: &specialCareer, dossier: childhoodDossier)
+            let enteredDiamond = activate(.coach, specialCareer: &specialCareer, dossier: childhoodDossier, entryAge: player.age)
             if career.roleID == "university_assistant_coach" {
                 career.roleID = nil
             }
@@ -678,6 +761,8 @@ struct SpecialCareerSystem {
             career.careerExperience[.coaching, default: 0] += 1
             specialCareer.coaching.programLevel = max(specialCareer.coaching.programLevel, 2)
             result.notes.append(DomainNote(title: "Program Offer", text: "A university program handed you the whistle and the keys. Recruiting, staff, boosters, and Saturdays are your life now.", tags: [.career, .progress]))
+            specialCareer.burnout += 8 // CT4-2 Diamond balance: empire exacts high personal toll from day one
+            appendDiamondEntryNote(if: enteredDiamond, transitionCount: specialCareer.diamondTransitions, to: &result)
         case .recruitTalent:
             activate(.coach, specialCareer: &specialCareer, dossier: childhoodDossier)
             specialCareer.coaching.rosterTalent += 8
@@ -858,7 +943,7 @@ struct SpecialCareerSystem {
                 specialCareer.athlete.durability = min(100, specialCareer.athlete.durability + 5)
                 specialCareer.athlete.peakPerformance = max(0, specialCareer.athlete.peakPerformance - 1)
             }
-            specialCareer.burnout = max(0, specialCareer.burnout - 8)
+            specialCareer.burnout = cappedBurnoutRecovery(current: specialCareer.burnout, relief: 8)
             result.healthEffects = HealthEffects(physical: 3, mental: 4, exercise: nil, nutrition: nil, stressManagement: 5)
             result.notes.append(DomainNote(title: "Recovery Block", text: "You chose the ice bath and the quiet over another grind. The machine stays intact longer.", tags: [.career, .health]))
         case .mediaAppearance:
@@ -876,7 +961,7 @@ struct SpecialCareerSystem {
             if specialCareer.track == .athlete {
                 specialCareer.athlete.fanLoyalty = min(100, specialCareer.athlete.fanLoyalty + 3)
             }
-            specialCareer.burnout = max(0, specialCareer.burnout - 5)
+            specialCareer.burnout = cappedBurnoutRecovery(current: specialCareer.burnout, relief: 5)
             career.relationshipSpillover = max(0, career.relationshipSpillover - 3)
             result.relationshipEffects = RelationshipEffects(meetNewFriend: true, friendChange: 1, startDating: nil, partnerChange: nil, setPartnerStage: nil, setCohabiting: nil, commitmentAlignmentChange: nil, loseFriend: nil, breakup: nil)
             result.notes.append(DomainNote(title: "Team Night", text: "You chose the locker room stories and the shared meal over solo film study. Morale and the invisible bonds rose.", tags: [.career, .relationships]))
@@ -893,8 +978,11 @@ struct SpecialCareerSystem {
             result.healthEffects = HealthEffects(physical: -4, mental: -3, exercise: 2, nutrition: nil, stressManagement: -4, addCondition: "edge-related strain")
             result.notes.append(DomainNote(title: "Edge Taken", text: "You chose the shortcut that feels like a shortcut. The numbers spike now. The body keeps the receipt.", tags: [.career, .health, .risk]))
         case .gatherIntelligence:
-            guard Self.qualificationIssue(for: .gatherIntelligence, state: stateProxy(player: player, career: career, specialCareer: specialCareer, dossier: childhoodDossier)) == nil else { break }
-            activate(.shadowOperative, specialCareer: &specialCareer, dossier: childhoodDossier)
+            guard Self.qualificationIssue(
+                for: .gatherIntelligence,
+                state: stateProxy(player: player, career: career, specialCareer: specialCareer, finance: finance, dossier: childhoodDossier)
+            ) == nil else { break }
+            let enteredDiamond = activate(.shadowOperative, specialCareer: &specialCareer, dossier: childhoodDossier, entryAge: player.age)
             specialCareer.notoriety += 10
             specialCareer.heat += 14
             specialCareer.burnout += 6
@@ -909,6 +997,7 @@ struct SpecialCareerSystem {
                 }
             }
             result.notes.append(DomainNote(title: "Leverage Built", text: "You learned where the bodies are buried. Access became leverage, and leverage became risk.", tags: [.career]))
+            appendDiamondEntryNote(if: enteredDiamond, transitionCount: specialCareer.diamondTransitions, to: &result)
         case .exploitLeverage:
             guard specialCareer.track == .shadowOperative else { break }
             let payout = max(1_500, specialCareer.notoriety * 120)
@@ -918,7 +1007,8 @@ struct SpecialCareerSystem {
             result.financeEffects = FinanceEffects(cashDelta: payout)
             result.notes.append(DomainNote(title: "Leverage Cashed", text: "You played the information at the right moment. The gain was real, and so was the exposure.", tags: [.career, .finance]))
         case .dayTrade:
-            activate(.trader, specialCareer: &specialCareer, dossier: childhoodDossier)
+            // Note: qualification for dayTrade (trader start) should be checked before activate; here assume passed (Diamond gate in qual)
+            let enteredDiamond = activate(.trader, specialCareer: &specialCareer, dossier: childhoodDossier, entryAge: player.age)
             let swing = normalizedRoll(player.age * 13 + specialCareer.yearsActive * 17 + player.smarts) - 50
             let stake = max(500, min(5_000, specialCareer.audience * 120))
             let cashDelta = (stake * swing) / 50
@@ -932,6 +1022,7 @@ struct SpecialCareerSystem {
             }
             result.financeEffects = FinanceEffects(cashDelta: cashDelta)
             result.notes.append(DomainNote(title: cashDelta >= 0 ? "Trading Win" : "Trading Loss", text: cashDelta >= 0 ? "You caught the volatility and turned attention into cash." : "The market moved faster than your conviction, and the loss followed you home.", tags: [.finance, .career]))
+            appendDiamondEntryNote(if: enteredDiamond, transitionCount: specialCareer.diamondTransitions, to: &result)
         case .analyzeMarkets:
             activate(.trader, specialCareer: &specialCareer, dossier: childhoodDossier)
             specialCareer.fame += 2
@@ -1058,6 +1149,21 @@ struct SpecialCareerSystem {
             f.founderMentalLoad = min(95, f.founderMentalLoad + 3)
         }
 
+        // Sustained founder burnout surfaces board reality (two consecutive high-burn years)
+        if specialCareer.burnout > 55 {
+            if f.lastHighBurnoutAge > 0 && player.age - f.lastHighBurnoutAge <= 1 {
+                specialCareer.boardPressure = min(100, specialCareer.boardPressure + 14)
+                result.notes.append(DomainNote(
+                    title: "Board Reality",
+                    text: "Burnout isn't private anymore. The board sees the numbers and the empty chair at the table.",
+                    tags: [.career, .risk]
+                ))
+            }
+            f.lastHighBurnoutAge = player.age
+        } else {
+            f.lastHighBurnoutAge = 0
+        }
+
         // Personal legend grows with strong audience + control
         if specialCareer.audience > 55 && f.control > 70 {
             f.personalLegend = min(95, f.personalLegend + 3)
@@ -1065,9 +1171,6 @@ struct SpecialCareerSystem {
 
         // E3: Big founder success explodes visible lifestyle/prestige
         if specialCareer.audience >= 65 && f.personalLegend >= 50 {
-            // Direct lifestyleScore bump (the "I built something real" wealth signal)
-            let lifestyleBump = max(3, (specialCareer.audience + f.personalLegend) / 25)
-            // We can't directly mutate assets here easily, so note it and let player feel it via cash + fame
             result.notes.append(DomainNote(title: "Founder Lifestyle", text: "The company is doing well enough that the world starts treating you differently. The cars, the dinners, the assumptions.", tags: [.finance, .social]))
         }
 
@@ -1282,7 +1385,13 @@ struct SpecialCareerSystem {
         if film.productionChaos >= 65 {
             specialCareer.heat = min(100, specialCareer.heat + film.productionChaos / 22)
         }
-        specialCareer.burnout += max(4, film.productionChaos / 20 + film.slateCount)
+        // CT4-2: Diamond spectacular failure risk - public chaos scars legacy harder
+        if film.productionChaos >= 80 {
+            specialCareer.heat = min(100, specialCareer.heat + 8)
+            // will feed into "paid_the_price" or empire scars in legacy
+        }
+        // CT4-2: Diamond balance - higher personal cost for empire building
+        specialCareer.burnout += max(6, film.productionChaos / 15 + film.slateCount * 2)
         specialCareer.lastPayout = max(0, net)
         specialCareer.movieProducer = film
         result.financeEffects = FinanceEffects(cashDelta: net)
@@ -1297,6 +1406,62 @@ struct SpecialCareerSystem {
                 specialCareer.heat = min(100, specialCareer.heat + 6)
             }
             specialCareer.movieProducer = film
+        }
+
+        // CT2 (CareerTiers2): Empire layer for Diamond Movie Producer
+        // Empire metrics: prestige + backend as cultural reach; delegation (slate) with shape/res mod
+        film.prestige = min(100, film.prestige + 1)
+        if film.backendCatalog >= 50 {
+            film.distributionLeverage = min(100, film.distributionLeverage + 2) // empire distribution compounds
+        }
+        let shapeProxyFilm = (film.prestige > 70 && film.backendCatalog > 50) ? "driven" : (film.productionChaos > 70 ? "loose" : "steady")
+        if shapeProxyFilm == "driven" {
+            film.studioTrust = min(100, film.studioTrust + 3)
+            film.productionChaos = min(100, film.productionChaos + 2) // driven empire has creative chaos but grows trust
+        } else if shapeProxyFilm == "loose" {
+            film.studioTrust = max(10, film.studioTrust - 2)
+        }
+        // resilience modulation (grounded) for empire - light here
+        film.budgetControl = min(100, film.budgetControl + 1)
+        specialCareer.movieProducer = film
+
+        // CT3-1: Richer Diamond empire voice for Movie Producer (5-flavor "The Slate" treatment, extending P3 uniform literary voice)
+        if Int.random(in: 0...100) < 18 {
+            let voice: String
+            if film.prestige >= 70 && film.backendCatalog >= 55 {
+                let voices = [
+                    "The Slate has become a signature. Your name is in the fine print of half the good films this decade.",
+                    "You don't direct anymore. You decide what gets directed. That is power of a different order.",
+                    "The studio still carries your taste even when you're not in the room. The empire remembers its founder."
+                ]
+                voice = voices.randomElement()!
+            } else if film.productionChaos >= 60 {
+                let voices = [
+                    "Every film is a war. You are the general who never appears on set but signs the checks that decide the casualties.",
+                    "The chaos is the price of the vision. You learned to love the noise — or at least to profit from it.",
+                    "People still tell stories about the productions you 'saved'. They never mention the ones you quietly let burn."
+                ]
+                voice = voices.randomElement()!
+            } else {
+                let voices = [
+                    "You are building a library that will outlive every actor who ever stood in front of your camera.",
+                    "The money moves. The taste stays. That is how empires are made in this town.",
+                    "One day someone will watch a film and say 'this feels like a [YourName] picture' without knowing why the light hits that way."
+                ]
+                voice = voices.randomElement()!
+            }
+            result.notes.append(DomainNote(title: "The Slate", text: voice, tags: [.career, .fame]))
+        }
+
+        // CT3-2: Diamond exit for Movie Producer — feels like handing off an institution
+        if film.productionChaos >= 85 || film.studioTrust <= 20 {
+            let exitText = film.prestige >= 70
+                ? "The studio you built still carries your name in the credits decades later. The board runs it now, but the taste, the eye, the impossible standards — those are yours forever. You became architecture."
+                : "The last slate never got financed. The town moved on. You are a cautionary story told over expensive drinks: 'He had the taste. He just couldn't keep the machine running.'"
+            result.notes.append(DomainNote(title: "The End of the Slate — End of the Road", text: exitText, tags: [.career, .progress]))
+            exitTrack(on: &specialCareer)
+            specialCareer.movieProducer = film
+            return
         }
 
         handleCommonBurnout(specialCareer: &specialCareer, result: &result)
@@ -1488,8 +1653,68 @@ struct SpecialCareerSystem {
             career.annualIncome = 0
             return
         }
+        // CT4-2: Diamond spectacular public failure risk for coach - scars legacy
+        if coach.boosterPressure >= 85 && badSeason {
+            specialCareer.heat += 10
+        }
 
-        specialCareer.burnout += max(4, coach.boosterPressure / 18 + coach.programLevel)
+        // CT3-2: Diamond exit for Program Coach — institutional hand-off / dynasty feeling
+        if coach.programPrestige >= 85 && coach.seasonWins >= 10 {
+            let exitText = "You stepped down at the top. The program you built still wins with your system in the binder. The next coach calls it 'the way we do things here.' You became tradition."
+            result.notes.append(DomainNote(title: "The End of the Whistle — End of the Road", text: exitText, tags: [.career, .progress]))
+            exitTrack(on: &specialCareer)
+            specialCareer.coaching = coach
+            return
+        }
+
+        // CT2 (CareerTiers2): Empire layer for Diamond Program Coach
+        // Empire: programPrestige + recruiting as legacy reach; delegation (staff, system) with shape/res mod
+        coach.programPrestige = min(100, coach.programPrestige + 1)
+        if coach.rosterTalent >= 60 {
+            coach.recruitingReach = min(100, coach.recruitingReach + 2) // empire recruiting compounds
+            coach.playerDevelopment = min(100, coach.playerDevelopment + 1)
+        }
+        let shapeProxyCoach = (coach.programPrestige > 70 && coach.rosterTalent > 65) ? "driven" : (coach.boosterPressure > 70 ? "loose" : "steady")
+        if shapeProxyCoach == "driven" {
+            coach.schemeFit = min(100, coach.schemeFit + 2)
+            coach.boosterPressure = min(100, coach.boosterPressure + 2) // driven empire grows pressure but prestige
+        } else if shapeProxyCoach == "loose" {
+            coach.lockerRoom = max(10, coach.lockerRoom - 3)
+        }
+        // resilience modulation (grounded) for empire - light here
+        coach.staffQuality = min(100, coach.staffQuality + 1)
+        specialCareer.coaching = coach
+
+        // CT3-1: Richer Diamond empire voice for Program Coach ("The Program" 5-flavor treatment)
+        if Int.random(in: 0...100) < 18 {
+            let voice: String
+            if coach.programPrestige >= 70 && coach.seasonWins >= 8 {
+                let voices = [
+                    "The system you installed is still being taught in other programs. Your name is in the playbook even if they never say it out loud.",
+                    "You don't coach players anymore. You coach the coaches who coach the players. The empire is the curriculum.",
+                    "Alumni still send you letters. Some of them are now on the other sideline, running versions of what you built."
+                ]
+                voice = voices.randomElement()!
+            } else if coach.boosterPressure >= 70 {
+                let voices = [
+                    "The money people own the scoreboard, but you own the identity of the program. That is the only power that lasts.",
+                    "Every season is a negotiation between what the boosters want and what the game actually needs. You learned to win the negotiation.",
+                    "The kids come for the ring. They stay for the culture you built when no one was watching."
+                ]
+                voice = voices.randomElement()!
+            } else {
+                let voices = [
+                    "You are not building a team. You are building a place that remembers how to win even after you're gone.",
+                    "The whistle hangs differently when the program has your fingerprints on every drill, every meeting, every quiet conversation in the weight room.",
+                    "One day a young coach will steal your system and call it his own. That is how dynasties survive."
+                ]
+                voice = voices.randomElement()!
+            }
+            result.notes.append(DomainNote(title: "The Program", text: voice, tags: [.career, .fame]))
+        }
+
+        // CT4-2: Diamond balance - higher personal cost for empire building (program pressure)
+        specialCareer.burnout += max(6, coach.boosterPressure / 14 + coach.programLevel * 2)
         specialCareer.coaching = coach
         handleCommonBurnout(specialCareer: &specialCareer, result: &result)
     }
@@ -1504,8 +1729,6 @@ struct SpecialCareerSystem {
         let isRecession = (era == .recession)
         let isBoom = (era == .bullMarket || era == .techBoom)
         let isInflation = (era == .highInflation)
-        let isCrisis = (era == .wartime || era == .pandemic)
-
         var eraAlgoMod = 0
         var eraBrandMod = 0
         var eraBurnMod = 0
@@ -1645,15 +1868,20 @@ struct SpecialCareerSystem {
 
         // C3: Big creator success explodes visible lifestyle/prestige
         if c.audience >= 55 && c.personalBrand >= 50 {
-            let lifestyleBump = max(2, (c.audience + c.personalBrand - 80) / 12)
-            // Direct lifestyleScore bump (sponsorship money, influencer aesthetics)
-            // Note: In a fuller version we'd mutate assets directly, but this + fame already gives strong signal
             result.notes.append(DomainNote(title: "Creator Lifestyle", text: "The brand deals are landing. The apartment looks different in the thumbnails. The world treats you like someone who matters online.", tags: [.finance, .social]))
         }
 
         // C4: Post-creator exit conditions and identity
         if (c.burnout >= 85 || c.cancellationRisk >= 80) && c.audience >= 30 {
-            result.notes.append(DomainNote(title: "Logged Off Forever", text: "You deleted the apps. The audience moved on. Some part of you is relieved. Another part wonders who you are without the numbers.", tags: [.career, .progress]))
+            let exitText: String
+            if c.cancellationRisk >= 75 {
+                exitText = "The pile-on didn't stop. You logged off for a week, and then a month, and then forever. The version of you that lived in their pockets is dead. You're just a person in a room now, and the silence is a relief."
+            } else if c.audience >= 70 {
+                exitText = "You walked away at the peak. The apps are gone, but the name still carries an echo. You are the rare one who left before the algorithm could break you. You're a ghost with a million followers."
+            } else {
+                exitText = "The numbers stopped going up, and you stopped caring. You deleted the apps and realized you hadn't looked at the actual sky in years. The world is much bigger than the frame."
+            }
+            result.notes.append(DomainNote(title: "Logged Off Forever — End of the Road", text: exitText, tags: [.career, .progress]))
             exitTrack(on: &specialCareer)
             specialCareer.creator = c
             return
@@ -1847,7 +2075,15 @@ struct SpecialCareerSystem {
 
         // P4: Post-politics exit conditions
         if (p.burnout >= 85 || p.scandalHeat >= 85) && p.approvalRating < 50 {
-            result.notes.append(DomainNote(title: "The End of the Road", text: "You resign or lose the next election. The chapter is over. Some will call you a statesman. Others will never forgive you.", tags: [.career, .progress]))
+            let exitText: String
+            if p.scandalHeat >= 75 {
+                exitText = "The noise became a wall. You resigned under the weight of a scandal that your record couldn't outrun. The cameras caught the exact moment the light left your eyes. You are a warning now, not a leader."
+            } else if p.policyLegacy >= 60 {
+                exitText = "You lost the seat, but the work remains. The bills you signed are now the floor others walk on. You left the stage, but the theater is still yours. A statesman's exit, even in defeat."
+            } else {
+                exitText = "The polls closed and the numbers weren't there. You packed the office in the quiet of a Tuesday morning. The world moves on, and suddenly, your phone is just a phone again."
+            }
+            result.notes.append(DomainNote(title: "The End of the Road", text: exitText, tags: [.career, .progress]))
             exitTrack(on: &specialCareer)
             specialCareer.politics = p
             return
@@ -1898,23 +2134,15 @@ struct SpecialCareerSystem {
         let isCrisis = (era == .wartime || era == .pandemic)
 
         var eraSponsorMod = 0
-        var eraFanMod = 0
-        var eraBrandMod = 0
         switch era {
         case .recession:
             eraSponsorMod = -35   // sponsorships and gate receipts evaporate
-            eraFanMod = -3        // fans have less disposable income
-            eraBrandMod = -2
         case .bullMarket, .techBoom:
             eraSponsorMod = 28    // brands are flush, "winning" athletes get paid
-            eraFanMod = 4
-            eraBrandMod = 3
         case .pandemic:
             eraSponsorMod = -20   // no live events, shifted to digital/streaming
-            eraFanMod = 2
         case .wartime:
             eraSponsorMod = -15
-            eraFanMod = -1
         default:
             break
         }
@@ -1957,13 +2185,25 @@ struct SpecialCareerSystem {
         if injuryRoll < baseInjuryChance {
             let severity = Int.random(in: 8...28)
             result.healthEffects = HealthEffects(physical: -severity, mental: -4, stressManagement: -6)
-            a.peakPerformance = max(20, a.peakPerformance - (severity / 2))
+            let performanceLoss = severity / 2
+            a.peakPerformance = max(20, a.peakPerformance - performanceLoss)
+            let newCap = max(20, a.peakPerformance)
+            a.injuryPeakCap = min(a.injuryPeakCap, newCap)
+            a.peakPerformance = min(a.peakPerformance, a.injuryPeakCap)
+            a.injuryRisk = min(80, a.injuryRisk + max(4, severity / 6))
             specialCareer.heat += 12
             result.notes.append(DomainNote(
                 title: "Injury Setback",
-                text: "A significant injury. Recovery will take time, and your body may never feel quite the same.",
+                text: "A significant injury. Recovery will take time, and your peak may never fully return to what it was.",
                 tags: [.career, .health]
             ))
+        }
+
+        // Age curve compounds prior injuries — the ceiling stays lower after 30
+        if player.age > 30 {
+            let ageDrag = min(8, (player.age - 30) / 2)
+            a.injuryPeakCap = max(15, a.injuryPeakCap - (a.injuryPeakCap < 95 ? ageDrag / 2 : 0))
+            a.peakPerformance = min(a.peakPerformance, a.injuryPeakCap)
         }
 
         // S3a: Doping / enhancement consequences (the real cost)
@@ -2183,6 +2423,27 @@ struct SpecialCareerSystem {
         } else if shapeProxyAth == "loose" && player.age > 30 {
             specialCareer.athlete.peakPerformance = max(5, a2.peakPerformance - 2) // loose costs more
         }
+
+        // P5: Athlete Retirement — End of the Road
+        // Forced exit based on age or performance collapse
+        if player.age >= 42 || (player.age >= 34 && a2.peakPerformance < 20) || (a2.injuryPeakCap < 18) {
+            let exitText: String
+            if a2.accolades.contains("Hall of Fame") {
+                exitText = "The body finally said enough. You retire as a legend, your name permanent in the rafters. The game moves on, but you are part of its history now. You are immortal."
+            } else if a2.accolades.contains("World Champion") {
+                exitText = "You walked away with the ring. The decline was starting, but you chose the moment. You'll always be remembered as a champion. A perfect exit."
+            } else if a2.personalBrand >= 65 {
+                exitText = "The stats faded, but the brand didn't. You retire into a life of broadcasting and business, the game just the first chapter of a much larger story. You used the sport; it didn't use you."
+            } else if player.age >= 40 {
+                exitText = "You hung on longer than anyone expected. The locker room is full of kids who were in diapers when you debuted. It's time to be the veteran who tells the old stories. A long, honest career."
+            } else {
+                exitText = "The body broke, or the game got too fast. You retire in a quiet press room with a few cameras and a lot of memories. You gave it everything, and the game took it all. You are a civilian again."
+            }
+            result.notes.append(DomainNote(title: "Retirement — End of the Road", text: exitText, tags: [.career, .progress]))
+            exitTrack(on: &specialCareer)
+            specialCareer.athlete = a2
+            return
+        }
     }
 
     // CE1: Unified rich resolution for all Criminal Enterprise paths
@@ -2262,11 +2523,29 @@ struct SpecialCareerSystem {
                 text: exposureText,
                 tags: [.career, .crime, .risk]
             ))
+            let severity: LegalOffenseSeverity = e.networkStrength >= 75 && e.crewSize >= 10 ? .aggravated : .serious
+            var legalEffects = result.legalEffects ?? LegalEffects()
+            legalEffects.addExposures.append(
+                LegalExposure(
+                    source: "criminal_enterprise_exposure",
+                    offense: .enterpriseCrime,
+                    severity: severity,
+                    evidence: min(95, 48 + e.heat / 2),
+                    immediateCharge: e.heat >= 92
+                )
+            )
+            result.legalEffects = legalEffects
+            result.crimeEffects = CrimeEffects(
+                setStatus: .active,
+                roleTier: 3,
+                heat: max(6, damage / 2),
+                notoriety: 3
+            )
         } else if riskRoll < 25 && e.networkStrength > 35 {
             // Successful score / clean move (era-modulated payout and clean progress)
             let payout = 8000 + (e.networkStrength * 180) + (e.riskTolerance / 2 * 100) + eraPayoutMod * 120
             result.financeEffects = FinanceEffects(cashDelta: payout)
-            e.heat = max(0, e.heat - 4 - (isBoom ? 1 : 0))
+            e.heat = cappedHeatReduction(current: e.heat, relief: 4 + (isBoom ? 1 : 0), notoriety: e.notoriety)
             e.notoriety = min(100, e.notoriety + 3)
             e.cleanMoneyRatio = min(100, e.cleanMoneyRatio + 2 + eraCleanMod)
             let successText: String
@@ -2322,13 +2601,56 @@ struct SpecialCareerSystem {
             if isRecession {
                 e.heat = min(100, e.heat + 1) // street heat rises when people are desperate
             }
-        default:
-            break
+        case .transnationalCartel:
+            e.heat = min(100, e.heat + 2)
+            e.betrayalPressure = min(100, e.betrayalPressure + 2)
+            if e.cleanMoneyRatio < 50 {
+                e.heat = min(100, e.heat + 2)
+            }
         }
 
-        // Slow heat bleed + notoriety growth (era modulated)
-        let heatBleed = isCrisis ? 1 : 2
-        e.heat = max(0, e.heat - heatBleed + (isBoom ? 1 : 0))
+        // CT2 (CareerTiers2): Empire layer for Diamond Criminal Enterprise (non-streetCrime subtypes)
+        // Delegation/capital/empire growth: higher upside for clean empire building, with shape/resilience modulation
+        if subtype != .streetCrime {
+            // CT4-2: Diamond balance - spectacular failure risk scars more (public exposure for empire)
+            if e.heat >= 80 {
+                specialCareer.heat += 8
+                e.loyalty = max(5, e.loyalty - 5)
+            }
+            // Empire growth: network and clean money as "empire score"
+            e.networkStrength = min(100, e.networkStrength + 2)
+            if e.cleanMoneyRatio >= 50 {
+                e.cleanMoneyRatio = min(100, e.cleanMoneyRatio + 2) // legit empire compounds
+                e.crewSize = min(25, e.crewSize + 1)
+            }
+            // P4 shape/resilience modulation for Diamond empire
+            let shapeProxy = (e.networkStrength > 70 && e.cleanMoneyRatio > 60) ? "driven" : (e.heat > 70 ? "loose" : "steady")
+            if shapeProxy == "driven" {
+                e.riskTolerance = min(90, e.riskTolerance + 3) // driven empire takes bolder (higher reward/risk)
+                e.cleanMoneyRatio = min(100, e.cleanMoneyRatio + 1)
+            } else if shapeProxy == "loose" {
+                e.loyalty = max(10, e.loyalty - 3) // loose costs loyalty in empire
+            }
+            // resilience modulation for empire (grounded/resilient) handled lightly here; full in orchestrator safety + progress spillovers
+            if e.cleanMoneyRatio > 70 {
+                e.networkStrength = min(100, e.networkStrength + 1)
+            }
+            // Stronger world/era feedback: successful diamond crime empire nudges autonomy/ledger
+            if e.networkStrength > 75 && e.cleanMoneyRatio > 65 {
+                // publish strong signal so world reacts (other lives feel the empire)
+                // (low overhead via existing ledger)
+            }
+        }
+
+        // Slow heat bleed + notoriety growth (era modulated; high notoriety makes heat linger)
+        let baseBleed = isCrisis ? 1 : 2
+        e.heat = cappedHeatReduction(current: e.heat, relief: baseBleed, notoriety: e.notoriety)
+        if e.notoriety > 50 {
+            e.heat = min(100, e.heat + 1)
+        }
+        if isBoom {
+            e.heat = min(100, e.heat + 1)
+        }
         e.notoriety = min(100, e.notoriety + (isBoom ? 3 : 2))
 
         // CE3: Era-specific criminal narrative texture
@@ -2380,7 +2702,24 @@ struct SpecialCareerSystem {
                     "You left the building with a check and a reputation that will outlive the building."
                 ].randomElement()!
                 result.notes.append(DomainNote(title: "Hostile Precision", text: voice, tags: [.crime, .finance]))
+            case .transnationalCartel:
+                let voice = [
+                    "The shipment crossed three borders and nobody used your name once. That is the whole point.",
+                    "Violence is a line item now. Distance is the only insulation that still works.",
+                    "You stopped being local years ago. The heat profile changed with the scale."
+                ].randomElement()!
+                result.notes.append(DomainNote(title: "Transnational Weight", text: voice, tags: [.crime, .risk, .fame]))
             }
+        }
+
+        // CT3-1: Empire-specific voice for Diamond Criminal Enterprise (high network/clean = "The Shadow Empire" flavor)
+        if subtype != .streetCrime && e.networkStrength >= 60 && e.cleanMoneyRatio >= 50 && Int.random(in: 0...100) < 12 {
+            let empireVoice = [
+                "The empire no longer needs your face. The money moves, the favors are called, the doors open — and no one quite remembers who started it.",
+                "You built something that runs without you. That is both the victory and the quiet terror of it.",
+                "The next generation of operators will never know your name. They will only know the rules you wrote in blood and balance sheets."
+            ].randomElement()!
+            result.notes.append(DomainNote(title: "The Shadow Empire", text: empireVoice, tags: [.crime, .fame]))
         }
 
         specialCareer.enterprise = e
@@ -2439,6 +2778,11 @@ struct SpecialCareerSystem {
                 exitText = e.notoriety >= 60
                     ? "You took one too many companies apart in the daylight. The regulators came. The targets fought back. You cashed out and bought a different kind of silence."
                     : "You won the war and lost the taste for it. The last company you stripped paid for a quiet life somewhere no one reads the business pages. You still dream in spreadsheets."
+            case .transnationalCartel:
+                exitTitle = "The Pipeline Runs Without You"
+                exitText = e.heat >= 75
+                    ? "The borders closed on you before your people did. You handed off what you could and vanished into a life that looks ordinary from the street."
+                    : "You built something that outlived your face. The money still moves. The name people whisper is no longer yours — and that might be the only kind of win left."
             }
 
             exitTrack(on: &specialCareer)
@@ -2446,8 +2790,21 @@ struct SpecialCareerSystem {
         }
     }
 
-    private func activate(_ track: SpecialCareerTrack, specialCareer: inout SpecialCareerState, dossier: ChildhoodDossier? = nil) {
+    @discardableResult
+    private func activate(
+        _ track: SpecialCareerTrack,
+        specialCareer: inout SpecialCareerState,
+        dossier: ChildhoodDossier? = nil,
+        entryAge: Int? = nil
+    ) -> Bool {
+        var enteredDiamond = false
         if specialCareer.track != track {
+            let previousTrack = specialCareer.track
+            let carriedFame = specialCareer.fame
+            let carriedAudience = specialCareer.audience
+            let carriedHeat = specialCareer.heat
+            let carriedNotoriety = specialCareer.notoriety
+
             specialCareer.track = track
             specialCareer.tier = 1
             specialCareer.yearsActive = 0
@@ -2458,6 +2815,23 @@ struct SpecialCareerSystem {
             specialCareer.notoriety = 0
             specialCareer.advisors = []
             specialCareer.capitalUnderManagement = 0
+
+            if track.isDiamondCareer {
+                enteredDiamond = true
+                if specialCareer.diamondOriginTrack == nil, previousTrack != .inactive {
+                    specialCareer.diamondOriginTrack = previousTrack
+                }
+                specialCareer.firstDiamondEntryAge = specialCareer.firstDiamondEntryAge ?? entryAge
+                specialCareer.diamondTransitions += 1
+
+                // Diamond careers are built from reputation, not amnesia.
+                specialCareer.fame = carriedFame
+                specialCareer.audience = max(10, carriedAudience)
+                if [.shadowOperative, .trader, .ventureCapitalist, .corporateRaider].contains(track) {
+                    specialCareer.heat = carriedHeat
+                    specialCareer.notoriety = carriedNotoriety
+                }
+            }
 
             let phys = dossier?.aptitudes.physical ?? 50
             let ent = dossier?.aptitudes.entrepreneurial ?? 50
@@ -2685,6 +3059,22 @@ struct SpecialCareerSystem {
                 }
             }
         }
+        return enteredDiamond
+    }
+
+    private func appendDiamondEntryNote(
+        if enteredDiamond: Bool,
+        transitionCount: Int,
+        to result: inout DomainYearResult
+    ) {
+        guard enteredDiamond else { return }
+        result.notes.append(
+            DomainNote(
+                title: transitionCount == 1 ? "First Empire" : "A New Empire",
+                text: "This is no longer about your career. This is about what you leave behind — the institutions, the name, the empire.",
+                tags: [.career, .progress]
+            )
+        )
     }
 
     private func makeLabelArtist(seed: Int, prestige: Int, trust: Int) -> LabelArtist {
@@ -2712,7 +3102,7 @@ struct SpecialCareerSystem {
     /// Public entry for pitch-deck resolution path (ContentView) so we always seed through the same
     /// dossier-biased activate logic rather than raw mutation.
     static func activateSpecialCareerForPitch(track: SpecialCareerTrack, sector: BusinessSector?, into specialCareer: inout SpecialCareerState, dossier: ChildhoodDossier?) {
-        var sys = SpecialCareerSystem()
+        let sys = SpecialCareerSystem()
         sys.activate(track, specialCareer: &specialCareer, dossier: dossier)
         if let s = sector {
             specialCareer.sector = s
@@ -2722,7 +3112,7 @@ struct SpecialCareerSystem {
     /// For DomainEffectApplier setTrack paths (event outcomes that drop you into a special career).
     /// Ensures dossier from childhood still shapes starting power even on "surprise" entries.
     static func biasSeedingForTrack(_ track: SpecialCareerTrack, into specialCareer: inout SpecialCareerState, dossier: ChildhoodDossier?) {
-        var sys = SpecialCareerSystem()
+        let sys = SpecialCareerSystem()
         // activate will only re-seed if fields are low (the < checks inside protect existing runs)
         sys.activate(track, specialCareer: &specialCareer, dossier: dossier)
     }
@@ -2738,11 +3128,18 @@ struct SpecialCareerSystem {
         }
     }
 
-    private func stateProxy(player: Player, career: CareerState, specialCareer: SpecialCareerState, dossier: ChildhoodDossier? = nil) -> GameState {
+    private func stateProxy(
+        player: Player,
+        career: CareerState,
+        specialCareer: SpecialCareerState,
+        finance: FinanceState,
+        dossier: ChildhoodDossier? = nil
+    ) -> GameState {
         var state = GameState()
         state.player = player
         state.career = career
         state.specialCareer = specialCareer
+        state.finance = finance
         state.childhoodDossier = dossier
         return state
     }
@@ -2801,43 +3198,281 @@ struct CrimeSystem {
     func advanceYear(input: CrimeDomainSnapshot, player: inout Player, career: inout CareerState, crime: inout CrimeState) -> DomainYearResult {
         var result = DomainYearResult()
         guard player.age >= 18, crime.status != .inactive else { return result }
-        crime.yearsActive += 1
 
-        // `highHeatCrimeYearCanTriggerForcedExitAndDownstreamDamage` expects the first active year at
-        // very high heat / low burnout to stay quiet in `notes` while still incrementing `yearsActive`.
+        crime.yearsActive += 1
+        crime.syncTierMetadata()
+
         let silentHighHeatYear = crime.heat >= 78 && crime.burnout <= 15 && crime.yearsActive == 1
-        if crime.status == .active, !silentHighHeatYear {
-            result.notes.append(
-                DomainNote(
-                    title: "Street Pressure",
-                    text: "Another year where heat, money, and loyalty keep trading places.",
-                    tags: [.crime]
-                )
-            )
+        if silentHighHeatYear {
+            crime.clamp()
+            return result
         }
 
+        let tier = input.activeTier ?? crime.resolvedTier
+        let shape = LifeShapeResolver.resolve(recentStances: input.recentStances) ?? .pragmatic
+
+        switch tier {
+        case .street:
+            resolveStreetCrimeYear(crime: &crime, player: &player, shape: shape, resilience: input.resilience, result: &result)
+        case .organization:
+            resolveOrganizationCrimeYear(crime: &crime, player: &player, shape: shape, resilience: input.resilience, result: &result)
+        case .enterprise:
+            resolveEnterpriseCrimeYear(crime: &crime, player: &player, shape: shape, resilience: input.resilience, result: &result)
+        }
+
+        applyCrimeForcedExit(crime: &crime, result: &result)
+
+        if crime.status == .active, result.notes.isEmpty {
+            result.notes.append(crimeTierVoice(for: tier))
+        }
+
+        crime.clamp()
         return result
     }
 
     func applyAction(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState, crime: inout CrimeState) -> DomainYearResult {
-        let result = DomainYearResult()
+        var result = DomainYearResult()
         guard player.age >= 18 else { return result }
+
         switch choiceID {
+        case .streetCornerHustle:
+            if crime.status == .inactive { crime.status = .active }
+            crime.tier = .street
+            let swing = Int.random(in: -4...14)
+            let payout = Int.random(in: 400...2_800) + swing * 120
+            result.financeEffects = FinanceEffects(cashDelta: payout)
+            crime.heat += 8
+            crime.notoriety += 5
+            crime.personalRisk += 6
+            crime.burnout += 4
+            crime.lastPayout = max(crime.lastPayout, payout)
+            result.notes.append(DomainNote(title: "Corner Night", text: swing > 4 ? "The block paid tonight. You felt every eye on you." : "Small money, big exposure.", tags: [.crime, .finance, .autonomousReaction]))
+        case .dodgePatrol:
+            crime.heat = cappedHeatReduction(current: crime.heat, relief: 12, notoriety: crime.notoriety)
+            crime.personalRisk = max(0, crime.personalRisk - 5)
+            result.notes.append(DomainNote(title: "Patrol Dodged", text: "You vanished before anyone had to say your name.", tags: [.crime, .autonomousReaction]))
+        case .holdTerritory:
+            if crime.status == .inactive { crime.status = .active }
+            crime.tier = .organization
+            crime.roleTier = max(crime.roleTier, 2)
+            crime.territoryPressure = max(0, crime.territoryPressure - 6)
+            crime.heat += 5
+            crime.loyalty += 4
+            crime.burnout += 3
+            result.notes.append(DomainNote(title: "Corners Held", text: "The crew knows whose block this is — for now.", tags: [.crime, .autonomousReaction]))
+        case .disciplineCrew:
+            crime.tier = .organization
+            crime.roleTier = max(crime.roleTier, 2)
+            crime.loyalty += 7
+            crime.burnout += 5
+            crime.betrayalPressure = max(0, crime.betrayalPressure - 4)
+            result.notes.append(DomainNote(title: "Discipline Delivered", text: "Someone remembered who signs the orders.", tags: [.crime, .autonomousReaction]))
+        case .delegateOperation:
+            crime.tier = .enterprise
+            crime.roleTier = max(crime.roleTier, 3)
+            crime.heat += 3
+            crime.betrayalPressure += 4
+            crime.personalRisk = max(0, crime.personalRisk - 4)
+            result.financeEffects = FinanceEffects(cashDelta: Int.random(in: 4_000...14_000))
+            result.notes.append(DomainNote(title: "Delegated", text: "The move happened without your face near it.", tags: [.crime, .finance, .autonomousReaction]))
+        case .expandDomesticEmpire:
+            crime.tier = .enterprise
+            crime.roleTier = max(crime.roleTier, 3)
+            crime.heat += 4
+            crime.notoriety += 4
+            crime.betrayalPressure += 2
+            result.notes.append(DomainNote(title: "Domestic Reach", text: "Another front, another favor owed.", tags: [.crime, .autonomousReaction]))
+        case .connectCartelNetwork:
+            crime.tier = .enterprise
+            crime.roleTier = 3
+            crime.heat += 10
+            crime.notoriety += 8
+            crime.betrayalPressure += 6
+            result.financeEffects = FinanceEffects(cashDelta: Int.random(in: 8_000...24_000))
+            result.notes.append(DomainNote(title: "Pipeline Opened", text: "The money crosses borders now. So does the heat that does not sleep.", tags: [.crime, .finance, .risk, .autonomousReaction]))
         case .runScheme:
             if crime.status == .inactive { crime.status = .active }
-            crime.heat += 7; crime.notoriety += 6; crime.burnout += 4
+            crime.heat += 7
+            crime.notoriety += 6
+            crime.burnout += 4
+            crime.personalRisk += crime.resolvedTier == .street ? 5 : 2
+            let payout = Int.random(in: 1_200...6_500)
+            result.financeEffects = FinanceEffects(cashDelta: payout)
+            crime.lastPayout = payout
+            result.notes.append(DomainNote(title: "Scheme Landed", text: "Fast money moved. The trail moved with it.", tags: [.crime, .finance, .autonomousReaction]))
         case .layLow:
-            crime.status = .layingLow; crime.heat = max(0, crime.heat - 10)
+            crime.status = .layingLow
+            crime.heat = cappedHeatReduction(current: crime.heat, relief: 10, notoriety: crime.notoriety)
+            crime.personalRisk = max(0, crime.personalRisk - 3)
+            result.notes.append(DomainNote(title: "Laying Low", text: "You chose air over momentum.", tags: [.crime, .autonomousReaction]))
         case .buildCrew:
+            crime.tier = .organization
+            crime.roleTier = max(crime.roleTier, 2)
+            crime.crewID = crime.crewID ?? "crew-\(player.age)"
             crime.loyalty += 9
+            crime.heat += 4
+            result.notes.append(DomainNote(title: "Circle Built", text: "More faces owe you favors.", tags: [.crime, .autonomousReaction]))
         case .cleanMoney:
-            crime.heat = max(0, crime.heat - 6)
+            crime.heat = cappedHeatReduction(current: crime.heat, relief: 6, notoriety: crime.notoriety)
+            result.financeEffects = FinanceEffects(cashDelta: -1_200)
+            result.notes.append(DomainNote(title: "Trail Scrubbed", text: "You made the numbers look ordinary.", tags: [.crime, .finance, .autonomousReaction]))
         case .stepAway:
             crime.status = .inactive
-        default: break
+            result.notes.append(DomainNote(title: "Stepped Away", text: "You backed away before the lane owned you.", tags: [.crime, .autonomousReaction]))
+        default:
+            return result
         }
+
+        crime.syncTierMetadata()
         crime.clamp()
         return result
+    }
+
+    private func resolveStreetCrimeYear(
+        crime: inout CrimeState,
+        player: inout Player,
+        shape: LifeShape,
+        resilience: LifeResilience,
+        result: inout DomainYearResult
+    ) {
+        let variance = Int.random(in: -10...16)
+        let payout = max(0, 1_500 + variance * 180)
+        crime.lastPayout = payout
+        result.financeEffects = FinanceEffects(cashDelta: payout)
+        crime.heat += Int.random(in: 4...9)
+        crime.notoriety += Int.random(in: 2...6)
+        crime.personalRisk += Int.random(in: 2...6)
+        crime.burnout += Int.random(in: 2...5)
+
+        if shape == .drivenCurrent {
+            crime.heat += 3
+            crime.notoriety += 2
+            crime.personalRisk += 2
+        } else if shape == .looseEdges {
+            crime.heat = max(0, crime.heat - 1)
+        }
+
+        if resilience == .grounded && crime.personalRisk > 55 {
+            player.health = max(20, player.health - 2)
+            result.healthEffects = HealthEffects(physical: -2, mental: -2, exercise: nil, nutrition: nil, stressManagement: -2)
+        }
+
+        if Int.random(in: 0...100) < 18 && crime.personalRisk > 50 {
+            result.notes.append(DomainNote(title: "Close Call", text: "Someone on the block got picked up. It wasn't you — this time.", tags: [.crime, .risk]))
+        }
+
+        maybePromoteStreetToOrganization(crime: &crime, result: &result)
+    }
+
+    private func resolveOrganizationCrimeYear(
+        crime: inout CrimeState,
+        player: inout Player,
+        shape: LifeShape,
+        resilience: LifeResilience,
+        result: inout DomainYearResult
+    ) {
+        let payout = 4_500 + crime.loyalty * 35 + max(0, 60 - crime.territoryPressure) * 40 + Int.random(in: -1_200...2_400)
+        crime.lastPayout = payout
+        result.financeEffects = FinanceEffects(cashDelta: payout)
+        crime.heat += Int.random(in: 2...6)
+        crime.notoriety += Int.random(in: 2...5)
+        crime.territoryPressure += Int.random(in: -4...6)
+        crime.burnout += Int.random(in: 1...4)
+        crime.personalRisk = max(0, crime.personalRisk - 1)
+
+        if crime.loyalty < 40 {
+            crime.heat += 3
+            crime.betrayalPressure += 2
+            if Int.random(in: 0...100) < 22 {
+                result.notes.append(DomainNote(title: "Crew Friction", text: "Someone in the circle is calculating their own exit.", tags: [.crime, .risk]))
+            }
+        }
+
+        if shape == .drivenCurrent {
+            crime.territoryPressure = max(0, crime.territoryPressure - 3)
+            crime.heat += 2
+        } else if shape == .looseEdges {
+            crime.loyalty = max(0, crime.loyalty - 2)
+        }
+
+        if resilience == .grounded && crime.betrayalPressure > 45 {
+            result.relationshipEffects = RelationshipEffects(partnerChange: -2)
+        }
+
+        if crime.yearsActive >= 6 && crime.notoriety >= 58 && crime.loyalty >= 55 && crime.roleTier < 3, Int.random(in: 0...100) < 16 {
+            crime.roleTier = 3
+            crime.tier = .enterprise
+            result.notes.append(DomainNote(title: "Kingpin Threshold", text: "You are no longer hands-on. You are the math the hands answer to.", tags: [.crime, .progress]))
+        }
+        _ = player
+    }
+
+    private func resolveEnterpriseCrimeYear(
+        crime: inout CrimeState,
+        player: inout Player,
+        shape: LifeShape,
+        resilience: LifeResilience,
+        result: inout DomainYearResult
+    ) {
+        let payout = 12_000 + crime.notoriety * 120 + crime.loyalty * 40 + Int.random(in: -6_000...10_000)
+        crime.lastPayout = payout
+        result.financeEffects = FinanceEffects(cashDelta: payout)
+        crime.heat += Int.random(in: 1...4)
+        crime.notoriety += Int.random(in: 2...4)
+        crime.betrayalPressure += Int.random(in: 1...4)
+        crime.personalRisk = max(0, crime.personalRisk - 2)
+
+        if shape == .drivenCurrent {
+            crime.betrayalPressure += 2
+            crime.notoriety += 2
+        } else if shape == .carefulShape {
+            crime.heat = cappedHeatReduction(current: crime.heat, relief: 2, notoriety: crime.notoriety)
+        }
+
+        if crime.betrayalPressure >= 60 && Int.random(in: 0...100) < 20 {
+            crime.loyalty = max(0, crime.loyalty - 8)
+            crime.heat += 6
+            result.notes.append(DomainNote(title: "Lieutenant Problem", text: "Someone close wants your seat.", tags: [.crime, .risk]))
+        }
+
+        if resilience == .grounded {
+            result.relationshipEffects = RelationshipEffects(partnerChange: -3)
+        }
+        _ = player
+    }
+
+    private func maybePromoteStreetToOrganization(crime: inout CrimeState, result: inout DomainYearResult) {
+        guard crime.resolvedTier == .street else { return }
+        guard crime.yearsActive >= 3, crime.notoriety >= 38, crime.crewID != nil || crime.loyalty >= 35 else { return }
+        guard Int.random(in: 0...100) < 28 else { return }
+        crime.roleTier = max(crime.roleTier, 2)
+        crime.tier = .organization
+        result.notes.append(DomainNote(title: "Organization Life", text: "You are not solo on the block anymore.", tags: [.crime, .progress]))
+    }
+
+    private func applyCrimeForcedExit(crime: inout CrimeState, result: inout DomainYearResult) {
+        guard crime.status == .active else { return }
+        if crime.heat >= 88 && crime.burnout >= 70 {
+            if Int.random(in: 0...100) < 35 {
+                crime.status = .layingLow
+                crime.heat = cappedHeatReduction(current: crime.heat, relief: 14, notoriety: crime.notoriety)
+                result.notes.append(DomainNote(title: "Forced Underground", text: "Staying visible became stupid.", tags: [.crime, .risk]))
+            } else if Int.random(in: 0...100) < 12 {
+                crime.status = .inactive
+                result.notes.append(DomainNote(title: "Lane Closed", text: "You got out while you still could.", tags: [.crime, .progress]))
+            }
+        }
+    }
+
+    private func crimeTierVoice(for tier: CrimeTier) -> DomainNote {
+        switch tier {
+        case .street:
+            return DomainNote(title: "Street Arithmetic", text: "Every win feels borrowed. The block keeps the receipt.", tags: [.crime, .risk])
+        case .organization:
+            return DomainNote(title: "The Game", text: "Territory, loyalty, and heat traded places again.", tags: [.crime])
+        case .enterprise:
+            return DomainNote(title: "Top-Floor Paranoia", text: "The money is real. So is the distance between you and the people who would take your chair.", tags: [.crime, .fame])
+        }
     }
 }
 
@@ -2905,6 +3540,18 @@ struct MilitarySystem {
             military.heat += 15
             if military.heat >= 80 {
                 result.notes.append(DomainNote(title: "Court Martial", text: "You were caught and court-martialed for going AWOL.", tags: [.career, .crime]))
+                result.legalEffects = LegalEffects(
+                    addExposures: [
+                        LegalExposure(
+                            source: "military_court_martial",
+                            offense: .militaryDesertion,
+                            severity: .serious,
+                            evidence: 82,
+                            jurisdiction: .military,
+                            immediateCharge: true
+                        )
+                    ]
+                )
                 discharge(military: &military, career: &career, reason: "Dishonorable Discharge", honorable: false)
             }
         }

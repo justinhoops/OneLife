@@ -416,20 +416,6 @@ struct EducationSystem {
             education.pathway = .student
             education.activityMomentum -= 10
             result.notes.append(DomainNote(title: "ROTC", text: "You left ROTC and returned to regular student life.", tags: [.education]))
-        case .layLow:
-            education.engagement -= 5
-            education.schoolStanding -= 1
-            education.activityMomentum -= 4
-            education.schoolBelonging -= 5
-            education.attendancePressure -= 4
-            education.reputationRisk -= 3
-            result.notes.append(
-                DomainNote(
-                    title: "Education Focus",
-                    text: "You kept your head down and lowered the heat, but school stopped building you forward.",
-                    tags: [.education]
-                )
-            )
         case .skipClass:
             education.attendancePressure += 14
             education.schoolStanding -= 8
@@ -745,7 +731,6 @@ struct EducationSystem {
 
             // D3: Education branch mechanical effects (trade fast income ramp + slow decay, honors longevity/prestige + special bias, standard balanced with faster fade)
             education.yearsSinceCredential += 1
-            let eraBoost = 0 // era reactivity wired in finance/career handoff; light here
             if education.academicTrack == .vocational {
                 education.activityMomentum += 4
                 education.applicationReadiness += 3
@@ -845,10 +830,24 @@ struct EducationSystem {
 
 struct HousingSystem {
     func advanceYear(input: HousingDomainSnapshot, housing: inout HousingState) -> DomainYearResult {
-        advanceYear(housing: &housing, player: input.player, finance: input.finance, assets: input.assets)
+        advanceYear(
+            housing: &housing,
+            player: input.player,
+            finance: input.finance,
+            assets: input.assets,
+            reentryFrictionYears: input.reentryFrictionYears,
+            recordPressure: input.recordPressure
+        )
     }
 
-    func advanceYear(housing: inout HousingState, player: Player, finance: FinanceState, assets: AssetState) -> DomainYearResult {
+    func advanceYear(
+        housing: inout HousingState,
+        player: Player,
+        finance: FinanceState,
+        assets: AssetState,
+        reentryFrictionYears: Int = 0,
+        recordPressure: Int = 0
+    ) -> DomainYearResult {
         var result = DomainYearResult()
         if assets.ownsHome {
             housing.livingArrangement = .ownerOccupied
@@ -864,6 +863,13 @@ struct HousingSystem {
             housing.hasRoommate = true
             housing.housingStability = max(housing.housingStability - 4, 0)
             result.notes.append(DomainNote(title: "Housing", text: "Money pressure pushed you into a shared living setup."))
+        }
+
+        if reentryFrictionYears > 0 || recordPressure >= 45 {
+            housing.housingStability = (housing.housingStability - (reentryFrictionYears > 0 ? 5 : 3)).clamped(to: 0...100)
+            if reentryFrictionYears >= 2, !assets.ownsHome, result.notes.isEmpty {
+                result.notes.append(DomainNote(title: "Reentry Housing", text: "Landlords read your record before they read your application.", tags: [.legal, .housing]))
+            }
         }
 
         if finance.financialStress >= 55 {
@@ -968,8 +974,10 @@ struct ActionSystem {
     private let specialCareerSystem: SpecialCareerSystem
     private let militarySystem: MilitarySystem
     private let crimeSystem: CrimeSystem
+    private let legalSystem: LegalSystem
     private let relationshipSystem: RelationshipSystem
     private let familySystem: FamilySystem
+    private let luxurySystem: LuxurySystem
     private let financeSystem: FinanceSystem
     private let healthSystem: HealthSystem
     private let effectApplier: DomainEffectApplier
@@ -980,7 +988,9 @@ struct ActionSystem {
         specialCareerSystem: SpecialCareerSystem = SpecialCareerSystem(),
         militarySystem: MilitarySystem = MilitarySystem(),
         crimeSystem: CrimeSystem = CrimeSystem(),
+        legalSystem: LegalSystem = LegalSystem(),
         familySystem: FamilySystem = FamilySystem(),
+        luxurySystem: LuxurySystem = LuxurySystem(),
         financeSystem: FinanceSystem = FinanceSystem(),
         relationshipSystem: RelationshipSystem = RelationshipSystem(),
         healthSystem: HealthSystem = HealthSystem(),
@@ -991,7 +1001,9 @@ struct ActionSystem {
         self.specialCareerSystem = specialCareerSystem
         self.militarySystem = militarySystem
         self.crimeSystem = crimeSystem
+        self.legalSystem = legalSystem
         self.familySystem = familySystem
+        self.luxurySystem = luxurySystem
         self.financeSystem = financeSystem
         self.relationshipSystem = relationshipSystem
         self.healthSystem = healthSystem
@@ -1013,18 +1025,22 @@ struct ActionSystem {
                 actionResult = educationSystem.applyAction(action.choiceID, player: &state.player, education: &state.education, childhoodDossier: state.childhoodDossier, specialCareer: &state.specialCareer)
             case .career:
                 if specialCareerSystem.handles(action.choiceID) {
-                    actionResult = specialCareerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, specialCareer: &state.specialCareer, childhoodDossier: state.childhoodDossier)
+                    actionResult = specialCareerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, specialCareer: &state.specialCareer, childhoodDossier: state.childhoodDossier, finance: &state.finance)
                 } else {
-                    actionResult = careerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career)
+                    actionResult = careerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, fame: &state.fame)
                 }
             case .military:
                 actionResult = militarySystem.applyAction(action.choiceID, player: &state.player, military: &state.military, career: &state.career, education: state.education)
             case .crime:
                 actionResult = crimeSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, crime: &state.crime)
+            case .legal:
+                actionResult = legalSystem.applyAction(action.choiceID, legal: &state.legal, finance: &state.finance, fame: &state.fame)
             case .finance:
                 let homeOwnershipSystem = HomeOwnershipSystem()
                 if homeOwnershipSystem.isInstantHomeAction(action.choiceID) {
                     actionResult = homeOwnershipSystem.applyInstantAction(action.choiceID, state: &state)
+                } else if [.hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection].contains(action.choiceID) {
+                    actionResult = luxurySystem.applyAction(action.choiceID, state: state)
                 } else {
                     actionResult = financeSystem.applyAction(action.choiceID, finance: &state.finance, player: &state.player)
                 }
@@ -1033,7 +1049,7 @@ struct ActionSystem {
             case .health:
                 actionResult = healthSystem.applyAction(action.choiceID, player: &state.player, health: &state.healthProfile)
             case .family:
-                actionResult = DomainYearResult()
+                actionResult = familySystem.applyAction(action.choiceID, state: &state)
             case .identity:
                 // D1: Light identity apply — always instant self-work with dossier/ledger flavor
                 actionResult = applyIdentityAction(action.choiceID, state: &state)
@@ -1061,6 +1077,7 @@ struct ActionSystem {
         state.specialCareer.clamp()
         state.military.clamp()
         state.crime.clamp()
+        state.legal.clamp()
         state.healthProfile.clamp()
         state.housing.clamp()
         state.player.clampStats()
@@ -1073,6 +1090,9 @@ struct ActionSystem {
     private func merge(_ source: DomainYearResult, into target: inout DomainYearResult) {
         target.notes.append(contentsOf: source.notes)
         target.events.append(contentsOf: source.events)
+        if let combatFightSummary = source.combatFightSummary {
+            target.combatFightSummary = combatFightSummary
+        }
     }
 }
 
@@ -1290,13 +1310,30 @@ struct CareerSystem {
     }
 
     func advanceYear(input: CareerDomainSnapshot, player: inout Player, career: inout CareerState) -> DomainYearResult {
-        advanceYear(
+        if input.reentryFrictionYears > 0, career.status == .fullTime {
+            let cap = input.custodyProgramCompleted ? 58 : 48
+            career.jobSecurity = min(career.jobSecurity, cap)
+        }
+        if input.recordPressure >= 50 || input.reentryFrictionYears > 0 {
+            if career.regularArchetype == .corporateClimber {
+                career.jobSecurity = min(career.jobSecurity, input.custodyProgramCompleted ? 52 : 42)
+            }
+            if career.regularArchetype == .skilledTrades, input.recordPressure >= 60 {
+                career.jobSecurity = min(career.jobSecurity, 50)
+            }
+        }
+        if input.prisonResidueTags.contains("hardened"), career.regularArchetype == .salesNetworker {
+            career.performance = min(100, career.performance + 1)
+        }
+        return advanceYear(
             player: &player,
             career: &career,
             education: input.education,
             health: input.health,
             relationships: input.relationships,
-            childhoodDossier: input.childhoodDossier
+            childhoodDossier: input.childhoodDossier,
+            recentStances: input.recentStances,
+            resilience: input.resilience
         )
     }
 
@@ -1306,7 +1343,9 @@ struct CareerSystem {
         education: EducationState,
         health: HealthState,
         relationships: RelationshipState,
-        childhoodDossier: ChildhoodDossier? = nil
+        childhoodDossier: ChildhoodDossier? = nil,
+        recentStances: [YearlyStanceID] = [],
+        resilience: LifeResilience = .resilient
     ) -> DomainYearResult {
         var result = DomainYearResult()
         normalizeStatus(for: &career, age: player.age)
@@ -1529,28 +1568,47 @@ struct CareerSystem {
                 career.performance = (career.performance + 1).clamped(to: 0...100)
                 career.burnout = (career.burnout + 2).clamped(to: 0...100)
                 if player.age > 48 { career.performance = (career.performance - 2).clamped(to: 0...100) }
-            case .salesNetworker, nil:
-                // Balanced/default: mild variance, standard aging
+            case .salesNetworker:
+                let commissionSwing = Int.random(in: -12...18)
+                career.performance = (career.performance + commissionSwing / 4).clamped(to: 0...100)
+                career.burnout = (career.burnout + (commissionSwing < 0 ? 2 : 1)).clamped(to: 0...100)
+                if commissionSwing > 10 {
+                    career.annualIncome = Int(Double(career.annualIncome) * 1.06)
+                } else if commissionSwing < -8 {
+                    career.annualIncome = Int(Double(career.annualIncome) * 0.94)
+                }
+            case .creativeProfessional:
+                career.burnout = (career.burnout + 1).clamped(to: 0...100)
+                if career.performance > 65 { career.annualIncome = Int(Double(career.annualIncome) * 1.04) }
+                if player.age > 50 { career.jobSecurity = max(0, career.jobSecurity - 1) }
+            case .careLabor:
+                career.burnout = (career.burnout + 2).clamped(to: 0...100)
+                career.jobSecurity = (career.jobSecurity + 1).clamped(to: 0...100)
+                career.relationshipSpillover = (career.relationshipSpillover + 1).clamped(to: 0...100)
+            case nil:
                 if player.age > 45 {
                     career.performance = (career.performance - 1).clamped(to: 0...100)
                 }
             }
 
-            // P4: D4 life-shape + stance tuning for regular archetypes (driven stances boost perf temporarily, loose increases burnout variance)
-            // Proxy via burnout/performance (real recentStances tie via ledger in orchestrator calls)
-            if career.burnout < 30 && career.performance > 65 {
-                career.performance = min(100, career.performance + 2) // "driven" proxy
-            } else if career.burnout > 55 {
-                career.burnout = min(100, career.burnout + 2) // "loose" proxy
+            // D5 + P4: D4 life-shape tuning on regular archetypes (driven vs loose feel different per path)
+            if career.specializedTrack == nil, let arch = career.regularArchetype {
+                let shape = LifeShapeResolver.resolve(recentStances: recentStances) ?? .pragmatic
+                applyRegularArchetypeShapeTuning(
+                    archetype: arch,
+                    shape: shape,
+                    resilience: resilience,
+                    player: &player,
+                    career: &career,
+                    result: &result
+                )
             }
 
             // P4-2: Regular career safety nets + ramps (so "normal" lives have visible agency and don't grind into dead-ends before mid-life).
-            // Archetype specific: Corporate gets political safety (security floor), Gig gets quick recovery variance (can bounce), Trades gets durable low-burn floor.
-            // Modulated by dossier (early wiring) + resilience (grounded gets bigger "earned" ramps when protecting health/steady) + shape proxy.
             if career.specializedTrack == nil, let arch = career.regularArchetype {
-                let shape = (player.happiness > 65 && career.performance > 60) ? "driven" : (career.burnout > 55 ? "loose" : "steady")
+                let shape = LifeShapeResolver.resolve(recentStances: recentStances) ?? .pragmatic
                 let steadyTrait = player.traits.contains(.disciplined) || player.traits.contains(.resilient)
-                let resBonus = (steadyTrait && (arch == .skilledTrades || arch == .publicService)) ? 2 : 0
+                let resBonus = (steadyTrait && (arch == .skilledTrades || arch == .publicService || arch == .careLabor)) ? 2 : 0
 
                 switch arch {
                 case .corporateClimber:
@@ -1561,7 +1619,7 @@ struct CareerSystem {
                             result.notes.append(DomainNote(title: "Internal Safety", text: "The ladder has politics, but your track record bought one more rung.", tags: [.career]))
                         }
                     }
-                    if shape == "driven" { career.performance = (career.performance + 1).clamped(to: 0...100) }
+                    if shape == .drivenCurrent { career.performance = (career.performance + 1).clamped(to: 0...100) }
                 case .gigFreelancer:
                     // Variance + fast recovery ramp: when low, a good pivot year can spike income temporarily
                     if career.jobSecurity < 35 && career.performance > 55 {
@@ -1571,14 +1629,14 @@ struct CareerSystem {
                             result.notes.append(DomainNote(title: "Gig Pivot Paid", text: "One client or contract turned the variance into a real step up this year.", tags: [.career, .finance]))
                         }
                     }
-                    if shape == "loose" { career.burnout = (career.burnout + 1).clamped(to: 0...100) } // loose hurts gigs more
+                    if shape == .looseEdges { career.burnout = (career.burnout + 1).clamped(to: 0...100) }
                 case .skilledTrades:
                     // Durable: safety floor on burnout + physical aging slower ramp
                     career.burnout = max(5, career.burnout - (1 + resBonus))
                     if player.age > 50 && career.performance < 50 {
                         career.performance = (career.performance + 2).clamped(to: 0...100)
                     }
-                    if shape == "driven" && career.performance > 70 { career.jobSecurity = (career.jobSecurity + 2).clamped(to: 0...100) }
+                    if shape == .drivenCurrent && career.performance > 70 { career.jobSecurity = (career.jobSecurity + 2).clamped(to: 0...100) }
                 case .publicService:
                     career.jobSecurity = (career.jobSecurity + 1 + resBonus).clamped(to: 0...100)
                     if career.burnout > 60 {
@@ -1592,6 +1650,20 @@ struct CareerSystem {
                 case .salesNetworker:
                     if career.performance < 40 && career.jobSecurity < 40 {
                         career.jobSecurity = (career.jobSecurity + 3).clamped(to: 0...100)
+                    }
+                    if shape == .drivenCurrent, Int.random(in: 0...100) < 22 {
+                        career.annualIncome = Int(Double(career.annualIncome) * 1.1)
+                        result.notes.append(DomainNote(title: "Commission Spike", text: "A quarter of hustle turned into a number that actually showed up.", tags: [.career, .finance]))
+                    }
+                case .creativeProfessional:
+                    if shape == .drivenCurrent { career.performance = min(100, career.performance + 2) }
+                    if shape == .looseEdges { career.jobSecurity = max(0, career.jobSecurity - 2) }
+                case .careLabor:
+                    if resilience == .grounded && career.burnout > 60 {
+                        career.burnout = max(0, career.burnout - 2)
+                        if player.age % 4 == 0 {
+                            result.notes.append(DomainNote(title: "Fighting Back", text: "You set one boundary that held. The year still hurt, but it bent.", tags: [.career, .health]))
+                        }
                     }
                 }
             }
@@ -1631,6 +1703,10 @@ struct CareerSystem {
                     voice = "The code compiles. The version of you that wrote it at 2 a.m. is harder to find these days."
                 case .salesNetworker:
                     voice = "Every relationship is a bet. Some of them are still paying out. Some of them are just good stories."
+                case .creativeProfessional:
+                    voice = "The portfolio grows in the quiet. The rent still comes due whether the muse shows up or not."
+                case .careLabor:
+                    voice = "You carried other people's weight again. The meaning is real. So is the exhaustion."
                 }
                 result.notes.append(DomainNote(title: "Regular Life Voice", text: voice, tags: [.career]))
             }
@@ -1725,7 +1801,7 @@ struct CareerSystem {
         career.clamp()
     }
 
-    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState) -> DomainYearResult {
+    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState, fame: inout FameProfile) -> DomainYearResult {
         var result = DomainYearResult()
 
         switch choiceID {
@@ -1853,26 +1929,99 @@ struct CareerSystem {
             }
             // D1 veteran bonus lives in the full state path (military top-level); small always-on flavor here
         // D3: Regular career archetype actions for parity (non-special deep runs) - set persistent archetype + richer curves
+        case .corporateStayLate:
+            career.regularArchetype = .corporateClimber
+            career.performance += 5
+            career.burnout += 6
+            career.managerFriction += 2
+            result.notes.append(DomainNote(title: "Office Lights On", text: "You were still there when the floor went quiet. Someone noticed.", tags: [.career, .autonomousReaction]))
+        case .corporatePolitick:
+            career.regularArchetype = .corporateClimber
+            career.jobSecurity += 5
+            career.managerFriction += 5
+            career.performance += 2
+            result.notes.append(DomainNote(title: "Room Read", text: "You spent the afternoon learning who actually decides things around here.", tags: [.career, .autonomousReaction]))
+        case .corporateDocumentWin:
+            career.regularArchetype = .corporateClimber
+            career.performance += 6
+            career.jobSecurity += 3
+            applyRegularArchetypeFame(archetype: .corporateClimber, career: career, fame: &fame, performanceBump: 4)
+            result.notes.append(DomainNote(title: "Win On Record", text: "The work is real now — on paper, in a deck, where reviews live.", tags: [.career, .autonomousReaction]))
+        case .tradesExtraFocus:
+            career.regularArchetype = .skilledTrades
+            career.performance += 6
+            career.burnout += 3
+            result.healthEffects = HealthEffects(physical: -2, mental: nil, exercise: 2, nutrition: nil, stressManagement: -1)
+            result.notes.append(DomainNote(title: "Hands On The Work", text: "The craft moved forward. The body felt it immediately.", tags: [.career, .health, .autonomousReaction]))
+        case .tradesMaintainTools:
+            career.regularArchetype = .skilledTrades
+            career.jobSecurity += 4
+            career.performance += 2
+            result.notes.append(DomainNote(title: "Tools Ready", text: "Reliability is its own reputation. Yours held today.", tags: [.career, .autonomousReaction]))
+        case .tradesSafetyPush:
+            career.regularArchetype = .skilledTrades
+            career.burnout = max(0, career.burnout - 4)
+            career.jobSecurity += 2
+            result.notes.append(DomainNote(title: "Safety First", text: "You slowed down on purpose. The job will still be there tomorrow.", tags: [.career, .health, .autonomousReaction]))
+        case .salesClientOutreach:
+            career.regularArchetype = .salesNetworker
+            career.performance += 4
+            career.burnout += 2
+            career.relationshipSpillover += 2
+            result.notes.append(DomainNote(title: "Pipeline Touched", text: "You reached out again. The numbers might move next week — or they might not.", tags: [.career, .relationships, .autonomousReaction]))
+            applyRegularArchetypeFame(archetype: .salesNetworker, career: career, fame: &fame, performanceBump: 3)
+        case .salesPipelineGrind:
+            career.regularArchetype = .salesNetworker
+            let swing = Int.random(in: -6...10)
+            career.performance = (career.performance + swing).clamped(to: 0...100)
+            career.burnout += 4
+            if swing > 4 {
+                result.financeEffects = FinanceEffects(cashDelta: 900 + swing * 120)
+            }
+            result.notes.append(DomainNote(title: "Pipeline Grind", text: swing > 0 ? "A lead warmed up. The grind is paying something." : "Another week of numbers that didn't move.", tags: [.career, .finance, .autonomousReaction]))
+            applyRegularArchetypeFame(archetype: .salesNetworker, career: career, fame: &fame, performanceBump: max(0, swing))
+        case .salesRecoveryCall:
+            career.regularArchetype = .salesNetworker
+            career.performance += 3
+            career.jobSecurity += 2
+            result.notes.append(DomainNote(title: "Deal Salvaged", text: "You made the awkward call. It didn't close everything, but it kept the door cracked.", tags: [.career, .autonomousReaction]))
+        case .gigAcceptSurge:
+            career.regularArchetype = .gigFreelancer
+            career.burnout += 5
+            career.performance += 4
+            result.financeEffects = FinanceEffects(cashDelta: Int.random(in: 600...2200))
+            result.notes.append(DomainNote(title: "Surge Accepted", text: "Demand spiked and you answered. Cash landed fast; so did the fatigue.", tags: [.career, .finance, .autonomousReaction]))
+        case .gigMaintainRating:
+            career.regularArchetype = .gigFreelancer
+            career.jobSecurity += 5
+            career.schedulePressure += 3
+            result.notes.append(DomainNote(title: "Rating Protected", text: "You did the extra little things clients remember when they tap the stars.", tags: [.career, .autonomousReaction]))
+        case .gigRestDay:
+            career.regularArchetype = .gigFreelancer
+            career.burnout = max(0, career.burnout - 6)
+            career.jobSecurity = max(0, career.jobSecurity - 2)
+            result.healthEffects = HealthEffects(physical: 2, mental: 4, exercise: nil, nutrition: nil, stressManagement: 4)
+            result.notes.append(DomainNote(title: "Rest Day", text: "You let the surge pass without you. The algorithm moved on; your nervous system didn't.", tags: [.career, .health, .autonomousReaction]))
         case .corporateClimb:
             career.regularArchetype = .corporateClimber
             career.performance += 6
             career.jobSecurity += 7
             career.burnout += 5
             career.managerFriction += 4
-            result.notes.append(DomainNote(title: "Corporate Climb", text: "You played the internal game. Rank and security rise, but the politics and hours take their toll. (Corporate archetype: high security, steady but political.)", tags: [.career]))
+            result.notes.append(DomainNote(title: "Corporate Path", text: "You committed to the ladder — steady security, political drag, slow climbs.", tags: [.career, .autonomousReaction]))
         case .freelanceHustle:
             career.regularArchetype = .gigFreelancer
             career.performance += 4
             career.annualIncome = Int(Double(career.annualIncome) * 1.12)
             career.burnout += 6
             career.scheduleControl -= 5
-            result.notes.append(DomainNote(title: "Freelance Hustle", text: "You own your calendar and your clients. Income is spikier but the freedom is real. (Gig archetype: variance, freedom, brand over pension.)", tags: [.career, .finance]))
+            result.notes.append(DomainNote(title: "Gig Path", text: "You committed to the hustle — flexible income, thin safety net, your own calendar.", tags: [.career, .finance, .autonomousReaction]))
         case .tradesMastery:
             career.regularArchetype = .skilledTrades
             career.performance += 7
             career.jobSecurity += 9
             career.burnout -= 3
-            result.notes.append(DomainNote(title: "Trades Mastery", text: "Deep skill in something tangible. Steady demand, respect from peers, less corporate nonsense. (Trades: durable security, low burnout, tangible value.)", tags: [.career]))
+            result.notes.append(DomainNote(title: "Trades Path", text: "You committed to tangible mastery — steady demand, honest work, the body keeps score.", tags: [.career, .autonomousReaction]))
         case .pivotToGig:
             career.regularArchetype = .gigFreelancer
             career.status = .partTime
@@ -2198,5 +2347,109 @@ struct CareerSystem {
         case .military: return "Military Service"
         case .unemployed: return "Looking for work"
         }
+    }
+
+    /// D4 stance × archetype yearly texture — driven/loose feel different per regular path.
+    private func applyRegularArchetypeShapeTuning(
+        archetype: CareerArchetype,
+        shape: LifeShape,
+        resilience: LifeResilience,
+        player: inout Player,
+        career: inout CareerState,
+        result: inout DomainYearResult
+    ) {
+        switch (archetype, shape) {
+        case (.corporateClimber, .drivenCurrent):
+            career.performance = (career.performance + 1).clamped(to: 0...100)
+            career.burnout = (career.burnout + 2).clamped(to: 0...100)
+            career.managerFriction = (career.managerFriction + 1).clamped(to: 0...100)
+        case (.corporateClimber, .looseEdges):
+            career.jobSecurity = max(0, career.jobSecurity - 1)
+        case (.skilledTrades, .drivenCurrent):
+            career.performance = (career.performance + 2).clamped(to: 0...100)
+            career.burnout = (career.burnout + 2).clamped(to: 0...100)
+            result.healthEffects = mergeHealthEffects(
+                result.healthEffects,
+                with: HealthEffects(physical: -2, mental: nil, exercise: nil, nutrition: nil, stressManagement: nil)
+            )
+        case (.skilledTrades, .carefulShape):
+            career.burnout = max(0, career.burnout - 1)
+        case (.salesNetworker, .drivenCurrent):
+            if Int.random(in: 0...100) < 28 {
+                career.annualIncome = Int(Double(career.annualIncome) * 1.07)
+            } else if Int.random(in: 0...100) < 18 {
+                career.burnout = (career.burnout + 3).clamped(to: 0...100)
+            }
+            career.relationshipSpillover = (career.relationshipSpillover + 1).clamped(to: 0...100)
+        case (.salesNetworker, .looseEdges):
+            career.jobSecurity = max(0, career.jobSecurity - 2)
+        case (.gigFreelancer, .drivenCurrent):
+            career.performance = (career.performance + 1).clamped(to: 0...100)
+            career.burnout = (career.burnout + 2).clamped(to: 0...100)
+        case (.gigFreelancer, .looseEdges):
+            career.jobSecurity = max(0, career.jobSecurity - 2)
+            career.burnout = max(0, career.burnout - 1)
+        case (.techEngineer, .drivenCurrent):
+            career.performance = (career.performance + 2).clamped(to: 0...100)
+            career.burnout = (career.burnout + 3).clamped(to: 0...100)
+        case (.techEngineer, .carefulShape):
+            career.burnout = max(0, career.burnout - 1)
+        case (.careLabor, .drivenCurrent):
+            career.performance = (career.performance + 1).clamped(to: 0...100)
+            career.burnout = (career.burnout + 2).clamped(to: 0...100)
+            if resilience == .grounded {
+                career.burnout = (career.burnout + 1).clamped(to: 0...100)
+            }
+        case (.creativeProfessional, .drivenCurrent):
+            career.performance = (career.performance + 2).clamped(to: 0...100)
+            career.burnout = (career.burnout + 2).clamped(to: 0...100)
+        case (.publicService, .carefulShape):
+            career.jobSecurity = (career.jobSecurity + 1).clamped(to: 0...100)
+        default:
+            break
+        }
+        _ = player
+    }
+
+    /// Instant + yearly fame leak for visible regular-career performance.
+    private func applyRegularArchetypeFame(
+        archetype: CareerArchetype,
+        career: CareerState,
+        fame: inout FameProfile,
+        performanceBump: Int = 0
+    ) {
+        let tier = archetype.fameLeakTier
+        guard tier > 0 else { return }
+        let effectivePerf = min(100, career.performance + performanceBump)
+        guard effectivePerf >= 52 else { return }
+
+        let leak = max(1, (effectivePerf - 48) / max(4, 14 - tier * 2))
+        fame.culturalFame = min(100, fame.culturalFame + leak)
+
+        let tag: String?
+        switch archetype {
+        case .salesNetworker where effectivePerf >= 68:
+            tag = "Closer"
+        case .corporateClimber where effectivePerf >= 72 && career.jobSecurity >= 58:
+            tag = "Rising Executive"
+        case .creativeProfessional where effectivePerf >= 65:
+            tag = "Working Artist"
+        case .techEngineer where effectivePerf >= 70:
+            tag = "Tech Specialist"
+        case .gigFreelancer where effectivePerf >= 62:
+            tag = "Relentless Hustler"
+        case .careLabor where effectivePerf >= 60:
+            tag = "Dedicated Caregiver"
+        case .skilledTrades where effectivePerf >= 75:
+            tag = "Master Craftsman"
+        case .publicService where career.yearsWorked >= 12 && career.jobSecurity >= 65:
+            tag = "Public Servant"
+        default:
+            tag = nil
+        }
+        if let tag, !fame.knownFor.contains(tag) {
+            fame.knownFor.append(tag)
+        }
+        fame.clamp()
     }
 }

@@ -12,6 +12,18 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
     case universityTrack
     case tradeTrack
     case adultEdRebuild
+    case combatBoxing
+    case combatMMA
+    case combatCrossover
+    case combatChampion
+    case combatInjured
+    case fightEmpire
+    case legalInvestigation
+    case legalCharged
+    case legalConvicted
+    case legalCustody
+    case legalSupervision
+    case legalReleased
     case eventPreview
     case yearSummaryPreview
 
@@ -30,6 +42,18 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
         case .universityTrack: return "University State"
         case .tradeTrack: return "Trade Training State"
         case .adultEdRebuild: return "Adult-Ed Rebuild"
+        case .combatBoxing: return "Boxing Career"
+        case .combatMMA: return "MMA Career"
+        case .combatCrossover: return "Combat Crossover"
+        case .combatChampion: return "Combat Champion"
+        case .combatInjured: return "Injured Fighter"
+        case .fightEmpire: return "Fight Empire"
+        case .legalInvestigation: return "Legal Investigation"
+        case .legalCharged: return "Criminal Charges"
+        case .legalConvicted: return "Conviction"
+        case .legalCustody: return "Custody"
+        case .legalSupervision: return "Supervision"
+        case .legalReleased: return "Released"
         case .eventPreview: return "Event Sheet Preview"
         case .yearSummaryPreview: return "Year Summary Preview"
         }
@@ -59,6 +83,30 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
             return "Trade-training education state with practical-lane messaging and actions."
         case .adultEdRebuild:
             return "Adult-ed recovery route with slower momentum and rebuild framing."
+        case .combatBoxing:
+            return "Boxing contender with opponent, camp, and strategy choices ready for the yearly fight loop."
+        case .combatMMA:
+            return "MMA contender with distinct technical ratings and matchup choices."
+        case .combatCrossover:
+            return "Former boxer rebuilding an MMA ranking after using the one-time crossover."
+        case .combatChampion:
+            return "Defending champion with elite brand, a dangerous challenger, and Fight Empire qualification in reach."
+        case .combatInjured:
+            return "Suspended fighter with accumulated wear and recovery pressure."
+        case .fightEmpire:
+            return "Retired champion running a gym, prospect roster, and fictional fight promotion."
+        case .legalInvestigation:
+            return "An open civilian investigation with legal response choices."
+        case .legalCharged:
+            return "Filed charges, bail pressure, and three bounded legal choices."
+        case .legalConvicted:
+            return "A completed conviction with permanent record pressure."
+        case .legalCustody:
+            return "An active custodial sentence with ordinary career systems restricted."
+        case .legalSupervision:
+            return "Post-custody supervision with compliance and early-release actions."
+        case .legalReleased:
+            return "A released player whose conviction remains while pressure fades."
         case .eventPreview:
             return "Launch directly into an event sheet without waiting for random event selection."
         case .yearSummaryPreview:
@@ -129,6 +177,30 @@ struct DebugTestingCoordinator {
             return tradeTrack()
         case .adultEdRebuild:
             return adultEdRebuild()
+        case .combatBoxing:
+            return combatCareer(discipline: .boxing)
+        case .combatMMA:
+            return combatCareer(discipline: .mma)
+        case .combatCrossover:
+            return combatCareer(discipline: .mma, crossoverUsed: true)
+        case .combatChampion:
+            return combatCareer(discipline: .boxing, champion: true)
+        case .combatInjured:
+            return combatCareer(discipline: .mma, injured: true)
+        case .fightEmpire:
+            return fightEmpire()
+        case .legalInvestigation:
+            return legalScenario(stage: .investigation)
+        case .legalCharged:
+            return legalScenario(stage: .charged)
+        case .legalConvicted:
+            return legalScenario(stage: .released, conviction: true)
+        case .legalCustody:
+            return legalScenario(stage: .custody, conviction: true)
+        case .legalSupervision:
+            return legalScenario(stage: .supervision, conviction: true)
+        case .legalReleased:
+            return legalScenario(stage: .released, conviction: true)
         case .eventPreview:
             return eventPreview()
         case .yearSummaryPreview:
@@ -278,6 +350,63 @@ struct DebugTestingCoordinator {
         state.history = [
             HistoryEntry(age: 23, title: "Crime", text: "The fast money helped, but it also made your life harder to stabilize.", tags: [.crime, .finance, .health]),
             HistoryEntry(age: 22, title: "Relationships", text: "People got more cautious around you once the risk stopped feeling abstract.", tags: [.relationships, .crime])
+        ]
+        return finalized(state)
+    }
+
+    private func legalScenario(stage: LegalCaseStage, conviction: Bool = false) -> DebugScenarioPayload {
+        var state = baseState(name: "Dante", age: 28)
+        state.crime = CrimeState(
+            status: stage == .custody ? .layingLow : .active,
+            roleTier: 2,
+            heat: 78,
+            notoriety: 64,
+            burnout: 48,
+            loyalty: 52,
+            territoryPressure: 57,
+            personalRisk: 70,
+            betrayalPressure: 45,
+            yearsActive: 4,
+            lastPayout: 5_800
+        )
+        state.legal.stage = stage
+        state.legal.allegedOffenses = stage == .investigation || stage == .charged ? [.organizedCrime] : []
+        state.legal.evidenceStrength = 68
+        state.legal.counselQuality = 32
+        state.legal.bailAmount = stage == .charged ? 7_500 : 0
+        state.legal.recordPressure = conviction ? 62 : 24
+        if conviction {
+            state.legal.convictions = [
+                LegalConviction(id: "debug-legal-conviction", age: 27, offense: .organizedCrime, severity: .serious, jurisdiction: .civilian, sentenceYears: 5, fine: 12_000)
+            ]
+            state.legal.sentenceYears = 5
+            state.legal.timeServed = stage == .custody ? 2 : 5
+            state.legal.paroleEligibleAfter = 3
+            state.legal.supervisionYearsRemaining = stage == .supervision ? 2 : 0
+            state.legal.custodyStartedAge = 26
+            if stage == .custody {
+                state.legal.custodyProfile = CustodyProfile(
+                    facility: .statePrison,
+                    experienceTier: .organization,
+                    securityRegime: .heightened,
+                    conductScore: 58,
+                    violenceRisk: 34,
+                    yardReputation: 42,
+                    faction: .oldGuard,
+                    factionLoyalty: 52,
+                    protectionDebt: 28,
+                    programProgress: 35,
+                    discretionaryActionsRemaining: 4,
+                    lifetimeFamilyContactsMax: 3,
+                    totalFamilyCallsMade: 1
+                )
+            }
+        }
+        state.finance.cashOnHand = 8_400
+        state.career.status = stage == .custody ? .unemployed : .fullTime
+        state.career.annualIncome = stage == .custody ? 0 : 38_000
+        state.history = [
+            HistoryEntry(age: 28, title: "Legal Status", text: "The case now shapes work, money, and freedom.", tags: [.legal, .crime])
         ]
         return finalized(state)
     }
@@ -572,6 +701,90 @@ struct DebugTestingCoordinator {
             checkpoint: YearlyOutcomeItem(title: "Age Checkpoint", detail: "This year clarified that survival pressure is becoming your dominant life pattern.", domain: .progress, tone: .warning, impactScore: -10)
         )
         return payload
+    }
+
+    private func combatCareer(
+        discipline: CombatDiscipline,
+        crossoverUsed: Bool = false,
+        champion: Bool = false,
+        injured: Bool = false
+    ) -> DebugScenarioPayload {
+        var state = baseState(name: discipline == .boxing ? "Renee Vale" : "Ari Stone", age: champion ? 31 : 25)
+        state.player.health = injured ? 48 : 82
+        state.player.smarts = 68
+        state.specialCareer.track = .athlete
+        state.specialCareer.fame = champion ? 78 : 38
+        state.specialCareer.audience = champion ? 84 : 46
+        state.specialCareer.athlete.sport = .combatSports
+        state.specialCareer.athlete.personalBrand = champion ? 82 : 48
+        var combat = CombatCareerState()
+        combat.discipline = discipline
+        combat.stage = champion ? .defendingChampion : .rankedContender
+        combat.wins = champion ? 19 : 7
+        combat.losses = champion ? 1 : 2
+        combat.finishes = champion ? 12 : 4
+        combat.ranking = champion ? 48 : 29
+        combat.isChampion = champion
+        combat.titleDefenses = champion ? 3 : 0
+        combat.careerEarnings = champion ? 420_000 : 38_000
+        combat.crossoverUsed = crossoverUsed
+        combat.careerWear = injured ? 67 : (champion ? 54 : 28)
+        combat.suspensionYears = injured ? 1 : 0
+        combat.skills = CombatSkillRatings(
+            power: 76,
+            handSpeed: 79,
+            footwork: 74,
+            defense: 72,
+            striking: 77,
+            wrestling: 73,
+            submissions: 69,
+            takedownDefense: 75,
+            conditioning: injured ? 59 : 81
+        )
+        combat.activeContract = CombatContract(
+            promotionName: champion ? discipline.championshipOrganization : discipline.promotionName,
+            fightsRemaining: 2,
+            basePurse: champion ? 24_000 : 3_500
+        )
+        if !injured {
+            combat.opponentOffers = [
+                CombatOpponentOffer(id: "debug-safe", name: "Micah Voss", tier: .safe, rating: 66, style: discipline == .boxing ? "pressure puncher" : "striker", purse: 4_000, titleOpportunity: false),
+                CombatOpponentOffer(id: "debug-ranked", name: "Noel Cross", tier: .ranked, rating: 76, style: discipline == .boxing ? "counter boxer" : "wrestler", purse: 9_000, titleOpportunity: false),
+                CombatOpponentOffer(id: "debug-danger", name: "Dani Mercer", tier: .dangerous, rating: 86, style: discipline == .boxing ? "outside technician" : "submission hunter", purse: 18_000, titleOpportunity: champion)
+            ]
+        }
+        state.specialCareer.athlete.combat = combat
+        state.finance.cashOnHand = champion ? 180_000 : 24_000
+        state.history = [
+            HistoryEntry(age: state.player.age, title: discipline == .boxing ? "Ironline Boxing" : "Cagefront MMA", text: "The next contract decision is waiting in the Career tab.", tags: [.career, .health])
+        ]
+        return finalized(state)
+    }
+
+    private func fightEmpire() -> DebugScenarioPayload {
+        var state = baseState(name: "Renee Vale", age: 42)
+        state.specialCareer.track = .fightEmpire
+        state.specialCareer.fame = 86
+        state.specialCareer.audience = 79
+        state.specialCareer.fightEmpire = FightEmpireState(
+            originDiscipline: .boxing,
+            gymReputation: 72,
+            prospects: [
+                FightProspect(id: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!, name: "Mara Stone", discipline: .boxing, potential: 88, readiness: 64, trust: 78),
+                FightProspect(id: UUID(uuidString: "10000000-0000-0000-0000-000000000002")!, name: "Luis Vale", discipline: .boxing, potential: 79, readiness: 55, trust: 69)
+            ],
+            eventQuality: 68,
+            promotionReach: 61,
+            fighterTrust: 74,
+            regulatoryPressure: 24,
+            operatingCashPressure: 42,
+            lastEventProfit: 18_600
+        )
+        state.finance.cashOnHand = 235_000
+        state.history = [
+            HistoryEntry(age: 42, title: "Fight Empire", text: "The retired champion's name now carries a gym and a promotion.", tags: [.career, .finance, .progress])
+        ]
+        return finalized(state)
     }
 
     private func baseState(name: String, age: Int) -> GameState {

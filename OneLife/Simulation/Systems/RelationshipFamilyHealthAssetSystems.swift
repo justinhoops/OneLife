@@ -204,9 +204,8 @@ struct RelationshipSystem {
 
     func applyAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
         var result = DomainYearResult()
-        var player = state.player
+        let player = state.player
         var relationships = state.relationships
-        var family = state.family
         var finance = state.finance
         var assets = state.assets
 
@@ -359,7 +358,7 @@ struct RelationshipSystem {
                 }
             }
             
-            if family.childCount > 0 {
+            if state.family.childCount > 0 {
                 result.financeEffects = FinanceEffects(dependentCostDelta: 5000) // Child support
                 result.notes.append(DomainNote(title: "Child Support", text: "The divorce added a permanent child support obligation to your annual costs.", tags: [.finance]))
             }
@@ -395,40 +394,6 @@ struct RelationshipSystem {
                 result.notes.append(DomainNote(title: "Relationship Focus", text: "You pushed for cohabitation before the relationship was ready, and it created some tension.", tags: [.relationships]))
                 result.relationshipEffects = RelationshipEffects(partnerChange: -3, commitmentAlignmentChange: -4, privateReputationChange: -2)
             }
-        case .tryForBaby:
-            family.pregnancyIntent = .trying
-            if let primary = relationships.primaryPartner {
-                addOrMergeTension(
-                    into: &relationships,
-                    headline: "The family question got heavier",
-                    impactLine: "Trying for a baby raised the emotional stakes around the relationship and the future.",
-                    severity: 34,
-                    source: .familyPlanning,
-                    target: .future,
-                    createdAge: player.age,
-                    targetName: primary.name,
-                    impactedDomains: [.relationships, .lifeEvent, .finance]
-                )
-            }
-            result.notes.append(DomainNote(title: "Family Planning", text: "You and your partner stopped leaving pregnancy to chance and started trying on purpose.", tags: [.relationships, .lifeEvent]))
-        case .avoidPregnancy:
-            family.pregnancyIntent = .avoid
-            relationships.futureAlignment.familyReadiness = max(0, relationships.futureAlignment.familyReadiness - 3)
-            result.notes.append(DomainNote(title: "Family Planning", text: "You made avoiding pregnancy a clear priority this year.", tags: [.relationships]))
-        case .letChanceDecide:
-            family.pregnancyIntent = .chance
-            addOrMergeTension(
-                into: &relationships,
-                headline: "The future stayed unresolved",
-                impactLine: "Avoiding a decision let uncertainty keep its leverage over the relationship.",
-                severity: 38,
-                source: .familyPlanning,
-                target: .future,
-                createdAge: player.age,
-                targetName: relationships.partnerName,
-                impactedDomains: [.relationships, .lifeEvent]
-            )
-            result.notes.append(DomainNote(title: "Family Planning", text: "You left family planning unresolved and let the year carry its own risk.", tags: [.relationships]))
         case .callInFavor:
             guard relationships.socialCapital >= 50 else {
                 result.notes.append(DomainNote(title: "Favor Failed", text: "You tried to lean on your network, but you don't have enough capital to make it happen yet."))
@@ -601,9 +566,10 @@ struct RelationshipSystem {
                 relationships.friends[idx].bond = (relationships.friends[idx].bond + 8).clamped(to: 0...100)
                 result.notes.append(DomainNote(title: "Deep Bond", text: "You poured real time into one person. That friendship now carries more weight than the rest combined.", tags: [.relationships]))
             } else if relationships.hasPartner {
-                // fallback to partner
-                if let p = relationships.primaryPartner {
-                    // mutate via index or direct
+                if var partner = relationships.romanticPartner {
+                    partner.bond = (partner.bond + 8).clamped(to: 0...100)
+                    relationships.romanticPartner = partner
+                    result.notes.append(DomainNote(title: "Deep Bond", text: "You made room for a real conversation. The relationship feels less automatic now.", tags: [.relationships]))
                 }
             }
         case .fuelRivalry:
@@ -615,95 +581,12 @@ struct RelationshipSystem {
             relationships.privateReputation = max(0, relationships.privateReputation - 4)
             result.notes.append(DomainNote(title: "Rep Split", text: "Public you is polished. Private you paid a small price in authenticity.", tags: [.relationships, .identity]))
 
-        // Phase 2.2: Parenting mechanics — simple levers with real texture and trade-offs
-        case .spendTimeWithKids:
-            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
-            var totalBondGain = 0
-            for i in family.children.indices where family.children[i].livesAtHome {
-                let gain = Int.random(in: 4...8)
-                family.children[i].bondWithPlayer = (family.children[i].bondWithPlayer + gain).clamped(to: 5...95)
-                totalBondGain += gain
-                // Sensitive kids love this; independent kids appreciate it less dramatically
-                if family.children[i].temperament == .sensitive {
-                    family.children[i].bondWithPlayer = (family.children[i].bondWithPlayer + 2).clamped(to: 5...95)
-                }
-            }
-            // Trade-off: real presence costs mental bandwidth
-            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: -2))
-            result.notes.append(DomainNote(title: "Parenting", text: "You gave them hours that actually belonged to them. The house felt a little warmer, and you felt a little more tired in the best way.", tags: [.relationships]))
-        case .enforceRoutine:
-            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
-            for i in family.children.indices where family.children[i].livesAtHome {
-                let child = family.children[i]
-                var bondDelta = -1
-                var sensitivityDelta = -2
-                if child.temperament == .spirited || child.temperament == .intense {
-                    bondDelta = 3   // they actually needed the container
-                    sensitivityDelta = -4
-                } else if child.temperament == .independent {
-                    bondDelta = -4  // they pushed back
-                }
-                family.children[i].bondWithPlayer = (child.bondWithPlayer + bondDelta).clamped(to: 5...95)
-                family.children[i].emotionalSensitivity = (child.emotionalSensitivity + sensitivityDelta).clamped(to: 10...90)
-            }
-            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: -1, stressManagement: 2))
-            result.notes.append(DomainNote(title: "Parenting", text: "You held the line on bedtime, screen time, and structure. For some of them it landed as safety. For others it landed as a fight. Either way, the year had more shape.", tags: [.relationships]))
-        // D1: Light family statics — always available small anchors (dossier flavor)
-        case .familyMeal:
-            guard family.childCount > 0 else { return result }
-            for i in family.children.indices {
-                family.children[i].bondWithPlayer = (family.children[i].bondWithPlayer + 3).clamped(to: 5...95)
-            }
-            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: 3))
-            result.notes.append(DomainNote(title: "Family Meal", text: "The table was loud in the good way. Even the difficult child laughed once. The year remembered it belonged to all of you.", tags: [.family, .relationships]))
-        case .storyTime:
-            guard family.childCount > 0 else { return result }
-            for i in family.children.indices {
-                let d = family.children[i]
-                var bond = 4
-                if let playerD = state.childhoodDossier, playerD.aptitudes.social >= 55 {
-                    bond += 2 // your social wiring helps the story land
-                }
-                family.children[i].bondWithPlayer = (d.bondWithPlayer + bond).clamped(to: 5...95)
-                // tiny development note seed
-                family.children[i].developmentNotes.append("Heard stories about where you came from.")
-            }
-            result.notes.append(DomainNote(title: "Story Time", text: "You told them something true about before they were here. The thread got a little longer tonight.", tags: [.family, .identity]))
-        case .encourageIndependence:
-            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
-            for i in family.children.indices where family.children[i].livesAtHome {
-                let child = family.children[i]
-                var bondDelta = 1
-                var curiosityDelta = 4
-                if child.temperament == .independent || child.temperament == .spirited {
-                    bondDelta = 3
-                    curiosityDelta = 6
-                } else if child.temperament == .sensitive {
-                    bondDelta = -2
-                }
-                family.children[i].bondWithPlayer = (child.bondWithPlayer + bondDelta).clamped(to: 5...95)
-                family.children[i].curiosity = (child.curiosity + curiosityDelta).clamped(to: 15...90)
-            }
-            result.notes.append(DomainNote(title: "Parenting", text: "You stepped back on purpose. Some of them rose to it and seemed older by the end of the year. One or two seemed a little more distant. That was the point.", tags: [.relationships]))
-        case .checkInOnChild:
-            guard !family.children.filter({ $0.livesAtHome }).isEmpty else { return result }
-            for i in family.children.indices where family.children[i].livesAtHome {
-                let child = family.children[i]
-                var bondGain = 5
-                if child.temperament == .sensitive || child.temperament == .intense {
-                    bondGain = 8
-                }
-                family.children[i].bondWithPlayer = (child.bondWithPlayer + bondGain).clamped(to: 5...95)
-            }
-            result.healthEffects = mergeHealthEffects(result.healthEffects, with: HealthEffects(mental: -3)) // emotional labor
-            result.notes.append(DomainNote(title: "Parenting", text: "You sat down and actually asked how they were doing — not just what they needed. The answers were sometimes heavier than you expected. The connection got deeper anyway.", tags: [.relationships, .health]))
         default:
             break
         }
         
         state.player = player
         state.relationships = relationships
-        state.family = family
         state.finance = finance
         state.assets = assets
 
@@ -1091,8 +974,149 @@ struct FamilySystem {
             health: input.health,
             finance: input.finance,
             worldEra: input.worldEra,
-            resilience: input.player._resilience
+            resilience: input.player._resilience,
+            parentRegularArchetype: input.parentRegularArchetype,
+            parentCareerBurnout: input.parentCareerBurnout,
+            parentCrimeTier: input.parentCrimeTier,
+            parentCrimeHeat: input.parentCrimeHeat,
+            parentInCustody: input.parentInCustody,
+            parentCustodyFacility: input.parentCustodyFacility
         )
+    }
+
+    func applyAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
+        var result = DomainYearResult()
+
+        switch choiceID {
+        case .tryForBaby:
+            state.family.pregnancyIntent = .trying
+            result.notes.append(DomainNote(
+                title: "Family Planning",
+                text: "You and your partner stopped leaving pregnancy to chance and started trying on purpose.",
+                tags: [.relationships, .lifeEvent]
+            ))
+        case .avoidPregnancy:
+            state.family.pregnancyIntent = .avoid
+            state.relationships.futureAlignment.familyReadiness = max(
+                0,
+                state.relationships.futureAlignment.familyReadiness - 3
+            )
+            result.notes.append(DomainNote(
+                title: "Family Planning",
+                text: "You made avoiding pregnancy a clear priority this year.",
+                tags: [.relationships]
+            ))
+        case .letChanceDecide:
+            state.family.pregnancyIntent = .chance
+            result.notes.append(DomainNote(
+                title: "Family Planning",
+                text: "You left family planning unresolved and let the year carry its own risk.",
+                tags: [.relationships]
+            ))
+        case .spendTimeWithKids:
+            guard state.family.children.contains(where: \.livesAtHome) else { return result }
+            for index in state.family.children.indices where state.family.children[index].livesAtHome {
+                var gain = Int.random(in: 4...8)
+                if state.family.children[index].temperament == .sensitive {
+                    gain += 2
+                }
+                state.family.children[index].bondWithPlayer =
+                    (state.family.children[index].bondWithPlayer + gain).clamped(to: 5...95)
+            }
+            result.healthEffects = HealthEffects(mental: -2)
+            result.notes.append(DomainNote(
+                title: "Parenting",
+                text: "You gave them hours that actually belonged to them. The house felt warmer, and you felt the cost of being present.",
+                tags: [.family, .relationships]
+            ))
+        case .enforceRoutine:
+            guard state.family.children.contains(where: \.livesAtHome) else { return result }
+            for index in state.family.children.indices where state.family.children[index].livesAtHome {
+                let child = state.family.children[index]
+                let bondDelta: Int
+                let sensitivityDelta: Int
+                if child.temperament == .spirited || child.temperament == .intense {
+                    bondDelta = 3
+                    sensitivityDelta = -4
+                } else if child.temperament == .independent {
+                    bondDelta = -4
+                    sensitivityDelta = -2
+                } else {
+                    bondDelta = -1
+                    sensitivityDelta = -2
+                }
+                state.family.children[index].bondWithPlayer =
+                    (child.bondWithPlayer + bondDelta).clamped(to: 5...95)
+                state.family.children[index].emotionalSensitivity =
+                    (child.emotionalSensitivity + sensitivityDelta).clamped(to: 10...90)
+            }
+            result.healthEffects = HealthEffects(mental: -1, stressManagement: 2)
+            result.notes.append(DomainNote(
+                title: "Parenting",
+                text: "You held the line on structure. It landed as safety for some of them and a fight for others.",
+                tags: [.family, .relationships]
+            ))
+        case .encourageIndependence:
+            guard state.family.children.contains(where: \.livesAtHome) else { return result }
+            for index in state.family.children.indices where state.family.children[index].livesAtHome {
+                let child = state.family.children[index]
+                let bondDelta = child.temperament == .independent || child.temperament == .spirited ? 3 :
+                    (child.temperament == .sensitive ? -2 : 1)
+                let curiosityDelta = child.temperament == .independent || child.temperament == .spirited ? 6 : 4
+                state.family.children[index].bondWithPlayer =
+                    (child.bondWithPlayer + bondDelta).clamped(to: 5...95)
+                state.family.children[index].curiosity =
+                    (child.curiosity + curiosityDelta).clamped(to: 15...90)
+            }
+            result.notes.append(DomainNote(
+                title: "Parenting",
+                text: "You stepped back on purpose. They gained room to become more themselves.",
+                tags: [.family, .relationships]
+            ))
+        case .checkInOnChild:
+            guard state.family.children.contains(where: \.livesAtHome) else { return result }
+            for index in state.family.children.indices where state.family.children[index].livesAtHome {
+                let temperament = state.family.children[index].temperament
+                let gain = temperament == .sensitive || temperament == .intense ? 8 : 5
+                state.family.children[index].bondWithPlayer =
+                    (state.family.children[index].bondWithPlayer + gain).clamped(to: 5...95)
+            }
+            result.healthEffects = HealthEffects(mental: -3)
+            result.notes.append(DomainNote(
+                title: "Parenting",
+                text: "You asked how they were doing and stayed for the real answer.",
+                tags: [.family, .relationships, .health]
+            ))
+        case .familyMeal:
+            guard !state.family.children.isEmpty else { return result }
+            for index in state.family.children.indices {
+                state.family.children[index].bondWithPlayer =
+                    (state.family.children[index].bondWithPlayer + 3).clamped(to: 5...95)
+            }
+            result.healthEffects = HealthEffects(mental: 3)
+            result.notes.append(DomainNote(
+                title: "Family Meal",
+                text: "The table was loud in the good way. The year remembered it belonged to all of you.",
+                tags: [.family, .relationships]
+            ))
+        case .storyTime:
+            guard !state.family.children.isEmpty else { return result }
+            for index in state.family.children.indices {
+                let socialBonus = (state.childhoodDossier?.aptitudes.social ?? 0) >= 55 ? 2 : 0
+                state.family.children[index].bondWithPlayer =
+                    (state.family.children[index].bondWithPlayer + 4 + socialBonus).clamped(to: 5...95)
+                state.family.children[index].developmentNotes.append("Heard stories about where you came from.")
+            }
+            result.notes.append(DomainNote(
+                title: "Story Time",
+                text: "You told them something true about before they were here. The thread got longer.",
+                tags: [.family, .identity]
+            ))
+        default:
+            break
+        }
+
+        return result
     }
 
     func advanceYear(
@@ -1102,13 +1126,32 @@ struct FamilySystem {
         health: HealthState,
         finance: FinanceState,
         worldEra: WorldEra = .stable,
-        resilience: LifeResilience = .resilient
+        resilience: LifeResilience = .resilient,
+        parentRegularArchetype: CareerArchetype? = nil,
+        parentCareerBurnout: Int = 0,
+        parentCrimeTier: CrimeTier? = nil,
+        parentCrimeHeat: Int = 0,
+        parentInCustody: Bool = false,
+        parentCustodyFacility: CustodyFacility? = nil
     ) -> DomainYearResult {
         var result = DomainYearResult()
 
         // Econ3: Pass era + resilience so children feel the macro economy + parent's life path differently
         let parentStress = max(0, finance.financialStress + (health.mentalWellness < 40 ? 15 : 0))
-        ageChildren(family: &family, result: &result, worldEra: worldEra, resilience: resilience, parentFinancialStress: parentStress, parentIsSpecialCareer: /* rough signal */ finance.annualTotalExpenses > 45000)
+        ageChildren(
+            family: &family,
+            result: &result,
+            worldEra: worldEra,
+            resilience: resilience,
+            parentFinancialStress: parentStress,
+            parentIsSpecialCareer: finance.annualTotalExpenses > 45000,
+            parentRegularArchetype: parentRegularArchetype,
+            parentCareerBurnout: parentCareerBurnout,
+            parentCrimeTier: parentCrimeTier,
+            parentCrimeHeat: parentCrimeHeat,
+            parentInCustody: parentInCustody,
+            parentCustodyFacility: parentCustodyFacility
+        )
         family.postpartumYearsRemaining = max(0, family.postpartumYearsRemaining - 1)
 
         guard player.age >= 18 else { return result }
@@ -1185,7 +1228,20 @@ struct FamilySystem {
         return result
     }
 
-    private func ageChildren(family: inout FamilyState, result: inout DomainYearResult, worldEra: WorldEra = .stable, resilience: LifeResilience = .resilient, parentFinancialStress: Int = 0, parentIsSpecialCareer: Bool = false) {
+    private func ageChildren(
+        family: inout FamilyState,
+        result: inout DomainYearResult,
+        worldEra: WorldEra = .stable,
+        resilience: LifeResilience = .resilient,
+        parentFinancialStress: Int = 0,
+        parentIsSpecialCareer: Bool = false,
+        parentRegularArchetype: CareerArchetype? = nil,
+        parentCareerBurnout: Int = 0,
+        parentCrimeTier: CrimeTier? = nil,
+        parentCrimeHeat: Int = 0,
+        parentInCustody: Bool = false,
+        parentCustodyFacility: CustodyFacility? = nil
+    ) {
         guard !family.children.isEmpty else { return }
 
         let isBadEconomy = (worldEra == .recession || worldEra == .highInflation)
@@ -1257,6 +1313,35 @@ struct FamilySystem {
                     let parentNote = "My parent was fighting to keep everything together that year."
                     if !child.developmentNotes.contains(parentNote) {
                         child.developmentNotes.append(parentNote)
+                    }
+                }
+
+                if let arch = parentRegularArchetype, child.age >= 12, Int.random(in: 0...100) < 24 {
+                    let parentNote = regularCareerParentNote(
+                        archetype: arch,
+                        burnout: parentCareerBurnout,
+                        childName: child.name
+                    )
+                    if !child.developmentNotes.contains(parentNote) {
+                        child.developmentNotes.append(parentNote)
+                    }
+                }
+
+                if let crimeTier = parentCrimeTier, child.age >= 10, Int.random(in: 0...100) < 26 {
+                    let crimeNote = crimeParentNote(tier: crimeTier, heat: parentCrimeHeat, childName: child.name, grounded: isGrounded)
+                    if !child.developmentNotes.contains(crimeNote) {
+                        child.developmentNotes.append(crimeNote)
+                    }
+                }
+
+                if parentInCustody, child.age >= 6, Int.random(in: 0...100) < 30 {
+                    let custodyNote = custodyParentNote(
+                        facility: parentCustodyFacility ?? .statePrison,
+                        childName: child.name,
+                        grounded: isGrounded
+                    )
+                    if !child.developmentNotes.contains(custodyNote) {
+                        child.developmentNotes.append(custodyNote)
                     }
                 }
 
@@ -1354,6 +1439,66 @@ struct FamilySystem {
         }
     }
 
+    private func custodyParentNote(facility: CustodyFacility, childName: String, grounded: Bool) -> String {
+        switch facility {
+        case .countyJail:
+            return grounded
+                ? "\(childName) learned that visits were short and goodbyes were harder than the drive home."
+                : "\(childName) watched the county jail visits eat weekends before homework did."
+        case .statePrison:
+            return grounded
+                ? "\(childName) grew up counting years between phone calls and birthdays."
+                : "\(childName) understood early that one parent was somewhere the family could not follow."
+        case .federalPen:
+            return grounded
+                ? "\(childName) learned not to ask how far away the facility was — the answer always hurt."
+                : "\(childName) carried the quiet shame of a parent locked far from home for a long bid."
+        }
+    }
+
+    private func crimeParentNote(tier: CrimeTier, heat: Int, childName: String, grounded: Bool) -> String {
+        switch tier {
+        case .street:
+            return grounded
+                ? "\(childName) learned early that danger lived in the same rooms as dinner."
+                : "\(childName) saw how fast the street could turn on the people in it."
+        case .organization:
+            return heat >= 60
+                ? "\(childName) heard phones ring at odd hours and knew the crew was in trouble."
+                : "\(childName) watched you run something bigger than yourself — and felt the weight of it."
+        case .enterprise:
+            return grounded
+                ? "\(childName) grew up in the shadow of a name people whispered, not said aloud."
+                : "\(childName) understood that your power kept the house comfortable and the world nervous."
+        }
+    }
+
+    private func regularCareerParentNote(archetype: CareerArchetype, burnout: Int, childName: String) -> String {
+        let drained = burnout >= 65
+        switch archetype {
+        case .careLabor:
+            return drained
+                ? "\(childName) watched you come home drained from the hospital every night."
+                : "\(childName) saw how much of yourself you gave at work — and how rarely you got it back."
+        case .corporateClimber:
+            return drained
+                ? "\(childName) saw you grind the ladder and wondered if it was worth it."
+                : "\(childName) noticed the office followed you home in your voice and your timing."
+        case .skilledTrades:
+            return "\(childName) noticed how your hands showed the work before you ever said a word."
+        case .salesNetworker:
+            return "\(childName) heard you on late calls — wins and rejections in the same tired tone."
+        case .gigFreelancer:
+            return "\(childName) learned early that your schedule belonged to everyone else's urgency."
+        case .techEngineer:
+            return "\(childName) saw the glow of a screen at odd hours and knew the work wasn't finished."
+        case .creativeProfessional:
+            return "\(childName) watched you chase the next project like it might finally be the one that sticks."
+        case .publicService:
+            return "\(childName) heard you talk about the system like it was personal — because for you, it was."
+        }
+    }
+
     private func developmentNote(for child: ChildRecord, stability: Int) -> String {
         let name = child.name
         let age = child.age
@@ -1384,7 +1529,7 @@ struct FamilySystem {
         let temp = child.temperament
 
         var outcome: AdultChildOutcome
-        var relQuality = finalBond
+        let relQuality = finalBond
 
         // Temperament + investment bias the long-term path
         let investmentScore = finalBond + (child.developmentNotes.count * 3)
@@ -1447,7 +1592,13 @@ struct FamilySystem {
 
         // P3 D4: player focus history flavors the leaving (stance residue, life shape echo in child's view of "normal")
         let driftEcho = child.developmentNotes.contains(where: { $0.lowercased().contains("drift") || $0.lowercased().contains("loose") }) ? " (They swore this would look different than what they grew up watching.)" : ""
-        return "\(name) (\(temp)) moved out \(outcomeWord). The house felt different that night.\(driftEcho)"
+
+        // CT3-4: Diamond parent flavor — empire over family or empire as family
+        var diamondEcho = ""
+        if child.developmentNotes.contains(where: { $0.lowercased().contains("diamond") || $0.lowercased().contains("empire") || $0.lowercased().contains("studio") || $0.lowercased().contains("program") }) {
+            diamondEcho = " The distance they chose looks a lot like the one you modeled when the empire was everything."
+        }
+        return "\(name) (\(temp)) moved out \(outcomeWord). The house felt different that night.\(driftEcho)\(diamondEcho)"
     }
 
     private func advanceAdultMilestone(child: ChildRecord, currentProfile: AdultChildProfile, resilience: LifeResilience) -> (profile: AdultChildProfile, note: String?)? {

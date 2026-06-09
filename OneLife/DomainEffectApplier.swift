@@ -144,12 +144,41 @@ struct DomainEffectApplier {
             state.crime.clamp()
         }
 
+        if let legalEffects = result.legalEffects {
+            LegalSystem().apply(effect: legalEffects, legal: &state.legal)
+        }
+
         if let financeEffects = result.financeEffects {
             financeSystem.apply(effect: financeEffects, finance: &state.finance, player: &state.player)
         }
 
         if let relationshipEffects = result.relationshipEffects {
             relationshipSystem.apply(effect: relationshipEffects, to: &state.relationships)
+        }
+
+        if let familyEffects = result.familyEffects {
+            if let intent = familyEffects.pregnancyIntent {
+                state.family.pregnancyIntent = intent
+            }
+            if let delta = familyEffects.atHomeBondDelta {
+                for index in state.family.children.indices where state.family.children[index].livesAtHome {
+                    state.family.children[index].bondWithPlayer =
+                        (state.family.children[index].bondWithPlayer + delta).clamped(to: 5...95)
+                }
+            }
+            if let delta = familyEffects.allChildrenBondDelta {
+                for index in state.family.children.indices {
+                    state.family.children[index].bondWithPlayer =
+                        (state.family.children[index].bondWithPlayer + delta).clamped(to: 5...95)
+                }
+            }
+            if let deltas = familyEffects.childBondDeltaByID {
+                for index in state.family.children.indices {
+                    guard let delta = deltas[state.family.children[index].id] else { continue }
+                    state.family.children[index].bondWithPlayer =
+                        (state.family.children[index].bondWithPlayer + delta).clamped(to: 5...95)
+                }
+            }
         }
 
         if let healthEffects = result.healthEffects {

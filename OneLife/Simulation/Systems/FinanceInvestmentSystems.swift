@@ -425,13 +425,17 @@ struct FinanceSystem {
                 )
             )
             
-        case .buyStocks, .buyIndex:
-            InvestmentSystem().applyAction(.buyStocks, finance: &finance, player: player, result: &result)
-        // D2 collector statics - base cash/lifestyle hit, flavor from reactTo
-        case .curateCollection, .hostSignatureEvent, .maintainAsset:
-            finance.cashOnHand = max(0, finance.cashOnHand - 400)
+        case .curateCollection:
+            finance.cashOnHand -= 1500
             finance.financialStress = (finance.financialStress + 1).clamped(to: 0...100)
-            result.notes.append(DomainNote(title: "Asset Focus", text: "You invested time and cash into the things that signal who you are.", tags: [.finance, .assets]))
+            result.notes.append(DomainNote(title: "Collection Curated", text: "You spent the weekend cataloging and sourcing. The collection feels more complete.", tags: [.finance, .assets]))
+        case .hostSignatureEvent:
+            finance.cashOnHand -= 5000
+            finance.financialStress = (finance.financialStress + 2).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Signature Event", text: "You hosted a gathering that people noticed. The prestige is real.", tags: [.finance, .assets, .social]))
+        case .maintainAsset:
+            finance.cashOnHand -= 800
+            result.notes.append(DomainNote(title: "Asset Maintained", text: "You paid for the specialist to check the pieces. They remain in top condition.", tags: [.finance, .assets]))
         case .sellStocks, .sellPosition:
             InvestmentSystem().applyAction(.sellStocks, finance: &finance, player: player, result: &result)
         case .buyCrypto:
@@ -1196,6 +1200,18 @@ struct InvestmentSystem {
                 result.notes.append(DomainNote(title: "Investing", text: "You moved some surplus into index funds.", tags: [.finance]))
             }
         }
+        if action == .sellToCover {
+            let available = finance.indexFundBalance + finance.stockPortfolioBalance
+            let withdrawal = min(available, max(1_000, abs(finance.lastYearBalanceDelta)))
+            if withdrawal > 0 {
+                let fromStocks = min(finance.stockPortfolioBalance, withdrawal)
+                finance.stockPortfolioBalance -= fromStocks
+                finance.indexFundBalance = max(0, finance.indexFundBalance - (withdrawal - fromStocks))
+                finance.cashOnHand += withdrawal
+                finance.costBasis = min(finance.costBasis, finance.indexFundBalance + finance.stockPortfolioBalance)
+                result.notes.append(DomainNote(title: "Liquidity", text: "You sold $\(withdrawal) of investments to cover the shortfall.", tags: [.finance]))
+            }
+        }
 
         // 2. Portfolio Fluctuations (Phase 2 - Crypto & Rentals)
         let era = input.worldEra
@@ -1244,6 +1260,7 @@ struct InvestmentSystem {
         
         finance.indexFundBalance += indexDelta
         finance.stockPortfolioBalance += stockDelta
+        finance.investedBalance = finance.indexFundBalance + finance.stockPortfolioBalance
         finance.lastYearInvestmentDelta = totalDelta + indexDelta + stockDelta
 
         if finance.lastYearInvestmentDelta < 0 {
@@ -1264,11 +1281,19 @@ struct InvestmentSystem {
             let cost = 5000
             if finance.cashOnHand >= cost {
                 finance.cashOnHand -= cost
-                let sectors = ["TECH", "ENERGY", "RETAIL", "HEALTH"]
+                let sectors = ["TECH", "ENERGY", "RETAIL", "HEALTH", "SPECULATIVE", "BOND"]
                 let sector = sectors.randomElement() ?? "TECH"
                 let value = Double(cost)
-                finance.portfolio.stocks.append(StockHolding(tickerOrSector: sector, sharesOrValue: value, entryBasis: value, volatilityFactor: 1.5))
-                result.notes.append(DomainNote(title: "Investment", text: "You bought $\(cost) worth of \(sector). Expected volatility: High.", tags: [.finance]))
+                let volatility: Double = {
+                    switch sector {
+                    case "SPECULATIVE": return 2.5
+                    case "BOND": return 0.4
+                    case "TECH": return 1.5
+                    default: return 1.0
+                    }
+                }()
+                finance.portfolio.stocks.append(StockHolding(tickerOrSector: sector, sharesOrValue: value, entryBasis: value, volatilityFactor: volatility))
+                result.notes.append(DomainNote(title: "Investment", text: "You bought $\(cost) worth of \(sector). Expected volatility: \(volatility > 1.5 ? "Very High" : (volatility < 0.6 ? "Very Low" : "Moderate")).", tags: [.finance]))
             }
         case .buyIndex:
             let cost = 10000

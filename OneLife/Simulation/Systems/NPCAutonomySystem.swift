@@ -33,6 +33,12 @@ struct NPCAutonomySystem {
             generatedEvents.append(intervention)
             state.correlationLedger.publish(CorrelationSignal(kind: .npcAutonomyPulse, domain: "relationships", strength: 14, age: state.player.age))
         }
+        
+        // 4. NPC Mortality (P5 Final Shine - Late Life Realism)
+        if state.player.age >= 65 {
+            let mortalityEvents = processMortality(state: &state)
+            generatedEvents.append(contentsOf: mortalityEvents)
+        }
 
         // D4: stance-reactive NPC autonomy (if last focus was protectHealth, softer interventions; drift -> more resentment spikes)
         if let stance = state.yearlyStance.lastCompletedStance {
@@ -603,5 +609,81 @@ struct NPCAutonomySystem {
         }
 
         return notes
+    }
+
+    private func processMortality(state: inout GameState) -> [GameEvent] {
+        var events: [GameEvent] = []
+        let age = state.player.age
+        
+        // Partner mortality check
+        if state.relationships.hasPartner {
+            for i in 0..<state.relationships.romanticPartners.count {
+                var p = state.relationships.romanticPartners[i]
+                guard p.status == .active else { continue }
+                
+                // Base risk starts low at 65 and climbs steeply after 80
+                let baseRisk = age < 75 ? 2 : (age < 85 ? 6 : (age < 95 ? 15 : 25))
+                if Int.random(in: 0...100) < baseRisk {
+                    p.status = .ended
+                    state.relationships.romanticPartners[i] = p
+                    
+                    events.append(GameEvent(
+                        id: "npc_death_partner_\(p.id)",
+                        category: .relationships,
+                        tags: ["relationships", "life_event", "grief"],
+                        severity: .critical,
+                        title: "A Final Goodbye",
+                        text: "Your partner, \(p.name), has passed away. The house feels impossibly large now. The routines you built together are suddenly just memories. You are the one left to carry the story.",
+                        minAge: 65, maxAge: 120, weight: 100, cooldownYears: 99,
+                        requirements: [],
+                        choices: [
+                            EventChoice(
+                                text: "Mourn quietly",
+                                effects: ChoiceEffects(
+                                    core: CoreStatEffects(happiness: -25),
+                                    health: HealthEffects(mental: -15)
+                                ),
+                                microBeat: "The silence is heavy."
+                            )
+                        ]
+                    ))
+                }
+            }
+        }
+        
+        // Close friend mortality check
+        for i in 0..<state.relationships.friends.count {
+            var f = state.relationships.friends[i]
+            guard f.status == .active && f.bond >= 50 else { continue }
+            
+            let baseRisk = age < 75 ? 1 : (age < 85 ? 4 : (age < 95 ? 10 : 18))
+            if Int.random(in: 0...100) < baseRisk {
+                f.status = .ended
+                state.relationships.friends[i] = f
+                
+                events.append(GameEvent(
+                    id: "npc_death_friend_\(f.id)",
+                    category: .social,
+                    tags: ["social", "life_event", "grief"],
+                    severity: .consequential,
+                    title: "The Circle Narrows",
+                    text: "Your friend, \(f.name), has passed away. Another thread of your history has been cut. You're becoming the last one who remembers the early days.",
+                    minAge: 65, maxAge: 120, weight: 50, cooldownYears: 5,
+                    requirements: [],
+                    choices: [
+                        EventChoice(
+                            text: "A glass raised in their memory",
+                            effects: ChoiceEffects(
+                                core: CoreStatEffects(happiness: -10),
+                                health: HealthEffects(mental: -5)
+                            ),
+                            microBeat: "One less chair at the table."
+                        )
+                    ]
+                ))
+            }
+        }
+        
+        return events
     }
 }

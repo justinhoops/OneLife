@@ -28,6 +28,11 @@ enum AmbientPressureSync {
         if state.crime.heat >= 42 {
             state.consequences.adjustPressure(domain: "career", delta: 1)
         }
+        if state.legal.hasActiveCase || state.legal.isInCustody {
+            state.consequences.adjustPressure(domain: "legal", delta: 2)
+        } else if state.legal.stage == .released, state.legal.recordPressure > 0 {
+            state.consequences.adjustPressure(domain: "legal", delta: 1)
+        }
 
         let strained = (state.relationships.friends + state.relationships.romanticPartners).filter { $0.status == .strained }.count
         if strained >= 2 || state.relationships.partnerBond < 40 {
@@ -62,13 +67,16 @@ final class LifeSimulationOrchestrator {
     private let specialCareerSystem: SpecialCareerSystem
     private let militarySystem: MilitarySystem
     private let crimeSystem: CrimeSystem
+    private let legalSystem: LegalSystem
     private var financeSystem: FinanceSystem
     private let investmentSystem: InvestmentSystem
+    private let stockMarketSystem: StockMarketSystem
     private let relationshipSystem: RelationshipSystem
     private let familySystem: FamilySystem
     private var healthSystem: HealthSystem
     private let housingSystem: HousingSystem
     private let homeOwnershipSystem: HomeOwnershipSystem
+    private let luxurySystem: LuxurySystem
     private let progressSystem: ProgressSystem
     private let crossDomainPressureSystem: CrossDomainPressureSystem
     private let worldAutonomySystem: WorldAutonomySystem
@@ -90,8 +98,8 @@ final class LifeSimulationOrchestrator {
     private(set) var latestYearSummary: YearlyOutcomeSummary?
     private(set) var latestWorldSnapshot: WorldSnapshot?
 
-    // Phase 1 optimization: Cache last snapshot for faster instant actions
-    private var lastInstantSnapshot: WorldSnapshot?
+    private var stateGeneration: UInt64 = 0
+    private var lastInstantSnapshot: (generation: UInt64, state: GameState, snapshot: WorldSnapshot)?
 
     init(
         eventEngine: EventEngine = EventEngine(),
@@ -110,13 +118,16 @@ final class LifeSimulationOrchestrator {
         specialCareerSystem: SpecialCareerSystem = SpecialCareerSystem(),
         militarySystem: MilitarySystem = MilitarySystem(),
         crimeSystem: CrimeSystem = CrimeSystem(),
+        legalSystem: LegalSystem = LegalSystem(),
         relationshipSystem: RelationshipSystem = RelationshipSystem(),
         familySystem: FamilySystem = FamilySystem(),
         financeSystem: FinanceSystem = FinanceSystem(),
         investmentSystem: InvestmentSystem = InvestmentSystem(),
+        stockMarketSystem: StockMarketSystem = StockMarketSystem(),
         healthSystem: HealthSystem = HealthSystem(),
         housingSystem: HousingSystem = HousingSystem(),
         homeOwnershipSystem: HomeOwnershipSystem = HomeOwnershipSystem(),
+        luxurySystem: LuxurySystem = LuxurySystem(),
         progressSystem: ProgressSystem = ProgressSystem(),
         crossDomainPressureSystem: CrossDomainPressureSystem = CrossDomainPressureSystem(),
         worldAutonomySystem: WorldAutonomySystem = WorldAutonomySystem(),
@@ -141,13 +152,16 @@ final class LifeSimulationOrchestrator {
         self.specialCareerSystem = specialCareerSystem
         self.militarySystem = militarySystem
         self.crimeSystem = crimeSystem
+        self.legalSystem = legalSystem
         self.relationshipSystem = relationshipSystem
         self.familySystem = familySystem
         self.financeSystem = financeSystem
         self.investmentSystem = investmentSystem
+        self.stockMarketSystem = stockMarketSystem
         self.healthSystem = healthSystem
         self.housingSystem = housingSystem
         self.homeOwnershipSystem = homeOwnershipSystem
+        self.luxurySystem = luxurySystem
         self.progressSystem = progressSystem
         self.crossDomainPressureSystem = crossDomainPressureSystem
         self.worldAutonomySystem = worldAutonomySystem
@@ -162,27 +176,8 @@ final class LifeSimulationOrchestrator {
         self.instantReactionCoordinator = InstantReactionCoordinator(
             npcAutonomySystem: npcAutonomySystem,
             healthSystem: healthSystem,
-            financeSystem: financeSystem,
-            stockMarketSystem: stockMarketSystem
+            financeSystem: financeSystem
         )
-        }
-
-        // Sync systems into ActionSystem for correct routing
-        self.actionSystem = ActionSystem(
-            educationSystem: educationSystem,
-            careerSystem: careerSystem,
-            specialCareerSystem: specialCareerSystem,
-            militarySystem: militarySystem,
-            crimeSystem: crimeSystem,
-            familySystem: familySystem,
-            financeSystem: financeSystem,
-            relationshipSystem: relationshipSystem,
-            healthSystem: healthSystem,
-            effectApplier: effectApplier
-        )
-
-        // (Phase 1 bridge temporarily using simple internal _InstantReactionCoordinator during Phase 2 work.
-        // Reassignment skipped — the property default initializer is sufficient for now.)
     }
 
     func initialize(state: inout GameState) -> GameEvent? {
@@ -226,6 +221,7 @@ final class LifeSimulationOrchestrator {
         let refreshedWorld = rebuildWorldSnapshot(from: state)
         append(progressSystem.unlockNewMilestones(input: refreshedWorld.progress, progress: &state.progress), to: &state)
         syncAmbientContacts(in: &state)
+        markStateMutationCommitted()
         refreshGeneratedCaches(for: state)
         return initialEvent(for: state)
     }
@@ -407,6 +403,14 @@ final class LifeSimulationOrchestrator {
             }
         }
 
+        if let combatFight = chapter.pendingCombatFight {
+            cards.append(.combatFight(combatFight))
+        }
+
+        if let legalCase = chapter.pendingLegalCase {
+            cards.append(.legalCase(legalCase))
+        }
+
         if let summary = chapter.pendingSummary {
             cards.append(.yearSummary(summary))
         }
@@ -440,6 +444,12 @@ final class LifeSimulationOrchestrator {
         case .reaction(let reaction):
             chapter.phase = .reaction
             chapter.currentReactionIndex = chapter.reactionCards.firstIndex(where: { $0.id == reaction.id }) ?? 0
+        case .combatFight:
+            chapter.phase = .summary
+            chapter.currentReactionIndex = chapter.reactionCards.count
+        case .legalCase:
+            chapter.phase = .summary
+            chapter.currentReactionIndex = chapter.reactionCards.count
         case .consequence(_):
             chapter.phase = .resolution
             chapter.resolutionCardIndex = 0
@@ -486,6 +496,23 @@ final class LifeSimulationOrchestrator {
         if let crimeEffects = choice.effects.crime {
             effectApplier.apply(
                 result: DomainYearResult(crimeEffects: crimeEffects),
+                to: &state,
+                trajectorySystem: trajectorySystem,
+                educationSystem: educationSystem,
+                careerSystem: careerSystem,
+                specialCareerSystem: specialCareerSystem,
+                militarySystem: militarySystem,
+                crimeSystem: crimeSystem,
+                financeSystem: financeSystem,
+                relationshipSystem: relationshipSystem,
+                healthSystem: healthSystem,
+                housingSystem: housingSystem
+            )
+        }
+
+        if let legalEffects = choice.effects.legal {
+            effectApplier.apply(
+                result: DomainYearResult(legalEffects: legalEffects),
                 to: &state,
                 trajectorySystem: trajectorySystem,
                 educationSystem: educationSystem,
@@ -607,11 +634,14 @@ final class LifeSimulationOrchestrator {
         // Phase 1 (Orchestrator Cleanup): Snapshot caching for the instant path
         // Goal: Avoid repeated expensive rebuildWorldSnapshot calls during quick actions.
         let world: WorldSnapshot
-        if let cached = lastInstantSnapshot, !refreshCaches {
-            world = cached
+        if let cached = lastInstantSnapshot,
+           !refreshCaches,
+           cached.generation == stateGeneration,
+           cached.state == state {
+            world = cached.snapshot
         } else {
             world = rebuildWorldSnapshot(from: state)
-            lastInstantSnapshot = world
+            lastInstantSnapshot = (stateGeneration, state, world)
         }
 
         let result = actionSystem.apply(actions: [action], state: &state, world: world, clearsPendingActions: false)
@@ -623,12 +653,10 @@ final class LifeSimulationOrchestrator {
             state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags.isEmpty ? [.progress] : note.tags), at: 0)
         }
         enforceHistoryBudget(on: &state)
+        markStateMutationCommitted()
 
         if refreshCaches {
-            // Only heavy paths (yearly resolution entry points) request full cache refresh.
-            // The frictionless instant path deliberately skips this for responsiveness.
-            refreshGeneratedCaches(for: state, snapshot: lastInstantSnapshot)
-            lastInstantSnapshot = nil // Invalidate only after explicit heavy work
+            refreshGeneratedCaches(for: state)
         }
 
         return result
@@ -658,8 +686,8 @@ final class LifeSimulationOrchestrator {
         // rapid chaining of multiple quick actions with zero snapshot rebuilds between them.
         // The ViewModel calls refreshDerivedState() after each action for UI concerns.
         //
-        // Snapshot is only cleared on explicit heavy paths (see applyImmediateAction + refreshCaches:true
-        // and the yearly chapter resolution methods).
+        // The committed base action invalidates its generation immediately. A chained action rebuilds
+        // once from the new state, then previews may reuse that generation until the next commit.
 
         return baseResult
     }
@@ -675,8 +703,10 @@ final class LifeSimulationOrchestrator {
         // Read-only use of the warm cache when present. Never write to lastInstantSnapshot.
         // If no cache, build a transient snapshot that is discarded after the preview.
         let world: WorldSnapshot
-        if let cached = lastInstantSnapshot {
-            world = cached
+        if let cached = lastInstantSnapshot,
+           cached.generation == stateGeneration,
+           cached.state == state {
+            world = cached.snapshot
         } else {
             world = rebuildWorldSnapshot(from: previewState)
             // semantics owned exclusively by the mutating instant action paths.
@@ -775,9 +805,12 @@ final class LifeSimulationOrchestrator {
         let overallStart = CFAbsoluteTimeGetCurrent()
         #endif
         let startingState = state
+        let wasInCustodyAtYearStart = state.legal.isInCustody
         var yearResults: [DomainYearResult] = []
         let plannedActions = chapter.plannedActions
-        let actionsToApply = state.pendingActions
+        let actionsToApply = wasInCustodyAtYearStart
+            ? state.pendingActions.filter { [.legal, .finance, .relationships, .health, .family].contains($0.domain) }
+            : state.pendingActions
         let plannedFinanceAction = plannedActions.first(where: { $0.domain == .finance })?.choiceID
 
         // =====================================================================
@@ -898,6 +931,7 @@ final class LifeSimulationOrchestrator {
             let militaryResult = measure("Military") {
                 militarySystem.advanceYear(input: MilitaryDomainSnapshot(player: state.player, military: state.military, career: state.career, education: state.education, worldEra: state.currentEra), player: &state.player, military: &state.military, career: &state.career)
             }
+            apply(result: militaryResult, to: &state)
             record(militaryResult, in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
         }
@@ -908,6 +942,63 @@ final class LifeSimulationOrchestrator {
             }
             apply(result: crimeResult, to: &state)
             record(crimeResult, in: &state, results: &yearResults)
+            world = rebuildWorldSnapshot(from: state)
+        }
+        if let exposure = LegalExposureFactory.crimeExposure(from: state) {
+            apply(result: DomainYearResult(legalEffects: LegalEffects(addExposures: [exposure])), to: &state)
+            world = rebuildWorldSnapshot(from: state)
+        } else if let exposure = LegalExposureFactory.illegalAssetExposure(from: state) {
+            apply(result: DomainYearResult(legalEffects: LegalEffects(addExposures: [exposure])), to: &state)
+            world = rebuildWorldSnapshot(from: state)
+        }
+        if systemRegistry.isActive(.legal, in: world) {
+            let legalResult = measure("Legal") {
+                legalSystem.advanceYear(
+                    player: state.player,
+                    legal: &state.legal,
+                    wasInCustodyAtYearStart: wasInCustodyAtYearStart,
+                    recentStances: state.yearlyStance.recentStances,
+                    resilience: state.resilience,
+                    family: state.family,
+                    fame: state.fame,
+                    crimeTier: CrimeTier.resolve(crime: state.crime, specialCareer: state.specialCareer),
+                    enterprise: state.specialCareer.track == .crime ? state.specialCareer.enterprise : nil
+                )
+            }
+            apply(result: legalResult, to: &state)
+            if legalResult.legalCaseSummary?.id.hasPrefix("legal-sentenced") == true, state.legal.stage == .custody {
+                state.crime.status = .layingLow
+                state.crime.heat = 0
+                state.crime.territoryPressure = max(0, state.crime.territoryPressure - 30)
+                state.crime.clamp()
+                if state.specialCareer.track == .crime {
+                    state.specialCareer.heat = max(0, state.specialCareer.heat - 35)
+                }
+            }
+            record(legalResult, in: &state, results: &yearResults)
+            world = rebuildWorldSnapshot(from: state)
+        }
+        if wasInCustodyAtYearStart {
+            let custodyFinanceResult = CustodyFinanceSystem().advanceYear(career: &state.career, finance: &state.finance)
+            apply(result: custodyFinanceResult, to: &state)
+            record(custodyFinanceResult, in: &state, results: &yearResults)
+
+            let custodyRelationshipResult = CustodyRelationshipSystem().advanceYear()
+            apply(result: custodyRelationshipResult, to: &state)
+            record(custodyRelationshipResult, in: &state, results: &yearResults)
+
+            let custodyFamilyResult = CustodyFamilySpilloverSystem().advanceYear(
+                legal: state.legal,
+                relationships: &state.relationships,
+                family: &state.family,
+                resilience: state.resilience
+            )
+            apply(result: custodyFamilyResult, to: &state)
+            record(custodyFamilyResult, in: &state, results: &yearResults)
+
+            let custodyHealthResult = CustodyHealthSystem().advanceYear(resilience: state.resilience)
+            apply(result: custodyHealthResult, to: &state)
+            record(custodyHealthResult, in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
         }
         if systemRegistry.isActive(.housing, in: world) {
@@ -952,17 +1043,41 @@ final class LifeSimulationOrchestrator {
             }
         }
 
+        if systemRegistry.isActive(.economy, in: world) {
+            stockMarketSystem.advanceEconomy(&state.economy, era: state.currentEra)
+            world = rebuildWorldSnapshot(from: state)
+        }
         if systemRegistry.isActive(.investments, in: world) {
             let investmentResult = measure("Investments") {
                 investmentSystem.advanceYear(input: world.investments, plannedAction: plannedFinanceAction, finance: &state.finance)
             }
             record(investmentResult, in: &state, results: &yearResults)
+            let stockNotes = stockMarketSystem.resolveYearlyPerformance(
+                finance: &state.finance,
+                economy: state.economy,
+                player: state.player,
+                fame: state.fame,
+                financeMomentum: state.instantMomentum.financeMomentum,
+                family: state.family,
+                resilience: state.resilience
+            )
+            if !stockNotes.isEmpty {
+                record(DomainYearResult(notes: stockNotes), in: &state, results: &yearResults)
+            }
             world = rebuildWorldSnapshot(from: state)
         }
         if systemRegistry.isActive(.assets, in: world) {
             let result = measure("Home Ownership") {
                 homeOwnershipSystem.advanceYear(input: world.assets, plannedAction: plannedFinanceAction, finance: &state.finance, assets: &state.assets, housing: &state.housing)
             }
+            record(result, in: &state, results: &yearResults)
+            world = rebuildWorldSnapshot(from: state)
+        }
+        if systemRegistry.isActive(.luxury, in: world) {
+            let result = measure("Luxury") {
+                luxurySystem.advanceYear(state: state)
+            }
+            apply(result: result, to: &state)
             record(result, in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
         }
@@ -978,7 +1093,7 @@ final class LifeSimulationOrchestrator {
         // Low overhead (simple clamps + 1-2 notes + cheap ledger pulse). Modulated lightly by resilience (grounded gets a bit more "mercy/fight" recovery volume).
         // Also telegraphs risk when curves are dangerous (high age + low health + high stress + variance paths).
         if systemRegistry.isActive(.health, in: world) || systemRegistry.isActive(.finance, in: world) {
-            let safetyNotes = applyP4SafetyNets(to: &state)
+            let safetyNotes = SafetyNetSystem().applyYear(to: &state)
             if !safetyNotes.isEmpty {
                 record(DomainYearResult(notes: safetyNotes), in: &state, results: &yearResults)
                 world = rebuildWorldSnapshot(from: state)
@@ -1047,7 +1162,7 @@ final class LifeSimulationOrchestrator {
 
         // Fighting Back Bonus — rewards consistent stabilizing effort under pressure.
         // Big for replayability: players feel their small good choices actually matter.
-        let fightingBack = applyFightingBackRecoveryBonus(to: &state)
+        let fightingBack = RecoverySystem().applyFightingBackBonus(to: &state)
         if !fightingBack.isEmpty {
             record(DomainYearResult(notes: fightingBack), in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
@@ -1066,39 +1181,13 @@ final class LifeSimulationOrchestrator {
 
         // Fame Web F1: Connect every avenue that can make you known.
         // Runs after special career, military, assets, relationships, and world autonomy have all contributed.
-        propagateFameForYear(to: &state)
-
-        // Engine1: Decay old correlation signals (very cheap operation)
-        state.correlationLedger.decay(oldAge: state.player.age)
-
-        // Engine4: Resolve correlation echoes (high-intensity periods create delayed consequences)
-        let pendingEchoes = state.correlationLedger.pendingEchoes(currentAge: state.player.age)
-        for echo in pendingEchoes {
-            if echo.tag == "intense_stretch_echo" {
-                let note = echo.strength >= 80
-                    ? "The intensity of the last few years is finally catching up. You feel it in your body and your relationships."
-                    : "The long stretch of focused action is still reverberating. Some doors that were open before feel harder to reach now."
-
-                state.history.insert(HistoryEntry(age: state.player.age, title: "Echo", text: note, tags: [.progress]), at: 0)
-
-                if echo.domain == "relationships" || echo.domain == "finance" {
-                    state.relationships.activeRumorHeat = min(100, state.relationships.activeRumorHeat + 8)
-                }
-            }
-            state.correlationLedger.consumeEcho(echo)
-        }
-
-        // Engine4: Long-term reflection on lives that had extremely high correlation periods
-        if state.correlationLedger.recentActivityLevel >= 80 && state.player.age >= 45 && !state.history.prefix(4).contains(where: { $0.title.contains("Burned") || $0.title.contains("Intensity") }) {
-            let reflection = "There was a stretch, years ago, where everything felt accelerated. Looking back, it was both the most alive and the most expensive period of your life."
-            state.history.insert(HistoryEntry(age: state.player.age, title: "Burned Bright", text: reflection, tags: [.progress]), at: 0)
-        }
+        FameSystem().propagateYear(to: &state)
+        CorrelationEchoSystem().resolveYear(state: &state)
 
         // Phase 2: Clear momentum after it has influenced this year's simulation
         state.instantMomentum.clear()
 
-        let wealthFloor = state.resilience.scaling.wealthGameOverFloor
-        state.isGameOver = state.player.health <= 0 || state.healthProfile.physicalWellness <= 0 || state.finance.totalWealth < wealthFloor
+        state.isGameOver = LifeTerminationSystem().isGameOver(state: state)
         updateYearlyStanceMemory(before: startingState, after: &state)
 
         latestYearSummary = yearlyOutcomeAggregator.summarize(
@@ -1109,6 +1198,7 @@ final class LifeSimulationOrchestrator {
         )
         state.actionMemory.clearForNewAge(state.player.age)
         state.yearlyStance.selectedStance = nil
+        markStateMutationCommitted()
 
         // Push summary into History Log (BitLife style)
         if let summary = latestYearSummary {
@@ -1175,6 +1265,8 @@ final class LifeSimulationOrchestrator {
         chapter.reactionCards = reactions
         chapter.currentReactionIndex = 0
 
+        chapter.pendingCombatFight = yearResults.compactMap(\.combatFightSummary).last
+        chapter.pendingLegalCase = yearResults.compactMap(\.legalCaseSummary).last
         chapter.pendingSummary = latestYearSummary
         chapter.pendingConsequencePreview = dominantConsequence
         chapter.pendingResolution = buildResolutionPreview(
@@ -1552,12 +1644,15 @@ final class LifeSimulationOrchestrator {
         }
     }
 
+}
+
+private extension FameSystem {
     // MARK: - Fame Web (F1)
 
     /// Yearly propagation that connects every major fame avenue into a single unified profile.
     /// This is the heart of F1: special careers, athlete personalBrand, military medals,
     /// lifestyle/wealth signals, and social reputation all now contribute to "how known you are."
-    private func propagateFameForYear(to state: inout GameState) {
+    func propagateYear(to state: inout GameState) {
         var f = state.fame
         f.clamp()
 
@@ -1589,6 +1684,17 @@ final class LifeSimulationOrchestrator {
             }
             if a.accolades.contains("Hall of Fame") && !f.knownFor.contains("Legend") {
                 f.knownFor.append("Legend")
+            }
+        }
+
+        if sc.track == .fightEmpire {
+            let empire = sc.fightEmpire
+            f.culturalFame = min(100, f.culturalFame + max(1, (empire.gymReputation + empire.promotionReach) / 18))
+            if !f.knownFor.contains("Fight Promoter") {
+                f.knownFor.append("Fight Promoter")
+            }
+            if empire.fighterTrust >= 75 && !f.knownFor.contains("Fighter Advocate") {
+                f.knownFor.append("Fighter Advocate")
             }
         }
 
@@ -1869,7 +1975,59 @@ final class LifeSimulationOrchestrator {
             }
         }
 
-        // 5. Social reputation slowly feeds cultural recognition (the "well-regarded" path)
+        // 5a. Crime tier → fame/notoriety leak (street < org < enterprise)
+        if let crimeTier = CrimeTier.resolve(crime: state.crime, specialCareer: sc) {
+            let perf = max(state.crime.notoriety, sc.enterprise.notoriety, sc.notoriety)
+            let leak: Int
+            switch crimeTier {
+            case .street: leak = max(0, (perf - 40) / 10)
+            case .organization: leak = max(0, (perf - 35) / 7)
+            case .enterprise: leak = max(0, (perf - 30) / 5)
+            }
+            f.notoriety = min(100, f.notoriety + leak)
+            if crimeTier == .enterprise && perf >= 55 && !f.knownFor.contains("Shadow Reputation") {
+                f.knownFor.append("Shadow Reputation")
+            }
+            if sc.enterprise.subtype == .transnationalCartel && perf >= 65 && !f.knownFor.contains("Cartel Architect") {
+                f.knownFor.append("Cartel Architect")
+            }
+        }
+
+        // 5b. Regular career performance → unified fame (visible roles leak harder)
+        if sc.track == .inactive, let arch = state.career.regularArchetype {
+            let career = state.career
+            let tier = arch.fameLeakTier
+            if tier > 0, career.performance >= 55 {
+                let leak = max(0, (career.performance - 52) / max(5, 16 - tier * 3))
+                f.culturalFame = min(100, f.culturalFame + leak)
+            }
+            if arch == .salesNetworker, career.performance >= 70, !f.knownFor.contains("Closer") {
+                f.knownFor.append("Closer")
+            }
+            if arch == .corporateClimber, career.performance >= 72, career.jobSecurity >= 58, !f.knownFor.contains("Rising Executive") {
+                f.knownFor.append("Rising Executive")
+            }
+            if arch == .creativeProfessional, career.performance >= 65, !f.knownFor.contains("Working Artist") {
+                f.knownFor.append("Working Artist")
+            }
+            if arch == .techEngineer, career.performance >= 70, !f.knownFor.contains("Tech Specialist") {
+                f.knownFor.append("Tech Specialist")
+            }
+            if arch == .gigFreelancer, career.performance >= 62, !f.knownFor.contains("Relentless Hustler") {
+                f.knownFor.append("Relentless Hustler")
+            }
+            if arch == .careLabor, career.performance >= 60, !f.knownFor.contains("Dedicated Caregiver") {
+                f.knownFor.append("Dedicated Caregiver")
+            }
+            if arch == .skilledTrades, career.performance >= 75, !f.knownFor.contains("Master Craftsman") {
+                f.knownFor.append("Master Craftsman")
+            }
+            if arch == .publicService, career.yearsWorked >= 12, career.jobSecurity >= 65, !f.knownFor.contains("Public Servant") {
+                f.knownFor.append("Public Servant")
+            }
+        }
+
+        // 6. Social reputation slowly feeds cultural recognition (the "well-regarded" path)
         let repAboveBaseline = max(0, rel.publicReputation - 52)
         if repAboveBaseline > 0 {
             f.culturalFame = min(100, f.culturalFame + repAboveBaseline / 10)
@@ -1880,7 +2038,7 @@ final class LifeSimulationOrchestrator {
             f.knownFor.append(tag)
         }
 
-        // 6. Peak tracking for legacy texture
+        // 7. Peak tracking for legacy texture
         let currentRec = f.recognition
         if currentRec > 35 {
             if f.peakFameAge == nil || currentRec >= (state.fame.recognition + 8) {
@@ -1888,7 +2046,7 @@ final class LifeSimulationOrchestrator {
             }
         }
 
-        // 7. Gentle decay when fame is high but this year was quiet (realistic "fame fades")
+        // 8. Gentle decay when fame is high but this year was quiet (realistic "fame fades")
         if currentRec > 28 && state.instantMomentum.overallStrength < 18 {
             let decay = max(1, currentRec / 22)
             f.culturalFame = max(0, f.culturalFame - decay / 2)
@@ -2030,11 +2188,13 @@ final class LifeSimulationOrchestrator {
         f.clamp()
         state.fame = f
     }
+}
 
+private extension RecoverySystem {
     /// Small but meaningful recovery signal when the player actively fights back
     /// while under pressure. This is one of the biggest levers for "I can still turn this around"
     /// feelings that drive replayability in a Life Killer game.
-    private func applyFightingBackRecoveryBonus(to state: inout GameState) -> [DomainNote] {
+    func applyFightingBackBonus(to state: inout GameState) -> [DomainNote] {
         guard !state.isGameOver else { return [] }
 
         let highPressureDomains = state.consequences.pressureByDomain.filter { $0.value >= 28 }.keys
@@ -2085,12 +2245,14 @@ final class LifeSimulationOrchestrator {
 
         return notes
     }
+}
 
+private extension SafetyNetSystem {
     // P4-1: Safety nets + risk telegraphing. Prevents hard spirals from single bad years while preserving stakes.
     // Called after finance/health advance in resolvePreparedYearChapter.
     // Reuses resilience (grounded gets slightly stronger recovery volume for "fighting back" feel), era, and D4 life shape proxy.
     // Publishes cheap ledger signal so Silent/Continuity/autonomy can react ("you caught a break").
-    private func applyP4SafetyNets(to state: inout GameState) -> [DomainNote] {
+    func applyYear(to state: inout GameState) -> [DomainNote] {
         guard !state.isGameOver else { return [] }
         var notes: [DomainNote] = []
 
@@ -2107,9 +2269,9 @@ final class LifeSimulationOrchestrator {
             state.player.health = ((state.healthProfile.physicalWellness * 2) + state.healthProfile.mentalWellness) / 3
             state.player.clampStats()
 
-            let shape = deriveLifeShapeProxy(for: state) // cheap local tally, reuses D4 recentStances
+            let shape = LifeShapeResolver.resolveOrPragmatic(from: state)
             let eraNote = state.currentEra == .recession ? " even in a tight economy" : ""
-            let shapeNote = shape == "driven current" ? " The same drive that got you here kept you upright." : (shape == "loose edges" ? " You let some things slide, but the year didn't take everything." : "")
+            let shapeNote = shape == .drivenCurrent ? " The same drive that got you here kept you upright." : (shape == .looseEdges ? " You let some things slide, but the year didn't take everything." : "")
             notes.append(DomainNote(
                 title: "A Narrow Mercy",
                 text: "Your body found a way to keep going this year\(eraNote).\(shapeNote)",
@@ -2126,9 +2288,9 @@ final class LifeSimulationOrchestrator {
             state.finance.cashOnHand = min(1200, state.finance.cashOnHand + cashBump) // keep it a "breather", not windfall
             state.finance.financialStress = max(0, state.finance.financialStress - (state.resilience == .grounded ? 9 : 5))
 
-            let shape = deriveLifeShapeProxy(for: state)
+            let shape = LifeShapeResolver.resolveOrPragmatic(from: state)
             let eraNote = state.currentEra == .recession ? " (the margins were brutal)" : ""
-            let shapeNote = shape == "driven current" ? " Hustle and stubbornness turned a corner." : (shape == "careful shape" ? " Steady habits caught the fall." : "")
+            let shapeNote = shape == .drivenCurrent ? " Hustle and stubbornness turned a corner." : (shape == .carefulShape ? " Steady habits caught the fall." : "")
             notes.append(DomainNote(
                 title: "Unexpected Breather",
                 text: "Something gave just enough to keep the lights on\(eraNote).\(shapeNote)",
@@ -2156,26 +2318,9 @@ final class LifeSimulationOrchestrator {
         return notes
     }
 
-    // Cheap D4 life shape proxy for P4 balance (no new state, just tally recentStances like deriveLifeShapeForLegacy).
-    private func deriveLifeShapeProxy(for state: GameState) -> String {
-        let recent = state.yearlyStance.recentStances
-        guard !recent.isEmpty else { return "pragmatic" }
-        var pragmatic = 0, careful = 0, loose = 0, driven = 0
-        for s in recent {
-            switch s {
-            case .stabilizeMoney: pragmatic += 1
-            case .protectHealth: careful += 1
-            case .letYearDrift: loose += 1
-            case .pushCareer, .soldierStance, .studentStance: driven += 1
-            default: pragmatic += 1
-            }
-        }
-        if loose > max(pragmatic, careful, driven) { return "loose edges" }
-        if careful > max(pragmatic, loose, driven) { return "careful shape" }
-        if driven > max(pragmatic, careful, loose) { return "driven current" }
-        return "pragmatic"
-    }
+}
 
+extension LifeSimulationOrchestrator {
     private func buildForecastCard(
         for state: GameState,
         targetAge: Int,
@@ -3601,6 +3746,11 @@ final class LifeSimulationOrchestrator {
         let snapshot = worldSnapshotBuilder.build(from: state)
         latestWorldSnapshot = snapshot
         return snapshot
+    }
+
+    private func markStateMutationCommitted() {
+        stateGeneration &+= 1
+        lastInstantSnapshot = nil
     }
 
     private func refreshGeneratedCaches(for state: GameState) {

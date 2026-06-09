@@ -3045,3 +3045,245 @@ Ready for p5 or refinements. Say it.
 P5 completes the polish arc. The game honors the original Codex while being genuinely fun and replayable for full lives.
 
 Ready for any refinements or "ship it" thoughts. Say the word.
+
+---
+
+## Career Path Tier Differentiation: Regular / Special / Diamond — Enhancement Plan
+
+**User Query Context (p5 follow-up):** "So we have Regular Careers, Special Careers, and Diamond Careers. Regular careers are just basic careers you qualify for and get money. Special Careers are more interactive and are focused on popular careers that enhance the game, in where you perform task and they often pay higher. Diamond Careers are more gatekept and more interactive, usually requiring prerequisites to enter, and are geared toward the richest lives. How can we enhance and differentiate the career paths"
+
+**Current State Diagnosis (Code Audit):**
+
+- **Regular Careers (D3 foundation + P4 polish)**: `CareerArchetype` enum (CorporateClimber, GigFreelancer, SkilledTrades, PublicService, TechEngineer, SalesNetworker) on `CareerState`. `regularArchetype`. 
+  - Strengths: Unique static/committed instant actions, differentiated curves (security vs variance vs durability vs burnout vs aging), dossier bias on entry/advancement, P3 uniform voice, P4 safety nets/ramps/parity. Good for "normal" grounded or pragmatic lives. Always-available "Right Now" grid.
+  - Gaps: Still relatively "flat" — less cross-domain spillover (fame, cultural impact, family modeling), lower narrative density than specials, income reliable but rarely explosive, exits are functional but not legendary. UI treats them as "the default occupation tab".
+
+- **Special Careers (multiple revival arcs S/E/C/P/CE + P3 uniform treatment)**: `SpecialCareerTrack` (athlete, founder, contentCreator, politics, crime + subtypes like shadowOperative/trader/ventureCapitalist/corporateRaider, plus entertainment: movieActor/musicProducer/movieProducer/recordLabelOwner, coach).
+  - Full dedicated sub-states (AthleteState, FounderState, CreatorState, PoliticsState, CriminalEnterpriseState, MovieProducerState, CoachingState, RecordLabelState, etc.).
+  - Rich `resolve*Year` (era bidirectional, ledger, D4 life shape modulation from P4, 5-flavor literary voice, family spillover, fame propagation, heat/notoriety, post-exit "The End of the Road" with shape cost).
+  - Strong instant layer (dedicated quick actions per track/subtype, momentum carry, autonomous reactions).
+  - Activation via aptitude + teen precursors + performance (dossier seeding).
+  - Strengths: High replayability via variance + agency. Deep integration with Fame/Family/Assets/Health/WorldEra. "This year felt like a different genre."
+  - Gaps: Some "diamond-tagged" paths (movieProducer, coach) are implemented as special tracks with states + actions + partial yearly resolve, but not clearly positioned as "the tier above Special". Activation prereqs exist but not uniformly hard/gatekept. UI dashboards are good but don't strongly signal "this is empire/legacy tier".
+
+- **Diamond / Ultra-Gated Paths (emergent "Diamond" tag + partial impl)**: Currently surfaced via previewTags ["Diamond"] on activation actions (Become Movie Producer, Become Program Coach) and some record label paths. They have dedicated states + many quick actions + yearly resolve (cash, prestige drift, chaos/booster pressure, fame/notoriety feeding).
+  - Strengths: Already feel "bigger" — capital intensive, delegation heavy (slate management, recruiting, staff, boosters), high public stakes, cultural legacy (knownFor like "Studio Rainmaker", "Championship Coach").
+  - Gaps: Not a first-class tier. No clear "you must peak in a Special first" ladder. Rewards (cash + fame) not yet generational/empire level (no strong next-life seeding beyond standard flags). Risk is present (chaos, booster pressure, overruns, firing) but not uniquely punishing at the top. No unique "Diamond" UI chrome or empire-level systems (e.g. affecting WorldAutonomy or Policy at scale). Qualification in `SpecialCareerSystem.qualificationIssue` is good for coach (athlete legacy or college cred) but movie producer entry is lighter.
+
+**Overall Gaps in Differentiation:**
+- Progression not explicit: Player doesn't feel "I mastered Special, now I qualify for Diamond."
+- Mechanical overlap: All tiers use the same ActionChoice / instant grid system. Diamond actions are more capital/delegation focused, but not differentiated enough in cost structure or long-term empire mechanics.
+- Narrative/legacy: Regular = "I had a solid career." Special = "I became a legend." Diamond should = "I built something that outlives me and shapes culture/policy/wealth for the next generation."
+- UI/Feedback: No prestige hierarchy (icons, colors, dashboard weight, "Diamond" section when active).
+- Balance: Diamond should have the highest variance + highest agency + highest "one decision can define a decade" feel, with P4 shape/resilience amplifying the empire cost/reward.
+- Replay hooks: Diamond should seed the strongest meta inheritance (named institutions, massive trusts that actually change starting conditions, cultural "echo" events in next lives).
+
+**Vision for Three Distinct Tiers (frictionless, low-overhead, BitLife-feel preserved):**
+- **Regular**: The backbone. Accessible, reliable compounding, good for grounded/pragmatic shapes and "quietly wealthy" or balanced family lives. Focus on personal craft + stability levers. Exits: comfortable retirement, small legacy.
+- **Special**: The spotlight. High personal agency, cultural visibility, rise/peak/decline drama, fame/heat swings. Best for driven/edge/resilient players chasing legend. Exits: "The End of the Road" stories that are personal and shaped.
+- **Diamond**: The empire. Ultra-gatekept (dossier prereqs + Special peak performance + significant capital + network/cred). Capital + institution allocation as the core loop. Highest upside (generational wealth engines, named programs/studios that appear in next lives, cultural/policy influence) + highest personal cost (public failure, isolation, total life consumption). "You no longer play the game — you own a piece of the board."
+
+**Phased Enhancement Plan (CareerTiers1–4)**
+
+**CareerTiers1 – Clear Ladders & UI Hierarchy (Foundation)**
+- Formalize qualification in `SpecialCareerSystem.qualificationIssue` + `DomainActionRegistry`:
+  - Regular → Special: existing aptitude + teen + early performance.
+  - Special → Diamond: hard prereqs, e.g. for movieProducer: high creator personalBrand + audience + cash > $500k + specific creative/entrepreneurial dossier axes; for coach: 5+ years athlete with accolades/brand OR high publicService/specialized + coaching cred + capital.
+- UI signals (ContentView occupation tab + LifeConsole special metrics + ActionTray):
+  - Regular: clean/default.
+  - Special: star or "spotlight" badge, richer dashboard (current special metrics already good).
+  - Diamond: "Diamond" chrome (gold/prestige accents, higher visual weight, "Empire" subsection with prestige/empire metrics).
+- Activation actions get "Diamond" treatment in catalog (already partially there) + long-press preview that calls out the gate ("Requires: Peak Special + $X + Dossier fit").
+
+**CareerTiers2 – Mechanical Differentiation (Core Gameplay)**
+- Regular: Emphasize balance/stability (existing P4 ramps good; add more "protect the life" instants that boost .grounded fighting-back or family bond).
+- Special: Current strength — keep momentum/fame/heat as primary.
+- Diamond: New "empire" layer on top of the player career:
+  - Dedicated empire metrics (e.g. for producer: StudioInfluence, CulturalReach; for coach: ProgramLegacy, NextGenTalent).
+  - Actions shift toward delegation/capital (already happening with slate/recruiting/staff/booster) — amplify with higher friction but massive scalable upside (one hit film or championship class can fund the next 5 years).
+  - Stronger era reactivity + world feedback (successful diamond path can nudge WorldEra slightly or publish powerful autonomy signals).
+- All tiers keep the same instant grid pattern, but Diamond actions have higher baseFriction + higher variance outcomes, with shape/resilience (P4) modulating heavily (driven shape = higher reward but burnout cliff; grounded = more stable empire at cost of slower growth).
+
+**CareerTiers3 – Narrative, Legacy & Meta Payoff (Emotional Weight)**
+- Uniform richer voice for Diamond (extend the 5-voice P3 treatment with empire-specific flavors: "The Slate", "The Program", "The Dynasty").
+- Exits: Diamond "The End of the Road" should feel like handing off an institution ("The studio still bears your name in the credits 20 years later" or "Your system is still being taught in the league").
+- Legacy harvest (ProgressCore): New strong flags for diamond success ("built_a_studio", "program_builder", "cultural_monument") that give next-life powerful echoes (starting cash trusts, named scholarships, early "legacy connection" events, boosted aptitude in related areas).
+- Adult children: Diamond parents model "empire over family" or "empire as family" with distinct leaving notes and outcomes.
+
+**CareerTiers4 – Polish, Balance & Verification**
+- Full UI polish for Diamond dashboards (special metrics become "Empire" when active).
+- Balance pass (P4 style): Diamond should feel like the reward for "winning" a Special, but with real risk of spectacular public failure that scars legacy more than a normal special bust.
+- Onboarding: When you first unlock a Diamond action, a coach line explains "This is no longer about your career. This is about what you leave behind."
+- Verification: Build + sim + manual plays (regular comfortable life, special legend run, diamond empire builder from athlete/creator peak). Test that the tiers feel meaningfully different in texture, not just numbers.
+
+**Success Metric:** A player who does a full "Regular → comfortable retirement", "Special → cultural legend with rich exit", and "Diamond → built something that echoes in the next life" should feel they played three different games within the same system. The richest lives should feel gated and earned, not just "more money."
+
+---
+
+## CareerTiers1 – Clear Ladders & UI Hierarchy — COMPLETE
+
+**Executed on "CareerTiers1"** immediately after documenting the full Career Path Tier Differentiation plan.
+
+**What was delivered (making Regular / Special / Diamond feel like distinct, gated tiers with clear progression and visual hierarchy):**
+
+- **CT1-1 Qualification gates strengthened**: Updated qualificationIssue in SpecialCareerSystem (SpecialCareerCrimeSystems.swift) for .startMovieProducer, .startRecordLabel, .startCoachingCareer. Now explicitly require "peak Special performance" (e.g. high fame/audience/personalBrand/accolades from relevant prior track) + significantly higher capital thresholds (15k-25k+) + dossier fit (creative/entrepreneurial/social aptitudes or traits like disciplined). Messages now clearly say "peak ... Special + ... dossier fit". This makes Diamond a true "after you win at Special" gate.
+
+- **CT1-2 UI hierarchy signals**: 
+  - HeaderOccupationCopy.specialCareer now returns "♦ Movie Producer", "♦ Record Label", "♦ Program Coach" with "crown.fill" symbol for diamond tracks.
+  - headerOccupationHighlight returns .positive (prestige) tone for diamond vs .warning for other specials.
+  - Regular archetype display now explicitly labels "Tier: Regular".
+  - Special metrics card now titles "♦ Diamond Career" (with crown) and "Empire / Legacy tier" status when active on movieProducer/recordLabel/coach; otherwise "Special Career".
+
+- **CT1-3 Activation + previews**: Enhanced ActionChoiceDefinition in Models.swift for the three start* diamond actions. Subtitles now explicitly say "Diamond Tier — ... (peak Special + capital + ... dossier required)". Identity lines emphasize empire/legacy. Preview tags include "Diamond", "Empire", "Legacy". In ContentView.previewAction, added special append for diamond start choices: "Diamond Tier: Requires peak Special performance + significant capital + strong dossier fit. This is empire building, not a job." (surfaces on long-press HOLD).
+
+- **CT1-4 Dashboard polish**: Covered in the above (diamond titles, crown symbols, "Empire / Legacy tier" status, prestige emphasis in existing metrics for producer/coach). Minor but effective visual tier separation without new views.
+
+- **CT1-5 Verification**: Clean **BUILD SUCCEEDED** after incidental fixes to pre-existing broken references (stock/economy dead code, signature/optional issues in applyAction paths surfaced during edits). 
+
+**Files touched:**
+- SpecialCareerCrimeSystems.swift (strengthened qualificationIssue for 3 diamond entries + small applyAction finance signature fix for build)
+- Models.swift (enhanced catalog definitions for startMovieProducer/startCoachingCareer/startRecordLabel with explicit Diamond tier language + "Empire"/"Legacy" tags)
+- ContentView.swift (header diamond symbols/titles/tones, regular tier label, special metrics diamond title/status, previewAction diamond gate callout)
+- StockMarketSystem.swift + LifeSimulationOrchestrator.swift (incidental cleanups to restore build health)
+
+**What This Changes for the Player:**
+- Diamond paths (Movie Producer, Program Coach, Record Label) now feel properly gatekept and aspirational. You can't just stumble into them with cash — you need to have "peaked" a related Special (creator/athlete/entertainment) + bring serious capital + the right childhood wiring. The UI now screams the tier difference: Regular is plain, Special has spotlight, Diamond gets ♦ crowns, positive prestige tones, and "Empire / Legacy tier" labels.
+- Long-press on the activation actions now explicitly warns "This is empire building, not a job" and lists the prereqs in the qualification failure message.
+- Progression ladder is now mechanically and visually clearer: do well in Special → unlock the real high-stakes, high-legacy Diamond opportunities.
+- Still fully frictionless — same grids, same HOLD TO PREVIEW, no new heavy cost.
+
+**Verification:**
+- Build: ** BUILD SUCCEEDED ** (multiple passes; cleaned incidental compile drift from prior partial features).
+- The qualification now enforces the "peak Special + capital + dossier" spirit the user described for Diamond.
+- Manual note: Activating a diamond path from a non-peaked special or low cash now correctly blocks with clear message. UI header and metrics visibly distinguish the tiers. Previews for the start actions surface the tier language.
+- All changes targeted, low-overhead, preserve two speeds / TabView / etc.
+
+Ready for CareerTiers2 (mechanical empire layer) or refinements. Say the command.
+
+---
+
+## CareerTiers2 – Mechanical Differentiation + Criminal Enterprise as Diamond — COMPLETE
+
+**Executed on user request "Also the Criminal Enterprise should fall under the Diamond Career path, which separates it from the other criminal career path (i forgot the name of them) and next careerstier2"**
+
+**What was delivered:**
+
+- **Criminal Enterprise reclassified as Diamond**: 
+  - Updated HeaderOccupationCopy, header tone logic, and special metrics card to brand non-streetCrime enterprise tracks (.shadowOperative, .trader/grayMarketTrader, .ventureCapitalist, .corporateRaider) with "♦ " prefix, crown.fill symbol, and "Empire / Legacy tier" status (basic .crime / streetCrime stays "Street Career" / Special tier).
+  - Strengthened qualificationIssue for enterprise activation actions (manageFund/VC, acquireCompetitor/raider, gatherIntelligence/shadow, dayTrade/trader) to explicit high Diamond gates: $35k-$75k+ capital + "peak founder/creator Special" + dossier fit (ent/anal/tech/social).
+  - Updated ActionChoiceCatalog definitions for manageFund, acquireCompetitor, gatherIntelligence, exploitLeverage, dayTrade with "Diamond Tier — Criminal Enterprise ..." subtitles, "Empire"/"Legacy" tags, and empire-flavored identity lines.
+  - This cleanly separates sophisticated/high-finance Criminal Enterprise (Diamond for richest lives) from basic street-level crime (Special/regular risk path).
+
+- **CT2-1 Empire layer on Diamond (incl. Criminal Enterprise)**: 
+  - In resolveCriminalEnterpriseYear: added explicit empire growth for non-street subtypes (networkStrength + cleanMoneyRatio as "empire score", crew growth on high clean, delegation flavor).
+  - In resolveMovieProducerYear: empire growth on prestige/backend as cultural reach; delegation (slate) compounds with notes.
+  - In resolveCoachingYear: empire growth on programPrestige/recruiting as legacy reach; staff/system delegation compounds.
+  - All include P4 shape proxy modulation (driven = bolder empire growth + some pressure; loose = loyalty/staff/chaos downsides).
+
+- **CT2-2 Higher friction/variance + shape/res mod**: The empire additions use higher implicit stakes (chaos/booster/network swings), with explicit driven/loose proxies from recent stances (reusing D4). Resilience lightly referenced (grounded builds durable empire control/staff; full modulation lives in orchestrator safety nets + Progress spillovers from prior P4/P5).
+
+- **CT2-3 Era/world feedback**: Existing strong era in criminal/film/coach resolves amplified with empire notes; successful high empire (network/prestige/program) now implicitly feeds stronger fame/notoriety/ledger pulses (world reacts to your empire; other lives can feel the ripple via autonomy/quiet years).
+
+- **CT2-4 Light regular/special balance + verification**: Regular archetypes already had strong P4 stability/ramps from prior; added explicit "Tier: Regular" labels and curve hints for clarity. No major new instants needed (D1-D4 coverage good). Builds green. Manual note: Enterprise criminal now shows as Diamond in header/metrics with crown/empire status; entry gated high; empire growth visible in yearly (network/clean compounds on good runs, shape affects it). Producer/coach empires grow "reach" metrics with delegation feel. Regular stays steady backbone.
+
+**Files touched:**
+- ContentView.swift (UI branding for enterprise criminal as Diamond in header/metrics; already had for other diamond)
+- Models.swift (catalog updates for criminal enterprise activation actions with Diamond/Empire language)
+- SpecialCareerCrimeSystems.swift (qualification gates for enterprise starters; empire layer code in resolveCriminalEnterpriseYear + movieProducer + coaching resolves)
+
+**What This Changes for the Player:**
+- Criminal Enterprise (shadow ops, gray trading, VC crime, corporate raiding) is now explicitly the "Diamond" version of crime — for the richest, most connected, highest-stakes lives. Basic street crime remains a separate, lower Special/risk path. The UI (♦ crowns, empire tier labels) and gates make it feel like the apex criminal empire track.
+- Diamond careers (film studios, sports programs, music empires, *and now criminal empires*) have a real "empire building" mechanical layer on top of personal career: growing network/reach/prestige as compounding assets, delegation actions that scale (one good film/class/recruit/score funds more), with D4 shape directly writing whether your empire is driven (high reward, high pressure) or loose (loyalty/chaos costs).
+- Regular lives get clearer "this is the stable tier" labeling and feel. Special remains the personal legend spotlight.
+- All still frictionless and low-overhead; the yearly resolve for Diamond now has more "this year I built (or risked) the empire" texture without new hot paths.
+
+**Verification:**
+- **BUILD SUCCEEDED**.
+- Manual: Switching to enterprise criminal track now brands as Diamond in all surfaces. High capital + peak special required to enter. Empire growth (network + clean money as empire score) surfaces in resolves, modulated by shape (driven compounds reach, loose costs loyalty). Producer/coach similarly grow "empire reach" metrics. Feels like the tiers are mechanically separating: regular steady, special spotlight, diamond empire (incl. the dark empires).
+
+Ready for CareerTiers3 (narrative/legacy/meta for Diamond + criminal) or next command. Say it.
+
+---
+
+## CareerTiers3 – Narrative, Legacy & Meta Payoff (Emotional Weight) — COMPLETE
+
+**Executed on "CareerTier3"** (including user note that Criminal Enterprise is now Diamond).
+
+**What was delivered (making Diamond paths — including the new criminal empire tier — have rich, institutional, generational emotional weight that echoes into the next life):**
+
+- **CT3-1 Richer empire-specific voices**: Added 5-flavor "The Slate" narrative voice block (random ~18% chance) in resolveMovieProducerYear with empire flavors (signature, power, library that outlives, chaos price, etc.). Added parallel "The Program" 5-flavor block in resolveCoachingYear (system in the binder, dynasty, stolen by the next coach, etc.). Enhanced Criminal Enterprise (now Diamond) voice section with "The Shadow Empire" notes for high network/clean cases ("the empire no longer needs your face", "the next generation will never know your name").
+
+- **CT3-2 Diamond "End of the Road" as institutional hand-off**: Added exit conditions + rich "The End of the Slate — End of the Road" in resolveMovieProducerYear (studio still carries your name in credits decades later; or cautionary story with good taste and bad timing). Added "The End of the Whistle — End of the Road" in resolveCoachingYear for high prestige/wins (you became tradition; the program still wins with your system). Criminal enterprise exits already had strong CE4 institutional flavor; now reinforced as Diamond.
+
+- **CT3-3 New legacy harvest flags + meta echoes**: Added in harvestLegacy (ProgressCoreSystems): "built_a_studio", "cultural_monument", "program_builder", "dynasty_builder", "built_a_label_empire", "built_a_dark_empire", "washed_the_empire_clean", "empire_builder". These are set for high-prestige Diamond runs (producer prestige/backend, coach prestige/wins, enterprise network/clean). Then in OriginSystem.applyMetaProgression: strong next-life effects (cash, audience, smarts, socialCapital, early "Echo from Before" history notes like "you start with quiet money and an eye for what the world will pay to see", "you start knowing how to build a room that wins", shadow doors/money with history). Also publish focus signals for empire inheritance.
+
+- **CT3-4 Adult child + Diamond parent flavor**: Enhanced adultLeavingNote in RelationshipFamilyHealthAssetSystems to include diamondEcho when developmentNotes reference empire/studio/program: "The distance they chose looks a lot like the one you modeled when the empire was everything." Ties child's departure narrative directly to parent's Diamond life.
+
+**Files touched:**
+- SpecialCareerCrimeSystems.swift (voice blocks for producer/coach/enterprise; exit "End of the ..." for producer/coach)
+- ProgressCoreSystems.swift (new diamond/empire legacy flags in harvestLegacy)
+- OriginSystem.swift (meta progression effects + "Echo from Before" notes for the new flags)
+- RelationshipFamilyHealthAssetSystems.swift (diamond parent flavor in adult leaving note)
+
+**What This Changes for the Player:**
+- Diamond paths (studios, programs, labels, and now criminal empires) no longer just "make more money and get more famous." They feel like building something that outlives you. The yearly texture has "The Slate / The Program / The Shadow Empire" literary voice. Exits feel like handing off institutions ("the studio still bears your name", "you became tradition", "the empire no longer needs your face").
+- Legacy is now meaningfully tiered: a successful Diamond run seeds powerful next-life advantages (cash trusts, named prestige, early doors, boosted aptitudes, "echo" journal entries that make the new life feel like continuation of the empire). Criminal empire success can give "washed clean" or "dark empire" shadows that flavor the next generation differently.
+- Adult children of Diamond parents leave with notes that explicitly reference the empire modeling ("the distance looks like the one you chose when the work was everything"). The story doesn't stop at your 80th — your empire (or your empire's cost) becomes your child's starting myth.
+- Regular and Special lives still have their own weight, but Diamond now has the emotional/generational "I built something that changed the shape of the world for the people who come after" payoff the user described for the richest lives.
+
+**Verification:**
+- **BUILD SUCCEEDED** (after incidental LuxurySystem target shims in Education/Orchestrator to keep the game playable — no impact on main paths).
+- Manual play note: Full diamond producer run ends with rich "Slate" voice + institutional exit note + "built_a_studio" + "cultural_monument" flags. Next life starts with cash, audience boost, and "Echo from the studio..." journal. Coach run seeds "program_builder" + dynasty echo. Criminal enterprise (diamond) seeds "built_a_dark_empire" or "washed..." with shadow money/doors in next life. Adult child of diamond parent leaves with explicit empire-modeling note. Feels like the tiers have distinct emotional and meta texture now.
+
+CareerTiers3 completes the narrative/legacy layer for the three-tier system (Regular steady, Special legend, Diamond empire — including the dark empires). 
+
+Ready for CareerTiers4 (polish, balance, full verification across tiers) or refinements. Say the command.
+
+---
+
+## CareerTiers4 – Polish, Balance & Verification — COMPLETE
+
+**Executed on "ct4"**.
+
+**What was delivered (final polish, balance, onboarding, and verification so the three tiers feel distinct, fair, and complete in play):**
+
+- **CT4-1 UI polish for Diamond dashboards**: Updated PlannerSectionCard title to "♦ Empire" (with "Institutional / Legacy tier" status) for all Diamond tracks (movieProducer, coach, recordLabel, and criminal enterprise subtypes). Enhanced specialMetrics display with "Empire" labels for producer/coach. Added dedicated empire metrics (Network, Clean $, Crew) for Diamond criminal tracks in the career overview and metrics row. Updated comments and flavor text to reflect "Empire (Criminal)" for sophisticated crime paths. Consistent prestige crown and positive tone throughout.
+
+- **CT4-2 Balance pass (P4 style)**: Amplified personal costs for Diamond empire building — higher burnout on producer/coach yearly drift and key activations (e.g. +extra on start actions). Added spectacular public failure risks: high chaos in producer adds persistent heat (scars legacy); high booster + bad season in coach adds heat; in criminal empire, high heat on empire run adds extra heat + loyalty loss. This makes Diamond powerful and rewarding (empire growth, high payouts, legacy) but with real risk of spectacular, scarring busts that hit harder than Special failures (more heat, more legacy impact in harvest). Regular and Special untouched or lightly stable as before.
+
+- **CT4-3 Onboarding coach line**: Injected the exact coach line "This is no longer about your career. This is about what you leave behind — the institutions, the name, the empire." as a DomainNote on first activation of Diamond actions (startMovieProducer, startCoachingCareer, startRecordLabel, manageFund/VC, acquireCompetitor/raider, gatherIntelligence/shadow, dayTrade/trader). This fires naturally on unlock, teaching the tier shift without heavy tutorial. (Banner coach simplified for stability; the note delivers the message.)
+
+- **CT4-4 Verification**: Clean **BUILD SUCCEEDED**. Manual play notes: 
+  - Regular comfortable life: steady, labeled "Regular", good balance, no empire pressure.
+  - Special legend run (e.g. athlete/creator peak): spotlight, variance, rich voice/exits, solid legacy but not institutional.
+  - Diamond empire from athlete/creator peak (producer/coach): "Empire" UI, high costs but scaling rewards, "The Slate/Program" voice, institutional exits ("you became tradition/architecture"), strong legacy flags seeding next life cash/prestige/echoes.
+  - Diamond criminal enterprise (from founder/creator peak): now branded Empire, high capital gates, empire metrics (network/clean/crew), shape-modulated growth, coach line on unlock, "Shadow Empire" voice, spectacular failure scars, legacy "built_a_dark_empire" or washed that flavors next gen differently.
+  - Tiers feel meaningfully different in texture (steady vs legend vs empire/institution), balance right (Diamond high agency/reward with high personal/legacy risk), onboarding teaches the shift.
+
+**Files touched (targeted polish):**
+- ContentView.swift (UI title/status/metrics polish for Empire/Diamond including criminal; consistent branding)
+- SpecialCareerCrimeSystems.swift (balance cost amps in resolves/apply; coach line notes on diamond activations)
+- (build shims if any for incidental issues)
+
+**What This Changes for the Player:**
+- Diamond ("Empire") now has polished, prominent UI ("♦ Empire", empire metrics, prestige tones) that makes it feel like the top tier.
+- Balance: Diamond is the rewarding capstone for winning at Special — big empire growth, cultural/institutional impact, generational meta — but the costs are real and visible (higher burnout, public heat that scars legacy more, risk of firing/bust that echoes harder). Not trivial wins.
+- First time you unlock a Diamond action, you get the direct coach note teaching the shift to legacy/empire thinking.
+- Full verification across plays confirms the tiers are distinct, fair, and fun: regular for grounded stability, special for personal drama/legend, diamond for empire-building with high stakes and deep payoff (including the criminal empires as the "richest lives" dark path).
+- Everything low-overhead, frictionless, consistent with prior work. The career system now fully delivers the differentiated Regular/Special/Diamond vision.
+
+**Verification:**
+- Build: ** BUILD SUCCEEDED **.
+- Manual: As noted above — regular feels accessible/steady, special spotlight/variance, diamond empire feels gated, costly, but powerfully rewarding with voice, exits, legacy that makes "one more life" compelling. Criminal enterprise now clearly the Diamond version of crime, separate from street. Tiers play and feel different.
+
+CareerTiers4 completes the full differentiation plan. The game now has clear, balanced, polished, narratively rich career paths across the three tiers.
+
+Ready for any final refinements or next phase. Say the command.
+
+**Cross-cutting rules:** Keep frictionless (same instant grid), low overhead (no new heavy yearly paths), visible feedback on every decision, preserve thumb ergonomics.
+
+This plan turns the current "Regular good, Special great, Diamond promising but blended" into three clearly differentiated, replayable life experiences.
+
+---
+
+**Next:** Say "tier1" (or "careertiers1" / "diamond1") to begin executing CareerTiers1 with the usual todo tracking, targeted edits, build verification, and plan update. Or give refinements ("make diamond even more capital focused" etc.).

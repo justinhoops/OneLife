@@ -35,17 +35,18 @@ struct SilentYearEngine {
     // MARK: - Note Selection
 
     private func pickNote(tone: NarrativeTone, state: GameState) -> String {
-        let pool = notePool(for: tone, state: state)
+        let pool: [String]
+        if let streak = LifeShapeResolver.stanceStreak(in: state, minimum: 3) {
+            pool = stanceDrivenPool(for: streak, tone: tone, state: state)
+        } else {
+            pool = notePool(for: tone, state: state)
+        }
         var baseNote = pool.randomElement() ?? "Another year passed."
 
-        // Engine2 + cross-engine: quiet years feel recent instant + autonomous (world/NPC) activity
         let heat = state.correlationLedger.recentActivityLevel
         let momentum = state.instantMomentum.overallStrength
         let recentAutonomy = state.correlationLedger.recentSignals(kind: .npcAutonomyPulse, minStrength: 5).count +
                              state.correlationLedger.recentSignals(kind: .worldAutonomyPulse, minStrength: 5).count
-
-        // D4: stance + focus history in silent years (focus chains)
-        let lastStance = state.yearlyStance.lastCompletedStance
         let recentFocus = state.correlationLedger.recentSignals(kind: .focusStance, minStrength: 10).count
 
         if heat >= 55 && momentum < 20 {
@@ -64,71 +65,81 @@ struct SilentYearEngine {
             baseNote += " The world didn't pause just because you did."
         }
 
-        // D4 focus residue
-        if let s = lastStance, recentFocus > 0 {
-            switch s {
-            case .pushCareer:
-                baseNote += " The career push from before left its mark on the quiet."
-            case .letYearDrift:
-                baseNote += " The drift still lingers; the quiet feels earned and a little empty."
-            case .protectHealth:
-                baseNote += " Taking care of the body paid quiet dividends here."
-            default:
-                if recentFocus >= 2 {
-                    baseNote += " The shape of what you focused on (or avoided) is still audible."
-                }
-            }
+        if recentFocus >= 2, LifeShapeResolver.stanceStreak(in: state, minimum: 3) == nil {
+            baseNote += " The shape of what you focused on (or avoided) is still audible."
         }
 
-        // D4: ambient life-shape tracker (tallied from recent stances + automation signals, surfaces in quiet years)
-        let shape = deriveLifeShape(state: state)
-        if !shape.isEmpty {
-            baseNote += " (\(shape))"
+        let shapeLabel = LifeShapeResolver.label(from: state, includeActivityHeat: true)
+        if !shapeLabel.isEmpty {
+            baseNote += " (\(shapeLabel))"
         }
 
-        // P1 content injection: more D4/stance/era aware quiet year flavor for variety (lightweight storylets)
-        if let last = state.yearlyStance.lastCompletedStance {
-            switch last {
-            case .pushCareer:
-                if Int.random(in: 0...100) < 25 { baseNote += " The drive from your career focus still echoes in how opportunities (or their absence) present themselves." }
-            case .protectHealth:
-                if Int.random(in: 0...100) < 25 { baseNote += " Protecting the body paid off in small, invisible ways this quiet stretch." }
-            case .letYearDrift:
-                if Int.random(in: 0...100) < 30 { baseNote += " The looseness you allowed is still coloring what the world bothers to bring to your door." }
-            case .stabilizeMoney:
-                if Int.random(in: 0...100) < 25 { baseNote += " The money discipline you practiced makes the quiet feel less precarious than it used to." }
-            default:
-                if Int.random(in: 0...100) < 15 { baseNote += " Your focus pattern is quietly rewriting the texture of uneventful years." }
-            }
-        }
-        if state.correlationLedger.recentActivityLevel < 20 && shape.contains("loose") {
-            baseNote += " The shape feels diffuse; the year didn't push back much."
+        if state.correlationLedger.recentActivityLevel < 20 && shapeLabel.contains("loose") {
+            baseNote += " The shape feels diffuse; doors stayed closed without drama."
         }
 
-        // P5-1: Edge flavor for long lives (80+) and extremes (high notoriety/fame/heat, zero kids, very low wealth)
-        if state.player.age >= 80 {
-            if Int.random(in: 0...100) < 18 {
-                baseNote += " At this age the quiet is no longer empty — it is the sound of everything that came before."
-            }
+        if state.player.age >= 80, Int.random(in: 0...100) < 18 {
+            baseNote += " At this age the quiet is no longer empty — it is the sound of everything that came before."
         }
-        if state.fame.notoriety >= 65 || state.crime.heat >= 60 {
-            if Int.random(in: 0...100) < 12 {
-                baseNote += " Even in stillness, the name (or the heat) travels ahead of you."
-            }
+        if state.fame.notoriety >= 65 || state.crime.heat >= 60, Int.random(in: 0...100) < 12 {
+            baseNote += " Even in stillness, the name (or the heat) travels ahead of you."
         }
-        if state.family.children.isEmpty && state.player.age >= 50 {
-            if Int.random(in: 0...100) < 10 {
-                baseNote += " The house is quiet in a different way. The future will not carry your name the same way."
-            }
+        if state.family.children.isEmpty && state.player.age >= 50, Int.random(in: 0...100) < 10 {
+            baseNote += " The house is quiet in a different way. The future will not carry your name the same way."
         }
-        if state.finance.cashOnHand < 0 && state.player.age >= 45 {
-            if Int.random(in: 0...100) < 10 {
-                baseNote += " The margin is gone. The quiet years now carry the weight of every choice that spent it."
-            }
+        if state.finance.cashOnHand < 0 && state.player.age >= 45, Int.random(in: 0...100) < 10 {
+            baseNote += " The margin is gone. The quiet years now carry the weight of every choice that spent it."
         }
 
         return baseNote
     }
+
+    /// Primary silence pool when the same stance landed three years in a row — the world remembers the pattern.
+    private func stanceDrivenPool(for stance: YearlyStanceID, tone: NarrativeTone, state: GameState) -> [String] {
+        switch stance {
+        case .pushCareer, .soldierStance, .studentStance:
+            return [
+                "Same grind. The career lane kept taking priority and everything else waited.",
+                "You pushed again. The year didn't reward it loudly, but the pattern is obvious now.",
+                "Another year of showing up first for work. The cost is starting to show in what didn't happen.",
+                "The hustle continued. Quiet doesn't mean easy — it means the engine never really idled.",
+                "Opportunities arrived smaller than they used to. You were too busy to notice until now.",
+            ]
+        case .protectHealth:
+            return [
+                "You kept protecting the body. Small wins, no headlines — but you're still upright.",
+                "Another year of choosing rest over reach. The quiet feels earned, not accidental.",
+                "The maintenance held. Nothing dramatic broke because you refused to ignore the signals.",
+                "You treated recovery like a job. It paid off in ways that don't photograph well.",
+                "The machine is still running because you stopped pretending it was invincible.",
+            ]
+        case .letYearDrift:
+            return [
+                "You let the year slide again. Fewer doors knocked; fewer people reached back.",
+                "The looseness compounded. Nothing fell apart — it just didn't tighten.",
+                "Another drift year. The world stopped offering as much and you didn't fight it.",
+                "Quiet, but thin. The life feels wider at the edges and lighter in the middle.",
+                "Relationships didn't explode. They just moved a little further away without a scene.",
+            ]
+        case .stabilizeMoney:
+            return [
+                "You kept the money discipline. The quiet felt less precarious than it used to.",
+                "Another year of watching numbers instead of chasing noise. Stability has its own texture.",
+                "The ledger stayed controlled. Boring on paper, relieving in the body.",
+                "You chose margin over momentum. The year respected that choice without celebrating it.",
+                "Financial quiet isn't peace — but it's closer than you've been in a while.",
+            ]
+        case .repairPeople:
+            return [
+                "You kept showing up for people in small ways. The bonds didn't snap; some didn't deepen either.",
+                "Another year of tending relationships without fireworks. The work is invisible until it isn't.",
+                "You chose connection over conquest. The quiet carries who still answers your texts.",
+                "The social fabric held. Not tight, not torn — just maintained.",
+                "People noticed you tried, even when the year had nothing dramatic to report.",
+            ]
+        default:
+            return notePool(for: tone, state: state)
+        }
     }
 
     private func notePool(for tone: NarrativeTone, state: GameState) -> [String] {
@@ -287,25 +298,4 @@ struct SilentYearEngine {
             "You looked up and everything was okay. Not spectacular. Okay. It was enough.",
         ]
     }
-
-    // D4: derive ambient life shape from recent stances (pragmatic/careful/loose/driven) + heat
-    private func deriveLifeShape(state: GameState) -> String {
-        let recent = state.yearlyStance.recentStances
-        guard !recent.isEmpty else { return "" }
-        var pragmatic = 0, careful = 0, loose = 0, driven = 0
-        for s in recent {
-            switch s {
-            case .stabilizeMoney: pragmatic += 1
-            case .protectHealth: careful += 1
-            case .letYearDrift: loose += 1
-            case .pushCareer, .soldierStance: driven += 1
-            default: pragmatic += 1
-            }
-        }
-        let heat = state.correlationLedger.recentActivityLevel
-        if heat >= 50 { driven += 1 }
-        if loose > max(pragmatic, careful, driven) { return "loose edges" }
-        if careful > max(pragmatic, loose, driven) { return "careful shape" }
-        if driven > max(pragmatic, careful, loose) { return "driven current" }
-        return "pragmatic"
-    }
+}

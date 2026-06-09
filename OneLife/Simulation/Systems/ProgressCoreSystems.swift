@@ -368,21 +368,38 @@ struct ProgressSystem {
 
         state.progress.finalLifePath = finalPath
         let profile = LifePathCatalog.profile(for: finalPath)
-        result.notes.append(DomainNote(title: "Legacy", text: "This life will be remembered as a \(profile.title.lowercased()) life."))
+        
+        // P5: More poetic and path-aware handoff
+        let legacyIntro: String
+        switch finalPath {
+        case .scholar: legacyIntro = "You leaves behind a legacy of quiet inquiry and documented mastery."
+        case .striver: legacyIntro = "You are remembered as someone who never stopped pushing the world back."
+        case .provider: legacyIntro = "Your legacy is one of built walls and steady roofs; a life that anchored others."
+        case .connector: legacyIntro = "You are remembered through the people you held together."
+        case .survivor: legacyIntro = "Your story is a monument to what can be endured. You survived."
+        }
+        
+        result.notes.append(DomainNote(title: "Legacy", text: legacyIntro))
 
         // P5-5: Richer end payoff reacting to full P4 (shape + resilience + era)
-        let shape = deriveLifeShapeForLegacy(state: state)
+        let shape = LifeShapeResolver.label(from: state)
         let res = state.resilience
         let era = state.currentEra
         var closer = ""
-        if !shape.isEmpty {
-            closer += " It ended in a \(shape)."
+        
+        switch LifeShapeResolver.resolveOrPragmatic(from: state) {
+        case .drivenCurrent: closer += " You ended the race at full speed, still chasing the horizon."
+        case .looseEdges: closer += " You let the edges fray at the end, finding a quiet, unscripted peace."
+        case .carefulShape: closer += " Every choice was weighed; you finished exactly as you intended."
+        case .pragmatic: closer += " You settled the accounts and met the end with a steady eye."
         }
+
         if res == .grounded {
             closer += " You fought it all the way."
         } else if era == .recession || era == .highInflation {
-            closer += " The times were against you at the close."
+            closer += " The times were against you at the close, but the record stands."
         }
+        
         if !closer.isEmpty {
             result.notes.append(DomainNote(title: "The End", text: "The final chapter wrote itself.\(closer)", tags: [.progress]))
         }
@@ -399,6 +416,9 @@ struct ProgressSystem {
         // Generation Flags
         if state.player.age >= 65 {
             meta.generationFlags.insert("reached_retirement")
+        }
+        if state.player.age >= 100 {
+            meta.generationFlags.insert("centenarian_memory")
         }
 
         if state.finance.totalWealth >= 1_000_000,
@@ -421,6 +441,16 @@ struct ProgressSystem {
         }
         if goodKids.count >= 2 {
             meta.generationFlags.insert("family_that_held")
+        }
+        if state.family.childCount == 0 && state.player.age >= 60 {
+            meta.generationFlags.insert("the_branch_ends")
+        }
+
+        // P5: Cycle breaking legacy flag
+        if let d = state.childhoodDossier, d.aptitudes.social < 40 {
+            if state.finance.totalWealth >= 500_000 || state.healthProfile.mentalWellness >= 65 {
+                meta.generationFlags.insert("broke_the_cycle")
+            }
         }
 
         // Fame Web F3: Legacy recognition flags for meta progression
@@ -451,6 +481,12 @@ struct ProgressSystem {
             }
             if ent.crewSize >= 10 && ent.networkStrength >= 70 {
                 meta.generationFlags.insert("ruled_a_silent_kingdom")
+            }
+        }
+        if !state.legal.convictions.isEmpty {
+            meta.generationFlags.insert("carried_a_criminal_record")
+            if state.legal.convictions.contains(where: { $0.sentenceYears >= 3 }) {
+                meta.generationFlags.insert("served_time")
             }
         }
 
@@ -496,6 +532,53 @@ struct ProgressSystem {
             }
         }
 
+        // CT3-3: Diamond empire legacy flags (new strong meta for richest lives)
+        let isDiamond = [.movieProducer, .recordLabelOwner, .coach, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire].contains(state.specialCareer.track)
+        if isDiamond {
+            if state.specialCareer.track == .movieProducer {
+                let film = state.specialCareer.movieProducer
+                if film.prestige >= 70 && film.backendCatalog >= 50 {
+                    meta.generationFlags.insert("built_a_studio")
+                }
+                if film.distributionLeverage >= 70 {
+                    meta.generationFlags.insert("cultural_monument")
+                }
+            }
+            if state.specialCareer.track == .coach {
+                let coach = state.specialCareer.coaching
+                if coach.programPrestige >= 70 && coach.seasonWins >= 8 {
+                    meta.generationFlags.insert("program_builder")
+                }
+                if coach.programLevel >= 3 {
+                    meta.generationFlags.insert("dynasty_builder")
+                }
+            }
+            if state.specialCareer.track == .recordLabelOwner {
+                // assume recordLabel state has similar prestige
+                meta.generationFlags.insert("built_a_label_empire")
+            }
+            if state.specialCareer.track == .fightEmpire {
+                let empire = state.specialCareer.fightEmpire
+                if empire.gymReputation >= 70 {
+                    meta.generationFlags.insert("built_a_fight_gym")
+                }
+                if empire.promotionReach >= 70 && empire.fighterTrust >= 60 {
+                    meta.generationFlags.insert("built_a_fight_promotion")
+                }
+            }
+            // Criminal Enterprise as Diamond
+            if [.shadowOperative, .trader, .ventureCapitalist, .corporateRaider].contains(state.specialCareer.track) {
+                let ent = state.specialCareer.enterprise
+                if ent.networkStrength >= 70 && ent.cleanMoneyRatio >= 60 {
+                    meta.generationFlags.insert("built_a_dark_empire")
+                }
+                if ent.cleanMoneyRatio >= 80 {
+                    meta.generationFlags.insert("washed_the_empire_clean")
+                }
+            }
+            meta.generationFlags.insert("empire_builder") // general diamond flag
+        }
+
         // P4: stronger resilience divergence in legacy/meta (grounded: bigger comeback flags; resilient: scar + compound flags)
         if state.resilience == .grounded {
             if state.player.age > 55 && state.healthProfile.mentalWellness > 55 {
@@ -522,37 +605,20 @@ struct ProgressSystem {
             }
         }
         // Life shape from D4 (reuse simple tally)
-        let shape = deriveLifeShapeForLegacy(state: state)
-        if shape == "loose edges" {
+        switch LifeShapeResolver.resolve(from: state) {
+        case .looseEdges:
             meta.generationFlags.insert("left_loose_ends")
-        } else if shape == "driven current" {
+        case .drivenCurrent:
             meta.generationFlags.insert("passed_on_the_drive")
-        } else if shape == "careful shape" {
+        case .carefulShape:
             meta.generationFlags.insert("modeled_steady_care")
+        default:
+            break
         }
         // Stance residue echo
         if state.yearlyStance.repeatCount >= 3 {
             meta.generationFlags.insert("stuck_in_a_rut_once")
         }
-    }
-
-    private func deriveLifeShapeForLegacy(state: GameState) -> String {
-        let recent = state.yearlyStance.recentStances
-        guard !recent.isEmpty else { return "" }
-        var pragmatic = 0, careful = 0, loose = 0, driven = 0
-        for s in recent {
-            switch s {
-            case .stabilizeMoney: pragmatic += 1
-            case .protectHealth: careful += 1
-            case .letYearDrift: loose += 1
-            case .pushCareer, .soldierStance, .studentStance: driven += 1
-            default: pragmatic += 1
-            }
-        }
-        if loose > max(pragmatic, careful, driven) { return "loose edges" }
-        if careful > max(pragmatic, loose, driven) { return "careful shape" }
-        if driven > max(pragmatic, careful, loose) { return "driven current" }
-        return "pragmatic"
     }
 
     func legacyPointsEarned(from state: GameState) -> Int {
@@ -673,29 +739,64 @@ struct LifeSummarySystem {
     }
 
     private func headline(for state: GameState, pathTitle: String) -> String {
-        if state.fame.notoriety >= 75 { return "A Name Nobody Could Ignore" }
-        if state.fame.culturalFame >= 75 { return "The World Learned Your Name" }
-        if state.family.children.contains(where: { $0.bondWithPlayer >= 70 }) { return "You Left People Who Remember" }
+        // P5: Higher resolution headlines for edge cases
+        if state.player.age >= 100 { return "A Century of Change and Survival" }
+        if state.fame.notoriety >= 85 { return "An Infamy That Outlives the Man" }
+        if state.fame.culturalFame >= 85 { return "A Name etched into the Culture" }
+        if state.fame.notoriety >= 70 { return "A Name Nobody Could Ignore" }
+        if state.fame.culturalFame >= 70 { return "The World Learned Your Name" }
+        
+        if state.assets.lifestyleScore >= 95 { return "The Architect of a High Life" }
+        if state.assets.lifestyleScore >= 80 { return "A Titan of the High Life" }
+        if state.finance.portfolio.totalValue >= 1_000_000 { return "A Titan of the Markets" }
+        
+        let closeChildren = state.family.children.filter { $0.bondWithPlayer >= 75 }
+        if closeChildren.count >= 3 { return "A Foundation Built of Family" }
+        if !closeChildren.isEmpty { return "You Left People Who Remember" }
+        
+        if state.finance.totalWealth >= 2_000_000 { return "You Built an Empire That Lasted" }
         if state.finance.totalWealth >= 1_000_000 { return "You Built Something That Lasted" }
-        if state.player.age >= 85 { return "A Long Life, Fully Lived" }
+        
+        if state.player.age >= 90 { return "A Master of the Long Game" }
+        if state.player.age >= 80 { return "A Long Life, Fully Lived" }
+        
+        if state.resilience == .grounded && state.player.age >= 75 { return "A Grounded Life, Fought and Won" }
+        
         return "The End of a \(pathTitle) Life"
     }
 
     private func closingLine(for state: GameState, achievements: [String], regrets: [String]) -> String {
+        let shape = LifeShapeResolver.resolveOrPragmatic(from: state)
+        
         if achievements.isEmpty, regrets.isEmpty {
             return "The years passed quietly. The life was still yours."
         }
-        if regrets.count > achievements.count {
-            return "What hurt mattered. So did the fact that you kept going."
-        }
+        
         if state.family.childCount > 0 {
+            let closeKids = state.family.children.filter { $0.bondWithPlayer >= 60 }.count
+            if closeKids > 0 {
+                return "Your life ends here. Its consequences live on in the ones you raised."
+            }
             return "Your life ends here. Its consequences do not."
         }
-        return "The choices are over. The shape they made remains."
+        
+        switch shape {
+        case .drivenCurrent:
+            return "The race is over. You finished exactly where you were aiming."
+        case .looseEdges:
+            return "The final chapter was quiet, the edges finally softening."
+        default:
+            if regrets.count > achievements.count {
+                return "What hurt mattered. So did the fact that you kept going."
+            }
+            return "The choices are over. The shape they made remains."
+        }
     }
 
     private func relationshipLine(for state: GameState) -> String {
         let closeChildren = state.family.children.filter { $0.bondWithPlayer >= 65 }.count
+        let familyCount = state.family.childCount
+        
         if state.relationships.hasSpouse, closeChildren > 0 {
             return "You leave a partner and \(closeChildren) close \(closeChildren == 1 ? "child" : "children") behind."
         }
@@ -705,19 +806,39 @@ struct LifeSummarySystem {
         if closeChildren > 0 {
             return "\(closeChildren) \(closeChildren == 1 ? "child carries" : "children carry") a close memory of you."
         }
-        if state.relationships.friends.strongestBond >= 65 {
+        if familyCount > 0 {
+            return "The children are still there, even if the distance was never fully closed."
+        }
+        
+        if state.relationships.friends.strongestBond >= 70 {
+            return "The friends you chose became the family that stayed."
+        }
+        if state.relationships.friends.strongestBond >= 50 {
             return "At least one friendship held when it mattered."
         }
+        
+        if state.finance.totalWealth >= 500_000 {
+            return "Your legacy lives in the empire you built, rather than the people you left."
+        }
+        
         return "The final years were mostly yours to carry."
     }
 
     private func reputationLine(for state: GameState) -> String {
-        if state.fame.notoriety >= 70 { return "Your name survives as a warning." }
-        if state.fame.culturalFame >= 70 { return "Your name outlives the person behind it." }
-        if state.relationships.publicReputation >= 70 { return "People remember you generously." }
-        if state.relationships.privateReputation <= 35 { return "The people closest to you remember the difficult parts." }
+        if state.fame.notoriety >= 80 { return "Your name survives as a warning to those who follow." }
+        if state.fame.notoriety >= 60 { return "Your name survives as a dark legend." }
+        if state.fame.culturalFame >= 80 { return "Your name has become a permanent part of the culture." }
+        if state.fame.culturalFame >= 60 { return "Your name outlives the person behind it." }
+        
+        if state.relationships.publicReputation >= 75 { return "The community remembers you with genuine generosity." }
+        if state.relationships.publicReputation >= 60 { return "People remember you generously." }
+        
+        if state.relationships.privateReputation <= 30 { return "Those who knew you best remember the difficult, unvarnished parts." }
+        if state.relationships.privateReputation <= 45 { return "The people closest to you remember the difficult parts." }
+        
         return "Most people remember a complicated, ordinary human life."
     }
+
 
     private func achievementLines(from state: GameState) -> [String] {
         var lines = state.progress.unlockedMilestones.reversed().map { milestoneTitle($0.id) }
@@ -726,6 +847,12 @@ struct LifeSummarySystem {
         }
         if state.specialCareer.founder.personalLegend >= 60 {
             lines.insert("Built a company people remembered", at: 0)
+        }
+        if state.assets.lifestyleScore >= 85 {
+            lines.insert("Acquired world-class statement pieces", at: 0)
+        }
+        if state.finance.portfolio.stocks.contains(where: { $0.tickerOrSector == "TECH" && $0.totalValue > 250_000 }) {
+            lines.insert("Rode the wave of the tech boom", at: 0)
         }
         if state.family.children.contains(where: { $0.adultProfile?.outcome == .thriving }) {
             lines.insert("Helped a child build a thriving life", at: 0)
@@ -741,8 +868,14 @@ struct LifeSummarySystem {
         if state.relationships.partnerBond > 0, state.relationships.partnerBond < 40 {
             lines.append("A close relationship was left strained")
         }
+        if state.assets.lifestyleScore >= 80 && state.family.children.contains(where: { $0.bondWithPlayer < 45 }) {
+            lines.append("The high life came at the cost of family distance")
+        }
         if state.family.children.contains(where: { $0.bondWithPlayer < 40 }) {
             lines.append("At least one child grew up feeling the distance")
+        }
+        if state.finance.portfolio.lastVolatilityEventAge != nil && state.finance.totalWealth < 50_000 {
+            lines.append("A market collapse stole your security")
         }
         if state.finance.financialStress >= 70 || state.finance.totalWealth < 0 {
             lines.append("Money pressure consumed too many years")
@@ -1062,21 +1195,8 @@ struct CrossDomainPressureSystem {
         }
 
         if state.resilience == .grounded {
-            // P4-5: stronger grounded divergence — bigger "remember the cost" + fighting back flavor
-            // (inline tally to avoid cross-struct private; cheap D4 shape read)
-            let recent = state.yearlyStance.recentStances
-            var pragmatic = 0, careful = 0, loose = 0, driven = 0
-            for s in recent {
-                switch s {
-                case .stabilizeMoney: pragmatic += 1
-                case .protectHealth: careful += 1
-                case .letYearDrift: loose += 1
-                case .pushCareer, .soldierStance, .studentStance: driven += 1
-                default: pragmatic += 1
-                }
-            }
-            let shape = loose > max(pragmatic, careful, driven) ? "loose edges" : (careful > max(pragmatic, loose, driven) ? "careful shape" : (driven > max(pragmatic, careful, loose) ? "driven current" : "pragmatic"))
-            let shapeTail = shape == "driven current" ? " The drive that kept you going also made the recovery feel harder-won." : (shape == "loose edges" ? " The looseness you allowed made the drag linger." : "")
+            let shape = LifeShapeResolver.resolveOrPragmatic(from: state)
+            let shapeTail = shape == .drivenCurrent ? " The drive that kept you going also made the recovery feel harder-won." : (shape == .looseEdges ? " The looseness you allowed made the drag linger." : "")
             return base + " In a Grounded run, the body and mind remember the cost longer. The fight back, when it comes, feels bigger." + shapeTail
         } else {
             // P4-5: resilient compounds but scars visible
@@ -1375,6 +1495,11 @@ struct YearlyOutcomeAggregator {
             detail = delta >= 0
                 ? "\(definition.title) gave the year a cleaner sense of direction."
                 : "\(definition.title) raised the stakes without fully paying off."
+        case .legal:
+            let changed = before.legal.stage != after.legal.stage
+            tone = after.legal.isInCustody ? .warning : (changed ? .neutral : .warning)
+            impactScore = after.legal.isInCustody ? 10 : 6
+            detail = "\(definition.title) shaped how the case moved."
         case .family, .identity:
             tone = .neutral
             impactScore = 5
@@ -1534,6 +1659,7 @@ struct YearlyOutcomeAggregator {
         case .education: return .education
         case .career: return .career
         case .crime: return .career
+        case .legal: return .legal
         case .military: return .military
         case .finance: return .finance
         case .relationships: return .relationships
@@ -1602,6 +1728,8 @@ enum SimulationDomain {
     case specialCareer
     case military
     case crime
+    case legal
+    case economy
     case investments
     case housing
     case relationships
@@ -1609,6 +1737,7 @@ enum SimulationDomain {
     case finance
     case health
     case assets
+    case luxury
     case progress
     case world
     case npcAutonomy
@@ -1617,6 +1746,8 @@ enum SimulationDomain {
 struct SystemRegistry {
     func isActive(_ domain: SimulationDomain, in world: WorldSnapshot) -> Bool {
         let state = world.state
+        let custodyRestrictionsActive = state.legal.isInCustody
+            && (state.legal.custodyStartedAge ?? state.player.age) < state.player.age
         switch domain {
         case .actions:
             return !state.pendingActions.isEmpty
@@ -1627,24 +1758,33 @@ struct SystemRegistry {
         case .education:
             return state.player.age <= 22 || state.education.pathway == .student || state.education.pathway == .training
         case .career:
-            return state.player.age >= 16 || state.career.roleID != nil || state.career.status != .student
+            return !custodyRestrictionsActive && (state.player.age >= 16 || state.career.roleID != nil || state.career.status != .student)
         case .specialCareer:
-            return state.player.age >= 18
+            return !custodyRestrictionsActive && state.player.age >= 18
         case .military:
-            return state.military.track != .inactive || state.player.age >= 18
+            return !custodyRestrictionsActive && (state.military.track != .inactive || state.player.age >= 18)
         case .crime:
-            return state.player.age >= 18 && (
+            return !custodyRestrictionsActive && state.player.age >= 18 && (
                 state.crime.status != .inactive ||
                 state.pendingActions.contains(where: { $0.domain == .crime }) ||
                 state.finance.cashOnHand < 600
             )
-        case .investments:
+        case .legal:
             return state.player.age >= 18 && (
+                state.legal.stage != .inactive ||
+                !state.legal.pendingExposures.isEmpty ||
+                !state.legal.convictions.isEmpty ||
+                state.pendingActions.contains(where: { $0.domain == .legal })
+            )
+        case .economy:
+            return state.player.age >= 18
+        case .investments:
+            return !custodyRestrictionsActive && state.player.age >= 18 && (
                 state.finance.hasInvestments ||
                 (state.finance.lastYearBalanceDelta >= 0 && state.finance.cashOnHand >= 6_000)
             )
         case .housing:
-            return state.player.age >= 18 || state.housing.livingArrangement != .familyHome
+            return !custodyRestrictionsActive && (state.player.age >= 18 || state.housing.livingArrangement != .familyHome)
         case .relationships:
             return state.player.age >= 12 || !state.relationships.friends.isEmpty || state.relationships.hasPartner
         case .family:
@@ -1654,7 +1794,9 @@ struct SystemRegistry {
         case .health:
             return true
         case .assets:
-            return state.player.age >= 18 || state.assets.ownsHome || state.assets.isSavingForHome || !state.finance.portfolio.rentals.isEmpty
+            return !custodyRestrictionsActive && (state.player.age >= 18 || state.assets.ownsHome || state.assets.isSavingForHome || !state.finance.portfolio.rentals.isEmpty)
+        case .luxury:
+            return !custodyRestrictionsActive && (state.assets.lifestyleScore >= 75 || state.finance.totalWealth >= 50_000_000)
         case .progress:
             return true
         case .world:

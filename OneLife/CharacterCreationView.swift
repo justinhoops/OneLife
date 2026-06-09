@@ -664,7 +664,7 @@ struct CharacterCreationView: View {
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
 
-            if let preview = vm.originPreview {
+            if vm.originPreview != nil {
                 Text("Current feel: \(vm.selectedResilience.displayName) — the preview stats above will feel the difference once you begin.")
                     .font(.caption.italic())
                     .foregroundStyle(.secondary)

@@ -112,6 +112,7 @@ enum ConsoleDomain: String, CaseIterable, Identifiable {
     case work
     case money
     case people
+    case activities
     case body
     case log
 
@@ -137,16 +138,24 @@ struct LifeConsoleView: View {
     }
 
     private var currentDomain: ConsoleDomain {
-        if vm.showingHealthConsole { return .body }
-        return consoleDomain(for: vm.selectedTab)
+        consoleDomain(for: vm.selectedTab)
     }
 
     private var panel: DomainPanelModel {
         vm.domainPanel(for: currentDomain)
     }
 
+    private var secondaryPressures: [PlannerInsight] {
+        Array(vm.feedUrgencyItems().dropFirst(3).prefix(3))
+    }
+
     private var showsLifeHubExtras: Bool {
         currentDomain == .life && !bitLifeShell
+    }
+
+    /// Life-tab compaction: glance ribbon + collapsible decks (works in BitLife shell).
+    private var showsLifeAuditDeck: Bool {
+        currentDomain == .life && compactLateGame
     }
 
     var body: some View {
@@ -167,37 +176,27 @@ struct LifeConsoleView: View {
                     }
 
                     nowLaneCard
-                    if showsLifeHubExtras, !vm.castStripMembers().isEmpty {
-                        castStripCard
+                    if (showsLifeHubExtras || showsLifeAuditDeck), !vm.castStripMembers().isEmpty {
+                        if compactLateGame {
+                            compactCastStrip
+                        } else {
+                            castStripCard
+                        }
                     }
 
-                    if showsLifeHubExtras {
-                        if let coach = vm.state.discoverability.pendingCoachLine(
-                            quickActionsAvailable: !panel.quickActions.isEmpty,
-                            mvpOnboardingActive: vm.state.mvpOnboarding.isActive(at: vm.state.player.age),
-                            momentumActive: vm.state.instantMomentum.isVisible,
-                            earlyDossierActive: vm.state.player.age < 22 && vm.state.childhoodDossier != nil
-                        ) {
-                            discoverabilityCoachBanner(coach) {
-                                if coach.contains("Age Up") {
-                                    vm.markInstantYearlyCoachSeen()
-                                } else if coach.contains("momentum strip") {
-                                    vm.markMomentumCoachSeen()
-                                } else {
-                                    vm.markLongPressCoachSeen()
-                                }
-                            }
-                        }
+                    if showsLifeHubExtras || showsLifeAuditDeck {
                         if let ribbon = vm.lateGameContextRibbon() {
                             lateGameContextRibbon(ribbon)
                         }
-                        glanceStrip
+                        if !compactLateGame {
+                            glanceStrip
+                        }
                         if compactLateGame {
                             collapsibleConsoleSection(
                                 id: "pressures",
-                                title: "All Pressures",
-                                subtitle: snapshot.topPressures.first.map { "\($0.title): \($0.value)" } ?? "Stable",
-                                tone: snapshot.topPressures.contains(where: { $0.tone == .warning }) ? .warning : .neutral,
+                                title: "More Pressures",
+                                subtitle: secondaryPressures.first.map { "\($0.title): \($0.value)" } ?? "No secondary pressure",
+                                tone: secondaryPressures.contains(where: { $0.tone == .warning }) ? .warning : .neutral,
                                 icon: "exclamationmark.triangle"
                             ) {
                                 pressureDeckContent
@@ -231,39 +230,68 @@ struct LifeConsoleView: View {
                         Button {
                             AppFeedback.impact(.light)
                             vm.showingHealthConsole = false
+                            vm.selectedTab = .activities
                         } label: {
-                            Label("Back to \(vm.dockLabel(for: vm.selectedTab))", systemImage: "chevron.left")
+                            Label("Open Play tab for instant actions", systemImage: "sparkles")
                                 .font(.caption.weight(.black))
                         }
                         .buttonStyle(.plain)
-                        .accessibilityIdentifier("health-console-back-button")
                     }
 
-                    DomainPanelView(
-                        model: panel,
-                        compactMode: panelCompact,
-                        bitLifeMode: bitLifeShell,
-                        forceExpandYearPlan: vm.shouldExpandHomeYearPlan() && currentDomain == .money,
-                        adultChildrenGlance: panelCompact ? vm.adultChildrenGlanceItems() : [],
-                        showLongPressCoach: !vm.state.discoverability.seenLongPressCoach && panel.previewProvider != nil,
-                        adultChildrenCoachLine: adultChildrenCoachLine,
-                        onDismissAdultChildrenCoach: { vm.markAdultChildrenCoachSeen() },
-                        onLongPressPreview: { vm.markLongPressCoachSeen() },
-                        onDetail: { destination in
-                            AppFeedback.impact(.light)
-                            vm.openDetail(destination)
-                        },
-                        onQuickAction: { action in
-                            vm.performQuickAction(action.choiceID, for: action.domain)
-                        },
-                        onSelectAction: { action in
-                            AppFeedback.impact(.light)
-                            vm.setAction(action.choiceID, for: action.domain)
-                        }
-                    )
+                    if currentDomain == .activities {
+                        ActivitiesInstantHubView(vm: vm)
+                    } else if bitLifeShell {
+                        DomainGlancePanelView(
+                            model: panel,
+                            vm: vm,
+                            adultChildrenGlance: panelCompact ? vm.adultChildrenGlanceItems() : [],
+                            adultChildrenFocusChip: adultChildrenFocusHistoryChip,
+                            onDismissAdultChildrenCoach: { vm.markAdultChildrenCoachSeen() },
+                            showLongPressCoach: vm.state.discoverability.shouldShowHoldHint() && panel.previewProvider != nil,
+                            firstQuickActionTeachLine: vm.firstQuickActionTeachLine(),
+                            onDismissFirstQuickActionTeach: { vm.markFirstQuickActionTeachSeen() },
+                            onLongPressPreview: { vm.markFirstLongPressTeachSeen() },
+                            onQuickAction: { action in
+                                vm.performQuickAction(action.choiceID, for: action.domain)
+                            },
+                            onDetail: { destination in
+                                AppFeedback.impact(.light)
+                                vm.openDetail(destination)
+                            }
+                        )
 
-                    if currentDomain == .money {
-                        housingHubCard
+                        if currentDomain == .money {
+                            housingHubCard
+                        }
+                    } else {
+                        DomainPanelView(
+                            model: panel,
+                            compactMode: panelCompact,
+                            bitLifeMode: bitLifeShell,
+                            forceExpandYearPlan: vm.shouldExpandHomeYearPlan() && currentDomain == .money,
+                            adultChildrenGlance: panelCompact ? vm.adultChildrenGlanceItems() : [],
+                            showLongPressCoach: vm.state.discoverability.shouldShowHoldHint() && panel.previewProvider != nil,
+                            adultChildrenFocusChip: adultChildrenFocusHistoryChip,
+                            onDismissAdultChildrenCoach: { vm.markAdultChildrenCoachSeen() },
+                            firstQuickActionTeachLine: vm.firstQuickActionTeachLine(),
+                            onDismissFirstQuickActionTeach: { vm.markFirstQuickActionTeachSeen() },
+                            onLongPressPreview: { vm.markFirstLongPressTeachSeen() },
+                            onDetail: { destination in
+                                AppFeedback.impact(.light)
+                                vm.openDetail(destination)
+                            },
+                            onQuickAction: { action in
+                                vm.performQuickAction(action.choiceID, for: action.domain)
+                            },
+                            onSelectAction: { action in
+                                AppFeedback.impact(.light)
+                                vm.performQuickAction(action.choiceID, for: action.domain)
+                            }
+                        )
+
+                        if currentDomain == .money {
+                            housingHubCard
+                        }
                     }
 
                     if currentDomain == .log, !bitLifeShell {
@@ -280,16 +308,6 @@ struct LifeConsoleView: View {
         .background(consoleBackground.ignoresSafeArea())
         .sheet(isPresented: $showResilienceSheet) {
             resilienceExplainSheet
-        }
-        .onAppear {
-            if !vm.recentInstantReactions.isEmpty, !vm.state.discoverability.seenMomentumCoach {
-                showedMomentumHint = true
-            }
-        }
-        .onChange(of: vm.recentInstantReactions.count) { _, count in
-            if count > 0, !vm.state.discoverability.seenMomentumCoach {
-                withAnimation { showedMomentumHint = true }
-            }
         }
         .onAppear { syncConsoleSectionDefaults() }
         .onChange(of: panelCompact) { _, _ in syncConsoleSectionDefaults() }
@@ -382,11 +400,11 @@ struct LifeConsoleView: View {
         .accessibilityIdentifier("console-section-\(id)")
     }
 
-    private var adultChildrenCoachLine: String? {
+    private var adultChildrenFocusHistoryChip: String? {
         guard currentDomain == .people, !vm.state.discoverability.seenAdultChildrenCoach else { return nil }
         let adults = vm.state.family.children.filter { !$0.livesAtHome }
         guard !adults.isEmpty else { return nil }
-        return "Adult children are the same kids from earlier years — their stories grew from how you raised them."
+        return DiscoverabilityTeaching.adultChildFocusHistoryLine
     }
 
     private var nowLaneCard: some View {
@@ -475,26 +493,90 @@ struct LifeConsoleView: View {
         }
     }
 
-    private func discoverabilityCoachBanner(_ text: String, onDismiss: @escaping () -> Void) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: text.contains("Age Up") ? "calendar.badge.clock" : "hand.tap.fill")
-                .foregroundStyle(Color.purple)
-            Text(text)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.primary)
-            Spacer(minLength: 0)
-            Button {
-                onDismiss()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.secondary)
+    /// Horizontal top-3 audit chips — always visible in compact late-game header.
+    private var glanceAuditStrip: some View {
+        let chips = vm.glanceAuditChips(limit: 3)
+        return Group {
+            if !chips.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(chips) { chip in
+                            Button {
+                                AppFeedback.impact(.light)
+                                if let dest = vm.plannerDestination(forUrgencyItemTitle: chip.title) {
+                                    vm.openDetail(dest)
+                                }
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: chip.icon)
+                                        .font(.system(size: 10, weight: .black))
+                                        .foregroundStyle(chip.tone.color)
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        Text(chip.title)
+                                            .font(.system(size: 8, weight: .heavy))
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                        Text(chip.value)
+                                            .font(.system(size: 10, weight: .black))
+                                            .foregroundStyle(chip.tone.color)
+                                            .lineLimit(1)
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .background(chip.tone.fill)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("glance-audit-\(chip.id)")
+                        }
+                    }
+                }
+                .accessibilityIdentifier("glance-audit-strip")
             }
-            .buttonStyle(.plain)
         }
-        .padding(12)
-        .background(Color.purple.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .accessibilityIdentifier("discoverability-coach-banner")
+    }
+
+    private var compactCastStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(vm.castStripMembers()) { member in
+                    HStack(spacing: 4) {
+                        Image(systemName: member.icon)
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.purple)
+                        Text(member.name)
+                            .font(.system(size: 9, weight: .heavy))
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(Capsule(style: .continuous))
+                    .accessibilityIdentifier("cast-member-\(member.id)")
+                }
+            }
+        }
+        .accessibilityIdentifier("life-cast-strip-compact")
+    }
+
+    private var healthActivitiesDeck: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HealthActivitiesPanel(
+                state: vm.state,
+                categories: vm.activityCategories(),
+                activitiesForCategory: { vm.activities(in: $0) },
+                statusLine: vm.activityThisYearStatus(),
+                onPerformActivity: { vm.performActivity($0) }
+            )
+
+            if vm.showsLuxurySuite {
+                LuxurySuiteCard(vm: vm) { action in
+                    vm.performQuickAction(action.choiceID, for: action.domain)
+                }
+            }
+        }
+        .accessibilityIdentifier("health-activities-deck")
     }
 
     private var resilienceExplainSheet: some View {
@@ -583,6 +665,10 @@ struct LifeConsoleView: View {
                 quickStat(title: "Pattern", value: snapshot.selectedAction, tone: vm.state.actionMemory.latestAction == nil ? .neutral : .positive)
             }
 
+            if compactLateGame {
+                glanceAuditStrip
+            }
+
             if !vm.recentInstantReactions.isEmpty || vm.state.instantMomentum.isVisible {
                 instantMomentumStrip
                     .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .opacity))
@@ -657,6 +743,14 @@ struct LifeConsoleView: View {
             }
         }
         .frame(minHeight: 28)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.purple.opacity(colorScheme == .light ? 0.05 : 0.12))
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous)
+                .stroke(Color.purple.opacity(colorScheme == .light ? 0.2 : 0.3), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous))
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.recentInstantReactions.count)
         .accessibilityIdentifier("instant-momentum-strip")
     }
@@ -788,15 +882,28 @@ struct LifeConsoleView: View {
         // Phase 6: Glance-optimized (icons derived from title + short text)
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Top Pressures")
+                Text("Secondary Pressures")
                     .font(.caption.weight(.black))
                     .foregroundStyle(.secondary)
                 Text(vm.state.resilience.shortLabel)
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(vm.state.resilience == .grounded ? Color.orange : Color.green)
+                if vm.hasHarshConsolePressure {
+                    Text(DiscoverabilityTeaching.harshYearConsoleSubtitle(resilience: vm.state.resilience))
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(vm.state.resilience == .grounded ? Color.orange.opacity(0.9) : Color.green.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("harsh-year-resilience-subtitle")
+                }
             }
 
-            ForEach(snapshot.topPressures.prefix(3)) { pressure in
+            if secondaryPressures.isEmpty {
+                Text("The primary audit already contains every active pressure.")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(secondaryPressures) { pressure in
                 HStack(spacing: 8) {
                     Image(systemName: iconForPressureTitle(pressure.title))
                         .font(.caption.weight(.bold))
@@ -1013,6 +1120,7 @@ struct LifeConsoleView: View {
         case .occupation: return .work
         case .assets: return .money
         case .relationships: return .people
+        case .activities: return .activities
         case .history: return .log
         }
     }
@@ -1029,6 +1137,377 @@ struct LifeConsoleView: View {
     }
 }
 
+// MARK: - BitLife Instant Hub (Play tab)
+
+private struct ActivitiesInstantHubView: View {
+    @ObservedObject var vm: GameViewModel
+    private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
+
+    var body: some View {
+        let sections = vm.instantHubSections()
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: "bolt.circle.fill")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(DesignSystem.Colors.positive)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Right Now")
+                        .font(.title3.weight(.black))
+                    Text("Every tap resolves instantly — deltas, momentum, fame, ledger.")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.bottom, 2)
+
+            ForEach(sections) { section in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: section.symbol)
+                            .font(.caption.weight(.black))
+                            .foregroundStyle(section.isLuxury ? Color(red: 0.75, green: 0.55, blue: 0.12) : .secondary)
+                        Text(section.title)
+                            .font(.caption.weight(.black))
+                            .foregroundStyle(section.isLuxury ? Color(red: 0.55, green: 0.38, blue: 0.05) : .secondary)
+                    }
+
+                    LazyVGrid(columns: columns, spacing: 8) {
+                        ForEach(section.items) { item in
+                            Button {
+                                vm.performInstantHubItem(item)
+                            } label: {
+                                InstantHubTile(item: item)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("instant-hub-\(item.id)")
+                        }
+                    }
+                }
+                .padding(section.isLuxury ? 10 : 0)
+                .background(
+                    Group {
+                        if section.isLuxury {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color(red: 0.98, green: 0.94, blue: 0.82).opacity(0.45))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(Color(red: 0.85, green: 0.65, blue: 0.15).opacity(0.45), lineWidth: 1)
+                                )
+                        }
+                    }
+                )
+            }
+        }
+        .padding(14)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .accessibilityIdentifier("activities-tab-content")
+    }
+}
+
+private struct InstantHubTile: View {
+    let item: GameViewModel.InstantHubItem
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: item.icon)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(item.isLuxury ? Color(red: 0.55, green: 0.38, blue: 0.05) : item.tone.color)
+            Text(item.title)
+                .font(.system(size: 10, weight: .heavy))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+                .foregroundStyle(.primary)
+            Text(item.subtitle)
+                .font(.system(size: 8, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, minHeight: 88)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 8)
+        .background(item.isLuxury ? Color.white.opacity(0.85) : item.tone.fill)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(item.isLuxury ? Color(red: 0.75, green: 0.55, blue: 0.12).opacity(0.35) : Color.primary.opacity(0.06), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Domain Glance Panel (BitLife domain tabs)
+
+@ViewBuilder
+private func domainInstantDeckSection(
+    model: DomainPanelModel,
+    showLongPressCoach: Bool,
+    firstQuickActionTeachLine: String? = nil,
+    showLongPressFooter: Bool = false,
+    onDismissFirstQuickActionTeach: (() -> Void)? = nil,
+    onLongPressPreview: (() -> Void)?,
+    onQuickAction: @escaping (ActionPresentationModel) -> Void
+) -> some View {
+    if !model.quickActions.isEmpty {
+        ActionTray(
+            title: "Right Now",
+            actions: model.quickActions,
+            selectedBadge: "DONE",
+            accessibilityPrefix: "quick-action",
+            onSelect: onQuickAction,
+            previewProvider: model.previewProvider,
+            showHoldHint: showLongPressCoach,
+            showLongPressFooter: showLongPressFooter,
+            firstQuickActionTeachLine: firstQuickActionTeachLine,
+            onDismissFirstQuickActionTeach: onDismissFirstQuickActionTeach,
+            onPreviewActivated: onLongPressPreview
+        )
+    }
+
+    if !model.familyQuickActions.isEmpty {
+        ActionTray(
+            title: "Family — Right Now",
+            actions: model.familyQuickActions,
+            selectedBadge: "DONE",
+            accessibilityPrefix: "family-quick-action",
+            onSelect: onQuickAction,
+            previewProvider: model.previewProvider,
+            showHoldHint: showLongPressCoach,
+            showLongPressFooter: showLongPressFooter,
+            onPreviewActivated: onLongPressPreview
+        )
+    }
+
+    if !model.riskQuickActions.isEmpty {
+        ActionTray(
+            title: "Risk — Right Now",
+            actions: model.riskQuickActions,
+            selectedBadge: "DONE",
+            accessibilityPrefix: "risk-quick-action",
+            onSelect: onQuickAction,
+            previewProvider: model.previewProvider,
+            showHoldHint: showLongPressCoach,
+            showLongPressFooter: showLongPressFooter,
+            onPreviewActivated: onLongPressPreview
+        )
+    }
+}
+
+private struct DomainGlancePanelView: View {
+    let model: DomainPanelModel
+    @ObservedObject var vm: GameViewModel
+    var adultChildrenGlance: [GameViewModel.AdultChildGlanceItem] = []
+    var adultChildrenFocusChip: String? = nil
+    var onDismissAdultChildrenCoach: (() -> Void)? = nil
+    var showLongPressCoach: Bool = false
+    var firstQuickActionTeachLine: String? = nil
+    var onDismissFirstQuickActionTeach: (() -> Void)? = nil
+    var onLongPressPreview: (() -> Void)? = nil
+    let onQuickAction: (ActionPresentationModel) -> Void
+    let onDetail: (PlannerDetailDestination) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("")
+                .frame(width: 1, height: 1)
+                .accessibilityIdentifier(accessibilityIdentifier)
+
+            if !model.quickActions.isEmpty || !model.familyQuickActions.isEmpty || !model.riskQuickActions.isEmpty {
+                domainInstantDeckSection(
+                    model: model,
+                    showLongPressCoach: showLongPressCoach,
+                    firstQuickActionTeachLine: firstQuickActionTeachLine,
+                    showLongPressFooter: !vm.state.discoverability.seenFirstLongPressTeach,
+                    onDismissFirstQuickActionTeach: onDismissFirstQuickActionTeach,
+                    onLongPressPreview: onLongPressPreview,
+                    onQuickAction: onQuickAction
+                )
+            }
+
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.title)
+                        .font(.headline.weight(.black))
+                    Text(model.status)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(model.tone.color)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                if let destination = model.detailDestination {
+                    Button("Details") { onDetail(destination) }
+                        .font(.caption.weight(.black))
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier(model.detailButtonIdentifier ?? "\(model.id.rawValue)-detail-button")
+                }
+            }
+
+            HStack(spacing: 8) {
+                ForEach(Array(model.metrics.prefix(3))) { metric in
+                    ConsoleMetricTile(metric: metric)
+                }
+            }
+            .accessibilityIdentifier("\(model.id.rawValue)-overview-audit")
+
+            if !vm.glanceAuditChips(limit: 3).isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(vm.glanceAuditChips(limit: 3)) { chip in
+                            HStack(spacing: 4) {
+                                Image(systemName: chip.icon)
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundStyle(chip.tone.color)
+                                Text(chip.value)
+                                    .font(.system(size: 9, weight: .heavy))
+                                    .foregroundStyle(chip.tone.color)
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(chip.tone.fill)
+                            .clipShape(Capsule())
+                        }
+                        if vm.state.instantMomentum.isVisible {
+                            HStack(spacing: 4) {
+                                Image(systemName: "globe.americas.fill")
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundStyle(Color.purple)
+                                Text("Mom \(vm.state.instantMomentum.overallStrength)")
+                                    .font(.system(size: 9, weight: .heavy))
+                                    .foregroundStyle(Color.purple)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(Color.purple.opacity(0.12))
+                            .clipShape(Capsule())
+                        }
+                        if vm.state.fame.culturalFame >= 45 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundStyle(.orange)
+                                Text("\(vm.state.fame.culturalFame)")
+                                    .font(.system(size: 9, weight: .heavy))
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(Color.orange.opacity(0.12))
+                            .clipShape(Capsule())
+                        }
+                    }
+                }
+            }
+
+            adultChildrenGlanceSection(
+                adultChildrenGlance: adultChildrenGlance,
+                focusChip: adultChildrenFocusChip,
+                onDismissFocusChip: onDismissAdultChildrenCoach
+            )
+
+            glanceHighlightRow(
+                icon: model.tone == .warning ? "exclamationmark.triangle.fill" : "checkmark.seal.fill",
+                title: model.tone == .warning ? "Top pressure" : "Status",
+                detail: model.pressureLine,
+                tone: model.tone,
+                destination: model.detailDestination
+            )
+
+            if !model.velocity.isEmpty, model.detailDestination != nil {
+                glanceHighlightRow(
+                    icon: "arrow.triangle.branch",
+                    title: "Trajectory",
+                    detail: model.velocity,
+                    tone: .neutral,
+                    destination: model.detailDestination
+                )
+            }
+
+            Button {
+                AppFeedback.impact(.light)
+                vm.selectedTab = .activities
+            } label: {
+                HStack {
+                    Image(systemName: "sparkles")
+                    Text("More instant actions on Play tab")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(10)
+                .background(Color.primary.opacity(0.04))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("\(model.id.rawValue)-open-play-tab")
+        }
+        .padding(12)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func glanceHighlightRow(
+        icon: String,
+        title: String,
+        detail: String,
+        tone: PlannerTone,
+        destination: PlannerDetailDestination?
+    ) -> some View {
+        Button {
+            AppFeedback.impact(.light)
+            if let destination { onDetail(destination) }
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: icon)
+                    .foregroundStyle(tone.color)
+                    .frame(width: 18)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.caption2.weight(.black))
+                        .foregroundStyle(.secondary)
+                    Text(detail)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                if destination != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(10)
+            .background(tone.fill)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(destination == nil)
+    }
+
+    private var accessibilityIdentifier: String {
+        switch model.id {
+        case .life: return "home-tab-content"
+        case .work: return model.title == "Education" ? "education-tab-content" : "career-tab-content"
+        case .money: return "finance-tab-content"
+        case .people: return "relationships-tab-content"
+        case .activities: return "activities-tab-content"
+        case .body: return "health-tab-content"
+        case .log: return "history-console-content"
+        }
+    }
+}
+
 private struct DomainPanelView: View {
     let model: DomainPanelModel
     var compactMode: Bool = false
@@ -1036,9 +1515,13 @@ private struct DomainPanelView: View {
     var forceExpandYearPlan: Bool = false
     var adultChildrenGlance: [GameViewModel.AdultChildGlanceItem] = []
     @State private var yearPlanExpanded = false
+    @State private var familyTrayExpanded = false
+    @State private var riskTrayExpanded = false
     var showLongPressCoach: Bool = false
-    var adultChildrenCoachLine: String? = nil
+    var adultChildrenFocusChip: String? = nil
     var onDismissAdultChildrenCoach: (() -> Void)? = nil
+    var firstQuickActionTeachLine: String? = nil
+    var onDismissFirstQuickActionTeach: (() -> Void)? = nil
     var onLongPressPreview: (() -> Void)? = nil
     let onDetail: (PlannerDetailDestination) -> Void
     let onQuickAction: (ActionPresentationModel) -> Void
@@ -1046,24 +1529,6 @@ private struct DomainPanelView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if let line = adultChildrenCoachLine {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "figure.2.and.child.holdinghands")
-                        .foregroundStyle(.secondary)
-                    Text(line)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: 0)
-                    Button { onDismissAdultChildrenCoach?() } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(10)
-                .background(Color.primary.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .accessibilityIdentifier("adult-children-coach-banner")
-            }
             Text("")
                 .frame(width: 1, height: 1)
                 .accessibilityIdentifier(accessibilityIdentifier)
@@ -1113,9 +1578,11 @@ private struct DomainPanelView: View {
             }
             .accessibilityIdentifier("\(model.id.rawValue)-overview-audit")
 
-            if !adultChildrenGlance.isEmpty {
-                adultChildrenGlanceStrip
-            }
+            adultChildrenGlanceSection(
+                adultChildrenGlance: adultChildrenGlance,
+                focusChip: adultChildrenFocusChip,
+                onDismissFocusChip: onDismissAdultChildrenCoach
+            )
 
             if !bitLifeMode || model.tone == .warning {
                 HStack(alignment: .top, spacing: 10) {
@@ -1150,31 +1617,34 @@ private struct DomainPanelView: View {
                 .padding(.top, 4)
             }
 
-            if !model.quickActions.isEmpty {
-                ActionTray(
-                    title: bitLifeMode ? "Do Now" : "Quick Actions",
-                    actions: model.quickActions,
-                    selectedBadge: "DONE",
-                    accessibilityPrefix: "quick-action",
-                    onSelect: onQuickAction,
-                    previewProvider: model.previewProvider,
-                    showHoldHint: showLongPressCoach,
-                    onPreviewActivated: onLongPressPreview
-                )
-            }
+            domainInstantDeckSection(
+                model: model,
+                showLongPressCoach: showLongPressCoach,
+                firstQuickActionTeachLine: firstQuickActionTeachLine,
+                showLongPressFooter: showLongPressCoach,
+                onDismissFirstQuickActionTeach: onDismissFirstQuickActionTeach,
+                onLongPressPreview: onLongPressPreview,
+                onQuickAction: onQuickAction
+            )
 
-            if !model.familyQuickActions.isEmpty {
-                ActionTray(title: "Family — Right Now", actions: model.familyQuickActions, selectedBadge: "DONE", accessibilityPrefix: "family-quick-action", onSelect: onQuickAction, previewProvider: model.previewProvider, showHoldHint: showLongPressCoach, onPreviewActivated: onLongPressPreview)
-            }
             if !model.familyActions.isEmpty {
-                ActionTray(title: "Family — Year Plan", actions: model.familyActions, selectedBadge: "SET", accessibilityPrefix: "family-action-choice", onSelect: onSelectAction, previewProvider: model.previewProvider)
+                if compactMode && !forceExpandYearPlan {
+                    actionTrayDisclosure(title: "Family — Year Plan", isExpanded: $familyTrayExpanded) {
+                        ActionTray(title: "Family — Year Plan", actions: model.familyActions, selectedBadge: "SET", accessibilityPrefix: "family-action-choice", onSelect: onSelectAction, previewProvider: model.previewProvider)
+                    }
+                } else {
+                    ActionTray(title: "Family — Year Plan", actions: model.familyActions, selectedBadge: "SET", accessibilityPrefix: "family-action-choice", onSelect: onSelectAction, previewProvider: model.previewProvider)
+                }
             }
 
-            if !model.riskQuickActions.isEmpty {
-                ActionTray(title: "Risk — Right Now", actions: model.riskQuickActions, selectedBadge: "DONE", accessibilityPrefix: "risk-quick-action", onSelect: onQuickAction, previewProvider: model.previewProvider, showHoldHint: showLongPressCoach, onPreviewActivated: onLongPressPreview)
-            }
             if !model.riskActions.isEmpty {
-                ActionTray(title: "Risk — Year Plan", actions: model.riskActions, selectedBadge: "SET", accessibilityPrefix: "risk-action-choice", onSelect: onSelectAction, previewProvider: model.previewProvider)
+                if compactMode {
+                    actionTrayDisclosure(title: "Risk — Year Plan", isExpanded: $riskTrayExpanded) {
+                        ActionTray(title: "Risk — Year Plan", actions: model.riskActions, selectedBadge: "SET", accessibilityPrefix: "risk-action-choice", onSelect: onSelectAction, previewProvider: model.previewProvider)
+                    }
+                } else {
+                    ActionTray(title: "Risk — Year Plan", actions: model.riskActions, selectedBadge: "SET", accessibilityPrefix: "risk-action-choice", onSelect: onSelectAction, previewProvider: model.previewProvider)
+                }
             }
 
             if let sections = model.actionSections, !sections.isEmpty {
@@ -1228,32 +1698,24 @@ private struct DomainPanelView: View {
         .accessibilityIdentifier("year-plan-disclosure")
     }
 
-    private var adultChildrenGlanceStrip: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Adult children")
-                .font(.caption2.weight(.black))
-                .foregroundStyle(.secondary)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(adultChildrenGlance) { child in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(child.name)
-                                .font(.caption.weight(.heavy))
-                                .lineLimit(1)
-                            Text("Age \(child.age) · \(child.outcomeLabel)")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(PlannerTone.neutral.fill)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .accessibilityIdentifier("adult-child-glance-\(child.id)")
-                    }
-                }
+    @ViewBuilder
+    private func actionTrayDisclosure<Content: View>(
+        title: String,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        DisclosureGroup(isExpanded: isExpanded) {
+            content()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "person.2.fill")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(.secondary)
             }
         }
-        .accessibilityIdentifier("adult-children-glance-strip")
     }
 
     private var accessibilityIdentifier: String {
@@ -1262,9 +1724,65 @@ private struct DomainPanelView: View {
         case .work: return model.title == "Education" ? "education-tab-content" : "career-tab-content"
         case .money: return "finance-tab-content"
         case .people: return "relationships-tab-content"
+        case .activities: return "activities-tab-content"
         case .body: return "health-tab-content"
         case .log: return "history-console-content"
         }
+    }
+}
+
+@ViewBuilder
+private func adultChildrenGlanceSection(
+    adultChildrenGlance: [GameViewModel.AdultChildGlanceItem],
+    focusChip: String?,
+    onDismissFocusChip: (() -> Void)?
+) -> some View {
+    if focusChip != nil || !adultChildrenGlance.isEmpty {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Adult children")
+                .font(.caption2.weight(.black))
+                .foregroundStyle(.secondary)
+
+            if let chip = focusChip {
+                Text(chip)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.purple.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .accessibilityIdentifier("adult-children-focus-chip")
+            }
+
+            if !adultChildrenGlance.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(adultChildrenGlance) { child in
+                            Button {
+                                onDismissFocusChip?()
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(child.name)
+                                        .font(.caption.weight(.heavy))
+                                        .lineLimit(1)
+                                    Text("Age \(child.age) · \(child.outcomeLabel)")
+                                        .font(.system(size: 9, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(PlannerTone.neutral.fill)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("adult-child-glance-\(child.id)")
+                        }
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("adult-children-glance-strip")
     }
 }
 
@@ -1286,8 +1804,12 @@ private struct ConsoleMetricTile: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(metric.tone.fill)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(metric.tone.fill.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(metric.tone.color.opacity(0.15), lineWidth: 1)
+        )
     }
 }
 
@@ -1299,6 +1821,9 @@ private struct ActionTray: View {
     let onSelect: (ActionPresentationModel) -> Void
     var previewProvider: ((ActionChoiceID) -> [String])? = nil
     var showHoldHint: Bool = false
+    var showLongPressFooter: Bool = false
+    var firstQuickActionTeachLine: String? = nil
+    var onDismissFirstQuickActionTeach: (() -> Void)? = nil
     var onPreviewActivated: (() -> Void)? = nil
 
     @State private var previewedActionID: ActionChoiceID? = nil
@@ -1311,10 +1836,15 @@ private struct ActionTray: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(title)
-                    .font(.caption.weight(.black))
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                if isQuickDeck {
+                    Image(systemName: "bolt.circle.fill")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(Color.green)
+                }
+                Text(isQuickDeck ? "Right Now" : title)
+                    .font(isQuickDeck ? .subheadline.weight(.black) : .caption.weight(.black))
+                    .foregroundStyle(isQuickDeck ? .primary : .secondary)
                 if showHoldHint, previewProvider != nil, isQuickDeck {
                     Text("HOLD TO PREVIEW")
                         .font(.system(size: 8, weight: .black))
@@ -1325,12 +1855,12 @@ private struct ActionTray: View {
                         .clipShape(Capsule())
                 }
                 if isQuickDeck {
-                    Text("ALWAYS")
-                        .font(.system(size: 7, weight: .black))
-                        .foregroundStyle(Color.green.opacity(0.7))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color.green.opacity(0.12))
+                    Text("Instant — tap anytime")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(Color.green)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color.green.opacity(0.16))
                         .clipShape(Capsule())
                 }
                 Spacer(minLength: 0)
@@ -1400,9 +1930,9 @@ private struct ActionTray: View {
                                 }
                             }
                         }
-                        .padding(useGrid ? 8 : 10)
-                        .frame(maxWidth: .infinity, minHeight: useGrid ? 68 : 52, alignment: .topLeading)
-                        .background(action.isSelected ? PlannerTone.positive.fill : Color.primary.opacity(0.04))
+                        .padding(useGrid ? 10 : 10)
+                        .frame(maxWidth: .infinity, minHeight: useGrid ? 80 : 52, alignment: .topLeading)
+                        .background(action.isSelected ? PlannerTone.positive.fill : (useGrid ? Color.primary.opacity(0.06) : Color.primary.opacity(0.04)))
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -1441,17 +1971,50 @@ private struct ActionTray: View {
                                         .font(.caption2.weight(.semibold))
                                         .foregroundStyle(.white)
                                 }
+                                if showLongPressFooter {
+                                    Text(DiscoverabilityTeaching.longPressFooterLine)
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundStyle(Color.purple.opacity(0.95))
+                                }
                             }
                             .padding(5)
                             .background(Color.black.opacity(0.85))
                             .clipShape(RoundedRectangle(cornerRadius: 5))
                             .offset(x: 1, y: -1)
                             .onTapGesture { previewedActionID = nil; previewLines = [] }
+                            .accessibilityIdentifier("long-press-preview-footer")
                         }
                     }
                 }
             }
+
+            if isQuickDeck, let teach = firstQuickActionTeachLine {
+                Text(teach)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.green.opacity(0.95))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+                    .accessibilityIdentifier("first-quick-action-teach")
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                            onDismissFirstQuickActionTeach?()
+                        }
+                    }
+            }
         }
+        .padding(isQuickDeck ? 12 : 0)
+        .background(
+            Group {
+                if isQuickDeck {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.green.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.green.opacity(0.28), lineWidth: 1.5)
+                        )
+                }
+            }
+        )
     }
 }
 
@@ -1747,6 +2310,30 @@ extension GameViewModel {
                 detailButtonIdentifier: "health-overview-detail-button",
                 previewProvider: { [weak self] choice in self?.previewAction(choice) ?? [] }
             )
+        case .activities:
+            return DomainPanelModel(
+                id: .activities,
+                title: "Play",
+                icon: "sparkles",
+                tone: .positive,
+                status: activityThisYearStatus(),
+                velocity: "Instant hub — every flex resolves now.",
+                metrics: [
+                    ConsoleMetricModel(title: "Health", value: "\(state.player.health)", tone: bodyTone()),
+                    ConsoleMetricModel(title: "Relief", value: "\(state.activities.recoveryBalance)", tone: .positive),
+                    ConsoleMetricModel(title: "Risk", value: "\(state.activities.riskLoad)", tone: state.activities.riskLoad >= 8 ? .warning : .neutral)
+                ],
+                pressureLine: activityPushbackSummary(),
+                quickActions: [],
+                actions: [],
+                actionSections: nil,
+                riskQuickActions: [],
+                riskActions: [],
+                familyQuickActions: [],
+                familyActions: [],
+                detailDestination: nil,
+                detailButtonIdentifier: nil
+            )
         case .log:
             return DomainPanelModel(
                 id: .log,
@@ -1914,6 +2501,31 @@ extension GameViewModel {
         if tags.contains("standing") || tags.contains("readiness") || tags.contains("school") { return "book.closed.fill" }
         if definition.baseFriction != .none { return "exclamationmark.triangle.fill" }
         return "bolt.fill"
+    }
+
+    var showsLuxurySuite: Bool {
+        state.assets.lifestyleScore >= 50
+            || state.finance.totalWealth >= 5_000_000
+            || !state.assets.signatureAssets.isEmpty
+            || state.fame.culturalFame >= 55
+    }
+
+    var luxurySuiteStatusLine: String {
+        if !luxurySuiteActions().isEmpty {
+            return "Lifestyle \(state.assets.lifestyleScore) · Fame \(state.fame.culturalFame)"
+        }
+        return "Elite tier locked · Lifestyle \(state.assets.lifestyleScore)"
+    }
+
+    func luxurySuiteActions() -> [ActionPresentationModel] {
+        let luxuryIDs: [ActionChoiceID] = [
+            .hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection,
+            .flexLuxuryAsset, .liquidateLuxury, .upgradeCollection, .hostAtSignatureEstate
+        ]
+        return luxuryIDs.compactMap { choiceID in
+            guard quickActionChoices(for: .finance).contains(choiceID) else { return nil }
+            return quickActionPresentation(choiceID: choiceID, domain: .finance)
+        }
     }
 }
 
@@ -2101,8 +2713,8 @@ private struct HousingHubCard: View {
                 .font(.caption.weight(.black))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .foregroundStyle(.white)
-                .background(DesignSystem.Colors.positive)
+                .foregroundStyle(.primary)
+                .background(Color.primary.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -2133,5 +2745,201 @@ private struct HousingUpgradeChip: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("housing-upgrade-\(upgrade.rawValue)")
+    }
+}
+
+/// Activities in the Health console — compact category picker + instant rows.
+private struct HealthActivitiesPanel: View {
+    let state: GameState
+    let categories: [ActivityCategory]
+    let activitiesForCategory: (ActivityCategory) -> [ActivityDefinition]
+    let statusLine: String
+    let onPerformActivity: (String) -> Void
+
+    @State private var selectedCategory: ActivityCategory = .mindBody
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(DesignSystem.Colors.positive)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Activities")
+                        .font(.headline.weight(.black))
+                    Text(statusLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(categories) { category in
+                        Button {
+                            AppFeedback.impact(.light)
+                            selectedCategory = category
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: category.symbol)
+                                Text(category.title)
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .foregroundStyle(selectedCategory == category ? Color.white : .primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(selectedCategory == category ? Color.black : Color.primary.opacity(0.08))
+                            .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            VStack(spacing: 8) {
+                ForEach(activitiesForCategory(selectedCategory)) { activity in
+                    Button {
+                        onPerformActivity(activity.id)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: activity.category.symbol)
+                                .foregroundStyle(PlannerTone.neutral.color)
+                                .frame(width: 32, height: 32)
+                                .background(PlannerTone.neutral.fill)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(activity.title)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                Text(activity.costLine)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(DesignSystem.Colors.positive)
+                        }
+                        .padding(10)
+                        .background(Color.primary.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("activity-\(activity.id)")
+                }
+            }
+        }
+        .padding(14)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityIdentifier("activities-tab-content")
+    }
+}
+
+/// Elite lifestyle actions — visually separated from everyday activities.
+private struct LuxurySuiteCard: View {
+    @ObservedObject var vm: GameViewModel
+    let onQuickAction: (ActionPresentationModel) -> Void
+
+    private var actions: [ActionPresentationModel] { vm.luxurySuiteActions() }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "crown.fill")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(Color(red: 0.85, green: 0.65, blue: 0.15))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Luxury Suite")
+                        .font(.headline.weight(.black))
+                    Text(vm.luxurySuiteStatusLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 0)
+            }
+
+            if actions.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill")
+                        .foregroundStyle(.secondary)
+                    Text("Reach elite wealth or lifestyle score 75+ to unlock gala, collection, and flex moves.")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(red: 0.85, green: 0.65, blue: 0.15).opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(actions) { action in
+                            Button {
+                                AppFeedback.impact(.medium)
+                                onQuickAction(action)
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Image(systemName: action.icon)
+                                        .font(.system(size: 14, weight: .bold))
+                                    Text(action.title)
+                                        .font(.system(size: 8, weight: .heavy))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .minimumScaleFactor(0.7)
+                                }
+                                .frame(width: 72)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 6)
+                                .foregroundStyle(Color(red: 0.55, green: 0.38, blue: 0.05))
+                                .background(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 0.98, green: 0.92, blue: 0.72),
+                                            Color(red: 0.92, green: 0.78, blue: 0.45)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(Color(red: 0.75, green: 0.55, blue: 0.12).opacity(0.45), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("luxury-action-\(action.choiceID.rawValue)")
+                        }
+                    }
+                }
+            }
+
+            Text("Long-press Money actions elsewhere for deep previews. Luxury moves carry fame, family, and scrutiny costs.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(red: 0.12, green: 0.10, blue: 0.06).opacity(0.04))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.85, green: 0.65, blue: 0.15).opacity(0.55),
+                            Color(red: 0.55, green: 0.38, blue: 0.05).opacity(0.25)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        )
+        .accessibilityIdentifier("luxury-suite-card")
     }
 }

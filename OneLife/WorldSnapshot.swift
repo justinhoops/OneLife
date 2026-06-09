@@ -107,6 +107,19 @@ struct CareerDomainSnapshot: Equatable {
     var health: HealthState
     var relationships: RelationshipState
     var childhoodDossier: ChildhoodDossier?
+    var recentStances: [YearlyStanceID] = []
+    var resilience: LifeResilience = .resilient
+    var reentryFrictionYears: Int = 0
+    var custodyProgramCompleted: Bool = false
+    var recordPressure: Int = 0
+    var prisonResidueTags: [String] = []
+}
+
+struct LegalDomainSnapshot: Equatable {
+    var player: Player
+    var legal: LegalState
+    var recentStances: [YearlyStanceID] = []
+    var resilience: LifeResilience = .resilient
 }
 
 struct SpecialCareerDomainSnapshot: Equatable {
@@ -131,6 +144,9 @@ struct CrimeDomainSnapshot: Equatable {
     var health: HealthState
     var relationships: RelationshipState
     var housing: HousingState
+    var activeTier: CrimeTier? = nil
+    var recentStances: [YearlyStanceID] = []
+    var resilience: LifeResilience = .resilient
 }
 
 struct FinanceDomainSnapshot: Equatable {
@@ -174,6 +190,12 @@ struct FamilyDomainSnapshot: Equatable {
     var health: HealthState
     var finance: FinanceState
     var worldEra: WorldEra
+    var parentRegularArchetype: CareerArchetype? = nil
+    var parentCareerBurnout: Int = 0
+    var parentCrimeTier: CrimeTier? = nil
+    var parentCrimeHeat: Int = 0
+    var parentInCustody: Bool = false
+    var parentCustodyFacility: CustodyFacility? = nil
 }
 
 struct HealthDomainSnapshot: Equatable {
@@ -192,6 +214,8 @@ struct HousingDomainSnapshot: Equatable {
     var housing: HousingState
     var finance: FinanceState
     var assets: AssetState
+    var reentryFrictionYears: Int = 0
+    var recordPressure: Int = 0
 }
 
 struct AssetDomainSnapshot: Equatable {
@@ -230,7 +254,30 @@ struct WorldSnapshot: Equatable {
     }
 
     var career: CareerDomainSnapshot {
-        CareerDomainSnapshot(world: cache, player: state.player, education: state.education, career: state.career, health: state.healthProfile, relationships: state.relationships, childhoodDossier: state.childhoodDossier)
+        CareerDomainSnapshot(
+            world: cache,
+            player: state.player,
+            education: state.education,
+            career: state.career,
+            health: state.healthProfile,
+            relationships: state.relationships,
+            childhoodDossier: state.childhoodDossier,
+            recentStances: state.yearlyStance.recentStances,
+            resilience: state.resilience,
+            reentryFrictionYears: state.legal.reentryYearsRemaining,
+            custodyProgramCompleted: state.legal.custodyProfile.programProgress >= 100,
+            recordPressure: state.legal.recordPressure,
+            prisonResidueTags: state.legal.prisonResidue?.tags ?? []
+        )
+    }
+
+    var legal: LegalDomainSnapshot {
+        LegalDomainSnapshot(
+            player: state.player,
+            legal: state.legal,
+            recentStances: state.yearlyStance.recentStances,
+            resilience: state.resilience
+        )
     }
 
     var specialCareer: SpecialCareerDomainSnapshot {
@@ -238,7 +285,19 @@ struct WorldSnapshot: Equatable {
     }
 
     var crime: CrimeDomainSnapshot {
-        CrimeDomainSnapshot(world: cache, player: state.player, career: state.career, crime: state.crime, finance: state.finance, health: state.healthProfile, relationships: state.relationships, housing: state.housing)
+        CrimeDomainSnapshot(
+            world: cache,
+            player: state.player,
+            career: state.career,
+            crime: state.crime,
+            finance: state.finance,
+            health: state.healthProfile,
+            relationships: state.relationships,
+            housing: state.housing,
+            activeTier: CrimeTier.resolve(crime: state.crime, specialCareer: state.specialCareer),
+            recentStances: state.yearlyStance.recentStances,
+            resilience: state.resilience
+        )
     }
 
     var finance: FinanceDomainSnapshot {
@@ -254,7 +313,21 @@ struct WorldSnapshot: Equatable {
     }
 
     var family: FamilyDomainSnapshot {
-        FamilyDomainSnapshot(world: cache, player: state.player, relationships: state.relationships, family: state.family, health: state.healthProfile, finance: state.finance, worldEra: state.currentEra)
+        FamilyDomainSnapshot(
+            world: cache,
+            player: state.player,
+            relationships: state.relationships,
+            family: state.family,
+            health: state.healthProfile,
+            finance: state.finance,
+            worldEra: state.currentEra,
+            parentRegularArchetype: state.specialCareer.track == .inactive ? state.career.regularArchetype : nil,
+            parentCareerBurnout: state.career.burnout,
+            parentCrimeTier: CrimeTier.resolve(crime: state.crime, specialCareer: state.specialCareer),
+            parentCrimeHeat: max(state.crime.heat, state.specialCareer.heat),
+            parentInCustody: state.legal.isInCustody,
+            parentCustodyFacility: state.legal.isInCustody ? state.legal.custodyProfile.facility : nil
+        )
     }
 
     var health: HealthDomainSnapshot {
@@ -262,7 +335,15 @@ struct WorldSnapshot: Equatable {
     }
 
     var housing: HousingDomainSnapshot {
-        HousingDomainSnapshot(world: cache, player: state.player, housing: state.housing, finance: state.finance, assets: state.assets)
+        HousingDomainSnapshot(
+            world: cache,
+            player: state.player,
+            housing: state.housing,
+            finance: state.finance,
+            assets: state.assets,
+            reentryFrictionYears: state.legal.reentryYearsRemaining,
+            recordPressure: state.legal.recordPressure
+        )
     }
 
     var assets: AssetDomainSnapshot {

@@ -419,6 +419,26 @@ struct OriginSystem {
         if meta.generationFlags.contains("scars_from_the_fast_lane") || meta.generationFlags.contains("scars_of_the_strong") {
             state.history.insert(HistoryEntry(age: 14, title: "Echo from Before", text: "The last life left marks. You start with a little less margin and a little more hunger.", tags: [.lifeEvent]), at: 0)
         }
+
+        // CT3-3: Diamond empire meta echoes (strong next-life advantages for having built institutions)
+        if meta.generationFlags.contains("built_a_studio") || meta.generationFlags.contains("built_a_label_empire") {
+            state.finance.cashOnHand += 8000
+            state.specialCareer.audience += 15
+            state.history.insert(HistoryEntry(age: 14, title: "Echo from Before", text: "You start this life with quiet money and an eye for what the world will pay to see. The last one left you the taste.", tags: [.lifeEvent]), at: 0)
+        }
+        if meta.generationFlags.contains("program_builder") || meta.generationFlags.contains("dynasty_builder") {
+            state.player.smarts += 5
+            state.relationships.socialCapital += 20
+            state.history.insert(HistoryEntry(age: 14, title: "Echo from Before", text: "You start knowing how to build a room that wins. People already look at you like you belong on the sideline.", tags: [.lifeEvent]), at: 0)
+        }
+        if meta.generationFlags.contains("built_a_dark_empire") || meta.generationFlags.contains("washed_the_empire_clean") {
+            state.finance.cashOnHand += 12000
+            state.specialCareer.heat += 10 // the shadow follows
+            state.history.insert(HistoryEntry(age: 14, title: "Echo from Before", text: "You start with doors that open in rooms most people don't know exist. The money is clean on paper. The history is not.", tags: [.lifeEvent]), at: 0)
+        }
+        if meta.generationFlags.contains("empire_builder") {
+            state.correlationLedger.publish(CorrelationSignal(kind: .focusStance, domain: "career", strength: 25, age: 14))
+        }
     }
 
     private func applyTemplate(_ templateID: OriginTemplateID, to state: inout GameState, deterministic: Bool) {

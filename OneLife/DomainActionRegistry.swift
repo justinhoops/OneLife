@@ -28,11 +28,28 @@ struct DomainActionRegistry {
     // MARK: - Public API
 
     func availableCommitted(for domain: ActionDomain) -> [ActionChoiceID] {
+        if state.legal.isInCustody {
+            switch domain {
+            case .legal:
+                return custodyInstantCore()
+            case .finance:
+                return [.minimumPayments, .payDownDebt].filter { financeCommittedChoices().contains($0) }
+            case .relationships:
+                return relationshipCommittedChoices().filter { [.reachOut, .strengthenBond, .repairTension].contains($0) }
+            case .health:
+                return healthCommittedChoices().filter { [.rest, .protectSleep, .recurringTherapy, .manageMeds].contains($0) }
+            case .family:
+                return familyPhaseCommittedChoices().filter { [.checkInOnChild, .spendTimeWithKids].contains($0) }
+            default:
+                return []
+            }
+        }
         switch domain {
         case .education: return educationCommittedChoices()
         case .career: return careerCommittedChoices()
         case .military: return militaryCommittedChoices()
         case .crime: return crimeCommittedChoices()
+        case .legal: return legalCommittedChoices()
         case .finance: return financeCommittedChoices()
         case .relationships: return relationshipCommittedChoices()
         case .health: return healthCommittedChoices()
@@ -58,7 +75,7 @@ struct DomainActionRegistry {
             choices.append(contentsOf: [
                 .joinReservesArmy, .joinReservesNavy, .joinReservesAirForce, .joinReservesMarines, .joinReservesCoastGuard, .joinReservesSpaceForce
             ])
-            
+
             if state.military.hasPension {
                 choices.append(.claimPension)
             }
@@ -68,11 +85,11 @@ struct DomainActionRegistry {
             return choices
         } else {
             choices.append(contentsOf: [.militaryService, .goAWOL, .desert, .militaryRetirement, .deployTour])
-            
+
             if state.military.specialty == nil {
                 choices.append(contentsOf: [.selectCombatMOS, .selectMedicalMOS, .selectAviationMOS, .selectIntelMOS, .selectLogisticsMOS])
             }
-            
+
             if state.military.deploymentStatus == .home || state.military.deploymentStatus == .stationed {
                 choices.append(.deploy)
             }
@@ -109,10 +126,7 @@ struct DomainActionRegistry {
     }
 
     func resolutionTier(for choiceID: ActionChoiceID, domain: ActionDomain) -> ActionResolutionTier {
-        if contextualInstantChoices(for: domain).contains(choiceID) {
-            return .instant
-        }
-        return ActionChoiceCatalog.baseResolutionTier(for: choiceID)
+        return .instant
     }
 
     func suggestedChoice(for domain: ActionDomain) -> ActionChoiceID? {
@@ -172,6 +186,9 @@ struct DomainActionRegistry {
             if state.crime.heat >= 65 { return .layLow }
             if state.finance.cashOnHand < 0 { return .cleanMoney }
             return .runScheme
+        case .legal:
+            if state.legal.isInCustody { return custodyInstantCore().first }
+            return legalCommittedChoices().first
         case .finance:
             if context.isStudentLifeExperience {
                 if state.finance.studentDebt > 0 && state.finance.debtPressureBand == .heavy { return .deferStudentLoans }
@@ -219,10 +236,10 @@ struct DomainActionRegistry {
         var home: [ActionChoiceID] = []
 
         let debtIDs: Set<ActionChoiceID> = [.payDownDebt, .consolidateDebt, .minimumPayments, .deferStudentLoans, .declareBankruptcy]
-        let investIDs: Set<ActionChoiceID> = [.buildEmergencyFund, .buyIndexFund, .speculateStocks, .holdPositions, .sellToCover, .dayTrade, .analyzeMarkets, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition]
+        let investIDs: Set<ActionChoiceID> = [.buildEmergencyFund, .buyIndexFund, .speculateStocks, .holdPositions, .sellToCover, .dayTrade, .analyzeMarkets, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition, .hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection]
         let homeIDs: Set<ActionChoiceID> = [.saveForDownPayment, .depositToHouseFund, .buyStarterHome, .refinanceMortgage, .buildMaintenanceReserve, .topUpHouseReserve, .sellHome]
         // Econ4: New era-aware economic actions
-        let econEraIDs: Set<ActionChoiceID> = [.panicSell, .aggressiveSideHustle, .bigLifestylePurchase, .rideTheWave, .quietFinancialQuit, .flexLuxuryAsset, .liquidateLuxury, .upgradeCollection, .hostAtSignatureEstate]
+        let econEraIDs: Set<ActionChoiceID> = [.panicSell, .aggressiveSideHustle, .bigLifestylePurchase, .rideTheWave, .quietFinancialQuit, .flexLuxuryAsset, .liquidateLuxury, .upgradeCollection, .hostAtSignatureEstate, .hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection]
 
         for choice in choices {
             if debtIDs.contains(choice) { debt.append(choice) }
@@ -343,6 +360,13 @@ struct DomainActionRegistry {
         case .launderThroughShell: return "Launder Shells"
         case .hostStrategicGala: return "Strategic Gala"
         case .aggressiveTakeover: return "Aggressive Takeover"
+        case .streetCornerHustle: return "Corner Hustle"
+        case .dodgePatrol: return "Dodge Patrol"
+        case .holdTerritory: return "Hold Block"
+        case .disciplineCrew: return "Discipline"
+        case .delegateOperation: return "Delegate"
+        case .expandDomesticEmpire: return "Expand Empire"
+        case .connectCartelNetwork: return "Cartel Link"
         case .analyzeMarkets: return "Markets"
         case .checkPortfolio: return "Portfolio"
         case .rebalancePortfolio: return "Rebalance"
@@ -350,6 +374,12 @@ struct DomainActionRegistry {
         case .buyIndex: return "Buy Index"
         case .sellPosition: return "Sell Pos"
         case .holdPositions: return "Hold"
+        // Luxury L1
+        case .hostLuxuryEvent: return "Host Gala"
+        case .acquireLuxuryAsset: return "Buy Luxury"
+        case .indulgeInExcess: return "Indulge"
+        case .displayWealth: return "Flex"
+        case .maintainLuxuryCollection: return "Maintain"
         case .minimumPayments: return "Min Pay"
         case .consolidateDebt: return "Consolidate"
         case .stayInvisible: return "Lay Low Social"
@@ -452,6 +482,18 @@ struct DomainActionRegistry {
         case .pivotToGig: return "Gig Pivot"
         case .publicServiceGrind: return "Public Grind"
         case .techDeepWork: return "Tech Deep"
+        case .corporateStayLate: return "Stay Late"
+        case .corporatePolitick: return "Politick"
+        case .corporateDocumentWin: return "Doc Win"
+        case .tradesExtraFocus: return "Extra Focus"
+        case .tradesMaintainTools: return "Tools"
+        case .tradesSafetyPush: return "Safety"
+        case .salesClientOutreach: return "Outreach"
+        case .salesPipelineGrind: return "Pipeline"
+        case .salesRecoveryCall: return "Recovery"
+        case .gigAcceptSurge: return "Surge"
+        case .gigMaintainRating: return "Rating"
+        case .gigRestDay: return "Rest Day"
         default: return ActionChoiceCatalog.definition(for: choiceID).title
         }
     }
@@ -459,96 +501,11 @@ struct DomainActionRegistry {
     // MARK: - Instant tier
 
     private func contextualInstantChoices(for domain: ActionDomain) -> Set<ActionChoiceID> {
-        var instant = Set<ActionChoiceID>()
-        for choice in ActionChoiceID.allCases where ActionChoiceCatalog.baseResolutionTier(for: choice) == .instant {
-            instant.insert(choice)
-        }
-        instant.formUnion(availableInstantPromotions(for: domain))
-        return instant
+        return Set(ActionChoiceID.allCases)
     }
 
     private func availableInstantPromotions(for domain: ActionDomain) -> [ActionChoiceID] {
-        switch domain {
-        case .education:
-            var choices: [ActionChoiceID] = [.studyConsistently, .joinClub, .lockInRoutine]
-            if state.education.attendancePressure >= 50 || state.education.burnoutRisk >= 45 {
-                choices.append(.layLow)
-            }
-            if context.isTeenExperience, let d = state.childhoodDossier {
-                if d.aptitudes.physical >= 50 { choices.append(.teenAthleticDrill) }
-                if d.aptitudes.creative >= 50 { choices.append(.teenCreativeProject) }
-            }
-            // D3: branch and lifelong statics promoted
-            choices.append(contentsOf: [.pursueTradeCert, .honorsTrack, .uniApplication, .lifelongLearning, .credentialRefresh])
-            return choices
-        case .career:
-            var choices: [ActionChoiceID] = [.protectYourEnergy, .network]
-            if state.career.status == .unemployed { choices.insert(.jobHunt, at: 0) }
-            // Promote special career dedicated static actions to instant tier when the subdomain is active.
-            // These are the BitLife-style always-clickable taps for the deep path.
-            if state.specialCareer.track == .athlete {
-                choices.append(contentsOf: [.intenseTraining, .compete, .extraTrainingSession, .recoveryFocus, .mediaAppearance, .teamBonding, .edgeProtocol])
-            } else if state.specialCareer.track == .founder {
-                choices.append(contentsOf: [.pivotBusiness, .raiseCapital, .aggressiveExpansion, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent, .closeMajorDeal])
-            } else if state.specialCareer.track == .contentCreator {
-                choices.append(contentsOf: [.postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal])
-            } else if state.specialCareer.track == .politics {
-                choices.append(contentsOf: [.townHall, .politicalFundraise, .scandalResponse, .policyPush, .backroomDeal, .mediaHit, .takeAStand, .attackOpponent])
-            } else if state.specialCareer.track == .crime || state.specialCareer.track == .shadowOperative || state.specialCareer.track == .trader || state.specialCareer.track == .ventureCapitalist || state.specialCareer.track == .corporateRaider {
-                // Already covered in crime domain promotions, but surface here too for career tab when crime track
-                choices.append(contentsOf: [.ghostProtocol, .burnEvidence, .payTheFixer, .launderThroughShell, .hostStrategicGala, .aggressiveTakeover])
-            } else {
-                // D3: regular (non-special) career archetype instants promoted to frictionless always-click
-                choices.append(contentsOf: [.corporateClimb, .freelanceHustle, .tradesMastery, .pivotToGig, .publicServiceGrind, .techDeepWork])
-            }
-            return choices
-        case .finance:
-            var choices: [ActionChoiceID] = [.cutSpending, .takeSideWork, .spendForRelief]
-            if state.player.age >= 18 && !state.assets.ownsHome {
-                choices.insert(.depositToHouseFund, at: 0)
-            }
-            if state.assets.ownsHome {
-                choices.insert(.topUpHouseReserve, at: 0)
-            }
-            if investmentsActive { choices.append(contentsOf: [.analyzeMarkets, .holdPositions]) }
-            // D2 collector statics promoted to instant
-            choices.append(contentsOf: [.curateCollection, .hostSignatureEvent, .maintainAsset])
-            return choices
-        case .relationships:
-            var choices: [ActionChoiceID] = [.reachOut, .repairTension, .keepDistance]
-            if context.isTeenExperience { choices.append(contentsOf: [.stayInvisible, .chaseStatus]) }
-            // D2 rel depth statics
-            choices.append(contentsOf: [.deepenSpecificBond, .fuelRivalry, .splitReputation])
-            return choices
-        case .health:
-            var choices: [ActionChoiceID] = [.rest, .protectSleep, .seeDoctor]
-            if state.career.burnout >= 58 || state.education.burnoutRisk >= 50 {
-                choices.insert(.protectSleep, at: 0)
-            }
-            // D2 health mastery instants
-            choices.append(contentsOf: [.recurringTherapy, .manageMeds, .bodyConditioning])
-            return choices
-        case .crime:
-            var choices: [ActionChoiceID] = [.layLow, .cleanMoney, .ghostProtocol, .payTheFixer]
-            if state.crime.heat >= 50 { choices.insert(.stepAway, at: 0) }
-            if state.specialCareer.track == .shadowOperative || state.specialCareer.track == .crime {
-                choices.append(.burnEvidence)
-            }
-            if state.specialCareer.track == .ventureCapitalist || state.specialCareer.track == .corporateRaider || state.specialCareer.track == .trader {
-                choices.append(contentsOf: [.launderThroughShell, .hostStrategicGala, .aggressiveTakeover])
-            }
-            return choices
-        case .military:
-            return [.militaryService]
-        case .family:
-            return [.checkInOnChild]
-        case .identity:
-            // D1: Identity actions are always instant (cheap self-work)
-            return [.morningReflection, .reconcileWithPast, .tryNewPersona, .publicReset, .therapySession, .processCrisis]
-        case .military:
-            // D1: New military statics promoted to instant when military subdomain active
-            return [.militaryService, .ptFocus, .seekCounsel, .studyTradition]
-        }
+        return availableCommitted(for: domain)
     }
 
     private var investmentsActive: Bool {
@@ -564,6 +521,26 @@ struct DomainActionRegistry {
     // These are the reliable, always-present "BitLife-style" quick taps that instantly calculate
     // and can always be clicked (bypass normal quick memory limits for core feel).
     // Subdomains (teen education, special career tracks, crime lane, etc.) get their dedicated static set.
+    /// D5: Regular career Right Now deck — path pickers until committed, then native toolkit.
+    private func regularCareerInstantCore() -> [ActionChoiceID] {
+        var fallback: [ActionChoiceID] = [.workHard, .protectYourEnergy, .network]
+        if state.career.status == .unemployed || state.career.status == .partTime {
+            fallback.insert(.jobHunt, at: 0)
+        }
+        guard state.specialCareer.track == .inactive, state.player.age >= 18 else { return dedupe(fallback) }
+
+        if let arch = state.career.regularArchetype {
+            var toolkit = arch.instantToolkit
+            if state.career.status == .unemployed || state.career.status == .partTime {
+                toolkit.insert(.jobHunt, at: 0)
+            }
+            return dedupe(toolkit)
+        }
+
+        fallback.append(contentsOf: CareerArchetype.pathPickerActions)
+        return dedupe(fallback)
+    }
+
     private func staticCoreInstantActions(for domain: ActionDomain) -> [ActionChoiceID] {
         switch domain {
         case .education:
@@ -586,24 +563,25 @@ struct DomainActionRegistry {
             eduCore.append(contentsOf: [.pursueTradeCert, .honorsTrack, .uniApplication, .lifelongLearning, .credentialRefresh])
             return eduCore
         case .career:
-            var core: [ActionChoiceID] = [.workHard, .network, .protectYourEnergy, .takeOvertime]
-            if state.career.status == .unemployed || state.career.status == .partTime {
-                core.insert(.jobHunt, at: 0)
-            }
-            // Subdomain statics when special career active (always clickable instant for that path)
             if state.specialCareer.track == .athlete {
+                var core: [ActionChoiceID] = [.workHard, .network, .protectYourEnergy, .takeOvertime]
                 core.append(contentsOf: [.intenseTraining, .compete, .extraTrainingSession, .recoveryFocus, .mediaAppearance, .teamBonding])
-            } else if state.specialCareer.track == .founder {
-                core.append(contentsOf: [.pivotBusiness, .raiseCapital, .aggressiveExpansion, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent])
-            } else if state.specialCareer.track == .contentCreator {
-                core.append(contentsOf: [.postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal])
-            } else if state.specialCareer.track == .politics {
-                core.append(contentsOf: [.townHall, .workHard, .chaseSpotlight, .reachOut])
-            } else {
-                // D3: regular career archetype statics for parity (6 archetypes)
-                core.append(contentsOf: [.corporateClimb, .freelanceHustle, .tradesMastery, .pivotToGig, .publicServiceGrind, .techDeepWork])
+                return dedupe(core)
             }
-            return core
+            if state.specialCareer.track == .founder {
+                var core: [ActionChoiceID] = [.workHard, .network, .protectYourEnergy]
+                core.append(contentsOf: [.pivotBusiness, .raiseCapital, .aggressiveExpansion, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent])
+                return dedupe(core)
+            }
+            if state.specialCareer.track == .contentCreator {
+                var core: [ActionChoiceID] = [.workHard, .network, .protectYourEnergy]
+                core.append(contentsOf: [.postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal])
+                return dedupe(core)
+            }
+            if state.specialCareer.track == .politics {
+                return dedupe([.townHall, .workHard, .chaseSpotlight, .reachOut, .network, .protectYourEnergy])
+            }
+            return regularCareerInstantCore()
         case .finance:
             var core: [ActionChoiceID] = [.cutSpending, .takeSideWork, .buildEmergencyFund, .spendForRelief]
             if state.player.age >= 18 && !state.assets.ownsHome {
@@ -618,6 +596,12 @@ struct DomainActionRegistry {
             if investmentsActive {
                 core.append(contentsOf: [.analyzeMarkets, .holdPositions, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition])
             }
+
+            // Luxury L1: High-wealth flex actions always clickable in finance static core if qualified
+            if state.finance.totalWealth >= 50_000_000 || state.assets.lifestyleScore >= 75 {
+                core.append(contentsOf: [.hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection])
+            }
+
             // D2: Collector loops always available in money tab (path/era flavor in apply)
             core.append(contentsOf: [.curateCollection, .hostSignatureEvent, .maintainAsset])
             return core
@@ -637,8 +621,10 @@ struct DomainActionRegistry {
             healthCore.append(contentsOf: [.recurringTherapy, .manageMeds, .bodyConditioning])
             return healthCore
         case .crime:
-            // Crime subdomain: these static actions are always the "Right Now" core for the risk lane
-            return [.layLow, .stepAway, .cleanMoney, .runScheme, .ghostProtocol, .burnEvidence, .payTheFixer, .launderThroughShell, .hostStrategicGala, .aggressiveTakeover]
+            return crimeInstantCore()
+        case .legal:
+            if state.legal.isInCustody { return custodyInstantCore() }
+            return legalCommittedChoices()
         case .military:
             // D1: Military static core now includes the new always-click instants
             return [.militaryService, .goAWOL, .deploy, .ptFocus, .seekCounsel, .studyTradition]
@@ -740,9 +726,10 @@ struct DomainActionRegistry {
         if state.specialCareer.track == .founder {
             var founder: [ActionChoiceID] = [.pivotBusiness, .raiseCapital, .aggressiveExpansion, .closeMajorDeal, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent, .protectYourEnergy, .network]
             if state.specialCareer.audience >= 75 { founder.append(.ipoExit) }
-            if SpecialCareerSystem.qualificationIssue(for: .startCompany, state: state) == nil {
-                founder.insert(.startCompany, at: 0)
-            }
+            if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil { founder.append(.manageFund) }
+            if SpecialCareerSystem.qualificationIssue(for: .acquireCompetitor, state: state) == nil { founder.append(.acquireCompetitor) }
+            if SpecialCareerSystem.qualificationIssue(for: .dayTrade, state: state) == nil { founder.append(.dayTrade) }
+            if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil { founder.append(.gatherIntelligence) }
             return founder
         }
         if state.specialCareer.track == .entertainment {
@@ -786,16 +773,54 @@ struct DomainActionRegistry {
         }
         if state.specialCareer.track == .contentCreator {
             // C2: Full set of dedicated creator quick actions
-            return [.postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal, .protectYourEnergy, .network, .chaseSpotlight]
+            var creator: [ActionChoiceID] = [.postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal, .protectYourEnergy, .network, .chaseSpotlight]
+            if SpecialCareerSystem.qualificationIssue(for: .startMovieProducer, state: state) == nil { creator.append(.startMovieProducer) }
+            if SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil { creator.append(.startRecordLabel) }
+            if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil { creator.append(.manageFund) }
+            if SpecialCareerSystem.qualificationIssue(for: .dayTrade, state: state) == nil { creator.append(.dayTrade) }
+            if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil { creator.append(.gatherIntelligence) }
+            return creator
         }
         if state.specialCareer.track == .politics {
             // P2: Full set of dedicated politics quick actions
             return [.townHall, .politicalFundraise, .scandalResponse, .policyPush, .backroomDeal, .mediaHit, .takeAStand, .attackOpponent, .protectYourEnergy, .network, .chaseSpotlight]
         }
         if state.specialCareer.track == .crime {
-            return [.runScheme, .layLow, .buildCrew, .cleanMoney, .stepAway, .ghostProtocol, .burnEvidence, .payTheFixer, .launderThroughShell, .hostStrategicGala, .aggressiveTakeover]
+            return crimeInstantCore()
         }
         if state.specialCareer.track == .athlete {
+            if state.specialCareer.athlete.sport == .combatSports {
+                let combat = state.specialCareer.athlete.combat
+                guard combat.discipline != nil else {
+                    return [.startBoxingCareer, .startMMACareer]
+                }
+                if combat.stage == .retired {
+                    var retired: [ActionChoiceID] = [.mediaAppearance, .protectYourEnergy, .network]
+                    if SpecialCareerSystem.qualificationIssue(for: .startFightEmpire, state: state) == nil {
+                        retired.insert(.startFightEmpire, at: 0)
+                    }
+                    if !combat.crossoverUsed {
+                        retired.append(.crossoverCombatDiscipline)
+                    }
+                    return retired
+                }
+
+                var fighter: [ActionChoiceID] = []
+                if combat.scheduledOpponent == nil, combat.suspensionYears == 0 {
+                    fighter.append(contentsOf: [.acceptSafeFight, .acceptRankedFight, .acceptDangerousFight])
+                }
+                if combat.discipline == .boxing {
+                    fighter.append(contentsOf: [.boxingPowerCamp, .boxingTechniqueCamp, .combatConditioningCamp, .combatRecoveryCamp])
+                    fighter.append(contentsOf: [.boxingPressureStrategy, .boxingCounterStrategy, .boxingOutsideStrategy])
+                } else {
+                    fighter.append(contentsOf: [.mmaStrikingCamp, .mmaGrapplingCamp, .combatConditioningCamp, .combatRecoveryCamp])
+                    fighter.append(contentsOf: [.mmaStrikeStrategy, .mmaWrestleStrategy, .mmaMixedStrategy])
+                }
+                fighter.append(contentsOf: [.mediaAppearance, .recoveryFocus])
+                if !combat.crossoverUsed { fighter.append(.crossoverCombatDiscipline) }
+                fighter.append(.retireFromCombat)
+                return fighter
+            }
             // Phase S2 + S3a: Athlete actions + edge temptation (doping)
             var athlete: [ActionChoiceID] = [.extraTrainingSession, .mediaAppearance, .recoveryFocus, .teamBonding, .edgeProtocol, .protectYourEnergy, .network]
             if SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state) == nil {
@@ -803,11 +828,32 @@ struct DomainActionRegistry {
             }
             return athlete
         }
+        if state.specialCareer.track == .fightEmpire {
+            return [.recruitFightProspect, .buildFightCamp, .developFightProspect, .bookFightEvent, .negotiateBroadcastDeal, .protectFighterHealth, .promoteGrudgeMatch, .protectYourEnergy, .network]
+        }
+        if state.specialCareer.track == .shadowOperative {
+            return [.gatherIntelligence, .exploitLeverage, .protectYourEnergy, .network]
+        }
+        if state.specialCareer.track == .trader {
+            return [.analyzeMarkets, .dayTrade, .protectYourEnergy, .network]
+        }
+        if state.specialCareer.track == .ventureCapitalist {
+            return [.manageFund, .hireAdvisor, .protectYourEnergy, .network]
+        }
+        if state.specialCareer.track == .corporateRaider {
+            return [.acquireCompetitor, .stripAssets, .protectYourEnergy, .network]
+        }
 
         if state.player.age >= 18 {
             options.append(contentsOf: [ActionChoiceID.workHard, .protectYourEnergy, .network, .retrain, .takeOvertime, .coast, .jobHunt, .chaseSpotlight])
-            // D3: regular career archetype committed options for depth (6-way parity)
-            options.append(contentsOf: [.corporateClimb, .freelanceHustle, .tradesMastery, .pivotToGig, .publicServiceGrind, .techDeepWork])
+            if state.specialCareer.track == .inactive {
+                if let arch = state.career.regularArchetype {
+                    options.append(contentsOf: arch.instantToolkit)
+                } else {
+                    options.append(contentsOf: CareerArchetype.pathPickerActions)
+                    options.append(contentsOf: [.publicServiceGrind, .techDeepWork, .pivotToGig])
+                }
+            }
             if SpecialCareerSystem.qualificationIssue(for: .startCompany, state: state) == nil {
                 options.append(.startCompany)
             }
@@ -838,6 +884,12 @@ struct DomainActionRegistry {
             if SpecialCareerSystem.qualificationIssue(for: .compete, state: state) == nil {
                 options.append(.compete)
             }
+            if SpecialCareerSystem.qualificationIssue(for: .startBoxingCareer, state: state) == nil {
+                options.append(.startBoxingCareer)
+            }
+            if SpecialCareerSystem.qualificationIssue(for: .startMMACareer, state: state) == nil {
+                options.append(.startMMACareer)
+            }
             if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil {
                 options.append(contentsOf: [.gatherIntelligence, .exploitLeverage])
             }
@@ -848,9 +900,55 @@ struct DomainActionRegistry {
         return options
     }
 
+    /// CT5: Tier-native crime Right Now deck — street / organization / enterprise toolkits.
+    private func crimeInstantCore() -> [ActionChoiceID] {
+        guard isCrimeLaneActive() else { return [] }
+        if let tier = CrimeTier.resolve(crime: state.crime, specialCareer: state.specialCareer) {
+            let cartel = state.specialCareer.enterprise.subtype == .transnationalCartel
+                || state.specialCareer.enterprise.empireBranch == .transnationalCartel
+            return dedupe(tier.instantToolkit(cartelBranch: cartel))
+        }
+        return dedupe(CrimeTier.street.instantToolkit())
+    }
+
     private func crimeCommittedChoices() -> [ActionChoiceID] {
         guard isCrimeLaneActive() else { return [] }
-        return [.runScheme, .layLow, .buildCrew, .cleanMoney, .stepAway]
+        return crimeInstantCore()
+    }
+
+    private func custodyInstantCore() -> [ActionChoiceID] {
+        let profile = state.legal.custodyProfile
+        let lockdown = profile.lockdownYearsRemaining > 0
+        let paroleEligible = state.legal.paroleEligible && profile.paroleHearingDeniedYears == 0
+        let enterpriseProxyEligible = profile.experienceTier == .enterprise
+            && (profile.facility == .federalPen
+                || state.fame.notoriety >= 45
+                || state.legal.convictions.contains(where: { $0.offense == .enterpriseCrime }))
+        return dedupe(profile.instantToolkit(
+            paroleEligible: paroleEligible,
+            lockdown: lockdown,
+            enterpriseProxyEligible: enterpriseProxyEligible
+        ))
+    }
+
+    private func legalCommittedChoices() -> [ActionChoiceID] {
+        if state.legal.isInCustody { return custodyInstantCore() }
+        switch state.legal.stage {
+        case .investigation:
+            return [.retainCounsel, .cooperateWithInvestigation, .refuseInterview]
+        case .charged:
+            var choices: [ActionChoiceID] = [.negotiatePlea, .fightCharges]
+            if state.legal.bailAmount > 0, !state.legal.bailPosted {
+                choices.append(.postBail)
+            }
+            return Array(choices.prefix(3))
+        case .supervision:
+            return state.legal.supervisionYearsRemaining <= 1
+                ? [.complyWithSupervision, .requestEarlyRelease]
+                : [.complyWithSupervision]
+        default:
+            return []
+        }
     }
 
     private func financeCommittedChoices() -> [ActionChoiceID] {

@@ -20,17 +20,20 @@ struct InstantReactionCoordinator {
     private var healthSystem: HealthSystem
     private var financeSystem: FinanceSystem
     private var stockMarketSystem: StockMarketSystem
+    private var luxurySystem: LuxurySystem
 
     init(
         npcAutonomySystem: NPCAutonomySystem = NPCAutonomySystem(),
         healthSystem: HealthSystem = HealthSystem(),
         financeSystem: FinanceSystem = FinanceSystem(),
-        stockMarketSystem: StockMarketSystem = StockMarketSystem()
+        stockMarketSystem: StockMarketSystem = StockMarketSystem(),
+        luxurySystem: LuxurySystem = LuxurySystem()
     ) {
         self.npcAutonomySystem = npcAutonomySystem
         self.healthSystem = healthSystem
         self.financeSystem = financeSystem
         self.stockMarketSystem = stockMarketSystem
+        self.luxurySystem = luxurySystem
     }
 
     /// The main enrichment method for the frictionless instant path.
@@ -61,17 +64,30 @@ struct InstantReactionCoordinator {
         case .finance:
             let notes = financeSystem.reactToPlayerFinanceAction(choiceID, state: &state)
             autonomousNotes.append(contentsOf: notes)
-            
+
             // Econ1/2: Stock Market reactions
             let stockNotes = stockMarketSystem.reactToStockAction(choiceID, state: &state)
             autonomousNotes.append(contentsOf: stockNotes)
+
+            // Luxury L1/L2: Luxury reactions
+            let luxuryNotes = luxurySystem.reactToLuxuryAction(choiceID, state: &state)
+            autonomousNotes.append(contentsOf: luxuryNotes)
+
+            // D2 Collector loops: generic momentum and texture
+            if [.curateCollection, .hostSignatureEvent, .maintainAsset].contains(choiceID) {
+                state.instantMomentum.recordReaction(domain: .finance, strength: 12, currentAge: state.player.age)
+                if choiceID == .hostSignatureEvent {
+                    state.fame.culturalFame = min(100, state.fame.culturalFame + 3)
+                    autonomousNotes.append(DomainNote(title: "Status Pulse", text: "You were seen in the right places. The reputation holds.", tags: [.social, .fame]))
+                }
+            }
             
-            let allFinanceNotes = notes + stockNotes
+            let allFinanceNotes = notes + stockNotes + luxuryNotes + (autonomousNotes.filter { $0.tags.contains(.finance) || $0.tags.contains(.assets) })
             for note in allFinanceNotes {
                 state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
             }
 
-        case .relationships: // also catch some family parenting quick actions here for frictionless feel
+        case .family:
             if [.spendTimeWithKids, .checkInOnChild, .enforceRoutine, .encourageIndependence].contains(choiceID) {
                 // Light instant family reaction — small immediate bond/mood bump so the button press feels alive
                 if !state.family.children.filter({ $0.livesAtHome }).isEmpty {
@@ -79,7 +95,7 @@ struct InstantReactionCoordinator {
                         let quickGain = Int.random(in: 2...5)
                         state.family.children[i].bondWithPlayer = (state.family.children[i].bondWithPlayer + quickGain).clamped(to: 5...95)
                     }
-                    let note = DomainNote(title: "Kids Noticed", text: "They felt the attention right away. The evening was a little lighter.", tags: [.relationships, .progress])
+                    let note = DomainNote(title: "Kids Noticed", text: "They felt the attention right away. The evening was a little lighter.", tags: [.family, .relationships])
                     autonomousNotes.append(note)
                     state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
                 }
@@ -379,6 +395,27 @@ struct InstantReactionCoordinator {
                 state.specialCareer.enterprise.operationalSecurity = min(100, ent.operationalSecurity + 4)
                 crimeNote = DomainNote(title: "Pulled Back", text: "You chose air over momentum. The pressure eased a little.", tags: [.crime, .health])
 
+            case .streetCornerHustle, .dodgePatrol, .holdTerritory, .disciplineCrew, .delegateOperation:
+                break
+
+            case .expandDomesticEmpire:
+                state.specialCareer.enterprise.subtype = ent.subtype == .streetCrime ? .ventureCapitalist : ent.subtype
+                state.specialCareer.enterprise.empireBranch = .domesticKingpin
+                state.specialCareer.enterprise.cleanMoneyRatio = min(100, ent.cleanMoneyRatio + 8)
+                state.specialCareer.enterprise.networkStrength = min(100, ent.networkStrength + 5)
+                state.specialCareer.heat += 4
+                crimeNote = DomainNote(title: "Domestic Empire", text: "Another legitimate front. Another door that opens because you own the hinge.", tags: [.crime, .finance])
+
+            case .connectCartelNetwork:
+                state.specialCareer.enterprise.subtype = .transnationalCartel
+                state.specialCareer.enterprise.empireBranch = .transnationalCartel
+                state.specialCareer.enterprise.networkStrength = min(100, ent.networkStrength + 10)
+                state.specialCareer.enterprise.riskTolerance = min(90, ent.riskTolerance + 6)
+                state.specialCareer.heat += 12
+                state.crime.heat = min(100, state.crime.heat + 8)
+                baseResult.financeEffects = FinanceEffects(cashDelta: 12_000 + ent.networkStrength * 120)
+                crimeNote = DomainNote(title: "Cartel Pipeline", text: "The money crosses borders now. The exposure changed shape — and scale.", tags: [.crime, .finance, .risk])
+
             default:
                 break
             }
@@ -396,6 +433,61 @@ struct InstantReactionCoordinator {
                 if state.fame.culturalFame >= 25 {
                     state.fame.culturalFame = max(0, state.fame.culturalFame - 1) // slight cultural cost for dark moves
                 }
+            }
+        }
+
+        // PC1: Custody instant reactions — conduct, violence, snitch, faction texture
+        if state.legal.isInCustody {
+            var custodyNote: DomainNote? = nil
+            var profile = state.legal.custodyProfile
+            switch choiceID {
+            case .keepHeadDown:
+                profile.conductScore += 2
+                custodyNote = DomainNote(title: "Eyes Down", text: "Staff logged another quiet week. The block barely noticed you.", tags: [.legal, .autonomousReaction])
+            case .standYourGround:
+                profile.yardReputation += 4
+                profile.violenceRisk += 3
+                custodyNote = DomainNote(title: "Yard Shift", text: "Someone tested you. The test ended without a write-up — this time.", tags: [.legal, .crime, .autonomousReaction])
+            case .alignWithFaction:
+                profile.protectionDebt += 3
+                custodyNote = DomainNote(title: "Crew Signal", text: "Your name moved through the faction channel before lights-out.", tags: [.legal, .crime, .autonomousReaction])
+            case .payProtection:
+                custodyNote = DomainNote(title: "Ledger Updated", text: "The debt was acknowledged. Pressure eased for a few days.", tags: [.legal, .finance, .autonomousReaction])
+            case .refuseSnitchDeal:
+                profile.snitchRisk = max(0, profile.snitchRisk - 3)
+                custodyNote = DomainNote(title: "Silence Held", text: "Guards filed frustration. Inmates filed respect.", tags: [.legal, .crime, .autonomousReaction])
+            case .cooperateWithGuards:
+                profile.factionLoyalty = max(0, profile.factionLoyalty - 5)
+                state.fame.notoriety = min(100, state.fame.notoriety + 3)
+                custodyNote = DomainNote(title: "Whisper Network", text: "Word about your cooperation moved before you reached your cell.", tags: [.legal, .crime, .risk, .autonomousReaction])
+            case .prisonWorkDetail:
+                profile.goodTimeCredits += 1
+                custodyNote = DomainNote(title: "Shift Credit", text: "Supervisor logged reliable work. Good-time paperwork ticked forward.", tags: [.legal, .progress, .autonomousReaction])
+            case .studyProgram:
+                profile.programProgress += 3
+                custodyNote = DomainNote(title: "Lesson Landed", text: "An instructor marked progress. The file got a little thicker.", tags: [.legal, .education, .autonomousReaction])
+            case .callFamily:
+                custodyNote = DomainNote(title: "Line Clicked Off", text: "The call ended before the apology did.", tags: [.legal, .family, .autonomousReaction])
+            case .requestParoleHearing:
+                custodyNote = DomainNote(title: "Board Packet", text: "Your file moved to the parole queue. The yard watched who got hopeful.", tags: [.legal, .progress, .autonomousReaction])
+            case .fileAppeal:
+                custodyNote = DomainNote(title: "Paper Trail", text: "Legal mail left the block. Hope and cost traveled together.", tags: [.legal, .finance, .autonomousReaction])
+            case .delegateFromInside:
+                profile.protectionDebt += 2
+                custodyNote = DomainNote(title: "Chain Of Command", text: "Orders left the cell. Someone outside saluted — and someone else listened.", tags: [.legal, .crime, .autonomousReaction])
+            case .callLieutenant:
+                state.fame.notoriety = min(100, state.fame.notoriety + 2)
+                custodyNote = DomainNote(title: "Line Tapped", text: "The call was logged. The network still answered.", tags: [.legal, .crime, .fame, .autonomousReaction])
+            case .authorizeOutsideMove:
+                custodyNote = DomainNote(title: "Remote Authorization", text: "Cash moved on your signature. The block felt the ripple.", tags: [.legal, .finance, .crime, .autonomousReaction])
+            default:
+                break
+            }
+            state.legal.custodyProfile = profile
+            state.legal.clamp()
+            if let note = custodyNote {
+                autonomousNotes.append(note)
+                state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
             }
         }
 

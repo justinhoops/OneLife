@@ -84,6 +84,8 @@ struct PersistenceCoordinator {
 
     let fileManager: FileManager
     private let directoryProvider: () throws -> URL
+    /// When true, GameViewModel decodes on the main thread (unit tests and explicit overrides).
+    let prefersSynchronousStartupLoad: Bool
 
     init(
         fileManager: FileManager = .default,
@@ -94,10 +96,12 @@ struct PersistenceCoordinator {
                 appropriateFor: nil,
                 create: true
             )
-        }
+        },
+        prefersSynchronousStartupLoad: Bool = false
     ) {
         self.fileManager = fileManager
         self.directoryProvider = directoryProvider
+        self.prefersSynchronousStartupLoad = prefersSynchronousStartupLoad
     }
 
     static let live = PersistenceCoordinator()
@@ -158,6 +162,12 @@ struct PersistenceCoordinator {
             print("OneLife: Failed to load meta state: \(error.localizedDescription)")
             return MetaState()
         }
+    }
+
+    /// Fast existence check — no JSON decode (Path 2C: show shell before heavy load).
+    func hasPersistedSave() -> Bool {
+        guard let candidates = try? loadCandidates() else { return false }
+        return !candidates.isEmpty
     }
 
     func loadForStartup() -> PersistenceStartupResult {

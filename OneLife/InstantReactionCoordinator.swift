@@ -16,6 +16,14 @@ import Foundation
 /// See LifeSimulationOrchestrator.swift for the "Player Micro Move vs Year Commitment" mental model documentation.
 struct InstantReactionCoordinator {
 
+    private func autonomousTagged(_ note: DomainNote) -> DomainNote {
+        var tagged = note
+        if !tagged.tags.contains(.autonomousReaction) {
+            tagged.tags.append(.autonomousReaction)
+        }
+        return tagged
+    }
+
     private var npcAutonomySystem: NPCAutonomySystem
     private var healthSystem: HealthSystem
     private var financeSystem: FinanceSystem
@@ -42,21 +50,21 @@ struct InstantReactionCoordinator {
 
         switch domain {
         case .relationships:
-            let notes = npcAutonomySystem.reactToPlayerSocialAction(choiceID, state: &state)
+            let notes = npcAutonomySystem.reactToPlayerSocialAction(choiceID, state: &state).map(autonomousTagged)
             autonomousNotes.append(contentsOf: notes)
             for note in notes {
                 state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
             }
 
         case .health:
-            let notes = healthSystem.reactToPlayerHealthAction(choiceID, state: &state)
+            let notes = healthSystem.reactToPlayerHealthAction(choiceID, state: &state).map(autonomousTagged)
             autonomousNotes.append(contentsOf: notes)
             for note in notes {
                 state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
             }
 
         case .finance:
-            let notes = financeSystem.reactToPlayerFinanceAction(choiceID, state: &state)
+            let notes = financeSystem.reactToPlayerFinanceAction(choiceID, state: &state).map(autonomousTagged)
             autonomousNotes.append(contentsOf: notes)
             for note in notes {
                 state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)

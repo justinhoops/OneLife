@@ -4,13 +4,20 @@ final class EventEngine {
     private(set) var allEvents: [GameEvent] = []
     private let traitSystem = TraitSystem()
     private var hasLoggedEventPackWarning = false
+    /// True after bundle JSON is parsed or injected events are provided (Path 2: lazy launch).
+    private(set) var isEventPackLoaded = false
 
     init(events: [GameEvent]? = nil) {
         if let events {
             allEvents = events
-        } else {
-            loadEventsFromBundle()
+            isEventPackLoaded = true
         }
+    }
+
+    private func ensureEventsLoaded() {
+        guard !isEventPackLoaded else { return }
+        isEventPackLoaded = true
+        loadEventsFromBundle()
     }
 
     private func loadEventsFromBundle() {
@@ -31,6 +38,7 @@ final class EventEngine {
     }
 
     func pickEvent(for state: GameState, preferredTags: [String] = []) -> GameEvent? {
+        ensureEventsLoaded()
         let preferredTagWeights = preferredTags.reduce(into: [String: Int]()) { partial, tag in
             partial[tag, default: 0] += 5
         }
@@ -38,16 +46,19 @@ final class EventEngine {
     }
 
     func event(withID id: String) -> GameEvent? {
-        allEvents.first(where: { $0.id == id })
+        ensureEventsLoaded()
+        return allEvents.first(where: { $0.id == id })
     }
 
     func registerDynamicEvent(_ event: GameEvent) {
+        ensureEventsLoaded()
         if !allEvents.contains(where: { $0.id == event.id }) {
             allEvents.append(event)
         }
     }
 
     func pickEvent(for state: GameState, preferredTagWeights: [String: Int]) -> GameEvent? {
+        ensureEventsLoaded()
         warnIfEventPackIsLarge()
         let age = state.player.age
 
