@@ -36,7 +36,9 @@ enum HeaderOccupationCopy {
         case .recordLabelOwner:
             return ("♦ Record Label", "crown.fill")
         case .coach:
-            return ("♦ Program Coach", "crown.fill")  // CT1-2: Diamond tier visual signal
+            return ("Program Coach", "sportscourt.fill")
+        case .sportsOwner:
+            return ("♦ Sports Owner", "building.2.crop.circle")
         case .crime:
             return ("Street Career", "flame.fill")  // Basic crime - Special tier, separate from Diamond Enterprise paths
         case .founder:

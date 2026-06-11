@@ -81,6 +81,13 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case manageLockerRoom
     case callBigGame
     case handleBoosterPressure
+    case startSportsOwnership
+    case acquireFranchise
+    case hireGeneralManager
+    case negotiateMediaDeal
+    case investInBrand
+    case expandPortfolio
+    case sellFranchise
     case intenseTraining
     case compete
     case startBoxingCareer
@@ -142,6 +149,11 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case attackOpponent
     case gatherIntelligence
     case exploitLeverage
+    // CE2: Dedicated crime quick actions for Dark Fame Web parity
+    case crimeLayLow
+    case crimeRecruitAssociate
+    case crimeLaunderFunds
+    case crimeCutTies
     case dayTrade
     case analyzeMarkets
     case runScheme
@@ -402,7 +414,7 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .studyHard, .studyConsistently, .cramAndSurvive, .lockInRoutine, .joinClub, .buildPortfolio, .skipClass, .skipAndDrift, .joinROTC, .leaveROTC:
             return .education
-        case .workHard, .network, .pivotCareer, .trainNewSkill, .retire, .jobHunt, .takeOvertime, .takeExtraShifts, .chaseSpotlight, .startMovieActor, .auditionRole, .actingClass, .buildActingReel, .takeIndieRole, .managePublicist, .startMusicProducer, .produceTrack, .runStudioSession, .shopBeats, .collaborateWithArtist, .polishSignatureSound, .manageProducerCredits, .startMovieProducer, .optionScript, .castProject, .shootFilm, .handleProductionCrisis, .secureDistribution, .manageBackEndPoints, .startRecordLabel, .signArtist, .developArtist, .releaseRecord, .bookTour, .payArtists, .pushSingle, .handleArtistDrama, .startCoachingCareer, .recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .startCompany, .pitchDeck, .pivotBusiness, .raiseCapital, .aggressiveExpansion, .ipoExit, .hireAdvisor, .compete, .intenseTraining, .recoveryFocus, .mediaAppearance, .teamBonding, .extraTrainingSession, .edgeProtocol, .gatherIntelligence, .exploitLeverage, .applyForResidency, .completeResidency, .openPrivatePractice, .passBarExam, .makePartner, .becomeCTO, .launchStartupSpinOff,
+        case .workHard, .network, .pivotCareer, .trainNewSkill, .retire, .jobHunt, .takeOvertime, .takeExtraShifts, .chaseSpotlight, .startMovieActor, .auditionRole, .actingClass, .buildActingReel, .takeIndieRole, .managePublicist, .startMusicProducer, .produceTrack, .runStudioSession, .shopBeats, .collaborateWithArtist, .polishSignatureSound, .manageProducerCredits, .startMovieProducer, .optionScript, .castProject, .shootFilm, .handleProductionCrisis, .secureDistribution, .manageBackEndPoints, .startRecordLabel, .signArtist, .developArtist, .releaseRecord, .bookTour, .payArtists, .pushSingle, .handleArtistDrama, .startCoachingCareer, .recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .startSportsOwnership, .acquireFranchise, .hireGeneralManager, .negotiateMediaDeal, .investInBrand, .expandPortfolio, .sellFranchise, .startCompany, .pitchDeck, .pivotBusiness, .raiseCapital, .aggressiveExpansion, .ipoExit, .hireAdvisor, .compete, .intenseTraining, .recoveryFocus, .mediaAppearance, .teamBonding, .extraTrainingSession, .edgeProtocol, .gatherIntelligence, .exploitLeverage, .applyForResidency, .completeResidency, .openPrivatePractice, .passBarExam, .makePartner, .becomeCTO, .launchStartupSpinOff,
              .closeMajorDeal, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent,
              .postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal,
              .townHall, .politicalFundraise, .scandalResponse, .policyPush, .backroomDeal, .mediaHit, .takeAStand, .attackOpponent:

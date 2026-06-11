@@ -53,43 +53,53 @@ enum AmbientPressureSync {
 // MARK: - LifeSimulationOrchestrator
 
 final class LifeSimulationOrchestrator {
-    private let eventEngine: EventEngine
-    private let originSystem: OriginSystem
-    private let narrativeArcSystem: NarrativeArcSystem
-    private let traitSystem: TraitSystem
-    private let storyletSystem: StoryletSystem
-    private var actionSystem: ActionSystem
-    private let actionCorrelationSystem: ActionCorrelationSystem
-    private let policySystem: PolicySystem
-    private let trajectorySystem: TrajectorySystem
-    private let educationSystem: EducationSystem
-    private let careerSystem: CareerSystem
-    private let specialCareerSystem: SpecialCareerSystem
-    private let militarySystem: MilitarySystem
-    private let crimeSystem: CrimeSystem
-    private let legalSystem: LegalSystem
-    private var financeSystem: FinanceSystem
-    private let investmentSystem: InvestmentSystem
-    private let stockMarketSystem: StockMarketSystem
-    private let relationshipSystem: RelationshipSystem
-    private let familySystem: FamilySystem
-    private var healthSystem: HealthSystem
-    private let housingSystem: HousingSystem
-    private let homeOwnershipSystem: HomeOwnershipSystem
-    private let luxurySystem: LuxurySystem
-    private let progressSystem: ProgressSystem
-    private let crossDomainPressureSystem: CrossDomainPressureSystem
-    private let worldAutonomySystem: WorldAutonomySystem
-    private var npcAutonomySystem: NPCAutonomySystem
-    private let continuityThreadEngine: ContinuityThreadEngine
-    private let silentYearEngine: SilentYearEngine
-    private let yearlyOutcomeAggregator: YearlyOutcomeAggregator
-    private let systemRegistry: SystemRegistry
-    private let worldSnapshotBuilder: WorldSnapshotBuilder
-    private let effectApplier: DomainEffectApplier
-    private let domainCacheCoordinator: DomainCacheGenerationCoordinator
+    private let injectedEventEngine: EventEngine?
 
-    private var instantReactionCoordinator: InstantReactionCoordinator
+    /// Lightweight systems used during creation preview / first paint.
+    private lazy var eventEngine: EventEngine = injectedEventEngine ?? EventEngine()
+    private lazy var originSystem = OriginSystem()
+    private lazy var narrativeArcSystem = NarrativeArcSystem()
+    private lazy var traitSystem = TraitSystem()
+    private lazy var progressSystem = ProgressSystem()
+    private lazy var worldSnapshotBuilder = WorldSnapshotBuilder()
+    private lazy var effectApplier = DomainEffectApplier()
+    private lazy var domainCacheCoordinator = DomainCacheGenerationCoordinator()
+
+    /// Deferred until first simulation action (Age Up, instant action, year resolve).
+    private lazy var storyletSystem = StoryletSystem()
+    private lazy var militarySystem = MilitarySystem()
+    private lazy var actionSystem = ActionSystem(militarySystem: militarySystem)
+    private lazy var actionCorrelationSystem = ActionCorrelationSystem()
+    private lazy var policySystem = PolicySystem()
+    private lazy var trajectorySystem = TrajectorySystem()
+    private lazy var educationSystem = EducationSystem()
+    private lazy var careerSystem = CareerSystem()
+    private lazy var specialCareerSystem = SpecialCareerSystem()
+    private lazy var crimeSystem = CrimeSystem()
+    private lazy var legalSystem = LegalSystem()
+    private lazy var financeSystem = FinanceSystem()
+    private lazy var investmentSystem = InvestmentSystem()
+    private lazy var stockMarketSystem = StockMarketSystem()
+    private lazy var relationshipSystem = RelationshipSystem()
+    private lazy var familySystem = FamilySystem()
+    private lazy var healthSystem = HealthSystem()
+    private lazy var housingSystem = HousingSystem()
+    private lazy var homeOwnershipSystem = HomeOwnershipSystem()
+    private lazy var luxurySystem = LuxurySystem()
+    private lazy var crossDomainPressureSystem = CrossDomainPressureSystem()
+    private lazy var worldAutonomySystem = WorldAutonomySystem()
+    private lazy var npcAutonomySystem = NPCAutonomySystem()
+    private lazy var continuityThreadEngine = ContinuityThreadEngine()
+    private lazy var silentYearEngine = SilentYearEngine()
+    private lazy var yearlyOutcomeAggregator = YearlyOutcomeAggregator()
+    private lazy var systemRegistry = SystemRegistry()
+    private lazy var instantReactionCoordinator = InstantReactionCoordinator(
+        npcAutonomySystem: npcAutonomySystem,
+        healthSystem: healthSystem,
+        financeSystem: financeSystem
+    )
+
+    private(set) var isSimulationRuntimeWarmed = false
 
     #if DEBUG
     private(set) var latestTimingSnapshot: SimulationTimingSnapshot?
@@ -101,83 +111,32 @@ final class LifeSimulationOrchestrator {
     private var stateGeneration: UInt64 = 0
     private var lastInstantSnapshot: (generation: UInt64, state: GameState, snapshot: WorldSnapshot)?
 
-    init(
-        eventEngine: EventEngine = EventEngine(),
-        originSystem: OriginSystem = OriginSystem(),
-        narrativeArcSystem: NarrativeArcSystem = NarrativeArcSystem(),
-        traitSystem: TraitSystem = TraitSystem(),
-        storyletSystem: StoryletSystem = StoryletSystem(),
-        actionSystem: ActionSystem = ActionSystem(
-            militarySystem: MilitarySystem()
-        ),
-        actionCorrelationSystem: ActionCorrelationSystem = ActionCorrelationSystem(),
-        policySystem: PolicySystem = PolicySystem(),
-        trajectorySystem: TrajectorySystem = TrajectorySystem(),
-        educationSystem: EducationSystem = EducationSystem(),
-        careerSystem: CareerSystem = CareerSystem(),
-        specialCareerSystem: SpecialCareerSystem = SpecialCareerSystem(),
-        militarySystem: MilitarySystem = MilitarySystem(),
-        crimeSystem: CrimeSystem = CrimeSystem(),
-        legalSystem: LegalSystem = LegalSystem(),
-        relationshipSystem: RelationshipSystem = RelationshipSystem(),
-        familySystem: FamilySystem = FamilySystem(),
-        financeSystem: FinanceSystem = FinanceSystem(),
-        investmentSystem: InvestmentSystem = InvestmentSystem(),
-        stockMarketSystem: StockMarketSystem = StockMarketSystem(),
-        healthSystem: HealthSystem = HealthSystem(),
-        housingSystem: HousingSystem = HousingSystem(),
-        homeOwnershipSystem: HomeOwnershipSystem = HomeOwnershipSystem(),
-        luxurySystem: LuxurySystem = LuxurySystem(),
-        progressSystem: ProgressSystem = ProgressSystem(),
-        crossDomainPressureSystem: CrossDomainPressureSystem = CrossDomainPressureSystem(),
-        worldAutonomySystem: WorldAutonomySystem = WorldAutonomySystem(),
-        npcAutonomySystem: NPCAutonomySystem = NPCAutonomySystem(),
-        yearlyOutcomeAggregator: YearlyOutcomeAggregator = YearlyOutcomeAggregator(),
-        systemRegistry: SystemRegistry = SystemRegistry(),
-        worldSnapshotBuilder: WorldSnapshotBuilder = WorldSnapshotBuilder(),
-        effectApplier: DomainEffectApplier = DomainEffectApplier(),
-        domainCacheCoordinator: DomainCacheGenerationCoordinator = DomainCacheGenerationCoordinator()
-    ) {
-        self.eventEngine = eventEngine
-        self.originSystem = originSystem
-        self.narrativeArcSystem = narrativeArcSystem
-        self.traitSystem = traitSystem
-        self.storyletSystem = storyletSystem
-        self.actionSystem = actionSystem
-        self.actionCorrelationSystem = actionCorrelationSystem
-        self.policySystem = policySystem
-        self.trajectorySystem = trajectorySystem
-        self.educationSystem = educationSystem
-        self.careerSystem = careerSystem
-        self.specialCareerSystem = specialCareerSystem
-        self.militarySystem = militarySystem
-        self.crimeSystem = crimeSystem
-        self.legalSystem = legalSystem
-        self.relationshipSystem = relationshipSystem
-        self.familySystem = familySystem
-        self.financeSystem = financeSystem
-        self.investmentSystem = investmentSystem
-        self.stockMarketSystem = stockMarketSystem
-        self.healthSystem = healthSystem
-        self.housingSystem = housingSystem
-        self.homeOwnershipSystem = homeOwnershipSystem
-        self.luxurySystem = luxurySystem
-        self.progressSystem = progressSystem
-        self.crossDomainPressureSystem = crossDomainPressureSystem
-        self.worldAutonomySystem = worldAutonomySystem
-        self.npcAutonomySystem = npcAutonomySystem
-        self.continuityThreadEngine = ContinuityThreadEngine()
-        self.silentYearEngine = SilentYearEngine()
-        self.yearlyOutcomeAggregator = yearlyOutcomeAggregator
-        self.systemRegistry = systemRegistry
-        self.worldSnapshotBuilder = worldSnapshotBuilder
-        self.effectApplier = effectApplier
-        self.domainCacheCoordinator = domainCacheCoordinator
-        self.instantReactionCoordinator = InstantReactionCoordinator(
-            npcAutonomySystem: npcAutonomySystem,
-            healthSystem: healthSystem,
-            financeSystem: financeSystem
-        )
+    init(eventEngine: EventEngine? = nil) {
+        self.injectedEventEngine = eventEngine
+    }
+
+    /// Warms deferred simulation systems before the first heavy tick.
+    func dropTransientCachesForMemoryPressure() {
+        lastInstantSnapshot = nil
+        latestWorldSnapshot = nil
+    }
+
+    func warmSimulationRuntimeIfNeeded() {
+        guard !isSimulationRuntimeWarmed else { return }
+        isSimulationRuntimeWarmed = true
+        _ = storyletSystem
+        _ = actionSystem
+        _ = educationSystem
+        _ = careerSystem
+        _ = specialCareerSystem
+        _ = crimeSystem
+        _ = legalSystem
+        _ = financeSystem
+        _ = relationshipSystem
+        _ = familySystem
+        _ = healthSystem
+        _ = silentYearEngine
+        _ = instantReactionCoordinator
     }
 
     func initialize(state: inout GameState) -> GameEvent? {
@@ -200,6 +159,7 @@ final class LifeSimulationOrchestrator {
     }
 
     func hydrateRuntimeCaches(for state: GameState) {
+        warmSimulationRuntimeIfNeeded()
         refreshGeneratedCaches(for: state)
     }
 
@@ -227,6 +187,7 @@ final class LifeSimulationOrchestrator {
     }
 
     func advanceYear(state: inout GameState) -> YearAdvanceOutcome {
+        warmSimulationRuntimeIfNeeded()
         guard !state.isGameOver else {
             return beginYearChapter(state: &state)
         }
@@ -286,6 +247,7 @@ final class LifeSimulationOrchestrator {
     }
 
     func beginYearChapter(state: inout GameState) -> YearAdvanceOutcome {
+        warmSimulationRuntimeIfNeeded()
         guard !state.isGameOver else {
             return YearAdvanceOutcome(
                 summary: latestYearSummary,
@@ -365,6 +327,7 @@ final class LifeSimulationOrchestrator {
     }
 
     func resolveYearChapter(choice: EventChoice, state: inout GameState) -> YearAdvanceOutcome {
+        warmSimulationRuntimeIfNeeded()
         guard var chapter = state.activeYearChapter else {
             return YearAdvanceOutcome(summary: latestYearSummary, cards: [])
         }
@@ -466,6 +429,7 @@ final class LifeSimulationOrchestrator {
     }
 
     func apply(choice: EventChoice, event: GameEvent, state: inout GameState) {
+        warmSimulationRuntimeIfNeeded()
         effectApplier.applyCoreEffects(choice.effects.core, to: &state.player)
 
         if let educationEffects = choice.effects.education {
@@ -669,6 +633,7 @@ final class LifeSimulationOrchestrator {
     /// - Reaction enrichment + momentum is fully delegated to the coordinator.
     /// - We avoid heavy cache work unless necessary.
     func applyInstantActionWithAutonomousReaction(_ choiceID: ActionChoiceID, domain: ActionDomain, state: inout GameState) -> DomainYearResult {
+        warmSimulationRuntimeIfNeeded()
         // Use the lightest possible path for the base action
         var baseResult = applyImmediateAction(choiceID, domain: domain, state: &state, refreshCaches: false)
 
@@ -1812,6 +1777,21 @@ private extension FameSystem {
             }
             if coach.boosterPressure >= 75 || sc.heat >= 65 {
                 f.notoriety = min(100, f.notoriety + max(2, coach.boosterPressure / 16))
+            }
+        }
+
+        if sc.track == .sportsOwner {
+            let owner = sc.sportsOwner
+            let ownerBoost = max(1, (owner.portfolio.count * 6 + owner.mediaLeverage / 4 + owner.leagueRelations / 5))
+            f.culturalFame = min(100, f.culturalFame + ownerBoost)
+            if owner.portfolio.count >= 1 && !f.knownFor.contains("Team Owner") {
+                f.knownFor.append("Team Owner")
+            }
+            if owner.portfolio.count >= 2 && !f.knownFor.contains("Franchise Mogul") {
+                f.knownFor.append("Franchise Mogul")
+            }
+            if owner.totalValuation >= 10_000_000_000 && !f.knownFor.contains("League Owner") {
+                f.knownFor.append("League Owner")
             }
         }
 

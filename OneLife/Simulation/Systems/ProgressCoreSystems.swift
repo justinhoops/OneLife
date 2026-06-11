@@ -533,7 +533,16 @@ struct ProgressSystem {
         }
 
         // CT3-3: Diamond empire legacy flags (new strong meta for richest lives)
-        let isDiamond = [.movieProducer, .recordLabelOwner, .coach, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire].contains(state.specialCareer.track)
+        let isDiamond = [.movieProducer, .recordLabelOwner, .sportsOwner, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire].contains(state.specialCareer.track)
+        if state.specialCareer.track == .coach || state.specialCareer.coaching.programPrestige >= 70 {
+            let coach = state.specialCareer.coaching
+            if coach.programPrestige >= 70 && coach.seasonWins >= 8 {
+                meta.generationFlags.insert("program_builder")
+            }
+            if coach.programLevel >= 3 {
+                meta.generationFlags.insert("dynasty_builder")
+            }
+        }
         if isDiamond {
             if state.specialCareer.track == .movieProducer {
                 let film = state.specialCareer.movieProducer
@@ -544,13 +553,13 @@ struct ProgressSystem {
                     meta.generationFlags.insert("cultural_monument")
                 }
             }
-            if state.specialCareer.track == .coach {
-                let coach = state.specialCareer.coaching
-                if coach.programPrestige >= 70 && coach.seasonWins >= 8 {
-                    meta.generationFlags.insert("program_builder")
+            if state.specialCareer.track == .sportsOwner {
+                let owner = state.specialCareer.sportsOwner
+                if owner.portfolio.count >= 2 && owner.totalValuation >= 5_000_000_000 {
+                    meta.generationFlags.insert("franchise_mogul")
                 }
-                if coach.programLevel >= 3 {
-                    meta.generationFlags.insert("dynasty_builder")
+                if owner.totalValuation >= 10_000_000_000 {
+                    meta.generationFlags.insert("owned_the_league")
                 }
             }
             if state.specialCareer.track == .recordLabelOwner {
@@ -754,6 +763,10 @@ struct LifeSummarySystem {
         if closeChildren.count >= 3 { return "A Foundation Built of Family" }
         if !closeChildren.isEmpty { return "You Left People Who Remember" }
         
+        if state.specialCareer.sportsOwner.portfolio.count >= 2 && state.specialCareer.sportsOwner.totalValuation >= 10_000_000_000 {
+            return "You Owned the League"
+        }
+        if state.finance.totalWealth >= 2_000_000_000 { return "You Owned the League" }
         if state.finance.totalWealth >= 2_000_000 { return "You Built an Empire That Lasted" }
         if state.finance.totalWealth >= 1_000_000 { return "You Built Something That Lasted" }
         

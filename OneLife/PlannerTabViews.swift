@@ -245,7 +245,7 @@ struct CareerPlannerTab: View {
             AuditStrip(insights: auditInsights, identifier: "career-overview-audit")
 
             if let specialMetrics {
-                let diamondTracks: Set<SpecialCareerTrack> = [.movieProducer, .recordLabelOwner, .coach, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider]
+                let diamondTracks: Set<SpecialCareerTrack> = [.movieProducer, .recordLabelOwner, .sportsOwner, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire]
                 let isDiamond = diamondTracks.contains(state.specialCareer.track)
                 PlannerSectionCard(
                     title: isDiamond ? "♦ Empire" : "Special Career",
@@ -405,7 +405,9 @@ struct CareerPlannerTab: View {
         case .recordLabelOwner:
             return "You own the music machine now. Roster trust, catalog depth, tour upside, and cashflow pressure decide whether the label becomes a home for artists or another extractive room with better furniture."
         case .coach:
-            return "Diamond Career: you manage a sports program now. Recruiting, staff, scheme, locker room trust, boosters, and season results decide whether you climb or get fired."
+            return "Special Career: you manage a sports program now. Recruiting, staff, scheme, locker room trust, boosters, and season results decide whether you climb or get fired."
+        case .sportsOwner:
+            return "Diamond Career: you own the franchise, not the playbook. Acquisitions, media deals, front-office quality, and portfolio margins decide whether billions become an empire or an expensive hobby."
         case .movieProducer:
             return "Diamond Career: you manage scripts, casts, budgets, distribution, and production chaos. The upside is bigger than acting work, but unfinished projects can burn cash fast."
         case .musicProducer:
@@ -490,7 +492,7 @@ struct CareerPlannerTab: View {
         case .coach:
             let coach = state.specialCareer.coaching
             var metrics: [(String, String, PlannerTone)] = [
-                ("Empire", "Coach", .positive),
+                ("Tier", "Special", .positive),
                 ("Record", "\(coach.seasonWins)-\(coach.seasonLosses)", coach.seasonWins >= 9 ? .positive : (coach.seasonWins <= 4 && coach.seasonLosses > 0 ? .warning : .neutral)),
                 ("Roster", "\(coach.rosterTalent)", coach.rosterTalent >= 60 ? .positive : .neutral),
                 ("Scheme", "\(coach.schemeFit)", coach.schemeFit >= 60 ? .positive : .neutral),
@@ -499,6 +501,21 @@ struct CareerPlannerTab: View {
             ]
             if coach.boosterPressure >= 35 {
                 metrics.append(("Boosters", "\(coach.boosterPressure)", coach.boosterPressure >= 65 ? .warning : .neutral))
+            }
+            return metrics
+        case .sportsOwner:
+            let owner = state.specialCareer.sportsOwner
+            var metrics: [(String, String, PlannerTone)] = [
+                ("Tier", "Diamond", .positive),
+                ("Teams", "\(owner.portfolio.count)", owner.portfolio.count >= 2 ? .positive : .neutral),
+                ("Valuation", MoneyFormatting.compact(owner.totalValuation), owner.totalValuation >= 5_000_000_000 ? .positive : .neutral),
+                ("Last Profit", MoneyFormatting.compact(owner.lastPortfolioProfit), owner.lastPortfolioProfit > 0 ? .positive : (owner.lastPortfolioProfit < 0 ? .warning : .neutral)),
+                ("Front Office", "\(owner.frontOfficeQuality)", owner.frontOfficeQuality >= 60 ? .positive : .neutral),
+                ("Media", "\(owner.mediaLeverage)", owner.mediaLeverage >= 55 ? .positive : .neutral),
+                ("Pressure", "\(owner.capitalPressure)", owner.capitalPressure >= 65 ? .warning : .neutral)
+            ]
+            if let top = owner.portfolio.max(by: { $0.lastYearProfit < $1.lastYearProfit }) {
+                metrics.append(("\(top.league.displayName)", MoneyFormatting.compact(top.lastYearProfit), top.lastYearProfit >= 0 ? .positive : .warning))
             }
             return metrics
         case .movieProducer:
@@ -731,6 +748,9 @@ struct CareerPlannerTab: View {
         }
         if SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state) == nil {
             return "Coach ready"
+        }
+        if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil {
+            return "Owner ready"
         }
         if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil {
             return "Capital ready"

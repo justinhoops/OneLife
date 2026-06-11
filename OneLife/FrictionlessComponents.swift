@@ -329,17 +329,20 @@ struct LegacySelectionView: View {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
                     Text(summary.headline)
-                        .font(.system(size: 28, weight: .black, design: .serif))
+                        .font(.system(size: 32, weight: .black, design: .serif))
                         .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                     Text("Age \(vm.state.player.age)")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(.secondary)
+                        .font(.headline.bold())
+                        .foregroundStyle(DesignSystem.Colors.accent)
                     Text(summary.closingLine)
-                        .font(.subheadline)
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
                 }
                 .padding(.top, 40)
+                .padding(.bottom, 10)
 
                 VStack(alignment: .leading, spacing: 14) {
                     Text("The Life")
@@ -347,8 +350,12 @@ struct LegacySelectionView: View {
                         .foregroundStyle(.secondary)
 
                     Text(summary.relationshipLine)
+                        .font(.subheadline.weight(.semibold))
                     Text(summary.reputationLine)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
+
+                    Divider().padding(.vertical, 4)
 
                     HStack {
                         legacyMetric("Path", summary.lifePathTitle)
@@ -358,9 +365,8 @@ struct LegacySelectionView: View {
                         legacyMetric("Next Life", "+\(summary.legacyPointsEarned)")
                     }
                 }
-                .padding()
-                .background(Color.white.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(20)
+                .glassCard(radius: DesignSystem.Radius.large)
                 .padding(.horizontal)
 
                 legacyList(title: "What Lasted", items: summary.achievements, symbol: "sparkles", color: .green)
@@ -375,6 +381,7 @@ struct LegacySelectionView: View {
                         VStack(alignment: .leading) {
                             Text("Total Wealth")
                                 .font(.caption.bold())
+                                .foregroundStyle(.secondary)
                             Text("$\(vm.state.finance.totalWealth)")
                                 .font(.title3.bold())
                         }
@@ -383,15 +390,15 @@ struct LegacySelectionView: View {
                             VStack(alignment: .trailing) {
                                 Text("Property")
                                     .font(.caption.bold())
+                                    .foregroundStyle(.secondary)
                                 Text(vm.state.assets.primaryResidence?.homeValue ?? 0 > 0 ? "Bequeathed" : "None")
                                     .font(.title3.bold())
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(DesignSystem.Colors.positive)
                             }
                         }
                     }
-                    .padding()
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(20)
+                    .glassCard(radius: DesignSystem.Radius.medium)
                 }
                 .padding(.horizontal)
                 
@@ -409,9 +416,9 @@ struct LegacySelectionView: View {
                             HStack(spacing: 16) {
                                 Image(systemName: "person.fill")
                                     .font(.title2)
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(DesignSystem.Colors.accent)
                                     .frame(width: 44, height: 44)
-                                    .background(Color.blue.opacity(0.1))
+                                    .background(DesignSystem.Colors.accent.opacity(0.15))
                                     .clipShape(Circle())
                                 
                                 VStack(alignment: .leading, spacing: 2) {
@@ -426,9 +433,8 @@ struct LegacySelectionView: View {
                                     .font(.caption.bold())
                                     .foregroundStyle(.tertiary)
                             }
-                            .padding()
-                            .background(Color.white.opacity(0.05))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .padding(16)
+                            .glassCard(radius: DesignSystem.Radius.medium)
                         }
                         .buttonStyle(.plain)
                     }
@@ -437,12 +443,12 @@ struct LegacySelectionView: View {
                         vm.finishLegacyWithoutSuccessor()
                     } label: {
                         Text(vm.state.family.children.isEmpty ? "Begin Another Life" : "Start a New Family")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.secondary)
+                            .font(.headline.bold())
+                            .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white.opacity(0.03))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .padding(16)
+                            .background(Color.primary.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.medium))
                     }
                     .padding(.top, 10)
                 }
@@ -466,20 +472,19 @@ struct LegacySelectionView: View {
     }
 
     private func legacyList(title: String, items: [String], symbol: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.caption.weight(.black))
                 .foregroundStyle(.secondary)
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 Label(item, systemImage: symbol)
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(color)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(20)
+        .glassCard(radius: DesignSystem.Radius.medium)
         .padding(.horizontal)
     }
 }

@@ -7,7 +7,7 @@ import UIKit
 
 
 struct ContentView: View {
-    @StateObject private var vm = GameViewModel()
+    @ObservedObject var vm: GameViewModel
     @State private var isPulsing = false
     @State private var showLifeFeedSheet = false
     @State private var showLifeJournalSheet = false
@@ -19,11 +19,9 @@ struct ContentView: View {
                 ZStack {
                     Color.clear
                         .onAppear {
-                            guard !vm.isLoadingPersistedGame else { return }
+                            guard !vm.chrome.isLoadingPersistedGame else { return }
                             if vm.state.startupState == .active {
                                 vm.hydrateRuntimeCachesIfNeeded()
-                            } else {
-                                vm.setupFreshGameIfNeeded()
                             }
                         }
                     plannerBackground
@@ -45,18 +43,19 @@ struct ContentView: View {
                         .allowsHitTesting(false)
                     }
 
-                    if vm.isLoadingPersistedGame {
+                    if vm.chrome.isLoadingPersistedGame {
                         startupLoadingOverlay(title: "Loading your life...")
                             .zIndex(120)
                             .transition(.opacity)
                     } else if vm.state.startupState == .active {
                         LifeConsoleView(
                             vm: vm,
+                            chrome: vm.chrome,
                             onOpenFeed: { showLifeFeedSheet = true },
                             onSettings: { vm.showingSettings = true }
                         )
-                        .offset(x: vm.actionFrictionJitter ? 4 : 0)
-                        .animation(vm.actionFrictionJitter ? .default.repeatCount(3, autoreverses: true) : .default, value: vm.actionFrictionJitter)
+                        .offset(x: vm.chrome.actionFrictionJitter ? 4 : 0)
+                        .animation(vm.chrome.actionFrictionJitter ? .default.repeatCount(3, autoreverses: true) : .default, value: vm.chrome.actionFrictionJitter)
                         .safeAreaInset(edge: .bottom, spacing: 0) {
                             if vm.presentedCard == nil,
                                vm.state.activeYearChapter == nil,
@@ -77,14 +76,14 @@ struct ContentView: View {
                         }
 
                         // Phase 1: Polished floating deltas for instant action feedback (above persistent controls)
-                        FloatingDeltasOverlay(deltas: vm.floatingDeltas)
+                        FloatingDeltasOverlay(deltas: vm.chrome.floatingDeltas)
                             .allowsHitTesting(false)
 
-                        AutonomyToastOverlay(toasts: vm.autonomyToasts)
+                        AutonomyToastOverlay(toasts: vm.chrome.autonomyToasts)
                             .zIndex(48)
 
                         // Micro-beat (transient reaction text) -- suppressed during popup resolving to keep focus on the processing card/loading.
-                        if !vm.isResolvingInteraction, let beat = vm.microBeatOverlay {
+                        if !vm.chrome.isResolvingInteraction, let beat = vm.chrome.microBeatOverlay {
                             VStack {
                                 Spacer()
                                 Text(beat)
@@ -109,7 +108,7 @@ struct ContentView: View {
                             .padding(.bottom, geometry.safeAreaInsets.bottom + 28)
                     }
 
-                    if let saveStatusBanner = vm.saveStatusBanner, vm.state.startupState == .active {
+                    if let saveStatusBanner = vm.chrome.saveStatusBanner, vm.state.startupState == .active {
                         saveStatusToast(saveStatusBanner, safeAreaBottom: geometry.safeAreaInsets.bottom)
                             .zIndex(11)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -123,27 +122,27 @@ struct ContentView: View {
                     // When isResolvingInteraction (set sync on button press, before Task.yield + heavy), we show
                     // processing UI immediately so user doesn't see frozen old popup buttons while yearly sim/refresh/save runs.
                     // (See also the two-speeds comment in LifeSimulationOrchestrator.swift around resolvePreparedYearChapter.)
-                    if vm.presentedCard != nil || vm.isResolvingInteraction {
+                    if vm.presentedCard != nil || vm.chrome.isResolvingInteraction {
                         ZStack(alignment: .bottom) {
                             // Full dimming scrim (root level ensures it covers TabView content + bar + everything).
                             Color.black.opacity(0.55)
                                 .ignoresSafeArea()
                                 .allowsHitTesting(true)
                                 .onTapGesture {
-                                    if !vm.isResolvingInteraction, let card = vm.presentedCard, !vm.isChoiceCard(card) {
+                                    if !vm.chrome.isResolvingInteraction, let card = vm.presentedCard, !vm.isChoiceCard(card) {
                                         AppFeedback.impact(.light)
                                         vm.dismissPresentedCard()
                                     }
                                 }
                                 .zIndex(1)
 
-                            if vm.isResolvingInteraction {
+                            if vm.chrome.isResolvingInteraction {
                                 // Processing/loading state (visible immediately after button press thanks to flag + yield).
                                 VStack(spacing: 16) {
                                     ProgressView()
                                         .tint(.white)
                                         .scaleEffect(1.2)
-                                    Text(vm.resolvingInteractionContext.map { "Resolving: \($0)" } ?? "Resolving your choice...")
+                                    Text(vm.chrome.resolvingInteractionContext.map { "Resolving: \($0)" } ?? "Resolving your choice...")
                                         .font(.headline)
                                         .foregroundStyle(.white)
                                     Text("Simulating the year (this can take a moment for complex lives).")
@@ -192,7 +191,7 @@ struct ContentView: View {
                     }
 
                     // Loading overlay during fresh game activation (prevents white screen)
-                    if vm.isStartingNewLife {
+                    if vm.chrome.isStartingNewLife {
                         startupLoadingOverlay(title: "Generating your life...")
                             .zIndex(200)
                             .transition(.opacity)
@@ -281,6 +280,8 @@ struct ContentView: View {
             #if DEBUG
             .sheet(isPresented: $vm.showingDebugLab) {
                 DebugScenarioLabSheet(
+                    timingSnapshot: vm.lastTimingSnapshot,
+                    performanceRecords: RuntimePerformanceMonitor.shared.records,
                     onLoadScenario: { scenarioID in
                         vm.loadDebugScenario(scenarioID)
                     },
@@ -297,8 +298,8 @@ struct ContentView: View {
                     dismissButton: .default(Text("Okay"))
                 )
             }
-            .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.saveStatusBanner)
-            .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.activityPulse)
+            .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.chrome.saveStatusBanner)
+            .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.chrome.activityPulse)
             .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.returnPrompt)
         }
     }
@@ -1059,6 +1060,8 @@ struct ContentView: View {
 
 #if DEBUG
 struct DebugScenarioLabSheet: View {
+    let timingSnapshot: SimulationTimingSnapshot?
+    let performanceRecords: [RuntimePerformanceRecord]
     let onLoadScenario: (DebugScenarioID) -> Void
     let onReset: () -> Void
 
@@ -1072,6 +1075,8 @@ struct DebugScenarioLabSheet: View {
                     Text("These seeded states are debug-only. They preserve the production planner layout while making hidden feature bands directly testable.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+
+                    runtimePerformancePanel
 
                     ForEach(DebugScenarioID.allCases) { scenario in
                         Button {
@@ -1110,13 +1115,81 @@ struct DebugScenarioLabSheet: View {
         }
     }
 
+    @ViewBuilder
+    private var runtimePerformancePanel: some View {
+        PlannerSectionCard(
+            title: "Runtime Performance",
+            symbol: "gauge.with.dots.needle.67percent",
+            status: "DEBUG",
+            tone: .neutral
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                if let timingSnapshot {
+                    perfRow("Load", timingSnapshot.loadMilliseconds, budget: RuntimePerformanceBaseline.saveResumeDecodeMilliseconds)
+                    perfRow("Save", timingSnapshot.saveMilliseconds, budget: RuntimePerformanceBaseline.saveEncodeMilliseconds)
+                    perfRow("Age Up", timingSnapshot.totalAdvanceYearMilliseconds, budget: RuntimePerformanceBaseline.typicalAgeUpMilliseconds)
+                    if timingSnapshot.persistedSaveBytes > 0 {
+                        Text("Save size: \(timingSnapshot.persistedSaveBytes) bytes · history \(timingSnapshot.persistedHistoryCount)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let source = timingSnapshot.persistenceRecoverySource {
+                        Text("Recovery source: \(source)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if !timingSnapshot.entries.isEmpty {
+                        Text("System breakdown")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        ForEach(timingSnapshot.entries.prefix(8)) { entry in
+                            Text("\(entry.label): \(Int(entry.durationMilliseconds))ms")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } else {
+                    Text("No timing snapshot yet. Age up or save to populate metrics.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !performanceRecords.isEmpty {
+                    Text("Recent markers")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    ForEach(performanceRecords.suffix(6).reversed()) { record in
+                        HStack {
+                            Text(record.marker.rawValue)
+                            Spacer()
+                            Text("\(Int(record.durationMilliseconds))ms")
+                                .foregroundStyle(record.exceedsBudget ? Color.orange : Color.secondary)
+                        }
+                        .font(.caption2.monospacedDigit())
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("debug-runtime-performance-panel")
+    }
+
+    private func perfRow(_ label: String, _ value: Double, budget: Double) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Text("\(Int(value))ms")
+                .foregroundStyle(value > budget ? Color.orange : Color.secondary)
+        }
+        .font(.caption.monospacedDigit())
+    }
+
     private func tone(for scenario: DebugScenarioID) -> PlannerTone {
         switch scenario {
         case .healthCrisis, .housingDeficitFlow, .specialCareerCrime, .pregnancyYoungFamily, .teenEducationPressure, .yearSummaryPreview,
              .legalInvestigation, .legalCharged, .legalConvicted, .legalCustody, .legalSupervision:
             return .warning
         case .adultCareerFlow, .specialCareerEntertainment, .partnerCohabitationFlow, .universityTrack, .tradeTrack,
-             .combatBoxing, .combatMMA, .combatCrossover, .combatChampion, .fightEmpire:
+             .combatBoxing, .combatMMA, .combatCrossover, .combatChampion, .fightEmpire, .sportsOwnerBillionaire:
             return .positive
         case .adultEdRebuild, .eventPreview, .combatInjured, .legalReleased:
             return .neutral
@@ -1133,6 +1206,8 @@ struct DebugScenarioLabSheet: View {
             return "figure.boxing"
         case .fightEmpire:
             return "building.columns.fill"
+        case .sportsOwnerBillionaire:
+            return "building.2.crop.circle"
         case .legalInvestigation, .legalCharged, .legalConvicted, .legalCustody, .legalSupervision, .legalReleased:
             return "building.columns.fill"
         case .specialCareerEntertainment:

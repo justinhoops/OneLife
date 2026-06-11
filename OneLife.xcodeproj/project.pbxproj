@@ -17,6 +17,8 @@
 		A100004C2F386F7600C04A6F /* PlannerTabViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200004C2F386F7600C04A6F /* PlannerTabViews.swift */; };
 		A100004D2F386F7600C04A6F /* PlannerSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200004D2F386F7600C04A6F /* PlannerSheets.swift */; };
 		A10000482F386F7600C04A6F /* GameChromeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000482F386F7600C04A6F /* GameChromeViews.swift */; };
+		A100004E2F386F7600C04A6F /* RuntimePerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200004E2F386F7600C04A6F /* RuntimePerformanceMonitor.swift */; };
+		A100004F2F386F7600C04A6F /* GameSessionChromeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200004F2F386F7600C04A6F /* GameSessionChromeState.swift */; };
 		A10000022F386F7600C04A6F /* DebugTestingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000022F386F7600C04A6F /* DebugTestingCoordinator.swift */; };
 		A10000032F386F7600C04A6F /* DomainCacheArtifacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000032F386F7600C04A6F /* DomainCacheArtifacts.swift */; };
 		A10000042F386F7600C04A6F /* DomainEffectApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000042F386F7600C04A6F /* DomainEffectApplier.swift */; };
@@ -41,6 +43,7 @@
 		A10000182F386F7600C04A6F /* Simulation/Systems/ProgressCoreSystems.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000182F386F7600C04A6F /* Simulation/Systems/ProgressCoreSystems.swift */; };
 		A10000192F386F7600C04A6F /* Simulation/LifeSimulationOrchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000192F386F7600C04A6F /* Simulation/LifeSimulationOrchestrator.swift */; };
 		A100001A2F386F7600C04A6F /* CharacterCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001A2F386F7600C04A6F /* CharacterCreationView.swift */; };
+		A10000502F386F7600C04A6F /* CharacterCreationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000502F386F7600C04A6F /* CharacterCreationViewModel.swift */; };
 		A100001B2F386F7600C04A6F /* ContinuityThreadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001B2F386F7600C04A6F /* ContinuityThreadEngine.swift */; };
 		A100001C2F386F7600C04A6F /* SilentYearEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001C2F386F7600C04A6F /* SilentYearEngine.swift */; };
 		A100001D2F386F7600C04A6F /* NarrativeToneResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */; };
@@ -117,6 +120,8 @@
 		A200004C2F386F7600C04A6F /* PlannerTabViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerTabViews.swift; sourceTree = "<group>"; };
 		A200004D2F386F7600C04A6F /* PlannerSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerSheets.swift; sourceTree = "<group>"; };
 		A20000482F386F7600C04A6F /* GameChromeViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameChromeViews.swift; sourceTree = "<group>"; };
+		A200004E2F386F7600C04A6F /* RuntimePerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimePerformanceMonitor.swift; sourceTree = "<group>"; };
+		A200004F2F386F7600C04A6F /* GameSessionChromeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSessionChromeState.swift; sourceTree = "<group>"; };
 		A20000022F386F7600C04A6F /* DebugTestingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugTestingCoordinator.swift; sourceTree = "<group>"; };
 		A20000032F386F7600C04A6F /* DomainCacheArtifacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainCacheArtifacts.swift; sourceTree = "<group>"; };
 		A20000042F386F7600C04A6F /* DomainEffectApplier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainEffectApplier.swift; sourceTree = "<group>"; };
@@ -141,6 +146,7 @@
 		A20000182F386F7600C04A6F /* Simulation/Systems/ProgressCoreSystems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/ProgressCoreSystems.swift; sourceTree = "<group>"; };
 		A20000192F386F7600C04A6F /* Simulation/LifeSimulationOrchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/LifeSimulationOrchestrator.swift; sourceTree = "<group>"; };
 		A200001A2F386F7600C04A6F /* CharacterCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterCreationView.swift; sourceTree = "<group>"; };
+		A20000502F386F7600C04A6F /* CharacterCreationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterCreationViewModel.swift; sourceTree = "<group>"; };
 		A200001B2F386F7600C04A6F /* ContinuityThreadEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuityThreadEngine.swift; sourceTree = "<group>"; };
 		A200001C2F386F7600C04A6F /* SilentYearEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilentYearEngine.swift; sourceTree = "<group>"; };
 		A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrativeToneResolver.swift; sourceTree = "<group>"; };
@@ -236,10 +242,13 @@
 			children = (
 				A200000B2F386F7600C04A6F /* Assets.xcassets */,
 				A200001A2F386F7600C04A6F /* CharacterCreationView.swift */,
+				A20000502F386F7600C04A6F /* CharacterCreationViewModel.swift */,
 				A20000252F386F7600C04A6F /* ChildhoodGenerationEngine.swift */,
 				A20000012F386F7600C04A6F /* ContentView.swift */,
 				A20000472F386F7600C04A6F /* GameViewModel.swift */,
 				A20000482F386F7600C04A6F /* GameChromeViews.swift */,
+				A200004E2F386F7600C04A6F /* RuntimePerformanceMonitor.swift */,
+				A200004F2F386F7600C04A6F /* GameSessionChromeState.swift */,
 				A20000492F386F7600C04A6F /* FrictionlessComponents.swift */,
 				A200004A2F386F7600C04A6F /* PlannerComponentViews.swift */,
 				A200004B2F386F7600C04A6F /* VisualPolishModifiers.swift */,
@@ -478,12 +487,15 @@
 				A10000462F386F7600C04A6F /* PlannerUIModels.swift in Sources */,
 				A10000472F386F7600C04A6F /* GameViewModel.swift in Sources */,
 				A10000482F386F7600C04A6F /* GameChromeViews.swift in Sources */,
+				A100004E2F386F7600C04A6F /* RuntimePerformanceMonitor.swift in Sources */,
+				A100004F2F386F7600C04A6F /* GameSessionChromeState.swift in Sources */,
 				A10000492F386F7600C04A6F /* FrictionlessComponents.swift in Sources */,
 				A100004A2F386F7600C04A6F /* PlannerComponentViews.swift in Sources */,
 				A100004B2F386F7600C04A6F /* VisualPolishModifiers.swift in Sources */,
 				A100004C2F386F7600C04A6F /* PlannerTabViews.swift in Sources */,
 				A100004D2F386F7600C04A6F /* PlannerSheets.swift in Sources */,
 				A100001A2F386F7600C04A6F /* CharacterCreationView.swift in Sources */,
+				A10000502F386F7600C04A6F /* CharacterCreationViewModel.swift in Sources */,
 				A10000232F386F7600C04A6F /* LifeConsoleView.swift in Sources */,
 				A10000242F386F7600C04A6F /* DomainActionRegistry.swift in Sources */,
 				A10000252F386F7600C04A6F /* ChildhoodGenerationEngine.swift in Sources */,

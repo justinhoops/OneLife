@@ -16,9 +16,9 @@ struct DesignSystem {
         static let secondaryBackground = Color(red: 0.12, green: 0.12, blue: 0.12)
         static let surface = Color(red: 0.18, green: 0.18, blue: 0.18)
         
-        static let textPrimary = Color.white
-        static let textSecondary = Color.white.opacity(0.7)
-        static let textTertiary = Color.white.opacity(0.45)
+        static let textPrimary = Color.primary
+        static let textSecondary = Color.primary.opacity(0.6)
+        static let textTertiary = Color.primary.opacity(0.4)
         
         // Semantic Colors (Codex IV: Color as Data)
         static let positive = Color(red: 0.17, green: 0.48, blue: 0.27)

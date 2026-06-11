@@ -2,8 +2,10 @@ import Foundation
 
 final class EventEngine {
     private(set) var allEvents: [GameEvent] = []
+    private var eventsByAgeBand: [Int: [GameEvent]] = [:]
     private let traitSystem = TraitSystem()
     private var hasLoggedEventPackWarning = false
+    private var hasLoggedEventPackLoadFailure = false
     /// True after bundle JSON is parsed or injected events are provided (Path 2: lazy launch).
     private(set) var isEventPackLoaded = false
 
@@ -11,6 +13,7 @@ final class EventEngine {
         if let events {
             allEvents = events
             isEventPackLoaded = true
+            rebuildAgeBandIndex()
         }
     }
 
@@ -22,8 +25,9 @@ final class EventEngine {
 
     private func loadEventsFromBundle() {
         guard let url = Bundle.main.url(forResource: "SampleEvents", withExtension: "json") else {
-            assertionFailure("Missing SampleEvents.json in bundle")
+            logEventPackFailure("Missing SampleEvents.json in bundle")
             allEvents = []
+            eventsByAgeBand = [:]
             return
         }
 
@@ -31,10 +35,42 @@ final class EventEngine {
             let data = try Data(contentsOf: url)
             let pack = try JSONDecoder().decode(EventPack.self, from: data)
             allEvents = pack.events
+            rebuildAgeBandIndex()
         } catch {
-            assertionFailure("Failed to load events: \(error)")
+            logEventPackFailure("Failed to load events: \(error)")
             allEvents = []
+            eventsByAgeBand = [:]
         }
+    }
+
+    private func logEventPackFailure(_ message: String) {
+        guard !hasLoggedEventPackLoadFailure else { return }
+        hasLoggedEventPackLoadFailure = true
+        #if DEBUG
+        assertionFailure(message)
+        #else
+        print("OneLife EventEngine: \(message)")
+        #endif
+    }
+
+    private func rebuildAgeBandIndex() {
+        var indexed: [Int: [GameEvent]] = [:]
+        for event in allEvents {
+            let lower = max(0, event.minAge)
+            let upper = min(120, event.maxAge)
+            guard lower <= upper else { continue }
+            for age in lower...upper {
+                indexed[age, default: []].append(event)
+            }
+        }
+        eventsByAgeBand = indexed
+    }
+
+    private func candidateEvents(for age: Int) -> [GameEvent] {
+        if let band = eventsByAgeBand[age], !band.isEmpty {
+            return band
+        }
+        return allEvents.filter { age >= $0.minAge && age <= $0.maxAge }
     }
 
     func pickEvent(for state: GameState, preferredTags: [String] = []) -> GameEvent? {
@@ -54,6 +90,7 @@ final class EventEngine {
         ensureEventsLoaded()
         if !allEvents.contains(where: { $0.id == event.id }) {
             allEvents.append(event)
+            rebuildAgeBandIndex()
         }
     }
 
@@ -62,8 +99,7 @@ final class EventEngine {
         warnIfEventPackIsLarge()
         let age = state.player.age
 
-        let eligible = allEvents.filter { event in
-            guard age >= event.minAge && age <= event.maxAge else { return false }
+        let eligible = candidateEvents(for: age).filter { event in
             guard requirementsMet(event.requirements, state: state) else { return false }
 
             if let lastYear = state.lastEventYearById[event.id], (age - lastYear) < event.cooldownYears {

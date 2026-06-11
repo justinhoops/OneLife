@@ -113,11 +113,10 @@ final class OneLifeUITests: XCTestCase {
     func testStartupFlowTransitionsIntoPlannerShell() throws {
         let app = launchApp()
 
-        if element("startup-screen", in: app).waitForExistence(timeout: 2) || app.buttons["begin-life-button"].waitForExistence(timeout: 2) {
-            XCTAssertTrue(app.buttons["quick-start-button"].exists)
-            XCTAssertTrue(app.buttons["begin-life-button"].exists)
-
-            app.buttons["begin-life-button"].tap()
+        if element("character-creation-screen", in: app).waitForExistence(timeout: 2)
+            || element("startup-screen", in: app).waitForExistence(timeout: 1)
+            || app.buttons["begin-life-button"].waitForExistence(timeout: 1) {
+            completeCharacterCreationFlow(app)
             dismissLaunchEventIfNeeded(app)
         } else {
             dismissLaunchEventIfNeeded(app)
@@ -139,6 +138,30 @@ final class OneLifeUITests: XCTestCase {
             let app = XCUIApplication()
             app.launch()
         }
+    }
+
+    @MainActor
+    func testPersistedGameShowsStartupLoadingOverlayThenPlanner() throws {
+        let saveDirectory = (NSTemporaryDirectory() as NSString).appendingPathComponent("OneLifeUITests/SavedResume/\(UUID().uuidString)")
+        try FileManager.default.createDirectory(atPath: saveDirectory, withIntermediateDirectories: true)
+
+        let seedApp = launchApp(environment: [
+            "ONELIFE_TEST_SAVE_DIR": saveDirectory,
+            "ONELIFE_SYNC_PERSISTENCE_LOAD": "1",
+            "ONELIFE_SYNC_PERSISTENCE_SAVE": "1"
+        ])
+        enterPlannerShellIfNeeded(seedApp)
+        XCTAssertTrue(seedApp.buttons["home-tab"].waitForExistence(timeout: 5))
+        seedApp.terminate()
+
+        let resumeApp = XCUIApplication()
+        resumeApp.launchEnvironment["ONELIFE_TEST_SAVE_DIR"] = saveDirectory
+        resumeApp.launchEnvironment["ONELIFE_DISABLE_OPENING_EVENT"] = "1"
+        resumeApp.launch()
+
+        let overlay = element("startup-loading-overlay", in: resumeApp)
+        _ = overlay.waitForExistence(timeout: 1)
+        XCTAssertTrue(resumeApp.buttons["home-tab"].waitForExistence(timeout: 8))
     }
 
     @MainActor
@@ -325,13 +348,29 @@ final class OneLifeUITests: XCTestCase {
 
     @MainActor
     private func enterPlannerShellIfNeeded(_ app: XCUIApplication) {
-        if element("startup-screen", in: app).waitForExistence(timeout: 2) || app.buttons["begin-life-button"].waitForExistence(timeout: 2) {
-            let beginButton = app.buttons["begin-life-button"]
-            XCTAssertTrue(beginButton.waitForExistence(timeout: 2))
-            beginButton.tap()
+        if app.buttons["begin-life-button"].waitForExistence(timeout: 1) {
+            app.buttons["begin-life-button"].tap()
+        } else if element("character-creation-screen", in: app).waitForExistence(timeout: 2)
+            || element("startup-screen", in: app).waitForExistence(timeout: 1) {
+            completeCharacterCreationFlow(app)
         }
 
         dismissLaunchEventIfNeeded(app)
+    }
+
+    @MainActor
+    private func completeCharacterCreationFlow(_ app: XCUIApplication) {
+        for _ in 0..<5 {
+            if app.buttons["begin-life-button"].waitForExistence(timeout: 1) {
+                app.buttons["begin-life-button"].tap()
+                return
+            }
+            if app.buttons["creation-next-button"].exists {
+                app.buttons["creation-next-button"].tap()
+            } else {
+                break
+            }
+        }
     }
 
     @MainActor

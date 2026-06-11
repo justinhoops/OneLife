@@ -432,6 +432,13 @@ struct DomainActionRegistry {
         case .manageLockerRoom: return "Locker Room"
         case .callBigGame: return "Big Game"
         case .handleBoosterPressure: return "Boosters"
+        case .startSportsOwnership: return "Owner"
+        case .acquireFranchise: return "Buy Team"
+        case .hireGeneralManager: return "Hire GM"
+        case .negotiateMediaDeal: return "Media Deal"
+        case .investInBrand: return "Brand"
+        case .expandPortfolio: return "Expand"
+        case .sellFranchise: return "Sell Team"
         case .postDaily: return "Post Daily"
         case .goLive: return "Go Live"
         case .filmBanger: return "Film Banger"
@@ -730,6 +737,7 @@ struct DomainActionRegistry {
             if SpecialCareerSystem.qualificationIssue(for: .acquireCompetitor, state: state) == nil { founder.append(.acquireCompetitor) }
             if SpecialCareerSystem.qualificationIssue(for: .dayTrade, state: state) == nil { founder.append(.dayTrade) }
             if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil { founder.append(.gatherIntelligence) }
+            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil { founder.append(.startSportsOwnership) }
             return founder
         }
         if state.specialCareer.track == .entertainment {
@@ -769,7 +777,24 @@ struct DomainActionRegistry {
             return [.signArtist, .developArtist, .releaseRecord, .pushSingle, .bookTour, .payArtists, .handleArtistDrama, .protectYourEnergy, .network]
         }
         if state.specialCareer.track == .coach {
-            return [.recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .protectYourEnergy, .network]
+            var coach: [ActionChoiceID] = [.recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .protectYourEnergy, .network]
+            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil {
+                coach.insert(.startSportsOwnership, at: 0)
+            }
+            return coach
+        }
+        if state.specialCareer.track == .sportsOwner {
+            var owner: [ActionChoiceID] = [.hireGeneralManager, .negotiateMediaDeal, .investInBrand, .protectYourEnergy, .network]
+            if SpecialCareerSystem.qualificationIssue(for: .acquireFranchise, state: state) == nil {
+                owner.insert(.acquireFranchise, at: 0)
+            }
+            if SpecialCareerSystem.qualificationIssue(for: .expandPortfolio, state: state) == nil {
+                owner.insert(.expandPortfolio, at: 1)
+            }
+            if SpecialCareerSystem.qualificationIssue(for: .sellFranchise, state: state) == nil {
+                owner.append(.sellFranchise)
+            }
+            return owner
         }
         if state.specialCareer.track == .contentCreator {
             // C2: Full set of dedicated creator quick actions
@@ -826,6 +851,9 @@ struct DomainActionRegistry {
             if SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state) == nil {
                 athlete.append(.startCoachingCareer)
             }
+            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil {
+                athlete.append(.startSportsOwnership)
+            }
             return athlete
         }
         if state.specialCareer.track == .fightEmpire {
@@ -869,8 +897,8 @@ struct DomainActionRegistry {
             if SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil {
                 options.append(.startRecordLabel)
             }
-            if SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state) == nil {
-                options.append(.startCoachingCareer)
+            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil {
+                options.append(.startSportsOwnership)
             }
             if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil {
                 options.append(.manageFund)

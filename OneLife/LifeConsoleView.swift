@@ -121,6 +121,7 @@ enum ConsoleDomain: String, CaseIterable, Identifiable {
 
 struct LifeConsoleView: View {
     @ObservedObject var vm: GameViewModel
+    @ObservedObject var chrome: GameSessionChromeState
     var onOpenFeed: () -> Void
     var onSettings: () -> Void
 
@@ -166,7 +167,7 @@ struct LifeConsoleView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
-                    if let pulse = vm.activityPulse {
+                    if let pulse = chrome.activityPulse {
                         ConsoleActivityPulse(pulse: pulse)
                     }
 
@@ -745,13 +746,8 @@ struct LifeConsoleView: View {
         .frame(minHeight: 28)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(Color.purple.opacity(colorScheme == .light ? 0.05 : 0.12))
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous)
-                .stroke(Color.purple.opacity(colorScheme == .light ? 0.2 : 0.3), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous))
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.recentInstantReactions.count)
+        .glassCard(radius: DesignSystem.Radius.medium)
+        .animation(.spring(response: 0.35, dampingFraction: 0.6), value: vm.recentInstantReactions.count)
         .accessibilityIdentifier("instant-momentum-strip")
     }
 
@@ -771,8 +767,12 @@ struct LifeConsoleView: View {
         }
         .padding(.horizontal, 7)
         .padding(.vertical, 4)
-        .background(tone.fill)
+        .background(tone.fill.opacity(0.6))
         .clipShape(Capsule(style: .continuous))
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(tone.color.opacity(0.15), lineWidth: 1)
+        )
         .accessibilityIdentifier("momentum-domain-\(domain.rawValue)")
     }
 
@@ -816,8 +816,12 @@ struct LifeConsoleView: View {
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 4)
-        .background(tone.fill)
+        .background(tone.fill.opacity(0.6))
         .clipShape(Capsule(style: .continuous))
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(tone.color.opacity(0.15), lineWidth: 1)
+        )
     }
 
     private func reactionTone(for reaction: String) -> PlannerTone {
@@ -844,13 +848,14 @@ struct LifeConsoleView: View {
                 .foregroundStyle(tone.color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.68)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: value)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tone.fill)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .glassCard(radius: 12)
     }
+
 
     /// Very small, low-attention indicator so the player always knows which replayability mode they're in.
     private var resiliencePill: some View {
@@ -1103,15 +1108,15 @@ struct LifeConsoleView: View {
     private var consoleBackground: some View {
         LinearGradient(
             colors: colorScheme == .dark
-                ? [Color(red: 0.06, green: 0.07, blue: 0.08), Color(red: 0.11, green: 0.12, blue: 0.11)]
-                : [Color(red: 0.96, green: 0.96, blue: 0.94), Color(red: 0.90, green: 0.93, blue: 0.91)],
+                ? [DesignSystem.Colors.backgroundDark, Color(red: 0.12, green: 0.11, blue: 0.18)]
+                : [DesignSystem.Colors.lightBackgroundStart, DesignSystem.Colors.lightBackgroundEnd],
             startPoint: .top,
             endPoint: .bottom
         )
     }
 
     private var consoleSurface: Color {
-        colorScheme == .dark ? Color.white.opacity(0.07) : Color.white.opacity(0.82)
+        colorScheme == .dark ? Color(white: 0.1, opacity: 0.8) : Color.white.opacity(0.85)
     }
 
     private func consoleDomain(for tab: GameViewModel.Tab) -> ConsoleDomain {
@@ -1813,6 +1818,144 @@ private struct ConsoleMetricTile: View {
     }
 }
 
+private struct ActionTrayCell: View {
+    let action: ActionPresentationModel
+    let useGrid: Bool
+    let selectedBadge: String
+    let accessibilityPrefix: String
+    let showHoldHint: Bool
+    let showLongPressFooter: Bool
+    let isQuickDeck: Bool
+    let previewProvider: ((ActionChoiceID) -> [String])?
+    let previewedActionID: ActionChoiceID?
+    let previewLines: [String]
+    let onSelect: (ActionPresentationModel) -> Void
+    let onPreviewActivated: (() -> Void)?
+    let onClearPreview: () -> Void
+    let onBeginPreview: (ActionChoiceID, [String]) -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    @State private var isPulsingHint = false
+
+    var body: some View {
+        Button {
+            onSelect(action)
+            onClearPreview()
+        } label: {
+            VStack(alignment: .leading, spacing: useGrid ? 5 : 6) {
+                HStack(alignment: .center, spacing: 8) {
+                    Image(systemName: action.icon)
+                        .font(.system(size: useGrid ? 18 : 16, weight: .black))
+                        .foregroundStyle(action.tone.color)
+                        .frame(width: useGrid ? 32 : 28, height: useGrid ? 32 : 28)
+                        .background(action.tone.fill)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(action.title)
+                            .font(.subheadline.weight(.black))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                        if action.isSelected {
+                            Text(selectedBadge)
+                                .font(.system(size: 8, weight: .black))
+                                .foregroundStyle(PlannerTone.positive.color)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(PlannerTone.positive.fill)
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+
+                Text(action.disabledReason ?? action.subtitle)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(action.disabledReason == nil ? .secondary : action.tone.color)
+                    .lineLimit(2)
+
+                if !useGrid {
+                    HStack(spacing: 3) {
+                        ForEach(action.tags.prefix(2), id: \.self) { tag in
+                            Text(tag)
+                                .font(.caption2.weight(.black))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(action.tone.fill)
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+            }
+            .padding(useGrid ? 12 : 10)
+            .frame(maxWidth: .infinity, minHeight: useGrid ? 80 : 52, alignment: .topLeading)
+            .background(
+                action.isSelected
+                    ? PlannerTone.positive.fill.opacity(0.8)
+                    : OLTheme.cardFill(colorScheme).opacity(0.6)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous)
+                    .stroke(
+                        action.isSelected
+                            ? PlannerTone.positive.color.opacity(0.4)
+                            : Color.primary.opacity(0.08),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: action.isSelected ? PlannerTone.positive.color.opacity(0.15) : Color.clear, radius: 8, y: 4)
+            .onLongPressGesture(minimumDuration: 0.4) {
+                guard let provider = previewProvider else { return }
+                let lines = provider(action.choiceID)
+                onBeginPreview(action.choiceID, lines.isEmpty ? ["Instant effect + possible reaction"] : lines)
+                onPreviewActivated?()
+                AppFeedback.impact(.medium)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(action.disabledReason != nil)
+        .accessibilityIdentifier("\(accessibilityPrefix)-\(action.choiceID.rawValue)")
+        .overlay(alignment: .topTrailing) {
+            if showHoldHint, previewProvider != nil, isQuickDeck, previewedActionID != action.choiceID {
+                Image(systemName: "hand.tap.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Color.purple.opacity(isPulsingHint ? 0.8 : 0.3))
+                    .scaleEffect(isPulsingHint ? 1.1 : 0.9)
+                    .padding(8)
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                            isPulsingHint = true
+                        }
+                    }
+            }
+            if let pid = previewedActionID, pid == action.choiceID, !previewLines.isEmpty {
+                VStack(alignment: .leading, spacing: 1) {
+                    ForEach(previewLines.prefix(2), id: \.self) { line in
+                        Text(line)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+                    if showLongPressFooter {
+                        Text(DiscoverabilityTeaching.longPressFooterLine)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(Color.purple.opacity(0.95))
+                    }
+                }
+                .padding(5)
+                .background(Color.black.opacity(0.85))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+                .offset(x: 1, y: -1)
+                .onTapGesture { onClearPreview() }
+                .accessibilityIdentifier("long-press-preview-footer")
+            }
+        }
+    }
+}
+
 private struct ActionTray: View {
     let title: String
     let actions: [ActionPresentationModel]
@@ -1828,6 +1971,7 @@ private struct ActionTray: View {
 
     @State private var previewedActionID: ActionChoiceID? = nil
     @State private var previewLines: [String] = []
+    @State private var isPulsingHeaderHint = false
 
     private var isQuickDeck: Bool {
         let lower = title.lowercased()
@@ -1848,11 +1992,20 @@ private struct ActionTray: View {
                 if showHoldHint, previewProvider != nil, isQuickDeck {
                     Text("HOLD TO PREVIEW")
                         .font(.system(size: 8, weight: .black))
-                        .foregroundStyle(Color.purple.opacity(0.85))
+                        .foregroundStyle(Color.purple.opacity(isPulsingHeaderHint ? 0.95 : 0.6))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.purple.opacity(0.12))
+                        .background(Color.purple.opacity(isPulsingHeaderHint ? 0.2 : 0.05))
                         .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(Color.purple.opacity(isPulsingHeaderHint ? 0.4 : 0.1), lineWidth: 1)
+                        )
+                        .scaleEffect(isPulsingHeaderHint ? 1.05 : 0.98)
+                        .onAppear {
+                            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                                isPulsingHeaderHint = true
+                            }
+                        }
                 }
                 if isQuickDeck {
                     Text("Instant — tap anytime")
@@ -1878,113 +2031,38 @@ private struct ActionTray: View {
 
             LazyVGrid(columns: gridColumns, spacing: useGrid ? 8 : 6) {
                 ForEach(actions) { action in
-                    Button {
-                        onSelect(action)
-                        previewedActionID = nil
-                        previewLines = []
-                    } label: {
-                        VStack(alignment: .leading, spacing: useGrid ? 5 : 6) {
-                            HStack(alignment: .center, spacing: 8) {
-                                Image(systemName: action.icon)
-                                    .font(.system(size: useGrid ? 18 : 16, weight: .black))
-                                    .foregroundStyle(action.tone.color)
-                                    .frame(width: useGrid ? 32 : 28, height: useGrid ? 32 : 28)
-                                    .background(action.tone.fill)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(action.title)
-                                        .font(.subheadline.weight(.black))
-                                        .foregroundStyle(.primary)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.75)
-                                    if action.isSelected {
-                                        Text(selectedBadge)
-                                            .font(.system(size: 8, weight: .black))
-                                            .foregroundStyle(PlannerTone.positive.color)
-                                            .padding(.horizontal, 4)
-                                            .padding(.vertical, 1)
-                                            .background(PlannerTone.positive.fill)
-                                            .clipShape(Capsule())
-                                    }
-                                }
-                            }
-
-                            Text(action.disabledReason ?? action.subtitle)
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(action.disabledReason == nil ? .secondary : action.tone.color)
-                                .lineLimit(useGrid ? 2 : 2)
-
-                            if !useGrid {
-                                HStack(spacing: 3) {
-                                    ForEach(action.tags.prefix(2), id: \.self) { tag in
-                                        Text(tag)
-                                            .font(.caption2.weight(.black))
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.6)
-                                            .padding(.horizontal, 5)
-                                            .padding(.vertical, 2)
-                                            .background(action.tone.fill)
-                                            .clipShape(Capsule())
-                                    }
-                                }
-                            }
-                        }
-                        .padding(useGrid ? 10 : 10)
-                        .frame(maxWidth: .infinity, minHeight: useGrid ? 80 : 52, alignment: .topLeading)
-                        .background(action.isSelected ? PlannerTone.positive.fill : (useGrid ? Color.primary.opacity(0.06) : Color.primary.opacity(0.04)))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .stroke(action.isSelected ? PlannerTone.positive.color.opacity(0.4) : Color.clear, lineWidth: 1)
-                        )
-                        .onLongPressGesture(minimumDuration: 0.4) {
-                            guard let provider = previewProvider else { return }
-                            let lines = provider(action.choiceID)
+                    ActionTrayCell(
+                        action: action,
+                        useGrid: useGrid,
+                        selectedBadge: selectedBadge,
+                        accessibilityPrefix: accessibilityPrefix,
+                        showHoldHint: showHoldHint,
+                        showLongPressFooter: showLongPressFooter,
+                        isQuickDeck: isQuickDeck,
+                        previewProvider: previewProvider,
+                        previewedActionID: previewedActionID,
+                        previewLines: previewLines,
+                        onSelect: onSelect,
+                        onPreviewActivated: onPreviewActivated,
+                        onClearPreview: {
+                            previewedActionID = nil
+                            previewLines = []
+                        },
+                        onBeginPreview: { choiceID, lines in
                             withAnimation {
-                                previewedActionID = action.choiceID
-                                previewLines = lines.isEmpty ? ["Instant effect + possible reaction"] : lines
+                                previewedActionID = choiceID
+                                previewLines = lines
                             }
-                            onPreviewActivated?()
-                            AppFeedback.impact(.medium)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                if previewedActionID == action.choiceID {
-                                    withAnimation { previewedActionID = nil; previewLines = [] }
+                                if previewedActionID == choiceID {
+                                    withAnimation {
+                                        previewedActionID = nil
+                                        previewLines = []
+                                    }
                                 }
                             }
                         }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(action.disabledReason != nil)
-                    .accessibilityIdentifier("\(accessibilityPrefix)-\(action.choiceID.rawValue)")
-                    .overlay(alignment: .topTrailing) {
-                        if showHoldHint, previewProvider != nil, isQuickDeck, previewedActionID != action.choiceID {
-                            Image(systemName: "hand.tap")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(Color.purple.opacity(0.55))
-                                .padding(4)
-                        }
-                        if let pid = previewedActionID, pid == action.choiceID, !previewLines.isEmpty {
-                            VStack(alignment: .leading, spacing: 1) {
-                                ForEach(previewLines.prefix(2), id: \.self) { line in
-                                    Text(line)
-                                        .font(.caption2.weight(.semibold))
-                                        .foregroundStyle(.white)
-                                }
-                                if showLongPressFooter {
-                                    Text(DiscoverabilityTeaching.longPressFooterLine)
-                                        .font(.caption2.weight(.bold))
-                                        .foregroundStyle(Color.purple.opacity(0.95))
-                                }
-                            }
-                            .padding(5)
-                            .background(Color.black.opacity(0.85))
-                            .clipShape(RoundedRectangle(cornerRadius: 5))
-                            .offset(x: 1, y: -1)
-                            .onTapGesture { previewedActionID = nil; previewLines = [] }
-                            .accessibilityIdentifier("long-press-preview-footer")
-                        }
-                    }
+                    )
                 }
             }
 

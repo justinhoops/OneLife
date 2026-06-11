@@ -18,6 +18,7 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
     case combatChampion
     case combatInjured
     case fightEmpire
+    case sportsOwnerBillionaire
     case legalInvestigation
     case legalCharged
     case legalConvicted
@@ -48,6 +49,7 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
         case .combatChampion: return "Combat Champion"
         case .combatInjured: return "Injured Fighter"
         case .fightEmpire: return "Fight Empire"
+        case .sportsOwnerBillionaire: return "Sports Owner Billionaire"
         case .legalInvestigation: return "Legal Investigation"
         case .legalCharged: return "Criminal Charges"
         case .legalConvicted: return "Conviction"
@@ -95,6 +97,8 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
             return "Suspended fighter with accumulated wear and recovery pressure."
         case .fightEmpire:
             return "Retired champion running a gym, prospect roster, and fictional fight promotion."
+        case .sportsOwnerBillionaire:
+            return "Billionaire with elite coaching prestige ready to buy major-league franchises and run the portfolio."
         case .legalInvestigation:
             return "An open civilian investigation with legal response choices."
         case .legalCharged:
@@ -189,6 +193,8 @@ struct DebugTestingCoordinator {
             return combatCareer(discipline: .mma, injured: true)
         case .fightEmpire:
             return fightEmpire()
+        case .sportsOwnerBillionaire:
+            return sportsOwnerBillionaire()
         case .legalInvestigation:
             return legalScenario(stage: .investigation)
         case .legalCharged:
@@ -757,6 +763,32 @@ struct DebugTestingCoordinator {
         state.finance.cashOnHand = champion ? 180_000 : 24_000
         state.history = [
             HistoryEntry(age: state.player.age, title: discipline == .boxing ? "Ironline Boxing" : "Cagefront MMA", text: "The next contract decision is waiting in the Career tab.", tags: [.career, .health])
+        ]
+        return finalized(state)
+    }
+
+    private func sportsOwnerBillionaire() -> DebugScenarioPayload {
+        var state = baseState(name: "Jordan Pike", age: 52)
+        state.specialCareer.track = .coach
+        state.specialCareer.fame = 68
+        state.specialCareer.audience = 62
+        state.specialCareer.coaching = CoachingState(
+            programLevel: 4,
+            rosterTalent: 78,
+            playerDevelopment: 74,
+            schemeFit: 80,
+            staffQuality: 76,
+            lockerRoom: 72,
+            recruitingReach: 81,
+            boosterPressure: 48,
+            programPrestige: 82,
+            seasonWins: 11,
+            seasonLosses: 3,
+            contractValue: 1_200_000
+        )
+        state.finance.cashOnHand = 3_200_000_000
+        state.history = [
+            HistoryEntry(age: 52, title: "Sports Owner Ready", text: "Dynasty coach with $3.2B in wealth — the Owner path is one action away.", tags: [.career, .finance, .progress])
         ]
         return finalized(state)
     }

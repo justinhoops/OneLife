@@ -625,7 +625,7 @@ struct OneLifeTests {
         #expect(vm.state.pendingActions.isEmpty)
         #expect(vm.state.actionMemory.latestAction?.choiceID == .takeSideWork)
         #expect(vm.state.quickActionMemory.countThisAge == 1)
-        #expect(vm.activityPulse != nil)
+        #expect(vm.chrome.activityPulse != nil)
     }
 
     @Test func repeatedQuickActionSameAgeIsBlocked() async throws {
@@ -2443,6 +2443,7 @@ struct OneLifeTests {
         let coordinator = PersistenceCoordinator(directoryProvider: { fileURL })
         let viewModel = GameViewModel(persistence: coordinator, defaults: temporaryDefaults())
         viewModel.save()
+        await viewModel.flushPendingSave()
 
         #expect(viewModel.persistenceBanner?.contains("Couldn't save") == true)
     }
@@ -2468,6 +2469,87 @@ struct OneLifeTests {
 
         _ = try harness.coordinator.save(GameState())
         #expect(harness.coordinator.hasPersistedSave() == true)
+    }
+
+    @Test func asyncStartupLoadsPersistedGameWithoutBlockingInit() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OneLifeTests-AsyncStartup-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let coordinator = PersistenceCoordinator(directoryProvider: { directory })
+        var state = GameState()
+        state.player.name = "Async Hero"
+        state.startupState = .active
+        _ = try coordinator.save(state)
+
+        let viewModel = GameViewModel(persistence: coordinator, defaults: temporaryDefaults())
+        #expect(viewModel.chrome.isLoadingPersistedGame == true)
+
+        for _ in 0..<200 where viewModel.chrome.isLoadingPersistedGame {
+            await Task.yield()
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+
+        #expect(viewModel.chrome.isLoadingPersistedGame == false)
+        #expect(viewModel.state.player.name == "Async Hero")
+        #expect(viewModel.state.startupState == .active)
+    }
+
+    @Test func orchestratorDefersSimulationRuntimeUntilFirstAdvance() async throws {
+        let orchestrator = LifeSimulationOrchestrator(eventEngine: EventEngine(events: []))
+        #expect(orchestrator.isSimulationRuntimeWarmed == false)
+
+        _ = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: MetaState())
+        #expect(orchestrator.isSimulationRuntimeWarmed == false)
+
+        var state = GameState()
+        state.player.age = 18
+        state.startupState = .active
+        _ = orchestrator.advanceYear(state: &state)
+        #expect(orchestrator.isSimulationRuntimeWarmed == true)
+    }
+
+    @Test func persistenceSaveRecordsPerformanceBudgetMarker() async throws {
+        RuntimePerformanceMonitor.shared.clear()
+        let harness = try PersistenceTestHarness()
+        let viewModel = GameViewModel(persistence: harness.coordinator, defaults: temporaryDefaults())
+        viewModel.save()
+        await viewModel.flushPendingSave()
+
+        let saveRecord = RuntimePerformanceMonitor.shared.records.last { $0.marker == .persistenceSave }
+        #expect(saveRecord != nil)
+        #expect((saveRecord?.durationMilliseconds ?? 0) >= 0)
+    }
+
+    @Test func longRunSoakAdvancesThirtyYearsWithoutCrash() async throws {
+        let orchestrator = LifeSimulationOrchestrator(eventEngine: EventEngine(events: []))
+        var state = GameState()
+        state.player.age = 18
+        state.startupState = .active
+        state.career.status = .fullTime
+        state.career.roleID = "office_assistant"
+        state.career.annualIncome = 28_000
+
+        for _ in 0..<30 {
+            let beforeAge = state.player.age
+            _ = orchestrator.advanceYear(state: &state)
+            #expect(state.player.age <= 120)
+            #expect(state.player.age >= beforeAge)
+        }
+    }
+
+    @Test func memoryPressureHandlerClearsTransientChrome() async throws {
+        let viewModel = makeViewModel(.adultCareerFlow)
+        viewModel.chrome.appendFloatingDeltas([
+            FloatingDelta(text: "+1 Happiness", tone: .positive, domain: .career)
+        ])
+        viewModel.chrome.autonomyToasts = [
+            AutonomyToast(title: "Test", detail: "Toast", tone: .neutral)
+        ]
+
+        viewModel.handleMemoryPressure()
+
+        #expect(viewModel.chrome.floatingDeltas.isEmpty)
+        #expect(viewModel.chrome.autonomyToasts.isEmpty)
     }
 
     @Test func persistencePrunesHistoryToBudget() async throws {
@@ -5775,6 +5857,117 @@ struct CombatCareerTests {
         #expect(result.financeEffects?.cashDelta == -40_000)
         #expect(decoded == specialCareer)
         #expect(decoded.track.isDiamondCareer)
+    }
+
+    @Test func coachIsSpecialNotDiamond() {
+        #expect(!SpecialCareerTrack.coach.isDiamondCareer)
+    }
+
+    @Test func sportsOwnerIsDiamond() {
+        #expect(SpecialCareerTrack.sportsOwner.isDiamondCareer)
+    }
+
+    @Test func startCoachingCareer_requiresSpecialGate_notBillionaireWealth() {
+        var state = GameState()
+        state.player.age = 32
+        state.finance.cashOnHand = 3_000_000_000
+        state.specialCareer.track = .athlete
+        state.specialCareer.yearsActive = 6
+        state.specialCareer.athlete.personalBrand = 55
+        state.specialCareer.athlete.accolades = ["League MVP", "All-Pro"]
+
+        let wealthOnly = SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state)
+        #expect(wealthOnly != nil)
+
+        state.finance.cashOnHand = 60_000
+        let qualified = SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state)
+        #expect(qualified == nil)
+    }
+
+    @Test func startSportsOwnership_requiresTwoBillionAndCred() {
+        var state = GameState()
+        state.player.age = 45
+        state.finance.cashOnHand = 3_000_000_000
+        state.specialCareer.track = .coach
+        state.specialCareer.coaching.programPrestige = 70
+
+        #expect(SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil)
+
+        state.finance.cashOnHand = 500_000
+        #expect(SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) != nil)
+
+        state.finance.cashOnHand = 3_000_000_000
+        state.specialCareer.track = .inactive
+        state.specialCareer.coaching.programPrestige = 20
+        state.specialCareer.athlete.personalBrand = 30
+        #expect(SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) != nil)
+    }
+
+    @Test func sportsOwnerYearlyResolve_canBeProfitable() {
+        let system = SpecialCareerSystem()
+        var state = GameState()
+        state.player.age = 48
+        state.finance.cashOnHand = 5_000_000_000
+        state.specialCareer.track = .sportsOwner
+        state.specialCareer.sportsOwner.frontOfficeQuality = 75
+        state.specialCareer.sportsOwner.mediaLeverage = 70
+        state.specialCareer.sportsOwner.leagueRelations = 68
+        state.specialCareer.sportsOwner.portfolio = [
+            OwnedFranchise(name: "Metro Hawks", league: .nfl, purchasePrice: 4_000_000_000, valuation: 4_200_000_000, brandEquity: 72, fanLoyalty: 70, operatingMargin: 10, lastYearProfit: 0)
+        ]
+
+        _ = system.applyAction(.hireGeneralManager, player: &state.player, career: &state.career, specialCareer: &state.specialCareer, finance: &state.finance)
+        _ = system.applyAction(.negotiateMediaDeal, player: &state.player, career: &state.career, specialCareer: &state.specialCareer, finance: &state.finance)
+        _ = system.applyAction(.investInBrand, player: &state.player, career: &state.career, specialCareer: &state.specialCareer, finance: &state.finance)
+
+        let wealthBefore = state.finance.totalWealth
+        var totalProfit = 0
+        for _ in 0..<3 {
+            let result = system.advanceYear(
+                input: WorldSnapshotBuilder().build(from: state).specialCareer,
+                player: &state.player,
+                career: &state.career,
+                specialCareer: &state.specialCareer
+            )
+            totalProfit += result.financeEffects?.cashDelta ?? 0
+            state.finance.cashOnHand += result.financeEffects?.cashDelta ?? 0
+        }
+
+        #expect(state.specialCareer.sportsOwner.lastPortfolioProfit > 0)
+        #expect(state.finance.totalWealth >= wealthBefore)
+        #expect(totalProfit > 0)
+    }
+
+    @Test func setupFreshGameIfNeeded_staysLightweight() {
+        let vm = GameViewModel(
+            persistence: PersistenceCoordinator(directoryProvider: {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+                return url
+            }),
+            defaults: UserDefaults(suiteName: "onelife.creation.perf.\(UUID().uuidString)") ?? .standard
+        )
+        vm.setupFreshGameIfNeeded()
+        #expect(vm.originPreview == nil)
+        #expect(vm.state.startupState != .active)
+    }
+
+    @Test func commitCharacterCreation_activatesGameFromDraft() async {
+        let vm = GameViewModel(
+            persistence: PersistenceCoordinator(directoryProvider: {
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+                return url
+            }),
+            defaults: UserDefaults(suiteName: "onelife.creation.perf.\(UUID().uuidString)") ?? .standard
+        )
+        var draft = CharacterCreationDraft()
+        draft.pendingName = "Test Player"
+        draft.selectedStartMode = .quickStart
+        vm.commitCharacterCreation(from: draft)
+        #expect(vm.state.startupState == .active)
+        #expect(vm.state.player.name == "Test Player")
+        #expect(vm.originPreview == nil)
     }
 }
 

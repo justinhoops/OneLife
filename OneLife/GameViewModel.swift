@@ -10,6 +10,7 @@ final class GameViewModel: ObservableObject {
         static let testDefaultsSuite = "ONELIFE_TEST_DEFAULTS_SUITE"
         static let disableOpeningEvent = "ONELIFE_DISABLE_OPENING_EVENT"
         static let syncPersistenceLoad = "ONELIFE_SYNC_PERSISTENCE_LOAD"
+        static let syncPersistenceSave = "ONELIFE_SYNC_PERSISTENCE_SAVE"
     }
 
     private enum PreferenceKeys {
@@ -109,14 +110,8 @@ final class GameViewModel: ObservableObject {
     @Published var originPreview: GameState?
     @Published var latestYearSummary: YearlyOutcomeSummary?
     @Published var presentedCard: InteractionCardPayload?
-    @Published var microBeatOverlay: String? = nil
-    @Published var actionFrictionJitter: Bool = false
-    /// Set immediately on popup button press (scrim/choice/continue). Causes processing/loading UI to appear
-    /// (via Task.yield before heavy yearly resolve/refresh/save) so the card does not appear frozen.
-    /// Mirrors the isStartingNewLife + loading pattern used for fresh game beginLifeSafely.
-    @Published var isResolvingInteraction: Bool = false
-    /// Optional context (e.g. event title) to show in the processing UI while isResolvingInteraction.
-    @Published var resolvingInteractionContext: String? = nil
+    /// Isolated overlay/toast state — observe via `chrome` in views to limit SwiftUI invalidation.
+    let chrome = GameSessionChromeState()
     @Published var selectedTab: Tab = .home {
         didSet {
             guard oldValue != selectedTab else { return }
@@ -145,10 +140,6 @@ final class GameViewModel: ObservableObject {
     @Published var selectedResilience: LifeResilience = .resilient   // Player-chosen "Life Feel" for replayability
     /// Recent autonomous "world reactions" from instant/quick actions. Powers the live frictionless feedback strip.
     @Published private(set) var recentInstantReactions: [String] = []
-    @Published var autonomyToasts: [AutonomyToast] = []
-
-    /// Currently visible floating deltas from instant actions (Phase 1 of UI overhaul).
-    @Published private(set) var floatingDeltas: [FloatingDelta] = []
 
     func clearInstantReactions() {
         recentInstantReactions = []
@@ -194,19 +185,13 @@ final class GameViewModel: ObservableObject {
 
         guard !newDeltas.isEmpty else { return }
 
-        // Limit concurrent deltas for visual cleanliness
-        let maxConcurrent = 5
-        if floatingDeltas.count + newDeltas.count > maxConcurrent {
-            floatingDeltas.removeFirst(max(0, floatingDeltas.count + newDeltas.count - maxConcurrent))
-        }
-
-        floatingDeltas.append(contentsOf: newDeltas)
+        chrome.appendFloatingDeltas(newDeltas)
 
         // Staggered auto-removal for nicer feel
         let removalDelay = 2.4
+        let deltaIDs = Set(newDeltas.map(\.id))
         DispatchQueue.main.asyncAfter(deadline: .now() + removalDelay) { [weak self] in
-            guard let self = self else { return }
-            self.floatingDeltas.removeAll { delta in newDeltas.contains { $0.id == delta.id } }
+            self?.chrome.removeFloatingDeltas(withIDs: deltaIDs)
         }
     }
 
@@ -229,27 +214,20 @@ final class GameViewModel: ObservableObject {
             newDeltas.append(FloatingDelta(text: p.title, tone: .warning, domain: .career))
         }
         guard !newDeltas.isEmpty else { return }
-        let maxConcurrent = 5
-        if floatingDeltas.count + newDeltas.count > maxConcurrent {
-            floatingDeltas.removeFirst(max(0, floatingDeltas.count + newDeltas.count - maxConcurrent))
-        }
-        floatingDeltas.append(contentsOf: newDeltas)
+        chrome.appendFloatingDeltas(newDeltas)
         AppFeedback.impact(.medium)
+        let deltaIDs = Set(newDeltas.map(\.id))
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-            guard let self = self else { return }
-            self.floatingDeltas.removeAll { delta in newDeltas.contains { $0.id == delta.id } }
+            self?.chrome.removeFloatingDeltas(withIDs: deltaIDs)
         }
     }
 
     @Published var persistenceAlert: PersistenceAlertContext?
     @Published var showingDebugLab: Bool = false
     @Published var plannerDetail: PlannerDetailDestination?
-    @Published var isStartingNewLife: Bool = false   // Prevents white screen during heavy fresh-game activation
-    @Published private(set) var isLoadingPersistedGame: Bool = false
     @Published var selectedInsight: ChangeInsightTopic?
     @Published private(set) var originTab: Tab?
     @Published private(set) var originPlannerDetail: PlannerDetailDestination?
-    @Published private(set) var saveStatusBanner: String?
     @Published private(set) var returnPrompt: PlannerReturnContext?
     @Published private(set) var changeInsights: [ChangeInsightTopic: ChangeInsightCard] = [:]
     @Published var hapticsSetting: FeedbackIntensitySetting {
@@ -275,8 +253,6 @@ final class GameViewModel: ObservableObject {
     }
     @Published private(set) var historyDigest: HistoryDigest = .empty
     @Published private(set) var lastTimingSnapshot: SimulationTimingSnapshot?
-    @Published private(set) var activityPulse: ActivityPulse?
-
     private let orchestrator = LifeSimulationOrchestrator()
     private let activitySystem = ActivitySystem()
     private let persistence: PersistenceCoordinator
@@ -288,10 +264,20 @@ final class GameViewModel: ObservableObject {
     private var activityPulseTask: Task<Void, Never>?
     private var didHydrateRuntimeCaches = false
     private var persistenceLoadTask: Task<Void, Never>?
+    private var saveTask: Task<Void, Never>?
+    private var pendingSaveState: GameState?
+    private var pendingSaveMeta: MetaState?
+    private var lastChangeInsightSummaryAge: Int?
+    private var lastDerivedStateFingerprint: UInt64 = 0
 
     private static var shouldLoadPersistenceSynchronously: Bool {
         ProcessInfo.processInfo.environment[RuntimeOverrideKeys.testSaveDirectory] != nil
             || ProcessInfo.processInfo.environment[RuntimeOverrideKeys.syncPersistenceLoad] == "1"
+    }
+
+    private static var shouldSavePersistenceSynchronously: Bool {
+        shouldLoadPersistenceSynchronously
+            || ProcessInfo.processInfo.environment[RuntimeOverrideKeys.syncPersistenceSave] == "1"
     }
 
     private static func defaultPersistence() -> PersistenceCoordinator {
@@ -325,16 +311,18 @@ final class GameViewModel: ObservableObject {
         defaults: UserDefaults = GameViewModel.defaultDefaults(),
         debugConfiguration: DebugTestingConfiguration = .fromProcessInfo()
     ) {
+        let initStart = CFAbsoluteTimeGetCurrent()
         self.persistence = persistence
         self.defaults = defaults
         self.hapticsSetting = FeedbackIntensitySetting(rawValue: defaults.string(forKey: PreferenceKeys.hapticsSetting) ?? "") ?? .full
         self.animationSetting = FeedbackIntensitySetting(rawValue: defaults.string(forKey: PreferenceKeys.animationSetting) ?? "") ?? .full
         self.colorEmphasisSetting = ColorEmphasisSetting(rawValue: defaults.string(forKey: PreferenceKeys.colorEmphasisSetting) ?? "") ?? .full
         self.domainShortcutPins = Self.loadDomainShortcutPins(from: defaults)
-        self.metaState = persistence.loadMeta()
+        self.metaState = MetaState()
         self.state = GameState()
 
         if let scenarioID = debugConfiguration.scenarioID {
+            self.metaState = persistence.loadMeta()
             applyDebugPayload(
                 debugTestingCoordinator.payload(for: scenarioID),
                 scenarioID: scenarioID,
@@ -342,28 +330,55 @@ final class GameViewModel: ObservableObject {
                 shouldSave: true
             )
         } else if persistence.prefersSynchronousStartupLoad || Self.shouldLoadPersistenceSynchronously {
+            self.metaState = persistence.loadMeta()
             applyPersistenceStartupResult(persistence.loadForStartup())
-        } else {
+        } else if persistence.hasPersistedSave() {
             beginAsyncPersistenceStartup()
+        } else {
+            self.metaState = persistence.loadMeta()
+            charCreationStep = .name
         }
+
+        RuntimePerformanceMonitor.shared.record(
+            .viewModelInit,
+            durationMilliseconds: ((CFAbsoluteTimeGetCurrent() - initStart) * 1_000).rounded()
+        )
     }
 
     deinit {
         persistenceLoadTask?.cancel()
+        saveTask?.cancel()
+    }
+
+    /// Test hook: waits for any in-flight async save to finish.
+    func flushPendingSave() async {
+        while saveTask != nil {
+            await Task.yield()
+        }
+    }
+
+    func handleMemoryPressure() {
+        orchestrator.dropTransientCachesForMemoryPressure()
+        chrome.removeFloatingDeltas(withIDs: Set(chrome.floatingDeltas.map(\.id)))
+        chrome.autonomyToasts.removeAll()
+        recentInstantReactions.removeAll()
     }
 
     /// Path 2C: decode save off the main thread; paint loading shell first when a save exists.
     private func beginAsyncPersistenceStartup() {
         if persistence.hasPersistedSave() {
-            isLoadingPersistedGame = true
+            chrome.setLoadingPersistedGame(true)
             let coordinator = persistence
             persistenceLoadTask = Task { @MainActor in
-                let result = await Task.detached(priority: .userInitiated) {
-                    coordinator.loadForStartup()
+                let payload = await Task.detached(priority: .userInitiated) {
+                    let startup = coordinator.loadForStartup()
+                    let meta = coordinator.loadMeta()
+                    return (startup, meta)
                 }.value
                 guard !Task.isCancelled else { return }
-                isLoadingPersistedGame = false
-                applyPersistenceStartupResult(result)
+                metaState = payload.1
+                chrome.setLoadingPersistedGame(false)
+                applyPersistenceStartupResult(payload.0)
             }
         } else {
             charCreationStep = .name
@@ -375,6 +390,11 @@ final class GameViewModel: ObservableObject {
         case .loaded(let result):
             state = result.state
             lastTimingSnapshot = result.timingSnapshot
+            RuntimePerformanceMonitor.shared.record(
+                .persistenceLoad,
+                durationMilliseconds: result.timingSnapshot.loadMilliseconds,
+                detail: result.recoveryResult.rawValue
+            )
             persistenceBanner = result.recoveryResult.userMessage
             configureStartupStateForLoadedGame()
             if state.startupState == .active {
@@ -393,11 +413,7 @@ final class GameViewModel: ObservableObject {
     }
 
     func setupFreshGameIfNeeded() {
-        if originPreview == nil && state.startupState != .active {
-            originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState)
-            refreshDerivedState()
-            restoreActiveChapterIfNeeded()
-        }
+        // Creation uses CharacterCreationViewModel draft only until explicit commit.
     }
 
     /// Path 2: Defer domain-cache hydration until after first frame (loaded saves).
@@ -411,7 +427,7 @@ final class GameViewModel: ObservableObject {
         // Reset to lightweight character creation immediately (avoid blocking launch with heavy beginLife work).
         didHydrateRuntimeCaches = false
         state = GameState()
-        originPreview = orchestrator.previewStart(mode: .quickStart, templateID: nil, meta: metaState, resilience: selectedResilience)
+        originPreview = nil
         autoLifePace = .guided
         selectedStartMode = .quickStart
         selectedTemplate = .stableHomeAverageMeans
@@ -419,12 +435,13 @@ final class GameViewModel: ObservableObject {
         pendingCharName = ""
         pendingRegionID = "mountain_standard"
         pendingTraitOverride = nil
+        selectedResilience = .resilient
         latestYearSummary = nil
         presentedCard = nil
         interactionCards.reset()
-        activityPulse = nil
-        isResolvingInteraction = false
-        resolvingInteractionContext = nil
+        chrome.setActivityPulse(nil)
+        chrome.isResolvingInteraction = false
+        chrome.resolvingInteractionContext = nil
         selectedTab = .home
         plannerDetail = nil
         selectedInsight = nil
@@ -432,14 +449,14 @@ final class GameViewModel: ObservableObject {
         originPlannerDetail = nil
         returnPrompt = nil
         persistenceBanner = nil
-        isStartingNewLife = false
+        chrome.isStartingNewLife = false
         clearPopupStateIfNeeded()
         // Heavy work (activatePreview, caches, etc.) will happen when user finishes creation via beginLifeSafely()
     }
 
     // Ensure loading flag is cleared on any full reset path
     func resetStartingLifeFlag() {
-        isStartingNewLife = false
+        chrome.isStartingNewLife = false
     }
 
     func ageUp() {
@@ -449,7 +466,7 @@ final class GameViewModel: ObservableObject {
             runAutopilot()
             return
         }
-        activityPulse = nil
+        chrome.setActivityPulse(nil)
         autopilotYearsAdvanced = 0
         captureReturnOrigin()
         AppFeedback.impact(.medium)
@@ -573,11 +590,11 @@ final class GameViewModel: ObservableObject {
         let fightingBack = (summary.spillovers + summary.headlines).first { $0.title == "Fighting Back" }
         guard let fightingBack else { return }
         let tone: PlannerTone = .positive
-        activityPulse = ActivityPulse(
+        chrome.setActivityPulse(ActivityPulse(
             title: fightingBack.title,
             detail: fightingBack.detail,
             tone: tone
-        )
+        ))
         showTransientActivityPulse()
         AppFeedback.notify(.success)
     }
@@ -650,16 +667,16 @@ final class GameViewModel: ObservableObject {
 
     func choose(_ choice: EventChoice) {
         guard case .event(let ev)? = presentedCard else { return }
-        guard !isResolvingInteraction else { return }
+        guard !chrome.isResolvingInteraction else { return }
 
         // Immediately signal processing so the popup UI can swap to loading/spinner (preventing "frozen on the popup" visual).
         // The actual (heavy) work is deferred via Task.yield so SwiftUI can commit the loading state first.
-        isResolvingInteraction = true
-        resolvingInteractionContext = ev.title
+        chrome.isResolvingInteraction = true
+        chrome.resolvingInteractionContext = ev.title
         let feedback = feedbackCoordinator.actionResponse(for: choice.baseFriction, microBeat: choice.microBeat)
         guard !feedback.shouldReturnEarly else {
-            isResolvingInteraction = false
-            resolvingInteractionContext = nil
+            chrome.isResolvingInteraction = false
+            chrome.resolvingInteractionContext = nil
             return
         }
         applyFeedback(feedback)
@@ -680,8 +697,8 @@ final class GameViewModel: ObservableObject {
                 refreshDerivedState()
                 save()
             }
-            isResolvingInteraction = false
-            resolvingInteractionContext = nil
+            chrome.isResolvingInteraction = false
+            chrome.resolvingInteractionContext = nil
         }
     }
 
@@ -692,7 +709,7 @@ final class GameViewModel: ObservableObject {
 
     private func runAutopilot(maxYears: Int = 8) {
         guard !state.isGameOver, presentedCard == nil, state.activeYearChapter == nil else { return }
-        activityPulse = nil
+        chrome.setActivityPulse(nil)
         autopilotYearsAdvanced = 0
         captureReturnOrigin()
         AppFeedback.impact(.medium)
@@ -715,11 +732,11 @@ final class GameViewModel: ObservableObject {
             }
         }
 
-        activityPulse = ActivityPulse(
+        chrome.setActivityPulse(ActivityPulse(
             title: "Autopilot Paused",
             detail: autopilotYearsAdvanced <= 1 ? "One quiet year resolved in the background." : "\(autopilotYearsAdvanced) quiet years resolved in the background.",
             tone: .neutral
-        )
+        ))
         showTransientActivityPulse()
         save()
     }
@@ -787,10 +804,10 @@ final class GameViewModel: ObservableObject {
     }
 
     func resolveCrisis(_ choice: CrisisChoice) {
-        guard !isResolvingInteraction else { return }
+        guard !chrome.isResolvingInteraction else { return }
 
-        isResolvingInteraction = true
-        resolvingInteractionContext = "crisis resolution"
+        chrome.isResolvingInteraction = true
+        chrome.resolvingInteractionContext = "crisis resolution"
 
         Task { @MainActor in
             await Task.yield()
@@ -812,7 +829,7 @@ final class GameViewModel: ObservableObject {
                 }
                 
                 AppFeedback.notify(.success)
-                microBeatOverlay = "A heavy price paid for time."
+                chrome.microBeatOverlay = "A heavy price paid for time."
             } else {
                 state.isGameOver = true
                 AppFeedback.notify(.warning)
@@ -833,16 +850,16 @@ final class GameViewModel: ObservableObject {
             refreshDerivedState()
             save()
             clearPopupStateIfNeeded()
-            isResolvingInteraction = false
-            resolvingInteractionContext = nil
+            chrome.isResolvingInteraction = false
+            chrome.resolvingInteractionContext = nil
         }
     }
 
     func resolvePitch(_ choice: PitchDeckChoice) {
-        guard !isResolvingInteraction else { return }
+        guard !chrome.isResolvingInteraction else { return }
 
-        isResolvingInteraction = true
-        resolvingInteractionContext = "pitch deck"
+        chrome.isResolvingInteraction = true
+        chrome.resolvingInteractionContext = "pitch deck"
 
         Task { @MainActor in
             await Task.yield()
@@ -856,7 +873,7 @@ final class GameViewModel: ObservableObject {
             state.specialCareer.burnout = max(state.specialCareer.burnout, 10)
             
             AppFeedback.notify(.success)
-            microBeatOverlay = "Launched: \(choice.text)"
+            chrome.microBeatOverlay = "Launched: \(choice.text)"
             
             state.pendingActions.removeAll { $0.choiceID == .startCompany }
             
@@ -868,8 +885,8 @@ final class GameViewModel: ObservableObject {
             }
             refreshDerivedState()
             save()
-            isResolvingInteraction = false
-            resolvingInteractionContext = nil
+            chrome.isResolvingInteraction = false
+            chrome.resolvingInteractionContext = nil
         }
     }
 
@@ -882,11 +899,11 @@ final class GameViewModel: ObservableObject {
 
     func dismissPresentedCard() {
         guard let currentCard = presentedCard else { return }
-        guard !isResolvingInteraction else { return }
+        guard !chrome.isResolvingInteraction else { return }
 
         // Immediately signal processing for continue-style popups (summary, resolution, etc.).
-        isResolvingInteraction = true
-        resolvingInteractionContext = (currentCard as? CustomStringConvertible)?.description ?? "year outcome"
+        chrome.isResolvingInteraction = true
+        chrome.resolvingInteractionContext = (currentCard as? CustomStringConvertible)?.description ?? "year outcome"
 
         // If we are dismissing a resolution card and the game is over, complete the life
         let shouldCompleteLife = state.isGameOver && isResolutionCard(currentCard)
@@ -906,8 +923,8 @@ final class GameViewModel: ObservableObject {
             refreshDerivedState()
             save()
             clearPopupStateIfNeeded()
-            isResolvingInteraction = false
-            resolvingInteractionContext = nil
+            chrome.isResolvingInteraction = false
+            chrome.resolvingInteractionContext = nil
         }
     }
 
@@ -939,7 +956,7 @@ final class GameViewModel: ObservableObject {
 
     /// Safety net called on shell changes / after heavy work to prevent stuck popups or desynced chapter/card state.
     func clearPopupStateIfNeeded() {
-        if isResolvingInteraction { return } // let the resolving Task finish
+        if chrome.isResolvingInteraction { return } // let the resolving Task finish
         if presentedCard != nil {
             presentedCard = nil
         }
@@ -1055,7 +1072,7 @@ final class GameViewModel: ObservableObject {
         latestYearSummary = nil
         presentedCard = nil
         interactionCards.reset()
-        activityPulse = nil
+        chrome.setActivityPulse(nil)
         let initialEvent = orchestrator.activatePreview(state: &preview)
         state = preview
         didHydrateRuntimeCaches = true
@@ -1098,35 +1115,178 @@ final class GameViewModel: ObservableObject {
     /// Safe wrapper for fresh game confirmation.
     /// Sets loading flag *before* the heavy synchronous work so the UI can show an overlay instead of white.
     func beginLifeSafely() {
-        guard !isStartingNewLife else { return }
-        isStartingNewLife = true
+        guard !chrome.isStartingNewLife else { return }
+        chrome.isStartingNewLife = true
         Task { @MainActor in
             await Task.yield()
             beginLife()
-            isStartingNewLife = false
+            chrome.isStartingNewLife = false
         }
     }
 
-    func save() {
-        do {
-            try? persistence.saveMeta(metaState)
-            let persistenceResult: PersistenceSaveResult
-            #if DEBUG
-            let saveStart = CFAbsoluteTimeGetCurrent()
-            persistenceResult = try persistence.save(state)
-            var snapshot = orchestrator.latestTimingSnapshot ?? lastTimingSnapshot ?? SimulationTimingSnapshot()
-            snapshot.saveMilliseconds = ((CFAbsoluteTimeGetCurrent() - saveStart) * 1_000).rounded()
-            snapshot.persistedHistoryCount = persistenceResult.timingSnapshot.persistedHistoryCount
-            snapshot.persistedSaveBytes = persistenceResult.timingSnapshot.persistedSaveBytes
-            snapshot.loadErrorCount = persistenceResult.timingSnapshot.loadErrorCount
-            snapshot.persistenceRecoverySource = persistenceResult.timingSnapshot.persistenceRecoverySource
-            snapshot.restoredFromBackup = persistenceResult.timingSnapshot.restoredFromBackup
-            if !persistenceResult.timingSnapshot.entries.isEmpty {
-                snapshot.entries = persistenceResult.timingSnapshot.entries
+    func beginLifeSafely(from creationDraft: CharacterCreationDraft) {
+        guard !chrome.isStartingNewLife else { return }
+        chrome.isStartingNewLife = true
+        Task { @MainActor in
+            await Task.yield()
+            commitCharacterCreation(from: creationDraft)
+            chrome.isStartingNewLife = false
+        }
+    }
+
+    func makeCreationPreviewCard(for draft: CharacterCreationDraft) async -> CreationPreviewCard? {
+        await Task.yield()
+        let preview = buildPreviewState(from: draft)
+        return CreationPreviewCard.from(state: preview, draftName: draft.pendingName)
+    }
+
+    private func buildPreviewState(from draft: CharacterCreationDraft) -> GameState {
+        let templateID = draft.selectedStartMode == .template ? draft.selectedTemplate : nil
+        var preview = orchestrator.previewStart(
+            mode: draft.selectedStartMode,
+            templateID: templateID,
+            meta: metaState,
+            resilience: draft.selectedResilience
+        )
+
+        if draft.selectedStartMode == .custom {
+            preview.finance.currentRegionPolicyID = draft.pendingRegionID
+        }
+
+        if let trait = draft.pendingTrait {
+            var traits = preview.player.traits
+            traits.removeAll { $0 == trait }
+            traits.insert(trait, at: 0)
+            preview.player.traits = Array(traits.prefix(3))
+            if let templateID = preview.originProfile?.templateID {
+                orchestrator.regenerateDossierInPreview(
+                    &preview,
+                    templateID: templateID,
+                    deterministic: draft.selectedStartMode == .template
+                )
             }
-            lastTimingSnapshot = snapshot
-            #else
-            persistenceResult = try persistence.save(state)
+        }
+
+        return preview
+    }
+
+    func commitCharacterCreation(from draft: CharacterCreationDraft) {
+        selectedStartMode = draft.selectedStartMode
+        selectedTemplate = draft.selectedTemplate
+        selectedResilience = draft.selectedResilience
+        pendingCharName = draft.pendingName
+        pendingRegionID = draft.pendingRegionID
+        pendingTraitOverride = draft.pendingTrait
+        charCreationStep = draft.step
+
+        var preview = buildPreviewState(from: draft)
+
+        let trimmedName = draft.pendingName.trimmingCharacters(in: .whitespaces)
+        preview.player.name = trimmedName.isEmpty ? randomCharacterName() : trimmedName
+        preview.finance.currentRegionPolicyID = draft.pendingRegionID
+
+        if draft.selectedStartMode == .custom {
+            preview.originProfile?.startMode = .custom
+        }
+        preview.mvpOnboarding.activate(at: preview.player.age)
+        preview.discoverability = DiscoverabilityState()
+        preview.softRunGoal = nil
+        preview.resilience = draft.selectedResilience
+        preview.syncResilienceToPlayer()
+        autoLifePace = .guided
+
+        latestYearSummary = nil
+        presentedCard = nil
+        interactionCards.reset()
+        chrome.setActivityPulse(nil)
+        let initialEvent = orchestrator.activatePreview(state: &preview)
+        state = preview
+        didHydrateRuntimeCaches = true
+        originPreview = nil
+
+        if state.history.isEmpty || state.history.first?.title != "Life Began" {
+            let feelLine = state.resilience == .resilient
+                ? "Chose a Resilient path — more room to recover when life gets heavy."
+                : "Chose the Grounded path — full Life Killer weight, no safety nets."
+            state.history.insert(
+                HistoryEntry(age: state.player.age, title: "Life Began", text: feelLine, tags: [.progress]),
+                at: 0
+            )
+        }
+
+        if state.history.count <= 1 {
+            let teachingLine = TwoSpeedTeaching.line
+            state.history.insert(
+                HistoryEntry(age: state.player.age, title: "How This Life Works", text: teachingLine, tags: [.progress]),
+                at: 0
+            )
+        }
+
+        selectedTab = .home
+        plannerDetail = nil
+        selectedInsight = nil
+        originTab = nil
+        originPlannerDetail = nil
+        returnPrompt = nil
+        if Self.shouldPresentOpeningEvent, let initialEvent {
+            present(cards: [.event(initialEvent)])
+        }
+        refreshDerivedState()
+        refreshSoftRunGoal()
+        save()
+    }
+
+    func save() {
+        pendingSaveState = state
+        pendingSaveMeta = metaState
+        guard saveTask == nil else { return }
+        saveTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.saveTask = nil }
+            while self.pendingSaveState != nil {
+                await self.performSaveNow()
+            }
+        }
+    }
+
+    private func shouldSaveSynchronously() -> Bool {
+        Self.shouldSavePersistenceSynchronously || persistence.prefersSynchronousStartupLoad
+    }
+
+    private func performSaveNow() async {
+        guard let snapshot = pendingSaveState else { return }
+        let metaSnapshot = pendingSaveMeta ?? metaState
+        pendingSaveState = nil
+        pendingSaveMeta = nil
+        let coordinator = persistence
+        let saveStart = CFAbsoluteTimeGetCurrent()
+
+        do {
+            let persistenceResult: PersistenceSaveResult
+            if shouldSaveSynchronously() {
+                try? coordinator.saveMeta(metaSnapshot)
+                persistenceResult = try coordinator.save(snapshot)
+            } else {
+                persistenceResult = try await Task.detached(priority: .utility) {
+                    try? coordinator.saveMeta(metaSnapshot)
+                    return try coordinator.save(snapshot)
+                }.value
+            }
+
+            let saveMilliseconds = ((CFAbsoluteTimeGetCurrent() - saveStart) * 1_000).rounded()
+            RuntimePerformanceMonitor.shared.record(.persistenceSave, durationMilliseconds: saveMilliseconds)
+            #if DEBUG
+            var timing = orchestrator.latestTimingSnapshot ?? lastTimingSnapshot ?? SimulationTimingSnapshot()
+            timing.saveMilliseconds = saveMilliseconds
+            timing.persistedHistoryCount = persistenceResult.timingSnapshot.persistedHistoryCount
+            timing.persistedSaveBytes = persistenceResult.timingSnapshot.persistedSaveBytes
+            timing.loadErrorCount = persistenceResult.timingSnapshot.loadErrorCount
+            timing.persistenceRecoverySource = persistenceResult.timingSnapshot.persistenceRecoverySource
+            timing.restoredFromBackup = persistenceResult.timingSnapshot.restoredFromBackup
+            if !persistenceResult.timingSnapshot.entries.isEmpty {
+                timing.entries = persistenceResult.timingSnapshot.entries
+            }
+            lastTimingSnapshot = timing
             #endif
 
             if let warning = persistenceResult.warning {
@@ -1189,7 +1349,7 @@ final class GameViewModel: ObservableObject {
         }
         if state.specialCareer.track != .inactive {
             let pair = HeaderOccupationCopy.specialCareer(state.specialCareer.track)
-            let diamondTracks: Set<SpecialCareerTrack> = [.movieProducer, .recordLabelOwner, .coach, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider]
+            let diamondTracks: Set<SpecialCareerTrack> = [.movieProducer, .recordLabelOwner, .sportsOwner, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire]
             let isDiamond = diamondTracks.contains(state.specialCareer.track)
             return (pair.title, pair.symbol, isDiamond ? .positive : .warning)  // CT1-2 + criminal-diamond: Diamond (incl. enterprise) gets prestige tone
         }
@@ -1703,13 +1863,13 @@ final class GameViewModel: ObservableObject {
 
     func pushAutonomyToast(title: String, detail: String, tone: PlannerTone = .neutral) {
         let toast = AutonomyToast(title: title, detail: detail, tone: tone)
-        autonomyToasts.insert(toast, at: 0)
-        if autonomyToasts.count > 2 {
-            autonomyToasts = Array(autonomyToasts.prefix(2))
+        chrome.autonomyToasts.insert(toast, at: 0)
+        if chrome.autonomyToasts.count > 2 {
+            chrome.autonomyToasts = Array(chrome.autonomyToasts.prefix(2))
         }
         let toastID = toast.id
         DispatchQueue.main.asyncAfter(deadline: .now() + 7) { [weak self] in
-            self?.autonomyToasts.removeAll { $0.id == toastID }
+            self?.chrome.autonomyToasts.removeAll { $0.id == toastID }
         }
     }
 
@@ -1868,8 +2028,11 @@ final class GameViewModel: ObservableObject {
         }
 
         // CT1-3: Diamond tier preview callout for activation actions
-        if [.startMovieProducer, .startCoachingCareer, .startRecordLabel].contains(choiceID) {
+        if [.startMovieProducer, .startRecordLabel, .startSportsOwnership].contains(choiceID) {
             previews.append("Diamond Tier: Requires peak Special performance + significant capital + strong dossier fit. This is empire building, not a job.")
+        }
+        if choiceID == .startCoachingCareer {
+            previews.append("Special Tier: Peak athlete or college coaching cred + program capital. Build a legacy on the sideline.")
         }
         
         return previews
@@ -1984,7 +2147,7 @@ final class GameViewModel: ObservableObject {
         if let domain = stance.domain, let action = stance.preferredAction(for: state), actionChoices(for: domain).contains(action) {
             setAction(action, for: domain)
         } else {
-            activityPulse = ActivityPulse(title: "Year Goal Set", detail: "\(stance.title) will let the year resolve with less player steering.", tone: .neutral)
+            chrome.setActivityPulse(ActivityPulse(title: "Year Goal Set", detail: "\(stance.title) will let the year resolve with less player steering.", tone: .neutral))
             showTransientActivityPulse()
             refreshDerivedState()
             save()
@@ -2175,7 +2338,7 @@ final class GameViewModel: ObservableObject {
 
         if let reason = quickActionBlockReason(choiceID, domain: domain) {
             AppFeedback.notify(.warning)
-            activityPulse = ActivityPulse(title: "Quick Action Blocked", detail: reason, tone: .warning)
+            chrome.setActivityPulse(ActivityPulse(title: "Quick Action Blocked", detail: reason, tone: .warning))
             showTransientActivityPulse()
             return
         }
@@ -2239,11 +2402,11 @@ final class GameViewModel: ObservableObject {
             state.pendingActions.removeFirst()
         }
 
-        activityPulse = ActivityPulse(
+        chrome.setActivityPulse(ActivityPulse(
             title: "Year Stance Set",
             detail: "\(definition.title) will shape the next yearly pulse.",
             tone: .positive
-        )
+        ))
         showTransientActivityPulse()
 
         orchestrator.applyAmbientPressureSync(state: &state)
@@ -2280,11 +2443,11 @@ final class GameViewModel: ObservableObject {
             detail = detail + "\n\n" + pressureLines.joined(separator: "\n")
         }
 
-        activityPulse = ActivityPulse(
+        chrome.setActivityPulse(ActivityPulse(
             title: resolution.headline,
             detail: detail,
             tone: PlannerTone(resolution.tone)
-        )
+        ))
         showTransientActivityPulse()
         refreshDerivedState()
         save()
@@ -2576,7 +2739,7 @@ final class GameViewModel: ObservableObject {
         
         // QoL: Richer feedback for asset acquisition (ties into our frictionless system)
         AppFeedback.impact(.medium)
-        floatingDeltas.append(FloatingDelta(text: "+\(vehicle.name)", tone: .positive, domain: .finance))
+        chrome.appendFloatingDeltas([FloatingDelta(text: "+\(vehicle.name)", tone: .positive, domain: .finance)])
         state.history.insert(
             HistoryEntry(age: state.player.age, title: "Acquired Asset", text: "Bought \(vehicle.name) for $\(cost).", tags: [.progress]),
             at: 0
@@ -2606,7 +2769,7 @@ final class GameViewModel: ObservableObject {
         
         // QoL improvement: Satisfying feedback for meaningful asset upgrades
         AppFeedback.impact(.light)
-        floatingDeltas.append(FloatingDelta(text: "Home Upgraded", tone: .positive, domain: .finance))
+        chrome.appendFloatingDeltas([FloatingDelta(text: "Home Upgraded", tone: .positive, domain: .finance)])
         state.history.insert(
             HistoryEntry(age: state.player.age, title: "Home Improvement", text: "Upgraded residence.", tags: [.progress]),
             at: 0
@@ -2845,7 +3008,7 @@ final class GameViewModel: ObservableObject {
         
         // QoL: Distinct feedback for luxury/collectible assets
         AppFeedback.impact(.light)
-        floatingDeltas.append(FloatingDelta(text: "+\(item.name)", tone: .positive, domain: .finance))
+        chrome.appendFloatingDeltas([FloatingDelta(text: "+\(item.name)", tone: .positive, domain: .finance)])
         state.history.insert(
             HistoryEntry(age: state.player.age, title: "Luxury Purchase", text: "Acquired \(item.name).", tags: [.progress]),
             at: 0
@@ -2902,7 +3065,7 @@ final class GameViewModel: ObservableObject {
         
         // Aggressive QoL: Consistent rich feedback for all asset transactions
         AppFeedback.impact(.medium)
-        floatingDeltas.append(FloatingDelta(text: "Sold \(item.name)", tone: .neutral, domain: .finance))
+        chrome.appendFloatingDeltas([FloatingDelta(text: "Sold \(item.name)", tone: .neutral, domain: .finance)])
         state.history.insert(
             HistoryEntry(age: state.player.age, title: "Asset Sale", text: "Sold \(item.name) for $\(item.resaleValue).", tags: [.progress]),
             at: 0
@@ -2921,7 +3084,7 @@ final class GameViewModel: ObservableObject {
         state.assets.signatureAssets.append(item)
 
         AppFeedback.notify(.success)
-        floatingDeltas.append(FloatingDelta(text: "+\(item.name)", tone: .positive, domain: .finance))
+        chrome.appendFloatingDeltas([FloatingDelta(text: "+\(item.name)", tone: .positive, domain: .finance)])
         state.history.insert(
             HistoryEntry(age: state.player.age, title: "Signature Asset Acquired", text: "Acquired \(item.name) — a major statement for your path.", tags: [.progress, .finance]),
             at: 0
@@ -2937,7 +3100,7 @@ final class GameViewModel: ObservableObject {
         state.assets.signatureAssets.remove(at: index)
 
         AppFeedback.impact(.medium)
-        floatingDeltas.append(FloatingDelta(text: "Sold \(item.name)", tone: .neutral, domain: .finance))
+        chrome.appendFloatingDeltas([FloatingDelta(text: "Sold \(item.name)", tone: .neutral, domain: .finance)])
         state.history.insert(
             HistoryEntry(age: state.player.age, title: "Signature Asset Sold", text: "Sold \(item.name) for $\(item.resaleValue).", tags: [.progress]),
             at: 0
@@ -2987,7 +3150,7 @@ final class GameViewModel: ObservableObject {
     private func assetTransactionFeedback(title: String, detail: String, deltaText: String? = nil, haptic: AppFeedback.ImpactStyle = .medium) {
         AppFeedback.impact(haptic)
         if let delta = deltaText {
-            floatingDeltas.append(FloatingDelta(text: delta, tone: .positive, domain: .finance))
+            chrome.appendFloatingDeltas([FloatingDelta(text: delta, tone: .positive, domain: .finance)])
         }
         state.history.insert(
             HistoryEntry(age: state.player.age, title: title, text: detail, tags: [.progress]),
@@ -3620,26 +3783,46 @@ final class GameViewModel: ObservableObject {
 
     private func applyFeedback(_ response: FeedbackCoordinator.Response) {
         if let duration = response.jitterDuration {
-            actionFrictionJitter = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + duration) { self.actionFrictionJitter = false }
+            chrome.actionFrictionJitter = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) { self.chrome.actionFrictionJitter = false }
         }
 
         guard let microBeat = response.microBeat else { return }
-        microBeatOverlay = microBeat
+        chrome.microBeatOverlay = microBeat
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            if self.microBeatOverlay == microBeat {
-                self.microBeatOverlay = nil
+            if self.chrome.microBeatOverlay == microBeat {
+                self.chrome.microBeatOverlay = nil
             }
         }
     }
 
-    private func refreshDerivedState() {
-        historyDigest = HistoryDigest(state: state)
-        refreshChangeInsights()
+    private func refreshDerivedState(forceInsights: Bool = false) {
+        let fingerprint = derivedStateFingerprint()
+        let stateChanged = fingerprint != lastDerivedStateFingerprint
+        if stateChanged {
+            lastDerivedStateFingerprint = fingerprint
+            historyDigest = HistoryDigest(state: state)
+        }
+        if forceInsights || stateChanged || latestYearSummary?.age != lastChangeInsightSummaryAge {
+            lastChangeInsightSummaryAge = latestYearSummary?.age
+            refreshChangeInsights()
+        }
         DomainActionRegistry.refreshSuggestedAction(in: &state, isTeenExperience: isTeenExperience)
         #if DEBUG
         lastTimingSnapshot = orchestrator.latestTimingSnapshot ?? lastTimingSnapshot
         #endif
+    }
+
+    private func derivedStateFingerprint() -> UInt64 {
+        var hasher = Hasher()
+        hasher.combine(state.player.age)
+        hasher.combine(state.pendingActions.count)
+        hasher.combine(state.career.status)
+        hasher.combine(state.career.performance)
+        hasher.combine(state.finance.cashOnHand)
+        hasher.combine(state.finance.financialStress)
+        hasher.combine(selectedTab)
+        return UInt64(bitPattern: Int64(hasher.finalize()))
     }
 
     private func applyDebugPayload(
@@ -3656,9 +3839,9 @@ final class GameViewModel: ObservableObject {
         latestYearSummary = nil
         presentedCard = nil
         interactionCards.reset()
-        activityPulse = nil
-        isResolvingInteraction = false
-        resolvingInteractionContext = nil
+        chrome.setActivityPulse(nil)
+        chrome.isResolvingInteraction = false
+        chrome.resolvingInteractionContext = nil
         showingDebugLab = false
         plannerDetail = nil
         selectedInsight = nil
@@ -3739,15 +3922,14 @@ final class GameViewModel: ObservableObject {
             AppFeedback.notify(.success)
         }
 
-        activityPulse = activityPulseFromDomainResult(
+        chrome.setActivityPulse(activityPulseFromDomainResult(
             result,
             fallbackTitle: fallbackTitle,
             fallbackDetail: fallbackDetail
-        )
+        ))
 
-        if !worldReactionNotes.isEmpty {
-            let enhanced = activityPulse!
-            activityPulse = ActivityPulse(title: "Action + World Reaction", detail: enhanced.detail, tone: enhanced.tone)
+        if !worldReactionNotes.isEmpty, let enhanced = chrome.activityPulse {
+            chrome.setActivityPulse(ActivityPulse(title: "Action + World Reaction", detail: enhanced.detail, tone: enhanced.tone))
             if let first = worldReactionNotes.first {
                 pushAutonomyToast(title: first.title, detail: first.text, tone: .neutral)
             }
@@ -3833,11 +4015,11 @@ final class GameViewModel: ObservableObject {
 
     private func showTransientSaveStatus() {
         saveStatusTask?.cancel()
-        saveStatusBanner = "Saved this year"
+        chrome.setSaveStatusBanner("Saved this year")
         saveStatusTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             guard !Task.isCancelled else { return }
-            self?.saveStatusBanner = nil
+            self?.chrome.setSaveStatusBanner(nil)
         }
     }
 
@@ -3846,7 +4028,7 @@ final class GameViewModel: ObservableObject {
         activityPulseTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             guard !Task.isCancelled else { return }
-            self?.activityPulse = nil
+            self?.chrome.setActivityPulse(nil)
         }
     }
 

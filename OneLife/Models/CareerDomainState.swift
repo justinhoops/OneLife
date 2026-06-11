@@ -276,6 +276,7 @@ enum SpecialCareerTrack: String, Codable, CaseIterable {
     case movieProducer
     case recordLabelOwner
     case coach
+    case sportsOwner
     case contentCreator   // C1: New dedicated track for modern attention economy creators
     case politics         // P1: New dedicated track for political life
     case crime
@@ -290,7 +291,7 @@ enum SpecialCareerTrack: String, Codable, CaseIterable {
 
     var isDiamondCareer: Bool {
         switch self {
-        case .movieProducer, .recordLabelOwner, .coach,
+        case .movieProducer, .recordLabelOwner, .sportsOwner,
              .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire:
             return true
         default:
@@ -797,11 +798,11 @@ enum CrimeTier: String, Codable, CaseIterable {
     func instantToolkit(cartelBranch: Bool = false) -> [ActionChoiceID] {
         switch self {
         case .street:
-            return [.streetCornerHustle, .runScheme, .dodgePatrol, .layLow, .stepAway]
+            return [.streetCornerHustle, .runScheme, .dodgePatrol, .crimeLayLow, .crimeCutTies]
         case .organization:
-            return [.holdTerritory, .buildCrew, .disciplineCrew, .runScheme, .payTheFixer, .burnEvidence, .cleanMoney, .layLow]
+            return [.holdTerritory, .crimeRecruitAssociate, .disciplineCrew, .runScheme, .payTheFixer, .burnEvidence, .crimeLaunderFunds, .crimeLayLow, .crimeCutTies]
         case .enterprise:
-            var tools: [ActionChoiceID] = [.delegateOperation, .launderThroughShell, .hostStrategicGala, .aggressiveTakeover, .ghostProtocol, .payTheFixer, .layLow]
+            var tools: [ActionChoiceID] = [.delegateOperation, .crimeLaunderFunds, .hostStrategicGala, .aggressiveTakeover, .ghostProtocol, .payTheFixer, .crimeLayLow, .crimeCutTies]
             if cartelBranch {
                 tools.insert(.connectCartelNetwork, at: 0)
             } else {
@@ -1055,6 +1056,75 @@ struct FightEmpireState: Codable, Equatable {
         fighterTrust = fighterTrust.clamped(to: 0...100)
         regulatoryPressure = regulatoryPressure.clamped(to: 0...100)
         operatingCashPressure = operatingCashPressure.clamped(to: 0...100)
+    }
+}
+
+enum FranchiseLeague: String, Codable, CaseIterable {
+    case nfl
+    case nba
+    case mlb
+    case mls
+
+    var displayName: String {
+        switch self {
+        case .nfl: return "NFL"
+        case .nba: return "NBA"
+        case .mlb: return "MLB"
+        case .mls: return "MLS"
+        }
+    }
+
+    var acquisitionCost: Int {
+        switch self {
+        case .nfl: return 4_000_000_000
+        case .nba: return 2_500_000_000
+        case .mlb: return 1_800_000_000
+        case .mls: return 400_000_000
+        }
+    }
+}
+
+struct OwnedFranchise: Codable, Equatable, Identifiable {
+    var id: String = UUID().uuidString
+    var name: String
+    var league: FranchiseLeague
+    var purchasePrice: Int
+    var valuation: Int
+    var brandEquity: Int = 45
+    var fanLoyalty: Int = 50
+    var operatingMargin: Int = 8
+    var lastYearProfit: Int = 0
+
+    mutating func clamp() {
+        purchasePrice = max(0, purchasePrice)
+        valuation = max(purchasePrice / 2, valuation)
+        brandEquity = brandEquity.clamped(to: 0...100)
+        fanLoyalty = fanLoyalty.clamped(to: 0...100)
+        operatingMargin = operatingMargin.clamped(to: -20...40)
+    }
+}
+
+struct SportsOwnerState: Codable, Equatable {
+    var portfolio: [OwnedFranchise] = []
+    var frontOfficeQuality: Int = 40
+    var mediaLeverage: Int = 25
+    var leagueRelations: Int = 50
+    var capitalPressure: Int = 20
+    var lastPortfolioProfit: Int = 0
+
+    var totalValuation: Int {
+        portfolio.reduce(0) { $0 + $1.valuation }
+    }
+
+    mutating func clamp() {
+        portfolio = Array(portfolio.prefix(6))
+        for index in portfolio.indices {
+            portfolio[index].clamp()
+        }
+        frontOfficeQuality = frontOfficeQuality.clamped(to: 0...100)
+        mediaLeverage = mediaLeverage.clamped(to: 0...100)
+        leagueRelations = leagueRelations.clamped(to: 0...100)
+        capitalPressure = capitalPressure.clamped(to: 0...100)
     }
 }
 
@@ -1371,6 +1441,9 @@ struct SpecialCareerState: Codable, Equatable {
     // Combat Diamond: gym and promotion ownership after elite fighting.
     var fightEmpire: FightEmpireState = FightEmpireState()
 
+    // Sports Diamond: major-league franchise portfolio ownership.
+    var sportsOwner: SportsOwnerState = SportsOwnerState()
+
     private enum CodingKeys: String, CodingKey {
         case track
         case tier
@@ -1400,6 +1473,7 @@ struct SpecialCareerState: Codable, Equatable {
         case politics    // P1
         case enterprise  // CE1
         case fightEmpire
+        case sportsOwner
     }
 
     init() {}
@@ -1457,6 +1531,7 @@ struct SpecialCareerState: Codable, Equatable {
         politics = try container.decodeIfPresent(PoliticsState.self, forKey: .politics) ?? PoliticsState()
         enterprise = try container.decodeIfPresent(CriminalEnterpriseState.self, forKey: .enterprise) ?? CriminalEnterpriseState()
         fightEmpire = try container.decodeIfPresent(FightEmpireState.self, forKey: .fightEmpire) ?? FightEmpireState()
+        sportsOwner = try container.decodeIfPresent(SportsOwnerState.self, forKey: .sportsOwner) ?? SportsOwnerState()
         clamp()
     }
 
@@ -1483,6 +1558,7 @@ struct SpecialCareerState: Codable, Equatable {
         politics.clamp()
         enterprise.clamp()
         fightEmpire.clamp()
+        sportsOwner.clamp()
     }
 }
 
@@ -1499,6 +1575,7 @@ struct CrimeState: Codable, Equatable {
     var heatProfile: CrimeHeatProfile = .streetPatrol
     var heat: Int = 0
     var notoriety: Int = 0
+    var legitimacy: Int = 50 // Crime Parity Pass: Legitimacy vs Lethality
     var burnout: Int = 0
     var crewID: String? = nil
     var loyalty: Int = 0
@@ -1523,6 +1600,7 @@ struct CrimeState: Codable, Equatable {
         case heatProfile
         case heat
         case notoriety
+        case legitimacy
         case burnout
         case crewID
         case loyalty
@@ -1542,6 +1620,7 @@ struct CrimeState: Codable, Equatable {
         heatProfile: CrimeHeatProfile = .streetPatrol,
         heat: Int = 0,
         notoriety: Int = 0,
+        legitimacy: Int = 50,
         burnout: Int = 0,
         crewID: String? = nil,
         loyalty: Int = 0,
@@ -1557,6 +1636,7 @@ struct CrimeState: Codable, Equatable {
         self.heatProfile = heatProfile
         self.heat = heat
         self.notoriety = notoriety
+        self.legitimacy = legitimacy
         self.burnout = burnout
         self.crewID = crewID
         self.loyalty = loyalty
@@ -1576,6 +1656,7 @@ struct CrimeState: Codable, Equatable {
         heatProfile = try container.decodeIfPresent(CrimeHeatProfile.self, forKey: .heatProfile) ?? .streetPatrol
         heat = try container.decodeIfPresent(Int.self, forKey: .heat) ?? 0
         notoriety = try container.decodeIfPresent(Int.self, forKey: .notoriety) ?? 0
+        legitimacy = try container.decodeIfPresent(Int.self, forKey: .legitimacy) ?? 50
         burnout = try container.decodeIfPresent(Int.self, forKey: .burnout) ?? 0
         crewID = try container.decodeIfPresent(String.self, forKey: .crewID)
         loyalty = try container.decodeIfPresent(Int.self, forKey: .loyalty) ?? 0
@@ -1597,6 +1678,7 @@ struct CrimeState: Codable, Equatable {
         roleTier = roleTier.clamped(to: 0...3)
         heat = heat.clamped(to: 0...100)
         notoriety = notoriety.clamped(to: 0...100)
+        legitimacy = legitimacy.clamped(to: 0...100) // Crime Parity Pass
         burnout = burnout.clamped(to: 0...100)
         loyalty = loyalty.clamped(to: 0...100)
         territoryPressure = territoryPressure.clamped(to: 0...100)
@@ -1613,6 +1695,7 @@ struct CrimeState: Codable, Equatable {
             heatProfile = .streetPatrol
             heat = 0
             notoriety = 0
+            legitimacy = 50
             crewID = nil
             loyalty = 0
             territoryPressure = 0

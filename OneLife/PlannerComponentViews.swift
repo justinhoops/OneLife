@@ -37,7 +37,7 @@ struct StatusPill: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                 Text(value)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(tone.color)
@@ -208,7 +208,7 @@ struct MetricTile: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
             Text(value)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(tone.color)
@@ -253,7 +253,7 @@ struct RecentLifeModule: View {
             if history.isEmpty {
                 Text("Your recent years will land here after your next turn.")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
             } else {
                 ForEach(Array(history.prefix(3))) { item in
                     VStack(alignment: .leading, spacing: 4) {
@@ -261,7 +261,7 @@ struct RecentLifeModule: View {
                             .font(.subheadline.weight(.semibold))
                         Text(item.text)
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                             .lineLimit(2)
                     }
                     .padding(.vertical, 2)
@@ -373,7 +373,7 @@ struct CompressedPlannerTab: View {
                     if !overview.summary.isEmpty {
                         Text(overview.summary)
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                             .lineLimit(3)
                     }
                 }
@@ -406,7 +406,7 @@ struct CompressedPlannerTab: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(overview.primaryPressure.detail)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                         .lineLimit(3)
 
                     CompactFocusDock(
@@ -479,7 +479,7 @@ struct ContinuityHubSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
 
                 ForEach(items) { item in
                     VStack(alignment: .leading, spacing: 4) {
@@ -488,7 +488,7 @@ struct ContinuityHubSection: View {
                             .foregroundStyle(item.tone.color)
                         Text(item.detail)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                             .lineLimit(3)
                     }
                 }
@@ -514,7 +514,7 @@ struct AutonomyToastOverlay: View {
                                     .font(.caption.weight(.black))
                                 Text(toast.detail)
                                     .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                                     .lineLimit(3)
                             }
                             Spacer(minLength: 0)
@@ -629,12 +629,12 @@ struct FeedHomeTab: View {
                         .font(.headline)
                     Text(nextDecisionDetail)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                         .lineLimit(3)
 
                     Text(queuedInteractionCount > 0 ? "Finish the live card stack to settle the year." : pendingActionSummary)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                 }
             }
             .accessibilityIdentifier("feed-now-card")
@@ -657,7 +657,7 @@ struct FeedHomeTab: View {
                                     .foregroundStyle(tone.color)
                                 Text(item.detail)
                                     .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                                     .lineLimit(2)
                             }
                         }
@@ -677,7 +677,7 @@ struct FeedHomeTab: View {
                 .font(.title.weight(.bold))
             Text("Pressure, timing, and momentum — read fast, tap once to drill down.")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -791,7 +791,7 @@ struct CompactInteractionOverlay: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(summary.discipline == .boxing ? "BOXING RESULT" : "MMA RESULT")
                 .font(.caption.weight(.heavy))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
             Text("\(summary.result) by \(summary.method)")
                 .font(.title2.weight(.black))
             Text("vs. \(summary.opponentName)")
@@ -812,7 +812,7 @@ struct CompactInteractionOverlay: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text("WHY IT MOVED")
                     .font(.caption2.weight(.heavy))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                 ForEach(summary.decisiveCauses, id: \.self) { cause in
                     Text("• \(cause)")
                         .font(.caption)
@@ -833,7 +833,7 @@ struct CompactInteractionOverlay: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("LEGAL RESULT")
                 .font(.caption.weight(.heavy))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
             Text(summary.title)
                 .font(.title2.weight(.black))
             Text(summary.allegation)
@@ -851,7 +851,7 @@ struct CompactInteractionOverlay: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text("WHY IT MOVED")
                     .font(.caption2.weight(.heavy))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                 ForEach(summary.decisiveCauses.prefix(3), id: \.self) { cause in
                     Text("• \(cause)")
                         .font(.caption)
@@ -870,7 +870,7 @@ struct CompactInteractionOverlay: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title.uppercased())
                 .font(.caption2.weight(.heavy))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
             Text(value)
                 .font(.caption.weight(.bold))
                 .lineLimit(2)
@@ -893,7 +893,7 @@ struct CompactInteractionOverlay: View {
             HStack {
                 Text("Age \(summary.age)")
                     .font(.caption.weight(.black))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                 Spacer()
                 Text("Year In Brief")
                     .font(.headline.weight(.bold))
@@ -982,7 +982,7 @@ struct CompactInteractionOverlay: View {
             } label: {
                 Text("More detail")
                     .font(.caption.weight(.black))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
             }
 
             Button("Continue", action: onAdvance)
@@ -1018,7 +1018,7 @@ struct CompactInteractionOverlay: View {
                 HStack {
                     Text("Forecast")
                         .font(.caption.weight(.black))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                     Spacer()
                     Text(state.resilience.shortLabel)
                         .font(.caption2.weight(.bold))
@@ -1030,7 +1030,7 @@ struct CompactInteractionOverlay: View {
 
                 Text(forecast.subtitle)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .lineLimit(3)
 
                 if let goal = state.softRunGoal, goal.setAtAge == state.player.age || goal.status == .inProgress {
@@ -1053,7 +1053,7 @@ struct CompactInteractionOverlay: View {
                                 .font(.caption.weight(.black))
                             Text(line)
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(DesignSystem.Colors.textSecondary)
                         }
                     }
                     .padding(10)
@@ -1065,7 +1065,7 @@ struct CompactInteractionOverlay: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("What the year is holding")
                         .font(.caption.weight(.black))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
 
                     TabView(selection: $stakesPageIndex) {
                         ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
@@ -1081,29 +1081,33 @@ struct CompactInteractionOverlay: View {
                                     .font(.subheadline.weight(.bold))
                                 Text(page.detail)
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
-                            .padding(12)
+                            .padding(14)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(page.tone.fill)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .background(page.tone.fill.opacity(0.8))
+                            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous)
+                                    .stroke(page.tone.color.opacity(0.2), lineWidth: 1)
+                            )
                             .tag(index)
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .automatic))
-                    .frame(height: 148)
+                    .frame(height: 154)
                     .accessibilityIdentifier("forecast-stakes-pager")
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("What are you protecting this year?")
                         .font(.caption.weight(.black))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
 
                     Text("Recommended: \(recommendedStance.title)")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                         ForEach(stanceChips) { stance in
@@ -1118,18 +1122,20 @@ struct CompactInteractionOverlay: View {
                                         .minimumScaleFactor(0.75)
                                     Text(stance.detail)
                                         .font(.system(size: 9, weight: .semibold))
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                                         .lineLimit(2)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(8)
-                                .background(stance.isSelected ? PlannerTone.positive.fill : Color.primary.opacity(0.05))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .padding(12)
+                                .background(stance.isSelected ? PlannerTone.positive.fill.opacity(0.85) : Color.primary.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(stance.isSelected ? PlannerTone.positive.color.opacity(0.45) : Color.clear, lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous)
+                                        .stroke(stance.isSelected ? PlannerTone.positive.color.opacity(0.5) : Color.primary.opacity(0.1), lineWidth: 1)
                                 )
+                                .shadow(color: stance.isSelected ? PlannerTone.positive.color.opacity(0.15) : .clear, radius: 6, y: 3)
                             }
+
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("forecast-stance-\(stance.id.rawValue)")
                             .accessibilityLabel("Select \(stance.title) goal")
@@ -1220,14 +1226,14 @@ struct CompactInteractionOverlay: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(event.category.rawValue.capitalized)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
 
             Text(event.title)
                 .font(.title3.weight(.bold))
 
             Text(event.displayText(echoing: state))
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
                 .lineLimit(5)
 
             VStack(spacing: 10) {
@@ -1266,7 +1272,7 @@ struct CompactInteractionOverlay: View {
 
             Text(reaction.detail)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
                 .lineLimit(5)
 
             Button("Keep Going", action: onAdvance)
@@ -1288,7 +1294,7 @@ struct CompactInteractionOverlay: View {
         return VStack(alignment: .leading, spacing: 12) {
             Text("Fallout")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
 
             Text(preview.title)
                 .font(.title3.weight(.bold))
@@ -1296,7 +1302,7 @@ struct CompactInteractionOverlay: View {
 
             Text(preview.detail)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
                 .lineLimit(5)
 
             Button("Keep Going", action: onAdvance)
@@ -1310,14 +1316,14 @@ struct CompactInteractionOverlay: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Wrap")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
 
             Text(preview.title)
                 .font(.title3.weight(.bold))
 
             Text(preview.detail)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
                 .lineLimit(5)
 
             // Replayability transparency: at the end of a life, gently remind the player what "Life Feel" they chose
@@ -1327,7 +1333,7 @@ struct CompactInteractionOverlay: View {
                         .font(.caption2)
                     Text("Your Life Feel choice shaped how this story could recover")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                 }
                 .padding(.top, 4)
             }
@@ -1353,7 +1359,7 @@ struct CompactInteractionOverlay: View {
 
             Text(crisis.detail)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
 
             VStack(spacing: 12) {
                 ForEach(crisis.choices) { choice in
@@ -1367,7 +1373,7 @@ struct CompactInteractionOverlay: View {
                                     .foregroundStyle(choice.isBuyBack ? .primary : .secondary)
                                 Text(choice.detail)
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                                 Text(choice.costSummary)
                                     .font(.caption.weight(.bold))
                                     .foregroundStyle(choice.isBuyBack ? .red : .green)
@@ -1405,7 +1411,7 @@ struct CompactInteractionOverlay: View {
 
             Text(pitch.detail)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
 
             VStack(spacing: 10) {
                 ForEach(pitch.choices) { choice in
@@ -1418,11 +1424,11 @@ struct CompactInteractionOverlay: View {
                                     .font(.headline)
                                 Text(choice.detail)
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                             }
                             Spacer()
                             Image(systemName: "arrow.up.right.square")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(DesignSystem.Colors.textSecondary)
                         }
                         .padding(12)
                         .background(Color.black.opacity(0.06))
@@ -1449,7 +1455,7 @@ struct CompactInteractionOverlay: View {
                     .lineLimit(1)
                 Text(detail)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .lineLimit(2)
             }
         }
@@ -1521,7 +1527,7 @@ struct ActionChoiceRow: View {
                         .lineLimit(2)
                     Text(definition.subtitle)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                         .lineLimit(2)
 
                     previewTagsRow
@@ -1543,13 +1549,23 @@ struct ActionChoiceRow: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity, minHeight: 74, alignment: .leading)
-            .background(OLTheme.cardFill(colorScheme))
+            .background(OLTheme.cardFill(colorScheme).opacity(0.85)) // Slight transparency for glass feel
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(rowTone.fill, lineWidth: 1.2)
+                RoundedRectangle(cornerRadius: DesignSystem.Radius.medium, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                rowTone.fill,
+                                rowTone.fill.opacity(0.3)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .shadow(color: Color.black.opacity(OLTheme.cardShadowOpacity(colorScheme)), radius: 8, x: 0, y: 4)
+            .shadow(color: rowTone.color.opacity(0.12), radius: 10, y: 5) // Soft ambient glow based on action tone
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("action-choice-\(action.rawValue)")
@@ -1679,14 +1695,14 @@ struct InsightStrip: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
 
             HStack(spacing: 8) {
                 ForEach(insights) { insight in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(insight.title)
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                         Text(insight.value)
                             .font(.caption.weight(.semibold))
                     }
@@ -1719,7 +1735,7 @@ struct YearlyConsequenceStrip: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Recent Consequences")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
 
                 ForEach(items.prefix(2)) { item in
                     HStack(alignment: .top, spacing: 10) {
@@ -1733,7 +1749,7 @@ struct YearlyConsequenceStrip: View {
                                 .font(.caption.weight(.bold))
                             Text(item.detail)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(DesignSystem.Colors.textSecondary)
                                 .lineLimit(2)
                         }
                     }
@@ -1768,7 +1784,7 @@ struct MomentumAgeUpTeachRow: View {
             }
             Text(DiscoverabilityTeaching.firstMomentumAgeUpLine)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
         }
         .padding(.horizontal, 4)
     }
@@ -1790,7 +1806,7 @@ struct AgeUpRiskPreviewStrip: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Risk Preview")
                 .font(.caption2.weight(.bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 7) {
@@ -1818,10 +1834,10 @@ struct CauseTrailStrip: View {
 
     var body: some View {
         if !items.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text(title)
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
 
                 ForEach(items.prefix(3)) { item in
                     HStack(alignment: .top, spacing: 9) {
@@ -1834,12 +1850,16 @@ struct CauseTrailStrip: View {
                                 .font(.caption.weight(.bold))
                             Text(item.detail)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(DesignSystem.Colors.textSecondary)
                                 .lineLimit(2)
                         }
                     }
                 }
             }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.primary.opacity(0.04))
+            .glassCard(radius: 12)
             .accessibilityIdentifier(identifier)
         }
     }
@@ -1856,17 +1876,20 @@ struct ChipStrip: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(items, id: \.self) { item in
                             Text(item)
-                                .font(.caption.weight(.semibold))
+                                .font(.caption2.weight(.bold))
                                 .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .background(tone.fill)
+                                .padding(.vertical, 6)
+                                .background(tone.fill.opacity(0.6))
                                 .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().stroke(tone.color.opacity(0.15), lineWidth: 1)
+                                )
                         }
                     }
                 }

@@ -472,6 +472,29 @@ enum WealthBand: String, Codable, CaseIterable {
     case comfortable
     case wealthy
     case millionaire
+    case billionaire
+}
+
+enum MoneyFormatting {
+    static func compact(_ amount: Int) -> String {
+        let absAmount = abs(amount)
+        let sign = amount < 0 ? "-" : ""
+        if absAmount >= 1_000_000_000 {
+            let billions = Double(absAmount) / 1_000_000_000.0
+            if billions >= 10 {
+                return "\(sign)$\(Int(billions.rounded()))B"
+            }
+            return String(format: "%@$%.1fB", sign, billions)
+        }
+        if absAmount >= 1_000_000 {
+            let millions = Double(absAmount) / 1_000_000.0
+            if millions >= 100 {
+                return "\(sign)$\(Int(millions.rounded()))M"
+            }
+            return String(format: "%@$%.1fM", sign, millions)
+        }
+        return "\(sign)$\(absAmount.formatted(.number.grouping(.automatic)))"
+    }
 }
 
 struct BalanceRunSummary: Equatable {
@@ -578,6 +601,7 @@ struct SimulationBalanceProfile: Equatable {
     var economy: EconomySettings
 
     func wealthBand(for totalWealth: Int) -> WealthBand {
+        if totalWealth >= 1_000_000_000 { return .billionaire }
         if totalWealth >= 1_000_000 { return .millionaire }
         if totalWealth >= wealth.wealthyBandLowerBound { return .wealthy }
         if totalWealth >= wealth.comfortableBandLowerBound { return .comfortable }

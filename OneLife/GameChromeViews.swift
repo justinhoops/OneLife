@@ -477,7 +477,7 @@ struct BitLifeGameChrome: View {
 
             AgeUpChromeButton(
                 vm: vm,
-                isEnabled: canAct && !vm.state.isGameOver && !vm.isResolvingInteraction
+                isEnabled: canAct && !vm.state.isGameOver && !vm.chrome.isResolvingInteraction
             ) {
                 vm.ageUp()
                 if vm.state.isGameOver {
