@@ -32,6 +32,7 @@
 		A100000D2F386F7600C04A6F /* OneLifeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000D2F386F7600C04A6F /* OneLifeTests.swift */; };
 		A100000E2F386F7600C04A6F /* OneLifeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000E2F386F7600C04A6F /* OneLifeUITests.swift */; };
 		A100000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift */; };
+		A10000602F386F7600C04A6F /* Simulation/Systems/StaticInstantActionFlavor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000602F386F7600C04A6F /* Simulation/Systems/StaticInstantActionFlavor.swift */; };
 		A10000102F386F7600C04A6F /* Simulation/Systems/NarrativeArcSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000102F386F7600C04A6F /* Simulation/Systems/NarrativeArcSystem.swift */; };
 		A10000112F386F7600C04A6F /* Simulation/Systems/OriginSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000112F386F7600C04A6F /* Simulation/Systems/OriginSystem.swift */; };
 		A10000122F386F7600C04A6F /* Simulation/Systems/PolicySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000122F386F7600C04A6F /* Simulation/Systems/PolicySystem.swift */; };
@@ -46,12 +47,18 @@
 		A10000502F386F7600C04A6F /* CharacterCreationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000502F386F7600C04A6F /* CharacterCreationViewModel.swift */; };
 		A100001B2F386F7600C04A6F /* ContinuityThreadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001B2F386F7600C04A6F /* ContinuityThreadEngine.swift */; };
 		A100001C2F386F7600C04A6F /* SilentYearEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001C2F386F7600C04A6F /* SilentYearEngine.swift */; };
+		C10000012F60000000C04A6F /* CohesionNarrative.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000012F60000000C04A6F /* CohesionNarrative.swift */; };
+		C10000022F60000000C04A6F /* AssetCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000022F60000000C04A6F /* AssetCatalog.swift */; };
+		C10000032F60000000C04A6F /* ConsoleNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000032F60000000C04A6F /* ConsoleNavigation.swift */; };
+		C10000042F60000000C04A6F /* PillTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000042F60000000C04A6F /* PillTabBar.swift */; };
 		A100001D2F386F7600C04A6F /* NarrativeToneResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */; };
 		A100001E2F386F7600C04A6F /* EchoFlavorResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001E2F386F7600C04A6F /* EchoFlavorResolver.swift */; };
 		A100001F2F386F7600C04A6F /* InteractionCardCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001F2F386F7600C04A6F /* InteractionCardCoordinator.swift */; };
 		A10000202F386F7600C04A6F /* FeedbackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000202F386F7600C04A6F /* FeedbackCoordinator.swift */; };
 		A10000212F386F7600C04A6F /* Simulation/Systems/WorldAutonomySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000212F386F7600C04A6F /* Simulation/Systems/WorldAutonomySystem.swift */; };
 		A10000222F386F7600C04A6F /* Simulation/Systems/NPCAutonomySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000222F386F7600C04A6F /* Simulation/Systems/NPCAutonomySystem.swift */; };
+		B10000012F50000000C04A6F /* ConsoleUIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000012F50000000C04A6F /* ConsoleUIModels.swift */; };
+		B10000022F50000000C04A6F /* GameViewModel+ConsolePanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000022F50000000C04A6F /* GameViewModel+ConsolePanels.swift */; };
 		A10000232F386F7600C04A6F /* LifeConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000232F386F7600C04A6F /* LifeConsoleView.swift */; };
 		A10000242F386F7600C04A6F /* DomainActionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000242F386F7600C04A6F /* DomainActionRegistry.swift */; };
 		A10000252F386F7600C04A6F /* ChildhoodGenerationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000252F386F7600C04A6F /* ChildhoodGenerationEngine.swift */; };
@@ -135,6 +142,7 @@
 		A200000D2F386F7600C04A6F /* OneLifeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeTests.swift; sourceTree = "<group>"; };
 		A200000E2F386F7600C04A6F /* OneLifeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeUITests.swift; sourceTree = "<group>"; };
 		A200000F2F386F7600C04A6F /* OneLifeUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneLifeUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		A20000602F386F7600C04A6F /* Simulation/Systems/StaticInstantActionFlavor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/StaticInstantActionFlavor.swift; sourceTree = "<group>"; };
 		A20000102F386F7600C04A6F /* Simulation/Systems/NarrativeArcSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/NarrativeArcSystem.swift; sourceTree = "<group>"; };
 		A20000112F386F7600C04A6F /* Simulation/Systems/OriginSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/OriginSystem.swift; sourceTree = "<group>"; };
 		A20000122F386F7600C04A6F /* Simulation/Systems/PolicySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/PolicySystem.swift; sourceTree = "<group>"; };
@@ -149,12 +157,18 @@
 		A20000502F386F7600C04A6F /* CharacterCreationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterCreationViewModel.swift; sourceTree = "<group>"; };
 		A200001B2F386F7600C04A6F /* ContinuityThreadEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuityThreadEngine.swift; sourceTree = "<group>"; };
 		A200001C2F386F7600C04A6F /* SilentYearEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilentYearEngine.swift; sourceTree = "<group>"; };
+		C20000012F60000000C04A6F /* CohesionNarrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CohesionNarrative.swift; sourceTree = "<group>"; };
+		C20000022F60000000C04A6F /* AssetCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetCatalog.swift; sourceTree = "<group>"; };
+		C20000032F60000000C04A6F /* ConsoleNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleNavigation.swift; sourceTree = "<group>"; };
+		C20000042F60000000C04A6F /* PillTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PillTabBar.swift; sourceTree = "<group>"; };
 		A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrativeToneResolver.swift; sourceTree = "<group>"; };
 		A200001E2F386F7600C04A6F /* EchoFlavorResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchoFlavorResolver.swift; sourceTree = "<group>"; };
 		A200001F2F386F7600C04A6F /* InteractionCardCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionCardCoordinator.swift; sourceTree = "<group>"; };
 		A20000202F386F7600C04A6F /* FeedbackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackCoordinator.swift; sourceTree = "<group>"; };
 		A20000212F386F7600C04A6F /* Simulation/Systems/WorldAutonomySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/WorldAutonomySystem.swift; sourceTree = "<group>"; };
 		A20000222F386F7600C04A6F /* Simulation/Systems/NPCAutonomySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Simulation/Systems/NPCAutonomySystem.swift; sourceTree = "<group>"; };
+		B20000012F50000000C04A6F /* Models/ConsoleUIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleUIModels.swift; sourceTree = "<group>"; };
+		B20000022F50000000C04A6F /* GameViewModel+ConsolePanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GameViewModel+ConsolePanels.swift"; sourceTree = "<group>"; };
 		A20000232F386F7600C04A6F /* LifeConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeConsoleView.swift; sourceTree = "<group>"; };
 		A20000242F386F7600C04A6F /* DomainActionRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainActionRegistry.swift; sourceTree = "<group>"; };
 		A20000252F386F7600C04A6F /* ChildhoodGenerationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildhoodGenerationEngine.swift; sourceTree = "<group>"; };
@@ -246,6 +260,7 @@
 				A20000252F386F7600C04A6F /* ChildhoodGenerationEngine.swift */,
 				A20000012F386F7600C04A6F /* ContentView.swift */,
 				A20000472F386F7600C04A6F /* GameViewModel.swift */,
+				B20000022F50000000C04A6F /* GameViewModel+ConsolePanels.swift */,
 				A20000482F386F7600C04A6F /* GameChromeViews.swift */,
 				A200004E2F386F7600C04A6F /* RuntimePerformanceMonitor.swift */,
 				A200004F2F386F7600C04A6F /* GameSessionChromeState.swift */,
@@ -268,6 +283,7 @@
 				A20000192F386F7600C04A6F /* Simulation/LifeSimulationOrchestrator.swift */,
 				0E3687792FCB4DDA00896B51 /* InstantReactionCoordinator.swift */,
 				A300002B2F386F7600C04A6F /* Models */,
+				A20000602F386F7600C04A6F /* Simulation/Systems/StaticInstantActionFlavor.swift */,
 				A20000102F386F7600C04A6F /* Simulation/Systems/NarrativeArcSystem.swift */,
 				A200001D2F386F7600C04A6F /* NarrativeToneResolver.swift */,
 				A20000072F386F7600C04A6F /* OneLifeApp.swift */,
@@ -280,6 +296,10 @@
 				A200000C2F386F7600C04A6F /* SampleEvents.json */,
 				A20000172F386F7600C04A6F /* Simulation/Systems/RelationshipFamilyHealthAssetSystems.swift */,
 				A200001C2F386F7600C04A6F /* SilentYearEngine.swift */,
+				C20000012F60000000C04A6F /* CohesionNarrative.swift */,
+				C20000022F60000000C04A6F /* AssetCatalog.swift */,
+				C20000032F60000000C04A6F /* ConsoleNavigation.swift */,
+				C20000042F60000000C04A6F /* PillTabBar.swift */,
 				A20000152F386F7600C04A6F /* Simulation/Systems/SpecialCareerCrimeSystems.swift */,
 				A20000132F386F7600C04A6F /* Simulation/Systems/StoryletSystem.swift */,
 				A20000142F386F7600C04A6F /* Simulation/Systems/EducationCareerSystems.swift */,
@@ -324,6 +344,7 @@
 				A200002C2F386F7600C04A6F /* Models/ModelLifecycleEnums.swift */,
 				A20000312F386F7600C04A6F /* Models/YearFlowModels.swift */,
 				A20000332F386F7600C04A6F /* Models/SessionUXState.swift */,
+				B20000012F50000000C04A6F /* Models/ConsoleUIModels.swift */,
 				A20000342F386F7600C04A6F /* Models/NarrativeArcModels.swift */,
 				A20000352F386F7600C04A6F /* Models/GameState.swift */,
 				A20000362F386F7600C04A6F /* Models/ActivityDomainState.swift */,
@@ -486,6 +507,7 @@
 				A10000012F386F7600C04A6F /* ContentView.swift in Sources */,
 				A10000462F386F7600C04A6F /* PlannerUIModels.swift in Sources */,
 				A10000472F386F7600C04A6F /* GameViewModel.swift in Sources */,
+				B10000022F50000000C04A6F /* GameViewModel+ConsolePanels.swift in Sources */,
 				A10000482F386F7600C04A6F /* GameChromeViews.swift in Sources */,
 				A100004E2F386F7600C04A6F /* RuntimePerformanceMonitor.swift in Sources */,
 				A100004F2F386F7600C04A6F /* GameSessionChromeState.swift in Sources */,
@@ -518,6 +540,7 @@
 				A10000312F386F7600C04A6F /* Models/YearFlowModels.swift in Sources */,
 				A10000322F386F7600C04A6F /* Models/DomainEffectModels.swift in Sources */,
 				A10000332F386F7600C04A6F /* Models/SessionUXState.swift in Sources */,
+				B10000012F50000000C04A6F /* Models/ConsoleUIModels.swift in Sources */,
 				A10000342F386F7600C04A6F /* Models/NarrativeArcModels.swift in Sources */,
 				A10000352F386F7600C04A6F /* Models/GameState.swift in Sources */,
 				A10000362F386F7600C04A6F /* Models/ActivityDomainState.swift in Sources */,
@@ -536,6 +559,7 @@
 				A10000432F386F7600C04A6F /* Models/InteractionModels.swift in Sources */,
 				A10000442F386F7600C04A6F /* Models/ModelHelpers.swift in Sources */,
 				A10000452F386F7600C04A6F /* Models/ModelsUI.swift in Sources */,
+				A10000602F386F7600C04A6F /* Simulation/Systems/StaticInstantActionFlavor.swift in Sources */,
 				A10000102F386F7600C04A6F /* Simulation/Systems/NarrativeArcSystem.swift in Sources */,
 				A100001D2F386F7600C04A6F /* NarrativeToneResolver.swift in Sources */,
 				A10000072F386F7600C04A6F /* OneLifeApp.swift in Sources */,
@@ -546,6 +570,10 @@
 				A10000182F386F7600C04A6F /* Simulation/Systems/ProgressCoreSystems.swift in Sources */,
 				A10000172F386F7600C04A6F /* Simulation/Systems/RelationshipFamilyHealthAssetSystems.swift in Sources */,
 				A100001C2F386F7600C04A6F /* SilentYearEngine.swift in Sources */,
+				C10000012F60000000C04A6F /* CohesionNarrative.swift in Sources */,
+				C10000022F60000000C04A6F /* AssetCatalog.swift in Sources */,
+				C10000032F60000000C04A6F /* ConsoleNavigation.swift in Sources */,
+				C10000042F60000000C04A6F /* PillTabBar.swift in Sources */,
 				A10000152F386F7600C04A6F /* Simulation/Systems/SpecialCareerCrimeSystems.swift in Sources */,
 				A10000132F386F7600C04A6F /* Simulation/Systems/StoryletSystem.swift in Sources */,
 				A10000142F386F7600C04A6F /* Simulation/Systems/EducationCareerSystems.swift in Sources */,

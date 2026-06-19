@@ -61,6 +61,21 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Lead Initiative", subtitle: "Step up and be counted.", identityLine: "You organize something that requires other people to trust you. The taste of it is addictive.", previewTags: ["Presence", "Support", "Politics seed"], preferredEventTags: ["social": 7, "school": 4], microBeat: "People are looking at you.", baseFriction: .none)
         case .teenRiskyExperiment:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Risky Experiment", subtitle: "See what you can get away with.", identityLine: "You test a boundary because the safe version of the year feels too small.", previewTags: ["Heat", "Network", "Crime seed"], preferredEventTags: ["risk": 7, "money": 4, "school": 2], microBeat: "Adrenaline and second thoughts.", baseFriction: .warning)
+        // Character Creation Overhaul (console-first)
+        case .createRandomCharacter:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Start Random Life", subtitle: "Instant spawn with variance.", identityLine: "You let the dice roll for a new life.", previewTags: ["Random", "Fast Entry"], preferredEventTags: ["life": 10], microBeat: "The story begins.", baseFriction: .none)
+        case .createFromTemplate:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Use Template", subtitle: "Quick archetype start.", identityLine: "You pick a proven starting shape.", previewTags: ["Template", "Balanced"], preferredEventTags: ["life": 8], microBeat: "Familiar ground.", baseFriction: .none)
+        case .customizeCharacter:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Build Your Own", subtitle: "Limited morph at creation.", identityLine: "You shape the start with care.", previewTags: ["Custom", "Points", "Morph"], preferredEventTags: ["life": 9], microBeat: "Choices made.", baseFriction: .resistance)
+        case .applyBackground:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Apply Background", subtitle: "Set origin story.", identityLine: "You choose the roots that shape the start.", previewTags: ["Background", "Tradeoffs"], preferredEventTags: ["life": 7], microBeat: "Roots set.", baseFriction: .none)
+        case .generateStarterAssets:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Generate Starter Assets", subtitle: "Background-based start.", identityLine: "You receive what your background provides.", previewTags: ["Assets", "Starter"], preferredEventTags: ["finance": 6], microBeat: "Things in hand.", baseFriction: .none)
+        case .buyStarterAsset:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Buy Starter Asset", subtitle: "Secure early hold.", identityLine: "You invest in something to carry forward.", previewTags: ["Asset", "Early"], preferredEventTags: ["finance": 5], microBeat: "Deal done.", baseFriction: .resistance)
+        case .morphIdentity:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Morph Identity", subtitle: "Change who you are.", identityLine: "You decide the person is not fixed at the start.", previewTags: ["Morph", "Ongoing"], preferredEventTags: ["life": 6], microBeat: "Shift happens.", baseFriction: .warning)
         case .workHard:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Lean Into The Grind", subtitle: "Push for traction.", identityLine: "You decide this year should move forward even if your body complains.", previewTags: ["Performance", "Mental cost"], preferredEventTags: ["career": 8, "money": 3], microBeat: "The coffee is cold. Again.", baseFriction: .resistance)
         case .protectYourEnergy:
@@ -471,6 +486,67 @@ enum ActionChoiceCatalog {
             return ActionChoiceDefinition(choiceID: choiceID, title: "Fuel The Rivalry", subtitle: "Let the competition sharpen you.", identityLine: "You decide a little enemy in the circle keeps everyone honest — including you.", previewTags: ["Rivalry heat", "Performance up", "Rep risk"], preferredEventTags: ["social": 5, "career": 4, "risk": 4], microBeat: "The side-eye across the room.", baseFriction: .warning)
         case .splitReputation:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Split Public & Private", subtitle: "Different faces for different rooms.", identityLine: "You decide the version the world sees doesn't have to be the one you go home to.", previewTags: ["Public rep", "Private bond", "Ethics risk"], preferredEventTags: ["social": 6, "risk": 5, "identity": 3], microBeat: "The mask slips back on.", baseFriction: .resistance)
+        case .setBoundary:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Set A Boundary", subtitle: "Protect your time and energy.", identityLine: "You decide some people don't get unlimited access to you anymore.", previewTags: ["Tension down", "Self-respect", "Bond risk"], preferredEventTags: ["relationships": 7, "health": 3], microBeat: "No is a full sentence.", baseFriction: .none)
+        // Static instant — finance extras
+        case .sideGig:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Side Gig", subtitle: "Quick cash, quick hustle.", identityLine: "You decide an extra lane of income is worth the hours it steals from everything else.", previewTags: ["Cash +", "Burnout +", "Low friction"], preferredEventTags: ["finance": 7, "career": 3], microBeat: "The side door opens.", baseFriction: .none)
+        case .negotiateBill:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Negotiate A Bill", subtitle: "Fight for every dollar.", identityLine: "You decide the company on hold doesn't get to win by default.", previewTags: ["Stress down", "Cash saved", "Annoyance"], preferredEventTags: ["finance": 8, "money": 4], microBeat: "Hold for the supervisor.", baseFriction: .none)
+        case .treatYourself:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Treat Yourself", subtitle: "Spend on joy, not just survival.", identityLine: "You decide the year deserves one purchase that isn't purely responsible.", previewTags: ["Happiness +", "Cash cost", "Relief"], preferredEventTags: ["finance": 4, "health": 4], microBeat: "You swipe without guilt.", baseFriction: .none)
+        // Static instant — career regular toolkit
+        case .extraEffort:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Extra Effort", subtitle: "Push performance now.", identityLine: "You decide this week the job gets more of you than it probably should.", previewTags: ["Performance +", "Burnout +", "Visible"], preferredEventTags: ["career": 8, "health": 3], microBeat: "One more deliverable.", baseFriction: .resistance)
+        case .seekMentor:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Seek A Mentor", subtitle: "Borrow someone else's map.", identityLine: "You decide learning from someone ahead of you beats guessing alone.", previewTags: ["Guidance", "Network +", "Humility"], preferredEventTags: ["career": 7, "social": 5], microBeat: "Coffee with someone who knows.", baseFriction: .none)
+        case .documentWins:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Document Wins", subtitle: "Make your work legible.", identityLine: "You decide credit only sticks when it is written down where people look.", previewTags: ["Perf ammo", "Review edge"], preferredEventTags: ["career": 7], microBeat: "The bullet points land.", baseFriction: .none)
+        case .improveSkill:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Improve A Skill", subtitle: "Stack capability on purpose.", identityLine: "You decide the next promotion belongs to whoever keeps learning.", previewTags: ["Skill +", "Time cost"], preferredEventTags: ["career": 8, "education": 3], microBeat: "The tutorial actually helps.", baseFriction: .none)
+        case .managePolitics:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Manage Office Politics", subtitle: "Play the room, not just the work.", identityLine: "You decide the ladder is climbed in conversations as much as deliverables.", previewTags: ["Security +", "Friction +", "Social"], preferredEventTags: ["career": 6, "social": 5], microBeat: "You know who to sit beside.", baseFriction: .none)
+        // Static instant — health
+        case .improveSleep:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Improve Sleep", subtitle: "Recovery as a habit.", identityLine: "You decide the year has to be survivable, not just productive.", previewTags: ["Mental +", "Recovery", "Energy"], preferredEventTags: ["health": 8, "routine": 4], microBeat: "The world goes dark on time.", baseFriction: .none)
+        // Static instant — play / hobbies
+        case .hobbySession:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Hobby Session", subtitle: "Do something just for you.", identityLine: "You decide the year needs hours that belong to joy, not obligation.", previewTags: ["Relief +", "Recovery", "Low stakes"], preferredEventTags: ["health": 5, "social": 2], microBeat: "The hobby pulls you in.", baseFriction: .none)
+        case .socialOuting:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Social Outing", subtitle: "Get out and be around people.", identityLine: "You decide isolation has been loud enough for one stretch.", previewTags: ["Bond +", "Cash cost", "Energy"], preferredEventTags: ["social": 8, "relationships": 4], microBeat: "The group chat finally meets IRL.", baseFriction: .none)
+        case .creativeOutlet:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Creative Outlet", subtitle: "Make something that is yours.", identityLine: "You spend real hours on work that might never be graded but feels like the real thing.", previewTags: ["Identity +", "Mental +", "Voice"], preferredEventTags: ["creative": 6, "health": 3], microBeat: "The idea won't leave you alone.", baseFriction: .none)
+        case .adventure:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Adventure", subtitle: "Chase a little risk and wonder.", identityLine: "You decide the safe version of the year feels too small right now.", previewTags: ["Happiness +", "Risk +", "Story"], preferredEventTags: ["risk": 5, "health": 3, "social": 3], microBeat: "Something unexpected happens.", baseFriction: .warning)
+        case .relaxRoutine:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Relax Routine", subtitle: "Deliberate downshift.", identityLine: "You decide not every hour needs to prove something.", previewTags: ["Recovery +", "Burnout down", "Relief"], preferredEventTags: ["health": 7, "routine": 4], microBeat: "Finally, a moment of silence.", baseFriction: .none)
+        // Core static — identity depth
+        case .journalTheShape:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Journal The Shape", subtitle: "Name the current you're in.", identityLine: "You decide to write down the pattern before it writes you.", previewTags: ["Shape residue", "Mental +", "Ledger"], preferredEventTags: ["identity": 6, "health": 4], microBeat: "The sentence lands.", baseFriction: .none)
+        case .quietTheNoise:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Quiet The Noise", subtitle: "Turn down rumor heat.", identityLine: "You decide the story doesn't get to run louder than your life.", previewTags: ["Rumor down", "Mental +", "Fame cost"], preferredEventTags: ["social": 5, "health": 4], microBeat: "The feed goes dark.", baseFriction: .none)
+        // Core static — health depth
+        case .sleepLikeItMatters:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Sleep Like It Matters", subtitle: "Protect the night like strategy.", identityLine: "You decide rest is not laziness — it's the thing that keeps the rest possible.", previewTags: ["Mental +", "Pressure relief", "Grounded boost"], preferredEventTags: ["health": 9, "routine": 5], microBeat: "The world goes dark on time.", baseFriction: .none)
+        case .coldExposureDrill:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Discipline Drill", subtitle: "Cold focus, hard edge.", identityLine: "You decide discomfort is a teacher, not an enemy.", previewTags: ["Physical +", "Mental edge", "Dossier physical"], preferredEventTags: ["health": 7, "career": 3], microBeat: "The cold hits. You stay.", baseFriction: .resistance)
+        // Core static — finance depth
+        case .negotiateBetterTerms:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Push For More", subtitle: "Negotiate better terms.", identityLine: "You decide the first offer is rarely the real one.", previewTags: ["Cash/equity nudge", "Dossier edge", "Tension"], preferredEventTags: ["finance": 8, "career": 4], microBeat: "Hold the line.", baseFriction: .none)
+        case .quietlyBuildCushion:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Build The Cushion", subtitle: "Quiet safety net.", identityLine: "You decide peace of mind is worth a little less flash.", previewTags: ["Buffer +", "Mental +", "Grounded flavor"], preferredEventTags: ["finance": 7, "health": 3], microBeat: "Another layer of slack.", baseFriction: .none)
+        case .reviewNumbersRuthlessly:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Review The Numbers", subtitle: "Ruthless clarity.", identityLine: "You decide ignorance is the most expensive habit.", previewTags: ["Insight", "Stress down", "pushCareer synergy"], preferredEventTags: ["finance": 8, "career": 3], microBeat: "The spreadsheet tells the truth.", baseFriction: .none)
+        // Core static — relationships depth
+        case .realConversation:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Real Conversation", subtitle: "No performance, just presence.", identityLine: "You decide someone deserves the unedited version of you tonight.", previewTags: ["Bond +", "Mental +", "Kid echo"], preferredEventTags: ["relationships": 9, "family": 4], microBeat: "The real talk.", baseFriction: .none)
+        case .networkWithoutMask:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Network Unmasked", subtitle: "Connect without the act.", identityLine: "You decide visibility doesn't have to mean fakery.", previewTags: ["Rep +", "Fame tick", "Notoriety risk"], preferredEventTags: ["social": 7, "career": 4], microBeat: "They remember the honesty.", baseFriction: .none)
+        // Core static — career universal
+        case .putYourHeadDown:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Put Your Head Down", subtitle: "Grind for traction.", identityLine: "You decide output is the language this room understands.", previewTags: ["Performance +", "Burnout +", "Shape flavor"], preferredEventTags: ["career": 8, "health": 3], microBeat: "One more deliverable.", baseFriction: .resistance)
+        case .protectWorkLifeLine:
+            return ActionChoiceDefinition(choiceID: choiceID, title: "Protect Work-Life Line", subtitle: "Draw the boundary at work.", identityLine: "You decide the job doesn't get to eat the whole person.", previewTags: ["Burnout down", "Mental +", "Grounded relief"], preferredEventTags: ["career": 5, "health": 6], microBeat: "The laptop closes.", baseFriction: .none)
         // D3: Education branches and regular career parity defs
         case .pursueTradeCert:
             return ActionChoiceDefinition(choiceID: choiceID, title: "Pursue Trade Certification", subtitle: "Hands-on path, faster income.", identityLine: "You decide practical skills and quick earning power beat the long academic road.", previewTags: ["Income ramp", "Credential", "Trade bonus"], preferredEventTags: ["career": 7, "education": 5], microBeat: "The shop floor calls.", baseFriction: .none)

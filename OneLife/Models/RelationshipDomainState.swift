@@ -123,6 +123,48 @@ struct Relationship: Codable, Identifiable, Equatable {
     }
 }
 
+enum CareLoadSource: String, Codable, CaseIterable, Equatable {
+    case agingParent
+    case sickPartner
+    case dependentAdultChild
+    case householdCrisis
+}
+
+struct CareLoadRecord: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    var source: CareLoadSource
+    var personName: String
+    var intensity: Int
+    var yearsActive: Int = 0
+    var storyLine: String
+
+    mutating func clamp() {
+        intensity = intensity.clamped(to: 0...100)
+        yearsActive = max(0, yearsActive)
+        if storyLine.isEmpty { storyLine = "Someone needs more from you this year." }
+    }
+}
+
+struct CareLoadState: Codable, Equatable {
+    var records: [CareLoadRecord] = []
+    var lastResolvedAge: Int? = nil
+
+    var totalIntensity: Int {
+        min(100, records.reduce(0) { $0 + max(0, $1.intensity) })
+    }
+
+    var isActive: Bool { totalIntensity > 0 }
+
+    var topLine: String {
+        records.max { $0.intensity < $1.intensity }?.storyLine ?? "No active care load"
+    }
+
+    mutating func clamp() {
+        records.indices.forEach { records[$0].clamp() }
+        records = Array(records.filter { $0.intensity > 0 }.sorted { $0.intensity > $1.intensity }.prefix(3))
+    }
+}
+
 struct RelationshipState: Codable, Equatable {
     var friends: [Relationship] = []
     var romanticPartners: [Relationship] = []
@@ -136,6 +178,7 @@ struct RelationshipState: Codable, Equatable {
     var recentSocialLift: String? = nil
     var tensions: [RelationshipTension] = []
     var futureAlignment: FutureAlignmentState = FutureAlignmentState()
+    var careLoad: CareLoadState = CareLoadState()
 
     private enum CodingKeys: String, CodingKey {
         case friends
@@ -152,6 +195,7 @@ struct RelationshipState: Codable, Equatable {
         case recentSocialLift
         case tensions
         case futureAlignment
+        case careLoad
     }
 
     init() {}
@@ -178,6 +222,7 @@ struct RelationshipState: Codable, Equatable {
         recentSocialLift = try container.decodeIfPresent(String.self, forKey: .recentSocialLift)
         tensions = try container.decodeIfPresent([RelationshipTension].self, forKey: .tensions) ?? []
         futureAlignment = try container.decodeIfPresent(FutureAlignmentState.self, forKey: .futureAlignment) ?? FutureAlignmentState()
+        careLoad = try container.decodeIfPresent(CareLoadState.self, forKey: .careLoad) ?? CareLoadState()
         clampSocialSignals()
     }
 
@@ -195,6 +240,7 @@ struct RelationshipState: Codable, Equatable {
         try container.encodeIfPresent(recentSocialLift, forKey: .recentSocialLift)
         try container.encode(tensions, forKey: .tensions)
         try container.encode(futureAlignment, forKey: .futureAlignment)
+        try container.encode(careLoad, forKey: .careLoad)
     }
 
     var primaryPartner: Relationship? {
@@ -282,6 +328,6 @@ struct RelationshipState: Codable, Equatable {
         tensions.indices.forEach { tensions[$0].clamp() }
         tensions = Array(tensions.sorted { $0.severity > $1.severity }.prefix(3))
         futureAlignment.clamp()
+        careLoad.clamp()
     }
 }
-

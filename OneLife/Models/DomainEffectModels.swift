@@ -258,6 +258,23 @@ struct LegalEffects: Codable, Equatable {
     var setDecision: LegalDecision? = nil
     var counselQualityDelta: Int? = nil
     var evidenceDelta: Int? = nil
+    var conductDelta: Int? = nil
+    var violenceRiskDelta: Int? = nil
+    var yardReputationDelta: Int? = nil
+    var protectionDebtDelta: Int? = nil
+    var snitchRiskDelta: Int? = nil
+    var programProgressDelta: Int? = nil
+    var goodTimeProgressDelta: Int? = nil
+    var lockdownYearsDelta: Int? = nil
+    var infractionDelta: Int? = nil
+    var familyCallsThisYearDelta: Int? = nil
+    var totalFamilyCallsDelta: Int? = nil
+    var targetCustodyContactID: String? = nil
+    var contactTrustDelta: Int? = nil
+    var contactDangerDelta: Int? = nil
+    var contactLeverageDelta: Int? = nil
+    var contactInfluenceDelta: Int? = nil
+    var setContactStatus: CustodyContactStatus? = nil
 }
 
 struct EducationEffects: Codable, Equatable {
@@ -367,4 +384,3 @@ struct HousingEffects: Codable, Equatable {
     var setArrangement: LivingArrangement? = nil
     var hasRoommate: Bool? = nil
 }
-

@@ -27,6 +27,42 @@ struct DomainActionRegistry {
 
     // MARK: - Public API
 
+    // Character Creation Overhaul support (console-first)
+    func handleCreationAction(_ choiceID: ActionChoiceID, draft: inout CharacterCreationDraft, previewState: inout GameState?) -> DomainYearResult? {
+        var result = DomainYearResult()
+        switch choiceID {
+        case .createRandomCharacter:
+            let character = Character.generateRandom()
+            result.notes.append(DomainNote(title: "Random Life Spawned", text: "A new life begins with \(character.background.displayName) roots and starter assets: \(character.startingAssets.joined(separator: ", ")).", tags: [.lifeEvent]))
+            // In real flow, this would trigger beginLife with the character
+            return result
+        case .createFromTemplate:
+            if let template = CharacterTemplate.presets.first {
+                result.notes.append(DomainNote(title: "Template Applied", text: "Starting as \(template.name): \(template.description)", tags: [.lifeEvent]))
+            }
+            return result
+        case .customizeCharacter:
+            result.notes.append(DomainNote(title: "Morphing Started", text: "Limited points to shape your start. Deeper changes come later through life.", tags: [.lifeEvent]))
+            return result
+        case .applyBackground:
+            if let bg = draft.selectedBackground {
+                result.notes.append(DomainNote(title: "Background Set", text: "Your roots are now \(bg.displayName). Trade-offs and starter assets applied.", tags: [.lifeEvent]))
+            }
+            return result
+        case .generateStarterAssets:
+            result.notes.append(DomainNote(title: "Starter Assets Generated", text: "Assets tied to background are now in your possession. Maintain them or lose value.", tags: [.finance, .lifeEvent]))
+            return result
+        case .buyStarterAsset:
+            result.notes.append(DomainNote(title: "Starter Asset Secured", text: "You now own an early asset. It has condition, maintenance, and depreciation from day one.", tags: [.finance]))
+            return result
+        case .morphIdentity:
+            result.notes.append(DomainNote(title: "Identity Shift", text: "The person you are is beginning to change. This will echo in future chapters.", tags: [.lifeEvent]))
+            return result
+        default:
+            return nil
+        }
+    }
+
     func availableCommitted(for domain: ActionDomain) -> [ActionChoiceID] {
         if state.legal.isInCustody {
             switch domain {
@@ -55,6 +91,7 @@ struct DomainActionRegistry {
         case .health: return healthCommittedChoices()
         case .family: return familyPhaseCommittedChoices()
         case .identity: return []
+        case .play: return []
         }
     }
 
@@ -108,21 +145,23 @@ struct DomainActionRegistry {
 
     func availableQuick(for domain: ActionDomain) -> [ActionChoiceID] {
         let committed = Set(availableCommitted(for: domain))
-        // Always start with the static core for this domain/subdomain so they are reliably present
-        // in the "Right Now" instant grids and can always be clicked for instant calc.
-        var quick = staticCoreInstantActions(for: domain).filter {
+        // Static core is always fully visible — never truncated.
+        let core = staticCoreInstantActions(for: domain).filter {
             committed.contains($0) || resolutionTier(for: $0, domain: domain) == .instant
         }
-        for choice in availableInstantPromotions(for: domain) {
+        var quick = core
+        let coreSet = Set(core)
+        for choice in conditionalInstantExtras(for: domain) + availableInstantPromotions(for: domain) {
             guard committed.contains(choice) || resolutionTier(for: choice, domain: domain) == .instant else { continue }
             if !quick.contains(choice) { quick.append(choice) }
         }
         if domain == .finance, state.finance.debtPressureBand == .crushing || state.finance.debtPressureBand == .heavy {
             for debtQuick in [ActionChoiceID.minimumPayments, .consolidateDebt, .payDownDebt] where committed.contains(debtQuick) {
-                if !quick.contains(debtQuick) { quick.insert(debtQuick, at: 0) }
+                if !quick.contains(debtQuick) { quick.insert(debtQuick, at: core.count) }
             }
         }
-        return Array(quick.prefix(8))  // give a bit more room for static + extras
+        let extras = quick.filter { !coreSet.contains($0) }
+        return core + Array(extras.prefix(6))
     }
 
     func resolutionTier(for choiceID: ActionChoiceID, domain: ActionDomain) -> ActionResolutionTier {
@@ -216,6 +255,9 @@ struct DomainActionRegistry {
             return .spendTimeWithKids
         case .identity:
             return nil
+        case .play:
+            if state.healthProfile.mentalWellness < 45 { return .relaxRoutine }
+            return .hobbySession
         }
     }
 
@@ -456,6 +498,8 @@ struct DomainActionRegistry {
         case .attackOpponent: return "Attack"
         // D1 short titles for static always grids
         case .morningReflection: return "Reflect"
+        case .journalTheShape: return "Journal"
+        case .quietTheNoise: return "Quiet Noise"
         case .reconcileWithPast: return "Reconcile"
         case .tryNewPersona: return "New Persona"
         case .publicReset: return "Public Reset"
@@ -471,9 +515,9 @@ struct DomainActionRegistry {
         case .curateCollection: return "Curate"
         case .hostSignatureEvent: return "Host Signature"
         case .maintainAsset: return "Maintain"
-        case .recurringTherapy: return "Therapy Loop"
-        case .manageMeds: return "Meds Mgmt"
-        case .bodyConditioning: return "Body Work"
+        case .recurringTherapy: return "Therapy"
+        case .manageMeds: return "Meds"
+        case .bodyConditioning: return "Train"
         case .deepenSpecificBond: return "Deepen Bond"
         case .fuelRivalry: return "Fuel Rivalry"
         case .splitReputation: return "Split Rep"
@@ -501,6 +545,31 @@ struct DomainActionRegistry {
         case .gigAcceptSurge: return "Surge"
         case .gigMaintainRating: return "Rating"
         case .gigRestDay: return "Rest Day"
+        case .improveSleep: return "Sleep"
+        case .sleepLikeItMatters: return "Sleep Hard"
+        case .coldExposureDrill: return "Discipline"
+        case .setBoundary: return "Boundary"
+        case .realConversation: return "Real Talk"
+        case .networkWithoutMask: return "Unmasked"
+        case .checkInOnChild: return "Check Kids"
+        case .putYourHeadDown: return "Head Down"
+        case .protectWorkLifeLine: return "Work-Life"
+        case .sideGig: return "Side Gig"
+        case .negotiateBill: return "Negotiate"
+        case .negotiateBetterTerms: return "Push Terms"
+        case .quietlyBuildCushion: return "Cushion"
+        case .reviewNumbersRuthlessly: return "Review #s"
+        case .treatYourself: return "Treat Self"
+        case .extraEffort: return "Extra Effort"
+        case .seekMentor: return "Mentor"
+        case .documentWins: return "Doc Wins"
+        case .improveSkill: return "Skill Up"
+        case .managePolitics: return "Politics"
+        case .hobbySession: return "Hobby"
+        case .socialOuting: return "Go Out"
+        case .creativeOutlet: return "Create"
+        case .adventure: return "Adventure"
+        case .relaxRoutine: return "Relax"
         default: return ActionChoiceCatalog.definition(for: choiceID).title
         }
     }
@@ -522,6 +591,50 @@ struct DomainActionRegistry {
         )
     }
 
+    /// Conditional instant extras layered on top of the static core (housing, debt, luxury, etc.).
+    private func conditionalInstantExtras(for domain: ActionDomain) -> [ActionChoiceID] {
+        switch domain {
+        case .finance:
+            var extras: [ActionChoiceID] = [.cutSpending, .takeSideWork, .buildEmergencyFund, .spendForRelief]
+            if state.player.age >= 18 && !state.assets.ownsHome {
+                extras.insert(.depositToHouseFund, at: 0)
+            }
+            if state.assets.ownsHome {
+                extras.insert(.topUpHouseReserve, at: 0)
+            }
+            if state.finance.totalNonHousingDebt > 0 {
+                extras.append(.payDownDebt)
+            }
+            if investmentsActive {
+                extras.append(contentsOf: [.analyzeMarkets, .holdPositions, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition])
+            }
+            if state.finance.totalWealth >= 50_000_000 || state.assets.lifestyleScore >= 75 {
+                extras.append(contentsOf: [.hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection])
+            }
+            extras.append(contentsOf: [.sideGig, .treatYourself, .negotiateBill])
+            return dedupe(extras)
+        case .career:
+            if state.career.status == .unemployed || state.career.status == .partTime {
+                return [.jobHunt]
+            }
+            return []
+        case .health:
+            var extras: [ActionChoiceID] = []
+            if state.healthProfile.mentalWellness < 45 || state.player.health < 45 {
+                extras.append(contentsOf: [.rest, .protectSleep])
+            }
+            if !state.healthProfile.activeConditions.isEmpty {
+                if !extras.contains(.seeDoctor) { extras.append(.seeDoctor) }
+            }
+            if state.military.combatTrauma > 0 {
+                extras.append(.seekVAHealthcare)
+            }
+            return dedupe(extras)
+        default:
+            return []
+        }
+    }
+
     // MARK: - Quick catalog
 
     // Static core instant actions for domains and subdomains.
@@ -530,7 +643,7 @@ struct DomainActionRegistry {
     // Subdomains (teen education, special career tracks, crime lane, etc.) get their dedicated static set.
     /// D5: Regular career Right Now deck — path pickers until committed, then native toolkit.
     private func regularCareerInstantCore() -> [ActionChoiceID] {
-        var fallback: [ActionChoiceID] = [.workHard, .protectYourEnergy, .network]
+        var fallback: [ActionChoiceID] = [.putYourHeadDown, .protectWorkLifeLine, .network, .seekMentor, .documentWins, .improveSkill, .managePolitics]
         if state.career.status == .unemployed || state.career.status == .partTime {
             fallback.insert(.jobHunt, at: 0)
         }
@@ -590,59 +703,30 @@ struct DomainActionRegistry {
             }
             return regularCareerInstantCore()
         case .finance:
-            var core: [ActionChoiceID] = [.cutSpending, .takeSideWork, .buildEmergencyFund, .spendForRelief]
-            if state.player.age >= 18 && !state.assets.ownsHome {
-                core.insert(.depositToHouseFund, at: 0)
-            }
-            if state.assets.ownsHome {
-                core.insert(.topUpHouseReserve, at: 0)
-            }
-            if state.finance.totalNonHousingDebt > 0 {
-                core.append(.payDownDebt)
-            }
-            if investmentsActive {
-                core.append(contentsOf: [.analyzeMarkets, .holdPositions, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition])
-            }
-
-            // Luxury L1: High-wealth flex actions always clickable in finance static core if qualified
-            if state.finance.totalWealth >= 50_000_000 || state.assets.lifestyleScore >= 75 {
-                core.append(contentsOf: [.hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection])
-            }
-
-            // D2: Collector loops always available in money tab (path/era flavor in apply)
-            core.append(contentsOf: [.curateCollection, .hostSignatureEvent, .maintainAsset])
-            return core
+            return [.curateCollection, .hostSignatureEvent, .maintainAsset, .negotiateBetterTerms, .quietlyBuildCushion, .reviewNumbersRuthlessly]
         case .relationships:
-            if state.relationships.hasPartner {
-                var relCore: [ActionChoiceID] = [.reachOut, .strengthenBond, .repairTension, .dateCarefully, .discussFuture]
-                // D2: per-friend deepen + rivalry statics always in people tab
-                relCore.append(contentsOf: [.deepenSpecificBond, .fuelRivalry, .splitReputation])
-                return relCore
+            var relCore: [ActionChoiceID] = [.deepenSpecificBond, .fuelRivalry, .splitReputation, .realConversation, .setBoundary, .networkWithoutMask]
+            if !state.family.children.isEmpty {
+                relCore.append(.checkInOnChild)
             }
-            var relCore: [ActionChoiceID] = [.reachOut, .findYourCrowd, .dateCarefully, .repairTension, .keepDistance]
-            relCore.append(contentsOf: [.deepenSpecificBond, .fuelRivalry, .splitReputation])
             return relCore
         case .health:
-            var healthCore: [ActionChoiceID] = [.rest, .protectSleep, .seeDoctor, .pushThrough, .protectYourEnergy]
-            // D2: condition management + body conditioning statics
-            healthCore.append(contentsOf: [.recurringTherapy, .manageMeds, .bodyConditioning])
-            return healthCore
+            return [.bodyConditioning, .recurringTherapy, .manageMeds, .seeDoctor, .sleepLikeItMatters, .coldExposureDrill]
         case .crime:
             return crimeInstantCore()
         case .legal:
             if state.legal.isInCustody { return custodyInstantCore() }
             return legalCommittedChoices()
         case .military:
-            // D1: Military static core now includes the new always-click instants
             return [.militaryService, .goAWOL, .deploy, .ptFocus, .seekCounsel, .studyTradition]
         case .family:
-            // D1: Light family anchors are always in the quick core (even outside heavy phase)
             var f = familyPhaseQuickChoices()
             f.append(contentsOf: [.familyMeal, .storyTime])
             return dedupe(f)
         case .identity:
-            // D1: Identity is always lightly available — self work is never "off"
-            return [.morningReflection, .reconcileWithPast, .tryNewPersona, .publicReset, .therapySession, .processCrisis]
+            return [.morningReflection, .reconcileWithPast, .protectYourEnergy, .tryNewPersona, .processCrisis, .journalTheShape, .quietTheNoise]
+        case .play:
+            return [.hobbySession, .socialOuting, .creativeOutlet, .adventure, .relaxRoutine]
         }
     }
 
@@ -963,13 +1047,22 @@ struct DomainActionRegistry {
         if state.legal.isInCustody { return custodyInstantCore() }
         switch state.legal.stage {
         case .investigation:
-            return [.retainCounsel, .cooperateWithInvestigation, .refuseInterview]
+            var choices: [ActionChoiceID] = []
+            if state.legal.counselQuality == 0 {
+                choices.append(.retainCounsel)
+            }
+            choices.append(contentsOf: [.cooperateWithInvestigation, .refuseInterview])
+            return choices
         case .charged:
-            var choices: [ActionChoiceID] = [.negotiatePlea, .fightCharges]
+            var choices: [ActionChoiceID] = []
+            if state.legal.counselQuality == 0 {
+                choices.append(.retainCounsel)
+            }
             if state.legal.bailAmount > 0, !state.legal.bailPosted {
                 choices.append(.postBail)
             }
-            return Array(choices.prefix(3))
+            choices.append(contentsOf: [.negotiatePlea, .fightCharges])
+            return choices
         case .supervision:
             return state.legal.supervisionYearsRemaining <= 1
                 ? [.complyWithSupervision, .requestEarlyRelease]
@@ -1009,6 +1102,11 @@ struct DomainActionRegistry {
 
             if state.finance.cashOnHand >= 2_000 {
                 financeOptions.append(contentsOf: [.dayTrade, .analyzeMarkets, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition])
+            }
+
+            // Phase 2 char: starter asset buy available early if none
+            if state.player.age < 25 && state.assets.vehicles.isEmpty && state.assets.jewelry.isEmpty {
+                financeOptions.append(.buyStarterAsset)
             }
         }
 

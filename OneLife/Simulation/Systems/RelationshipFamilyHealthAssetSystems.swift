@@ -564,7 +564,12 @@ struct RelationshipSystem {
             if !relationships.friends.isEmpty {
                 let idx = 0
                 relationships.friends[idx].bond = (relationships.friends[idx].bond + 8).clamped(to: 0...100)
-                result.notes.append(DomainNote(title: "Deep Bond", text: "You poured real time into one person. That friendship now carries more weight than the rest combined.", tags: [.relationships]))
+                var text = "You poured real time into one person. That friendship now carries more weight than the rest combined."
+                if StaticInstantActionFlavor.dossierSocial(state) {
+                    text = "Your social wiring from 14 made the conversation land deeper than usual."
+                }
+                StaticInstantActionFlavor.publishPulse(&state, domain: "relationships", strength: 16)
+                result.notes.append(DomainNote(title: "Deep Bond", text: text, tags: [.relationships]))
             } else if relationships.hasPartner {
                 if var partner = relationships.romanticPartner {
                     partner.bond = (partner.bond + 8).clamped(to: 0...100)
@@ -575,11 +580,86 @@ struct RelationshipSystem {
         case .fuelRivalry:
             relationships.activeRumorHeat = min(100, relationships.activeRumorHeat + 6)
             result.coreEffects = CoreStatEffects(happiness: -1)
-            result.notes.append(DomainNote(title: "Rivalry Fueled", text: "You turned a peer into competition. The heat is motivating — and dangerous.", tags: [.relationships, .risk]))
+            if state.fame.culturalFame >= 50 {
+                state.fame.culturalFame = min(100, state.fame.culturalFame + 2)
+            }
+            if state.fame.notoriety >= 45 {
+                state.fame.notoriety = min(100, state.fame.notoriety + 3)
+            }
+            var rivalryText = "You turned a peer into competition. The heat is motivating — and dangerous."
+            rivalryText += StaticInstantActionFlavor.fameGravitySuffix(state, highFame: " The rivalry went public faster than you planned.")
+            StaticInstantActionFlavor.publishPulse(&state, domain: "relationships", strength: 14)
+            result.notes.append(DomainNote(title: "Rivalry Fueled", text: rivalryText, tags: [.relationships, .risk]))
         case .splitReputation:
             relationships.publicReputation = (relationships.publicReputation + 5).clamped(to: 0...100)
             relationships.privateReputation = max(0, relationships.privateReputation - 4)
-            result.notes.append(DomainNote(title: "Rep Split", text: "Public you is polished. Private you paid a small price in authenticity.", tags: [.relationships, .identity]))
+            var splitText = "Public you is polished. Private you paid a small price in authenticity."
+            if state.fame.culturalFame >= 55 {
+                splitText = "The split got easier because the public version of you already had practice performing."
+            }
+            StaticInstantActionFlavor.publishPulse(&state, domain: "relationships", strength: 15)
+            result.notes.append(DomainNote(title: "Rep Split", text: splitText, tags: [.relationships, .identity]))
+        case .setBoundary:
+            relationships.activeRumorHeat = max(0, relationships.activeRumorHeat - 5)
+            resolveTension(in: &relationships, matching: [.friend, .partner, .future, .household], relief: 12)
+            result.coreEffects = CoreStatEffects(happiness: 2)
+            let boundaryText = StaticInstantActionFlavor.isGrounded(state)
+                ? "You said no and the air actually cleared. That rarely happens on the first try."
+                : (StaticInstantActionFlavor.isResilient(state)
+                    ? "You held the line. Relief came, but some of the tension stayed under the surface."
+                    : "You drew a line someone needed to see. Not everyone liked it, but the pressure eased.")
+            result.notes.append(DomainNote(title: "Boundary Set", text: boundaryText, tags: [.relationships, .health]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "relationships", strength: 17)
+        case .joinActivity:
+            if !relationships.friends.isEmpty {
+                relationships.friends[0].bond = (relationships.friends[0].bond + 5).clamped(to: 0...100)
+            }
+            relationships.publicReputation = (relationships.publicReputation + 3).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Joined In", text: "You stepped into something bigger than your couch. Belonging showed up fast.", tags: [.relationships, .social]))
+        case .realConversation:
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 5).clamped(to: 0...100)
+            if relationships.hasPartner, var partner = relationships.romanticPartner {
+                partner.bond = (partner.bond + 7).clamped(to: 0...100)
+                relationships.romanticPartner = partner
+            } else if !relationships.friends.isEmpty {
+                relationships.friends[0].bond = (relationships.friends[0].bond + 6).clamped(to: 0...100)
+            }
+            for index in state.family.children.indices where state.family.children[index].livesAtHome || state.family.children[index].age <= 22 {
+                state.family.children[index].bondWithPlayer = (state.family.children[index].bondWithPlayer + 4).clamped(to: 5...95)
+                if state.family.children[index].developmentNotes.count < 5 {
+                    state.family.children[index].developmentNotes.append("Parent showed up without the performance mask.")
+                }
+            }
+            let convoText = StaticInstantActionFlavor.isGrounded(state)
+                ? "You had the conversation without armor. It was warmer than you expected."
+                : "You skipped the script and asked what was actually true."
+            result.notes.append(DomainNote(title: "Real Talk", text: convoText, tags: [.relationships, .family, .health]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "relationships", strength: 18)
+        case .networkWithoutMask:
+            relationships.publicReputation = (relationships.publicReputation + 5).clamped(to: 0...100)
+            state.fame.culturalFame = min(100, state.fame.culturalFame + 3)
+            if state.fame.notoriety >= 45 {
+                state.fame.notoriety = min(100, state.fame.notoriety + 2)
+                result.notes.append(DomainNote(title: "Unmasked Network", text: "Honesty landed with the right room — but the wrong headline almost wrote itself.", tags: [.relationships, .social, .risk]))
+            } else {
+                result.notes.append(DomainNote(title: "Unmasked Network", text: "You connected without the act. People remembered the version that felt real.", tags: [.relationships, .social, .career]))
+            }
+            StaticInstantActionFlavor.publishPulse(&state, domain: "relationships", strength: 16)
+        case .checkInOnChild:
+            guard !state.family.children.isEmpty else {
+                result.notes.append(DomainNote(title: "Check In", text: "No kids in the picture yet — but you still took a minute to think about who you'd show up for.", tags: [.relationships]))
+                break
+            }
+            for index in state.family.children.indices {
+                let gain = state.family.children[index].temperament == .sensitive ? 7 : 5
+                state.family.children[index].bondWithPlayer = (state.family.children[index].bondWithPlayer + gain).clamped(to: 5...95)
+                if state.family.children[index].developmentNotes.count < 5 {
+                    state.family.children[index].developmentNotes.append("You asked the real questions this year.")
+                }
+            }
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 2).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Kids Check-In", text: "You asked how they actually were and stayed for the answer.", tags: [.family, .relationships, .health]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "relationships", strength: 16)
 
         default:
             break
@@ -1931,8 +2011,21 @@ struct HealthSystem {
         health.clamp()
     }
 
-    func applyAction(_ choiceID: ActionChoiceID, player: inout Player, health: inout HealthState) -> DomainYearResult {
+    /// Reduce severity on active conditions; remove when fully eased.
+    private func relieveActiveConditions(in health: inout HealthState, amount: Int) {
+        guard !health.activeConditions.isEmpty else { return }
+        health.activeConditions = health.activeConditions.compactMap { condition in
+            var updated = condition
+            updated.severity = max(0, updated.severity - amount)
+            return updated.severity > 0 ? updated : nil
+        }
+    }
+
+    func applyAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
         var result = DomainYearResult()
+        var player = state.player
+        var health = state.healthProfile
+        let grounded = StaticInstantActionFlavor.isGrounded(state)
 
         switch choiceID {
         case .protectSleep:
@@ -1969,35 +2062,105 @@ struct HealthSystem {
             )
         case .seeDoctor:
             health.hasPrimaryCare = true
-            health.mentalWellness += 2
-            result.financeEffects = FinanceEffects(cashDelta: -300, livingCostDelta: nil, educationCostDelta: nil, dependentCostDelta: nil, discretionaryCostDelta: nil, financialStressDelta: nil, setRegionPolicyID: nil)
-            result.notes.append(
-                DomainNote(
-                    title: "Health Focus",
-                    text: "You spent money on care this year, trading cash for a little stability.",
-                    tags: [.health, .finance]
-                )
-            )
-        // D2 health mastery
-        case .recurringTherapy:
-            health.mentalWellness = (health.mentalWellness + 7).clamped(to: 0...100)
+            let phys = StaticInstantActionFlavor.resilienceScaled(state, grounded: 6, resilient: 4)
+            health.physicalWellness = (health.physicalWellness + phys).clamped(to: 0...100)
+            health.mentalWellness = (health.mentalWellness + phys - 1).clamped(to: 0...100)
+            relieveActiveConditions(in: &health, amount: grounded ? 8 : 6)
             result.financeEffects = FinanceEffects(cashDelta: -150)
-            result.notes.append(DomainNote(title: "Therapy Loop", text: "The regular appointment is starting to change how you talk to yourself. Conditions feel a little less in charge.", tags: [.health, .finance]))
+            let doctorText: String = {
+                if grounded { return "You reached for care and it felt like claiming ground back. The future got a little less sharp." }
+                if StaticInstantActionFlavor.isResilient(state) { return "You patched it and kept moving. Not elegant, but effective." }
+                return health.activeConditions.isEmpty
+                    ? "A light visit, real reassurance. The body feels a little less mysterious."
+                    : "You got something looked at before it grew teeth. One weight eased."
+            }()
+            result.notes.append(DomainNote(title: "Quick Checkup", text: doctorText, tags: [.health, .finance]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "health", strength: 17)
+        case .recurringTherapy:
+            let mental = StaticInstantActionFlavor.resilienceScaled(state, grounded: 9, resilient: 7)
+            health.mentalWellness = (health.mentalWellness + mental).clamped(to: 0...100)
+            health.habits.stressManagement = (health.habits.stressManagement + 5).clamped(to: 0...100)
+            state.identityCoherence = (state.identityCoherence + 4).clamped(to: 0...100)
+            relieveActiveConditions(in: &health, amount: 4)
+            result.financeEffects = FinanceEffects(cashDelta: -120)
+            var therapyText = "The regular appointment rewired something small but real."
+            if StaticInstantActionFlavor.dossierSocial(state) || StaticInstantActionFlavor.dossierAnalytical(state) {
+                therapyText = "Your dossier made the session land differently — you heard yourself faster."
+            }
+            therapyText += StaticInstantActionFlavor.fameGravitySuffix(state, highFame: " Public pressure made honesty cost more — and matter more.")
+            StaticInstantActionFlavor.publishPulse(&state, domain: "health", strength: 16)
+            result.notes.append(DomainNote(title: "Therapy Loop", text: therapyText, tags: [.health, .finance, .identity]))
         case .manageMeds:
-            health.physicalWellness = (health.physicalWellness + 4).clamped(to: 0...100)
-            health.mentalWellness = (health.mentalWellness + 3).clamped(to: 0...100)
-            result.financeEffects = FinanceEffects(cashDelta: -80)
-            result.notes.append(DomainNote(title: "Meds Management", text: "You kept the regimen. Symptoms quieter, side effects and bill now part of the year.", tags: [.health, .finance]))
+            health.physicalWellness = (health.physicalWellness + 5).clamped(to: 0...100)
+            health.mentalWellness = (health.mentalWellness + 4).clamped(to: 0...100)
+            relieveActiveConditions(in: &health, amount: grounded ? 10 : 8)
+            result.financeEffects = FinanceEffects(cashDelta: -65)
+            let medsText = grounded
+                ? "You kept the regimen when it would've been easier to skip. Long-term stability got a real deposit."
+                : (health.activeConditions.isEmpty
+                    ? "The routine clicked. Prevention beats panic."
+                    : "Symptoms dialed down a notch. The pill organizer earned its keep.")
+            result.notes.append(DomainNote(title: "Meds On Schedule", text: medsText, tags: [.health, .finance]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "health", strength: 15)
         case .bodyConditioning:
-            health.physicalWellness = (health.physicalWellness + 6).clamped(to: 0...100)
-            result.notes.append(DomainNote(title: "Body Work", text: "You treated the body like the career asset it is. Athlete/creator paths feel the edge.", tags: [.health, .career]))
+            health.physicalWellness = (health.physicalWellness + 7).clamped(to: 0...100)
+            health.mentalWellness = (health.mentalWellness + 2).clamped(to: 0...100)
+            health.habits.exercise = (health.habits.exercise + 6).clamped(to: 0...100)
+            if state.specialCareer.track == .athlete {
+                state.specialCareer.athlete.peakPerformance = min(100, state.specialCareer.athlete.peakPerformance + 3)
+            }
+            result.coreEffects = CoreStatEffects(happiness: 2)
+            result.careerEffects = CareerEffects(performance: 2)
+            var bodyText = grounded
+                ? "You pushed through the fatigue and it mattered. The body answered back."
+                : "Reps, breath, sweat — the machine remembers what it's for."
+            if StaticInstantActionFlavor.dossierPhysical(state) {
+                bodyText = "The physical wiring from 14 made the work feel native, not forced."
+            }
+            result.notes.append(DomainNote(title: "Body Work", text: bodyText, tags: [.health, .career]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "health", strength: 16)
+        case .sleepLikeItMatters, .improveSleep:
+            let mental = StaticInstantActionFlavor.resilienceScaled(state, grounded: 9, resilient: 7)
+            health.mentalWellness = (health.mentalWellness + mental).clamped(to: 0...100)
+            health.physicalWellness = (health.physicalWellness + 4).clamped(to: 0...100)
+            health.habits.stressManagement = (health.habits.stressManagement + 6).clamped(to: 0...100)
+            result.careerEffects = CareerEffects(
+                burnout: -StaticInstantActionFlavor.resilienceScaled(state, grounded: 6, resilient: 4),
+                schedulePressure: -4,
+                relationshipSpillover: -2
+            )
+            result.educationEffects = EducationEffects(attendancePressure: -3)
+            state.consequences.adjustPressure(domain: "health", delta: grounded ? -3 : -2)
+            StaticInstantActionFlavor.publishPulse(&state, domain: "health", strength: 20)
+            let sleepText = grounded
+                ? "The years of actually protecting sleep are still paying off. You felt it tonight."
+                : "You protected the night like strategy. Morning feels less like an ambush."
+            result.notes.append(DomainNote(title: "Sleep Reset", text: sleepText, tags: [.health, .education]))
+        case .coldExposureDrill:
+            health.physicalWellness = (health.physicalWellness + 5).clamped(to: 0...100)
+            health.mentalWellness = (health.mentalWellness + 4).clamped(to: 0...100)
+            health.habits.exercise = (health.habits.exercise + 4).clamped(to: 0...100)
+            health.habits.stressManagement = (health.habits.stressManagement + 3).clamped(to: 0...100)
+            var drillText = "The cold hit. You stayed. Something hardening in you felt useful."
+            if StaticInstantActionFlavor.dossierPhysical(state) {
+                drillText = "Your body remembered how to take punishment and translate it into edge."
+            }
+            if LifeShapeResolver.resolveOrPragmatic(from: state) == .drivenCurrent {
+                drillText += " The driven current you're riding made this feel almost automatic."
+            }
+            result.notes.append(DomainNote(title: "Discipline Drill", text: drillText, tags: [.health, .career]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "health", strength: 15)
         default:
+            state.player = player
+            state.healthProfile = health
             return result
         }
 
         player.health = ((health.physicalWellness * 2) + health.mentalWellness) / 3
         player.clampStats()
         health.clamp()
+        state.player = player
+        state.healthProfile = health
         return result
     }
 
@@ -2064,6 +2227,48 @@ struct HealthSystem {
                         title: "Proactive Step",
                         text: text,
                         tags: [.health]
+                    )
+                )
+            }
+
+        case .recurringTherapy, .improveSleep, .protectYourEnergy:
+            let lowMental = state.healthProfile.mentalWellness < 45
+            let bonus = lowMental ? 3 : 1
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + bonus).clamped(to: 0...100)
+            state.player.health = ((state.healthProfile.physicalWellness * 2) + state.healthProfile.mentalWellness) / 3
+            notes.append(
+                DomainNote(
+                    title: "Recovery Ripple",
+                    text: lowMental
+                        ? "The body registered the care immediately. You feel slightly less underwater."
+                        : "Maintenance mode still counts. The nervous system exhaled a little.",
+                    tags: [.health, .progress]
+                )
+            )
+
+        case .manageMeds:
+            if !state.healthProfile.activeConditions.isEmpty {
+                for i in state.healthProfile.activeConditions.indices {
+                    state.healthProfile.activeConditions[i].severity = max(1, state.healthProfile.activeConditions[i].severity - 3)
+                }
+                notes.append(
+                    DomainNote(
+                        title: "Symptoms Eased",
+                        text: "The regimen caught up with you. One flare feels a size smaller.",
+                        tags: [.health]
+                    )
+                )
+            }
+
+        case .bodyConditioning:
+            state.career.burnout = max(0, state.career.burnout - 2)
+            if state.specialCareer.track == .athlete {
+                state.specialCareer.athlete.durability = min(95, state.specialCareer.athlete.durability + 3)
+                notes.append(
+                    DomainNote(
+                        title: "Athlete Edge",
+                        text: "The extra work showed up in how the body moves. Performance paths feel sharper.",
+                        tags: [.health, .career]
                     )
                 )
             }

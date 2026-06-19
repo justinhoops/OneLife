@@ -59,6 +59,7 @@ struct FloatingDeltasOverlay: View {
         case .military: return "shield.fill"
         case .family: return "person.2.fill"
         case .identity: return "person.fill"
+        case .play: return "sparkles"
         }
     }
 }
@@ -428,6 +429,7 @@ struct BitLifeGameChrome: View {
     var onOpenFeed: () -> Void
     var onOpenJournal: () -> Void
     var safeAreaBottom: CGFloat
+    @Namespace private var dockPillNamespace
 
     private var canAct: Bool {
         vm.presentedCard == nil && vm.state.activeYearChapter == nil && !vm.state.isGameOver
@@ -467,8 +469,10 @@ struct BitLifeGameChrome: View {
             }
 
             if vm.shouldShowMomentumAgeUpTeach() {
-                MomentumAgeUpTeachRow(momentum: vm.state.instantMomentum)
-                    .accessibilityIdentifier("momentum-age-up-teach-row")
+                MomentumAgeUpTeachRow(momentum: vm.state.instantMomentum) {
+                    vm.markFirstMomentumAgeUpTeachSeen()
+                }
+                .accessibilityIdentifier("momentum-age-up-teach-row")
             }
 
             if !ageUpRiskSignals.isEmpty {
@@ -485,12 +489,14 @@ struct BitLifeGameChrome: View {
                 }
             }
 
-            HStack(spacing: 4) {
-                ForEach(GameViewModel.Tab.dockTabs) { tab in
-                    dockTabButton(tab)
-                }
-            }
-            .accessibilityIdentifier("bottom-domain-strip")
+            PillDockTabBar(
+                tabs: GameViewModel.Tab.dockTabs,
+                vm: vm,
+                namespace: dockPillNamespace,
+                label: { vm.dockLabel(for: $0) },
+                symbol: { vm.dockSymbol(for: $0) },
+                onSelect: { vm.selectDockTab($0) }
+            )
 
             DomainShortcutStrip(vm: vm, onOpenJournal: onOpenJournal)
 
@@ -541,34 +547,6 @@ struct BitLifeGameChrome: View {
         .padding(.bottom, max(safeAreaBottom, 6))
         .background(.ultraThinMaterial)
         .accessibilityIdentifier("bottom-game-bar")
-    }
-
-    @ViewBuilder
-    private func dockTabButton(_ tab: GameViewModel.Tab) -> some View {
-        let selected = vm.selectedTab == tab && !vm.showingHealthConsole
-        Button {
-            AppFeedback.impact(.light)
-            vm.showingHealthConsole = false
-            vm.selectedTab = tab
-        } label: {
-            VStack(spacing: 2) {
-                Image(systemName: vm.dockSymbol(for: tab))
-                    .font(.system(size: 13, weight: .bold))
-                Text(vm.dockLabel(for: tab))
-                    .font(.system(size: 8, weight: .heavy))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.85))
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(selected ? DesignSystem.Colors.accent : Color.primary.opacity(0.06))
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier(tab.uiTestTabIdentifier)
     }
 
     @ViewBuilder

@@ -543,6 +543,7 @@ struct FeedHomeTab: View {
     let signals: [SignalSummary]
     let summaryItems: [YearlyOutcomeItem]
     let urgencyItems: [PlannerInsight]
+    var secondaryUrgencyItems: [PlannerInsight] = []
 
     @State private var expandedPressureMap = false
     let nextDecisionTitle: String
@@ -574,14 +575,15 @@ struct FeedHomeTab: View {
                 title: "Pressure Map",
                 symbol: "exclamationmark.bubble.fill",
                 status: urgencyItems.first?.value ?? "Stable",
-                tone: urgencyItems.contains(where: { $0.tone == .warning }) ? .warning : .neutral,
+                tone: (urgencyItems + secondaryUrgencyItems).contains(where: { $0.tone == .warning }) ? .warning : .neutral,
                 collapsible: compactMode,
-                startsCollapsed: false
+                startsCollapsed: compactMode
             ) {
                 VStack(alignment: .leading, spacing: 10) {
+                    let allPressures = urgencyItems + secondaryUrgencyItems
                     let visible = compactMode && !expandedPressureMap
-                        ? Array(urgencyItems.prefix(2))
-                        : urgencyItems
+                        ? Array(allPressures.prefix(3))
+                        : allPressures
                     ForEach(visible) { item in
                         HStack(spacing: 10) {
                             Circle()
@@ -596,8 +598,8 @@ struct FeedHomeTab: View {
                                 .multilineTextAlignment(.trailing)
                         }
                     }
-                    if compactMode, urgencyItems.count > 2 {
-                        Button(expandedPressureMap ? "Show fewer" : "Show all pressures") {
+                    if compactMode, allPressures.count > 3 {
+                        Button(expandedPressureMap ? "Show top 3" : "More Pressures (\(allPressures.count - 3))") {
                             withAnimation { expandedPressureMap.toggle() }
                         }
                         .font(.caption.weight(.bold))
@@ -710,6 +712,7 @@ struct CompactInteractionOverlay: View {
     var onSelectStance: ((YearlyStanceID) -> Void)? = nil
     var onPrepareForecast: (() -> Void)? = nil
     var onDismissMomentumCarry: (() -> Void)? = nil
+    var onDismissFirstAgeUpReflection: (() -> Void)? = nil
     let onAdvance: () -> Void
     let onPick: (EventChoice) -> Void
     let onCrisisPick: (CrisisChoice) -> Void
@@ -883,20 +886,54 @@ struct CompactInteractionOverlay: View {
     }
 
     private func summaryView(_ summary: YearlyOutcomeSummary) -> some View {
-        // Phase 6–7: Glance-first hierarchy — top 3 beats, rest behind disclosure
+        // Glance-first year review: 3-5 beats, net row, major shifts, then back to play.
         let resilienceAccent = state.resilience == .grounded ? Color.orange.opacity(0.35) : Color.green.opacity(0.28)
         let hadHardYear = summary.mainTradeoff?.tone == .warning || summary.nextYearPressure?.tone == .warning
-        let recentFocus = state.yearlyStance.recentStances.prefix(2).map { $0.title }.joined(separator: " → ")
         let causeItems = causeTrailItems(from: summary)
+        let primaryBeats = primaryYearReviewItems(from: summary)
+        let majorShifts = majorYearReviewItems(from: summary)
+        let resilienceCtx = CohesionResilienceContext(
+            hadRecovery: (summary.headlines + summary.spillovers).contains(where: { $0.tone == .positive && ($0.domain == .health || $0.title.contains("Fighting Back")) }),
+            momentumCarried: state.lastYearInstantMomentumCarry?.overallStrength ?? 0 >= 12,
+            harshYear: hadHardYear
+        )
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Age \(summary.age)")
+                Text("Year In Review")
                     .font(.caption.weight(.black))
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
                 Spacer()
-                Text("Year In Brief")
+                Text("Age \(summary.age)")
                     .font(.headline.weight(.bold))
+            }
+
+            netYearChangeRow(summary)
+
+            if !state.discoverability.seenFirstAgeUpReflection {
+                compactItem(
+                    label: "How It Works",
+                    title: "Instant + Yearly",
+                    detail: TwoSpeedTeaching.firstAgeUpReflection + " " + TwoSpeedTeaching.lifeShapeCarryPhrase,
+                    tone: .neutral
+                )
+                .accessibilityIdentifier("year-summary-first-age-up-reflection")
+                .onAppear {
+                    onDismissFirstAgeUpReflection?()
+                }
+            }
+
+            ForEach(primaryBeats.prefix(5)) { item in
+                compactItem(label: "Key Event", title: item.title, detail: item.detail, tone: PlannerTone(item.tone))
+            }
+
+            if !majorShifts.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(majorShifts.prefix(3)) { item in
+                        majorShiftChip(item)
+                    }
+                }
+                .accessibilityIdentifier("year-summary-major-shifts")
             }
 
             if !state.discoverability.seenInstantMomentumYearSummary,
@@ -928,18 +965,6 @@ struct CompactInteractionOverlay: View {
                 .accessibilityIdentifier("year-summary-actionable-lesson")
             }
 
-            if let nextYearPressure = summary.nextYearPressure {
-                compactItem(label: "Carries Over", title: nextYearPressure.title, detail: nextYearPressure.detail, tone: PlannerTone(nextYearPressure.tone))
-            } else if let momentum = summary.momentum {
-                compactItem(label: "Momentum", title: momentum.title, detail: momentum.detail, tone: PlannerTone(momentum.tone))
-            }
-
-            if let yearlyStanceOutcome = summary.yearlyStanceOutcome {
-                compactItem(label: "Goal", title: yearlyStanceOutcome.title, detail: yearlyStanceOutcome.detail, tone: PlannerTone(yearlyStanceOutcome.tone))
-            } else if let focusOutcome = summary.focusOutcome {
-                compactItem(label: "Pattern", title: focusOutcome.title, detail: focusOutcome.detail, tone: PlannerTone(focusOutcome.tone))
-            }
-
             DisclosureGroup(isExpanded: $yearSummaryExpanded) {
                 VStack(alignment: .leading, spacing: 8) {
                     if let goal = state.softRunGoal {
@@ -954,21 +979,36 @@ struct CompactInteractionOverlay: View {
                         .accessibilityIdentifier("year-summary-soft-goal")
                     }
 
-                    if let focusOutcome = summary.focusOutcome, summary.yearlyStanceOutcome != nil {
+                    if let resilienceLine = CohesionNarrative.resilienceEcho(
+                        state: state,
+                        surface: .yearSummary,
+                        context: resilienceCtx
+                    ) {
+                        compactItem(
+                            label: "Life Feel",
+                            title: state.resilience.displayName,
+                            detail: resilienceLine,
+                            tone: state.resilience == .grounded ? .warning : .positive
+                        )
+                        .accessibilityIdentifier("year-summary-resilience-line")
+                    }
+
+                    if let shapeLine = CohesionNarrative.lifeShapeEcho(state: state, surface: .yearSummary) {
+                        compactItem(label: "Shape", title: "Life Shape", detail: shapeLine, tone: .neutral)
+                            .accessibilityIdentifier("year-summary-shape-line")
+                    }
+
+                    if let recognitionLine = CohesionNarrative.recognitionEcho(state: state, surface: .yearSummary) {
+                        compactItem(label: "Recognition", title: "Fame Web", detail: recognitionLine, tone: state.fame.isInfamous ? .warning : .positive)
+                            .accessibilityIdentifier("year-summary-recognition-line")
+                    }
+
+                    if let focusOutcome = summary.focusOutcome, !primaryBeats.contains(where: { $0.id == focusOutcome.id }) {
                         compactItem(label: "Pattern", title: focusOutcome.title, detail: focusOutcome.detail, tone: PlannerTone(focusOutcome.tone))
                     }
 
                     if let mainTradeoff = summary.mainTradeoff {
                         compactItem(label: "Cost", title: mainTradeoff.title, detail: mainTradeoff.detail, tone: PlannerTone(mainTradeoff.tone))
-                    }
-
-                    if !recentFocus.isEmpty || state.yearlyStance.lastCompletedStance != nil {
-                        compactItem(
-                            label: "Shape",
-                            title: state.yearlyStance.lastCompletedStance?.title ?? "Life shape",
-                            detail: recentFocus.isEmpty ? "Your focus residue is shaping quiet years." : "Recent: \(recentFocus)",
-                            tone: .neutral
-                        )
                     }
 
                     if !causeItems.isEmpty {
@@ -985,7 +1025,7 @@ struct CompactInteractionOverlay: View {
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
             }
 
-            Button("Continue", action: onAdvance)
+            Button("Continue to age \(state.player.age)", action: onAdvance)
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .accessibilityIdentifier("year-summary-continue-button")
@@ -1008,6 +1048,95 @@ struct CompactInteractionOverlay: View {
         .padding(.vertical, -2)
     }
 
+    private func primaryYearReviewItems(from summary: YearlyOutcomeSummary) -> [YearlyOutcomeItem] {
+        let candidates = [
+            summary.checkpoint,
+            summary.yearlyStanceOutcome,
+            summary.focusOutcome,
+            summary.mainTradeoff,
+            summary.nextYearPressure,
+            summary.topProblem,
+            summary.topOpportunity,
+            summary.momentum
+        ].compactMap { $0 } + summary.headlines + summary.spillovers
+
+        var seen: Set<String> = []
+        return candidates
+            .sorted { lhs, rhs in abs(lhs.impactScore) > abs(rhs.impactScore) }
+            .filter { seen.insert($0.id).inserted }
+            .prefix(5)
+            .map { $0 }
+    }
+
+    private func majorYearReviewItems(from summary: YearlyOutcomeSummary) -> [YearlyOutcomeItem] {
+        primaryYearReviewItems(from: summary)
+            .filter { abs($0.impactScore) >= 8 || $0.tone == .warning }
+    }
+
+    private func netYearChangeRow(_ summary: YearlyOutcomeSummary) -> some View {
+        HStack(spacing: 8) {
+            yearChangeMetric(
+                title: "Cash",
+                value: signedMoney(state.finance.lastYearBalanceDelta),
+                tone: state.finance.lastYearBalanceDelta >= 0 ? .positive : .warning,
+                icon: state.finance.lastYearBalanceDelta >= 0 ? "arrow.up.circle.fill" : "arrow.down.circle.fill"
+            )
+            yearChangeMetric(
+                title: "Health",
+                value: "\(state.player.health)%",
+                tone: state.player.health >= 55 ? .positive : .warning,
+                icon: "heart.fill"
+            )
+            yearChangeMetric(
+                title: "Impact",
+                value: "\(summary.headlines.count + summary.spillovers.count)",
+                tone: summary.spillovers.contains(where: { $0.tone == .warning }) ? .warning : .neutral,
+                icon: "waveform.path.ecg"
+            )
+        }
+        .accessibilityIdentifier("year-summary-net-changes")
+    }
+
+    private func yearChangeMetric(title: String, value: String, tone: PlannerTone, icon: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.caption2.weight(.black))
+                .foregroundStyle(tone.color)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title.uppercased())
+                    .font(.system(size: 8, weight: .heavy))
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                Text(value)
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(tone.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(tone.fill)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func majorShiftChip(_ item: YearlyOutcomeItem) -> some View {
+        let tone = PlannerTone(item.tone)
+        return Label(item.title, systemImage: item.tone == .warning ? "exclamationmark.triangle.fill" : "sparkles")
+            .font(.caption2.weight(.black))
+            .foregroundStyle(tone.color)
+            .lineLimit(1)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity)
+            .background(tone.fill)
+            .clipShape(Capsule())
+    }
+
+    private func signedMoney(_ value: Int) -> String {
+        if value == 0 { return "$0" }
+        return "\(value > 0 ? "+" : "-")$\(abs(value))"
+    }
+
     private func forecastView(_ forecast: YearForecastCard) -> some View {
         let resilienceAccent = state.resilience == .grounded ? Color.orange.opacity(0.35) : Color.green.opacity(0.28)
         let pages = forecastStakesPages(forecast: forecast, stakes: stakes)
@@ -1020,9 +1149,15 @@ struct CompactInteractionOverlay: View {
                         .font(.caption.weight(.black))
                         .foregroundStyle(DesignSystem.Colors.textSecondary)
                     Spacer()
-                    Text(state.resilience.shortLabel)
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(state.resilience == .grounded ? .orange : .green)
+                    HStack(spacing: 3) {
+                        Image(systemName: state.resilience == .grounded ? "shield.fill" : "flame.fill")
+                            .font(.caption2.weight(.bold))
+                        Text(state.resilience.persistentPlayLabel)
+                            .font(.caption2.weight(.bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .foregroundStyle(state.resilience == .grounded ? .orange : .green)
                 }
 
                 Text(forecast.title)
@@ -1031,7 +1166,53 @@ struct CompactInteractionOverlay: View {
                 Text(forecast.subtitle)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
-                    .lineLimit(3)
+                    .lineLimit(4)
+
+                if let resilienceLine = CohesionNarrative.resilienceEcho(
+                    state: state,
+                    surface: .forecast,
+                    context: CohesionResilienceContext(momentumCarried: state.instantMomentum.isVisible)
+                ) {
+                    Text(resilienceLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(state.resilience == .grounded ? Color.orange.opacity(0.9) : Color.green.opacity(0.9))
+                        .accessibilityIdentifier("forecast-resilience-line")
+                }
+
+                if let shapeLine = CohesionNarrative.lifeShapeEcho(state: state, surface: .forecast) {
+                    Text(shapeLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("forecast-shape-line")
+                }
+
+                if let recognitionLine = CohesionNarrative.recognitionEcho(state: state, surface: .forecast) {
+                    Text(recognitionLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(state.fame.isInfamous ? Color.orange.opacity(0.9) : Color.secondary)
+                        .accessibilityIdentifier("forecast-recognition-line")
+                }
+
+                if let familyLine = CohesionNarrative.adultChildEcho(state: state, surface: .forecast) {
+                    Text(familyLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("forecast-family-line")
+                }
+
+                if let athleteLine = CohesionNarrative.athletePillarEcho(state: state, surface: .forecast) {
+                    Text(athleteLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("forecast-athlete-line")
+                }
+
+                if let collectionLine = CohesionNarrative.collectionEcho(state: state, surface: .forecast) {
+                    Text(collectionLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("forecast-collection-line")
+                }
 
                 if let goal = state.softRunGoal, goal.setAtAge == state.player.age || goal.status == .inProgress {
                     compactItem(
@@ -1762,6 +1943,7 @@ struct YearlyConsequenceStrip: View {
 
 struct MomentumAgeUpTeachRow: View {
     let momentum: InstantMomentumState
+    var onDismiss: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -1787,6 +1969,11 @@ struct MomentumAgeUpTeachRow: View {
                 .foregroundStyle(DesignSystem.Colors.textSecondary)
         }
         .padding(.horizontal, 4)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                onDismiss?()
+            }
+        }
     }
 
     private func momentumDomainLabel(_ domain: ActionDomain) -> String {

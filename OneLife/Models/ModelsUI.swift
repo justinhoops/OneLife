@@ -77,7 +77,7 @@ struct DesignSystem {
 }
 
 // MARK: - PlannerTone (Relocated from ContentView)
-enum PlannerTone: Equatable {
+enum PlannerTone: Codable, Equatable {
     case positive
     case neutral
     case warning
@@ -107,4 +107,3 @@ extension PlannerTone {
         }
     }
 }
-

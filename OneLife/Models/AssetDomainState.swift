@@ -371,6 +371,8 @@ struct AssetState: Codable, Equatable {
 
     // Assets2: Career-specific Signature Assets (high-status, path-unique holdings)
     var signatureAssets: [SignatureAsset] = []
+    /// Last piece spotlighted via Flex Collection instant action.
+    var lastShowcasedPieceName: String? = nil
 
     private enum CodingKeys: String, CodingKey {
         case homeownershipTrackActive
@@ -383,6 +385,7 @@ struct AssetState: Codable, Equatable {
         case marine
         case ownsHome // for legacy decoding
         case signatureAssets
+        case lastShowcasedPieceName
     }
 
     init() {}
@@ -410,6 +413,7 @@ struct AssetState: Codable, Equatable {
         aviation = try container.decodeIfPresent([AviationAsset].self, forKey: .aviation) ?? []
         marine = try container.decodeIfPresent([MarineAsset].self, forKey: .marine) ?? []
         signatureAssets = try container.decodeIfPresent([SignatureAsset].self, forKey: .signatureAssets) ?? []
+        lastShowcasedPieceName = try container.decodeIfPresent(String.self, forKey: .lastShowcasedPieceName)
 
         let legacyOwnsHome = try container.decodeIfPresent(Bool.self, forKey: .ownsHome) ?? false
         if primaryResidence == nil, legacyOwnsHome {
@@ -431,6 +435,7 @@ struct AssetState: Codable, Equatable {
         try container.encode(aviation, forKey: .aviation)
         try container.encode(marine, forKey: .marine)
         try container.encode(signatureAssets, forKey: .signatureAssets)
+        try container.encodeIfPresent(lastShowcasedPieceName, forKey: .lastShowcasedPieceName)
     }
 
     var ownsHome: Bool {
@@ -482,6 +487,11 @@ struct AssetState: Codable, Equatable {
         }
         
         return max(0, min(100, score))
+    }
+
+    /// Lifestyle score including collector-set bonuses (capped at 100).
+    var effectiveLifestyleScore: Int {
+        min(100, lifestyleScore + AssetCatalog.collectionBonus(in: self))
     }
 
     mutating func normalize() {

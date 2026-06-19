@@ -124,6 +124,8 @@ final class GameViewModel: ObservableObject {
     @Published var showingSettings: Bool = false
     @Published var showingDomainShortcutEditor: Bool = false
     @Published var domainShortcutPins: [DomainShortcutPin] = []
+    /// Domain sub-navigation (Assets sub-tabs, Careers sub-tabs, etc.)
+    @Published var consoleNavigation = ConsoleNavigationState()
     /// Health console overlay (BitLife "Mind & Body" — not a main dock tab).
     @Published var showingHealthConsole: Bool = false
     @Published var autoLifePace: AutoLifePace = .guided
@@ -143,6 +145,7 @@ final class GameViewModel: ObservableObject {
 
     func clearInstantReactions() {
         recentInstantReactions = []
+        momentumStripSnapshot = buildMomentumStripSnapshot()
     }
 
     /// Spawns floating delta visuals for instant actions (Phase 1 frictionless feedback polish).
@@ -253,6 +256,13 @@ final class GameViewModel: ObservableObject {
     }
     @Published private(set) var historyDigest: HistoryDigest = .empty
     @Published private(set) var lastTimingSnapshot: SimulationTimingSnapshot?
+    @Published private(set) var consoleSnapshot: LifeConsoleSnapshot = .empty
+    @Published private(set) var momentumStripSnapshot: MomentumStripSnapshot = .empty
+    @Published private(set) var nowLaneSnapshotCache: NowLaneSnapshot = .empty
+    @Published private(set) var cachedAdultChildrenGlance: [FamilyChildGlanceItem] = []
+    @Published private(set) var cachedFamilyHouseholdSnapshot: FamilyHouseholdSnapshot = .empty
+    @Published private(set) var cachedAtHomeChildrenGlance: [FamilyAtHomeGlanceItem] = []
+    @Published private(set) var cachedConsolePresentation: ConsolePresentationSnapshot = .empty
     private let orchestrator = LifeSimulationOrchestrator()
     private let activitySystem = ActivitySystem()
     private let persistence: PersistenceCoordinator
@@ -265,10 +275,14 @@ final class GameViewModel: ObservableObject {
     private var didHydrateRuntimeCaches = false
     private var persistenceLoadTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
+    private var saveDebounceTask: Task<Void, Never>?
     private var pendingSaveState: GameState?
     private var pendingSaveMeta: MetaState?
+    private static let quickActionSaveDebounceNanoseconds: UInt64 = 400_000_000
     private var lastChangeInsightSummaryAge: Int?
     private var lastDerivedStateFingerprint: UInt64 = 0
+    private var lastPresentationFingerprint: UInt64 = 0
+    private var deferredHeavyConsoleRefreshPending = false
 
     private static var shouldLoadPersistenceSynchronously: Bool {
         ProcessInfo.processInfo.environment[RuntimeOverrideKeys.testSaveDirectory] != nil
@@ -347,15 +361,24 @@ final class GameViewModel: ObservableObject {
 
     deinit {
         persistenceLoadTask?.cancel()
+        saveDebounceTask?.cancel()
         saveTask?.cancel()
     }
 
-    /// Test hook: waits for any in-flight async save to finish.
+    /// Test hook: waits for debounced + in-flight async saves to finish.
     func flushPendingSave() async {
+        cancelSaveDebounce()
+        if pendingSaveState != nil {
+            beginSaveTaskIfNeeded()
+        }
         while saveTask != nil {
             await Task.yield()
         }
     }
+
+    #if DEBUG
+    var isSaveDebounceActive: Bool { saveDebounceTask != nil }
+    #endif
 
     func handleMemoryPressure() {
         orchestrator.dropTransientCachesForMemoryPressure()
@@ -400,6 +423,7 @@ final class GameViewModel: ObservableObject {
             if state.startupState == .active {
                 hydrateRuntimeCachesIfNeeded()
             }
+            refreshDerivedState()
         case .noSave:
             charCreationStep = .name
         case .failed(let primaryError, let errors, let timingSnapshot):
@@ -479,9 +503,6 @@ final class GameViewModel: ObservableObject {
         let hadVisibleMomentum = state.instantMomentum.isVisible
         if hadVisibleMomentum {
             state.lastYearInstantMomentumCarry = InstantMomentumCarrySnapshot(from: state.instantMomentum, age: state.player.age)
-            if !state.discoverability.seenFirstMomentumAgeUpTeach {
-                state.discoverability.markFirstMomentumAgeUpTeachSeen()
-            }
         }
 
         let outcome = orchestrator.beginYearChapter(state: &state)
@@ -495,7 +516,7 @@ final class GameViewModel: ObservableObject {
         refreshSoftRunGoal()
         maintainDiscoverabilityAndResilienceJournal()
         present(cards: outcome.cards)
-        refreshDerivedState()
+        refreshDerivedStateAfterCardTransition()
         refreshSoftRunGoal()
         save()
     }
@@ -520,6 +541,12 @@ final class GameViewModel: ObservableObject {
         guard !state.discoverability.seenFirstLongPressTeach else { return }
         state.discoverability.markFirstLongPressTeachSeen()
         markMVPOnboardingHoldBeatIfNeeded()
+        chrome.setActivityPulse(ActivityPulse(
+            title: "Preview Unlocked",
+            detail: DiscoverabilityTeaching.longPressDiscoveryPulseDetail,
+            tone: .positive
+        ))
+        showTransientActivityPulse()
         save()
     }
 
@@ -544,6 +571,47 @@ final class GameViewModel: ObservableObject {
         state.discoverability.markInstantMomentumYearSummarySeen()
         state.lastYearInstantMomentumCarry = nil
         save()
+    }
+
+    func shouldAutoExpandMomentumHint() -> Bool {
+        state.discoverability.shouldAutoExpandMomentumHint(momentumVisible: state.instantMomentum.isVisible)
+    }
+
+    func markMomentumStripIntroSeen() {
+        guard !state.discoverability.seenMomentumStripIntro else { return }
+        state.discoverability.markMomentumStripIntroSeen()
+        momentumStripSnapshot = buildMomentumStripSnapshot()
+        lastDerivedStateFingerprint = derivedStateFingerprint()
+        save()
+    }
+
+    func markLifeShapeTeachSeen() {
+        guard !state.discoverability.seenLifeShapeTeach else { return }
+        state.discoverability.markLifeShapeTeachSeen()
+        momentumStripSnapshot = buildMomentumStripSnapshot()
+        lastDerivedStateFingerprint = derivedStateFingerprint()
+        save()
+    }
+
+    func markDossierStanceCoachSeen() {
+        guard !state.discoverability.seenDossierStanceCoach else { return }
+        state.discoverability.markDossierStanceCoachSeen()
+        save()
+    }
+
+    func markFirstAgeUpReflectionSeen() {
+        guard !state.discoverability.seenFirstAgeUpReflection else { return }
+        state.discoverability.markFirstAgeUpReflectionSeen()
+        save()
+    }
+
+    func pendingDiscoverabilityCoachLine() -> String? {
+        state.discoverability.pendingCoachLine(
+            age: state.player.age,
+            momentumVisible: state.instantMomentum.isVisible,
+            lifeShapeNonEmpty: !currentLifeShape.isEmpty,
+            earlyDossierActive: state.childhoodDossier != nil
+        )
     }
 
     func firstQuickActionTeachLine() -> String? {
@@ -576,6 +644,19 @@ final class GameViewModel: ObservableObject {
     func markAdultChildrenCoachSeen() {
         guard !state.discoverability.seenAdultChildrenCoach else { return }
         state.discoverability.markAdultChildrenSeen()
+        save()
+    }
+
+    func markFamilyHouseholdBannerSeen() {
+        guard state.discoverability.pendingFamilyHouseholdBanner != nil else { return }
+        state.discoverability.clearFamilyHouseholdBanner()
+        refreshDerivedState()
+        save()
+    }
+
+    func markFirstParentingActionCoachSeen() {
+        guard !state.discoverability.seenFirstParentingActionCoach else { return }
+        state.discoverability.markFirstParentingActionCoachSeen()
         save()
     }
 
@@ -635,6 +716,8 @@ final class GameViewModel: ObservableObject {
             return .repairPeople
         case .identity:
             return .stabilizeMoney
+        case .play:
+            return .protectHealth
         }
     }
 
@@ -688,13 +771,13 @@ final class GameViewModel: ObservableObject {
                 latestYearSummary = outcome.summary ?? latestYearSummary
                 maintainDiscoverabilityAndResilienceJournal()
                 present(cards: outcome.cards)
-                refreshDerivedState()
+                refreshDerivedStateAfterCardTransition()
                 save()
             } else {
                 orchestrator.apply(choice: choice, event: ev, state: &state)
                 advancePresentedCard()
                 orchestrator.syncActiveYearChapterProgress(state: &state, nextCard: presentedCard)
-                refreshDerivedState()
+                refreshDerivedStateAfterCardTransition()
                 save()
             }
             chrome.isResolvingInteraction = false
@@ -723,15 +806,17 @@ final class GameViewModel: ObservableObject {
             }
             autopilotYearsAdvanced += max(0, state.player.age - before.player.age)
             updateFirstLifeOnboarding(after: outcome)
-            refreshDerivedState()
+            refreshDerivedState(deferHeavyPanels: true)
 
             if shouldStopAutopilot(before: before, outcome: outcome) {
                 present(cards: outcome.cards)
+                refreshDerivedStateAfterCardTransition()
                 save()
                 return
             }
         }
 
+        refreshDerivedState()
         chrome.setActivityPulse(ActivityPulse(
             title: "Autopilot Paused",
             detail: autopilotYearsAdvanced <= 1 ? "One quiet year resolved in the background." : "\(autopilotYearsAdvanced) quiet years resolved in the background.",
@@ -847,7 +932,7 @@ final class GameViewModel: ObservableObject {
                     restoreInteractionOriginIfNeeded()
                 }
             }
-            refreshDerivedState()
+            refreshDerivedStateAfterCardTransition()
             save()
             clearPopupStateIfNeeded()
             chrome.isResolvingInteraction = false
@@ -883,7 +968,7 @@ final class GameViewModel: ObservableObject {
             if presentedCard == nil {
                 restoreInteractionOriginIfNeeded()
             }
-            refreshDerivedState()
+            refreshDerivedStateAfterCardTransition()
             save()
             chrome.isResolvingInteraction = false
             chrome.resolvingInteractionContext = nil
@@ -920,7 +1005,7 @@ final class GameViewModel: ObservableObject {
                     restoreInteractionOriginIfNeeded()
                 }
             }
-            refreshDerivedState()
+            refreshDerivedStateAfterCardTransition()
             save()
             clearPopupStateIfNeeded()
             chrome.isResolvingInteraction = false
@@ -1181,6 +1266,11 @@ final class GameViewModel: ObservableObject {
 
         var preview = buildPreviewState(from: draft)
 
+        // Phase 2: Wire starter assets based on background (from overhaul)
+        if let bg = draft.selectedBackground {
+            applyStarterAssets(to: &preview, for: bg)
+        }
+
         let trimmedName = draft.pendingName.trimmingCharacters(in: .whitespaces)
         preview.player.name = trimmedName.isEmpty ? randomCharacterName() : trimmedName
         preview.finance.currentRegionPolicyID = draft.pendingRegionID
@@ -1236,9 +1326,86 @@ final class GameViewModel: ObservableObject {
         save()
     }
 
+    // Phase 2: Apply starter assets from background (ties creation to assets per overhaul plan)
+    private func applyStarterAssets(to preview: inout GameState, for bg: Background) {
+        let starters = CharacterCreationViewModel().generateStarterAssets(for: bg)
+        for type in starters {
+            switch type {
+            case "used_car", "old_bike", "reliable_truck", "beat_up_car", "work_truck":
+                let vehicle = Vehicle(
+                    name: type.replacingOccurrences(of: "_", with: " ").capitalized,
+                    type: .sedan,
+                    isLegal: true,
+                    baseSpeed: 60,
+                    baseHandling: 50
+                )
+                preview.assets.vehicles.append(vehicle)
+            case "small_investment_portfolio", "family_savings", "basic_savings":
+                preview.finance.cashOnHand += 2000
+            case "laptop", "books_collection", "family_heirloom", "military_memento", "street_gear", "tools_set":
+                let jewelry = Jewelry(
+                    name: type.replacingOccurrences(of: "_", with: " ").capitalized,
+                    type: .pendant,
+                    rarity: .common,
+                    cost: 500,
+                    resaleValue: 300
+                )
+                preview.assets.jewelry.append(jewelry)
+            default:
+                preview.finance.cashOnHand += 500
+            }
+        }
+        if !starters.isEmpty {
+            preview.history.insert(
+                HistoryEntry(age: preview.player.age, title: "Starter Assets", text: "Received from background: \(starters.joined(separator: ", ")). Maintain them to preserve value.", tags: [.finance]),
+                at: 0
+            )
+        }
+    }
+
     func save() {
+        cancelSaveDebounce()
+        stageSaveSnapshot()
+        beginSaveTaskIfNeeded()
+    }
+
+    /// Tier C: Coalesce disk writes during rapid instant/quick-action chains.
+    /// UI caches still refresh immediately via `refreshDerivedState()`.
+    func scheduleDebouncedSave() {
+        if Self.shouldSavePersistenceSynchronously {
+            save()
+            return
+        }
+        stageSaveSnapshot()
+        saveDebounceTask?.cancel()
+        saveDebounceTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if !Task.isCancelled {
+                    self.saveDebounceTask = nil
+                }
+            }
+            do {
+                try await Task.sleep(nanoseconds: Self.quickActionSaveDebounceNanoseconds)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            self.beginSaveTaskIfNeeded()
+        }
+    }
+
+    private func cancelSaveDebounce() {
+        saveDebounceTask?.cancel()
+        saveDebounceTask = nil
+    }
+
+    private func stageSaveSnapshot() {
         pendingSaveState = state
         pendingSaveMeta = metaState
+    }
+
+    private func beginSaveTaskIfNeeded() {
         guard saveTask == nil else { return }
         saveTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -1530,12 +1697,92 @@ final class GameViewModel: ObservableObject {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    struct GlanceAuditChip: Identifiable, Equatable {
-        let id: String
-        let icon: String
-        let title: String
-        let value: String
+    func recognitionGlanceItem() -> RecognitionGlanceItem? {
+        let publicIdentity = PublicIdentitySystem().snapshot(for: state)
+        let fame = state.fame
+        guard publicIdentity.score >= 40 || fame.recognition >= 40 || fame.culturalFame >= 45 || fame.notoriety >= 45 else { return nil }
+
+        let subtitle = fame.knownFor.first ?? publicIdentity.consequences.first ?? publicIdentity.detail
+
+        return RecognitionGlanceItem(
+            label: publicIdentity.label,
+            score: publicIdentity.score,
+            subtitle: subtitle,
+            tone: publicIdentity.tone,
+            destination: .lifeLegacy
+        )
+    }
+
+    func collectionGlanceItem() -> CollectionGlanceItem? {
+        guard let identity = AssetCatalog.collectionIdentity(from: state.assets) else { return nil }
+
         let tone: PlannerTone
+        if identity.completedSets.count >= 2 {
+            tone = .positive
+        } else if identity.lifestyleScore >= 60 {
+            tone = .positive
+        } else {
+            tone = .neutral
+        }
+
+        return CollectionGlanceItem(
+            label: identity.label,
+            score: identity.lifestyleScore,
+            subtitle: identity.subtitle,
+            tone: tone,
+            completedSetCount: identity.completedSets.count
+        )
+    }
+
+    func openAssetsPlanner(subTab: AssetsSubTab = .overview) {
+        consoleNavigation.assetsSubTab = subTab
+        selectedTab = .assets
+    }
+
+    func openCareersPlanner(subTab: CareersSubTab = .overview) {
+        consoleNavigation.careersSubTab = subTab
+        selectedTab = .occupation
+    }
+
+    /// Life escape hatch + dock selection. Re-tapping Life resets sub-navigation.
+    func selectDockTab(_ tab: Tab) {
+        if tab == .home {
+            if selectedTab == .home {
+                consoleNavigation.resetToRoot()
+                AppFeedback.impact(.medium)
+            } else {
+                consoleNavigation.resetToRoot()
+                AppFeedback.impact(.light)
+            }
+        } else {
+            AppFeedback.impact(.light)
+        }
+        showingHealthConsole = false
+        selectedTab = tab
+    }
+
+    /// Console/debug navigation commands. See Docs/NAVIGATION-AND-TAB-PATTERN.md
+    @discardableResult
+    func handleConsoleNavigationCommand(_ raw: String) -> String? {
+        guard var command = ConsoleNavigationCoordinator.parse(command: raw) else { return nil }
+        command.apply(to: &consoleNavigation)
+        if let targetTab = command.targetTab {
+            selectedTab = targetTab
+            showingHealthConsole = false
+        }
+        return command.message
+    }
+
+    func compactPressureItems(limit: Int = 3) -> [PlannerInsight] {
+        Array(feedUrgencyItems().prefix(limit))
+    }
+
+    func secondaryPressureItems(after: Int = 3, limit: Int? = nil) -> [PlannerInsight] {
+        let items = Array(feedUrgencyItems().dropFirst(after))
+        if let limit {
+            return Array(items.prefix(limit))
+        }
+        return items
     }
 
     /// Top pressures/states for the 2-second audit — warnings first, icon-ready.
@@ -1551,7 +1798,9 @@ final class GameViewModel: ObservableObject {
                 )
             }
 
-        if state.fame.culturalFame >= 50,
+        let recognition = recognitionGlanceItem()
+        if recognition == nil,
+           state.fame.culturalFame >= 50,
            !chips.contains(where: { $0.id == "Fame" }) {
             chips.append(GlanceAuditChip(
                 id: "Fame",
@@ -1562,12 +1811,13 @@ final class GameViewModel: ObservableObject {
             ))
         }
         if state.assets.lifestyleScore >= 55,
+           collectionGlanceItem() == nil,
            !chips.contains(where: { $0.id == "Lifestyle" }) {
             chips.append(GlanceAuditChip(
                 id: "Lifestyle",
                 icon: "crown.fill",
                 title: "Lifestyle",
-                value: "\(state.assets.lifestyleScore)",
+                value: "\(state.assets.effectiveLifestyleScore)",
                 tone: .positive
             ))
         }
@@ -1592,15 +1842,45 @@ final class GameViewModel: ObservableObject {
         return "exclamationmark.triangle.fill"
     }
 
-    struct AdultChildGlanceItem: Identifiable, Equatable {
-        let id: String
-        let name: String
-        let age: Int
-        let outcomeLabel: String
+    func adultChildrenGlanceItems(limit: Int = 3) -> [FamilyChildGlanceItem] {
+        Array(cachedAdultChildrenGlance.prefix(limit))
     }
 
-    func adultChildrenGlanceItems(limit: Int = 3) -> [AdultChildGlanceItem] {
-        state.family.children
+    func adultChildrenCompactSummary(limit: Int = 3) -> AdultChildrenCompactSummary {
+        let preview = Array(cachedAdultChildrenGlance.prefix(limit))
+        let overflow = max(0, cachedAdultChildrenGlance.count - preview.count)
+        let summary: String?
+        if cachedAdultChildrenGlance.isEmpty {
+            summary = nil
+        } else if overflow > 0 {
+            summary = "\(cachedAdultChildrenGlance.count) grown · \(overflow) more"
+        } else {
+            summary = "\(cachedAdultChildrenGlance.count) grown"
+        }
+        return AdultChildrenCompactSummary(
+            previewItems: preview,
+            overflowCount: overflow,
+            summaryLine: summary
+        )
+    }
+
+    func atHomeChildrenGlanceItems(limit: Int = 2) -> [FamilyAtHomeGlanceItem] {
+        Array(cachedAtHomeChildrenGlance.prefix(limit))
+    }
+
+    func atHomeChildrenGlanceOverflow(beyond limit: Int = 2) -> Int {
+        max(0, state.family.children.filter(\.livesAtHome).count - limit)
+    }
+
+    func shouldShowFamilyTraySubtitle() -> Bool {
+        guard state.family.childCount > 0 else { return false }
+        if !state.discoverability.seenFirstParentingActionCoach { return true }
+        let youngestAtHome = state.family.children.filter(\.livesAtHome).map(\.age).min() ?? 99
+        return youngestAtHome < 12
+    }
+
+    private func rebuildAdultChildrenGlanceCache(limit: Int = 8) {
+        cachedAdultChildrenGlance = state.family.children
             .filter { !$0.livesAtHome }
             .prefix(limit)
             .map { child in
@@ -1613,13 +1893,88 @@ final class GameViewModel: ObservableObject {
                 case .distant: label = "Distant"
                 case .none: label = "Adult"
                 }
-                return AdultChildGlanceItem(
+                let profile = child.adultProfile
+                let story = profile?.keyStories.last ?? profile?.lifeVibe ?? ""
+                let sinceAge = child.leftHomeAtAge.map { "since age \($0)" } ?? "since childhood"
+                let continuity = "\(child.temperament.shortDescription.capitalized) \(sinceAge)"
+                return FamilyChildGlanceItem(
                     id: child.id.uuidString,
                     name: child.name,
                     age: child.age,
-                    outcomeLabel: label
+                    outcomeLabel: label,
+                    temperament: child.temperament.shortDescription,
+                    bond: child.bondWithPlayer,
+                    continuityHint: continuity,
+                    storyTease: story,
+                    relationshipQuality: profile?.relationshipQuality ?? child.bondWithPlayer
                 )
             }
+    }
+
+    private func rebuildAtHomeChildrenGlanceCache(limit: Int = 4) {
+        cachedAtHomeChildrenGlance = state.family.children
+            .filter(\.livesAtHome)
+            .sorted { $0.age < $1.age }
+            .prefix(limit)
+            .map { child in
+                FamilyAtHomeGlanceItem(
+                    id: child.id.uuidString,
+                    name: child.name,
+                    age: child.age,
+                    temperament: child.temperament.shortDescription,
+                    bond: child.bondWithPlayer,
+                    vibeLine: child.currentVibe
+                )
+            }
+    }
+
+    func adultChildrenFocusChip(for domain: ConsoleDomain) -> String? {
+        guard domain == .people, !state.discoverability.seenAdultChildrenCoach else { return nil }
+        let adults = state.family.children.filter { !$0.livesAtHome }
+        guard !adults.isEmpty else { return nil }
+        return DiscoverabilityTeaching.adultChildTransitionLine
+    }
+
+    private func rebuildConsolePresentationCache() {
+        var panels: [ConsoleDomain: DomainPanelModel] = [:]
+        for domain in ConsoleDomain.allCases {
+            panels[domain] = buildDomainPanel(for: domain)
+        }
+        let atHomeCount = state.family.children.filter(\.livesAtHome).count
+        cachedConsolePresentation = ConsolePresentationSnapshot(
+            panels: panels,
+            familyGlance: ConsoleFamilyGlancePresentation(
+                household: cachedFamilyHouseholdSnapshot,
+                atHomeItems: Array(cachedAtHomeChildrenGlance.prefix(2)),
+                atHomeOverflow: max(0, atHomeCount - 2),
+                adultChildrenFull: cachedAdultChildrenGlance,
+                adultChildrenCompact: adultChildrenCompactSummary(limit: 3),
+                showFamilyTraySubtitle: shouldShowFamilyTraySubtitle(),
+                showHouseholdStrip: state.family.childCount > 0
+            ),
+            teach: ConsoleTeachSnapshot(
+                showHoldHint: state.discoverability.shouldShowHoldHint(),
+                seenFirstLongPressTeach: state.discoverability.seenFirstLongPressTeach,
+                firstQuickActionTeachLine: firstQuickActionTeachLine(),
+                adultChildrenFocusChip: adultChildrenFocusChip(for: .people)
+            ),
+            auditRibbon: ConsoleAuditRibbonSnapshot(
+                chips: glanceAuditChips(limit: 3),
+                momentumVisible: state.instantMomentum.isVisible,
+                momentumStrength: state.instantMomentum.overallStrength,
+                showCulturalFame: false,
+                culturalFame: state.fame.culturalFame
+            ),
+            recognitionGlance: recognitionGlanceItem(),
+            collectionGlance: collectionGlanceItem()
+        )
+    }
+
+    private func rebuildFamilyHouseholdSnapshotCache() {
+        cachedFamilyHouseholdSnapshot = FamilyHouseholdSnapshot.build(
+            from: state.family,
+            bannerLine: state.discoverability.pendingFamilyHouseholdBanner
+        )
     }
 
     // MARK: - Tier A: Now lane, soft goals, cast, autonomy toasts
@@ -1659,7 +2014,9 @@ final class GameViewModel: ObservableObject {
             age: state.player.age,
             performedQuickAction: state.discoverability.performedFirstQuickAction,
             seenHoldCoach: state.discoverability.seenFirstLongPressTeach,
-            hasYearStance: state.yearlyStance.selectedStance != nil
+            hasYearStance: state.yearlyStance.selectedStance != nil,
+            momentumVisible: state.instantMomentum.isVisible,
+            lifeShapeNonEmpty: !currentLifeShape.isEmpty
         ) {
             let chip = homeQuickActionChips().first
             return NowLaneSnapshot(
@@ -1669,6 +2026,20 @@ final class GameViewModel: ObservableObject {
                 quickActionDomain: chip?.domain,
                 quickActionChoice: chip?.choiceID,
                 ageUpHint: "Age Up commits a full year after you set a goal on the forecast.",
+                tone: .positive,
+                showsQuickAction: chip != nil
+            )
+        }
+
+        if let coach = pendingDiscoverabilityCoachLine() {
+            let chip = homeQuickActionChips().first
+            return NowLaneSnapshot(
+                headline: "Coach",
+                detail: coach,
+                quickActionTitle: chip.map { ActionChoiceCatalog.definition(for: $0.choiceID).title },
+                quickActionDomain: chip?.domain,
+                quickActionChoice: chip?.choiceID,
+                ageUpHint: "Tap Got it on the momentum strip, or keep playing.",
                 tone: .positive,
                 showsQuickAction: chip != nil
             )
@@ -1813,6 +2184,7 @@ final class GameViewModel: ObservableObject {
         case .legal: return .legal
         case .family: return .family
         case .identity: return .progress
+        case .play: return .progress
         }
     }
 
@@ -1941,6 +2313,22 @@ final class GameViewModel: ObservableObject {
                 items.append(PlannerInsight(title: "Mental Health", value: "Trauma High", tone: .warning))
             }
         }
+
+        if state.relationships.careLoad.isActive {
+            items.append(PlannerInsight(
+                title: "Care Load",
+                value: state.relationships.careLoad.topLine,
+                tone: state.relationships.careLoad.totalIntensity >= 45 ? .warning : .neutral
+            ))
+        }
+
+        if state.healthProfile.bodyLoad.totalLoad >= 35 {
+            items.append(PlannerInsight(
+                title: "Body Load",
+                value: state.healthProfile.bodyLoad.summaryLine,
+                tone: state.healthProfile.bodyLoad.totalLoad >= 65 ? .warning : .neutral
+            ))
+        }
         
         let ranked = items.sorted { lhs, rhs in
             let lw = lhs.tone == .warning ? 0 : (lhs.tone == .positive ? 2 : 1)
@@ -2018,13 +2406,15 @@ final class GameViewModel: ObservableObject {
             if let h = mil.heat, h != 0 { previews.append("\(h > 0 ? "+" : "")\(h) Heat") }
         }
         
-        // P2-3: stronger previews with D4 shape/legacy impact
-        let shape = currentLifeShape
-        if !shape.isEmpty {
-            previews.append("Shapes your life (\(shape)) + legacy echoes")
-        }
-        if result.notes.contains(where: { $0.tags.contains(.progress) || $0.title.lowercased().contains("focus") }) {
-            previews.append("Carries into future focus & quiet years")
+        // P2-3: D4 / momentum context in previews (discoverability micro-pass)
+        let domain = inferredPreviewDomain(for: choiceID)
+        let contextLines = DiscoverabilityTeaching.previewContextLines(
+            choiceID: choiceID,
+            domain: domain,
+            state: state
+        )
+        for line in contextLines where !previews.contains(line) {
+            previews.append(line)
         }
 
         // CT1-3: Diamond tier preview callout for activation actions
@@ -2034,8 +2424,25 @@ final class GameViewModel: ObservableObject {
         if choiceID == .startCoachingCareer {
             previews.append("Special Tier: Peak athlete or college coaching cred + program capital. Build a legacy on the sideline.")
         }
+
+        if choiceID == .flexLuxuryAsset, let line = AssetCatalog.flexPreviewLine(for: state.assets) {
+            previews.append(line)
+        }
         
         return previews
+    }
+
+    private func inferredPreviewDomain(for choiceID: ActionChoiceID) -> ActionDomain {
+        let tags = ActionChoiceCatalog.definition(for: choiceID).preferredEventTags
+        let top = tags.max { $0.value < $1.value }
+        switch top?.key {
+        case "health": return .health
+        case "money", "finance": return .finance
+        case "social", "family", "relationships": return .relationships
+        case "school", "education": return .education
+        case "crime", "risk": return .crime
+        default: return .career
+        }
     }
 
     func backgroundPulseItems() -> [BackgroundPulseItem] {
@@ -2281,6 +2688,12 @@ final class GameViewModel: ObservableObject {
             return .relationshipsConnections
         case "Burnout":
             return .healthOverview
+        case "Care Load":
+            return .relationshipsFamily
+        case "Body Load":
+            return .healthOverview
+        case "Legal Status":
+            return .lifeLegacy
         default:
             return nil
         }
@@ -2328,7 +2741,40 @@ final class GameViewModel: ObservableObject {
 
     // Frictionless UI: Instant preview computation for any action
     func previewForAction(_ choiceID: ActionChoiceID, domain: ActionDomain) -> [String] {
-        orchestrator.previewInstantAction(choiceID, domain: domain, state: state)
+        var lines = orchestrator.previewInstantAction(choiceID, domain: domain, state: state)
+        for line in DiscoverabilityTeaching.previewContextLines(choiceID: choiceID, domain: domain, state: state)
+            where !lines.contains(line) {
+            lines.append(line)
+        }
+        return lines
+    }
+
+    private static let parentingChoiceIDs: Set<ActionChoiceID> = [
+        .spendTimeWithKids, .checkInOnChild, .enforceRoutine, .encourageIndependence
+    ]
+
+    // Phase 2: Make random spawn fully functional end-to-end in console/debug
+    func createRandomCharacter() {
+        let character = Character.generateRandom()
+        print("Random character created: \(character.name) from \(character.background.displayName) with assets \(character.startingAssets)")
+
+        var draft = CharacterCreationDraft()
+        draft.pendingName = character.name
+        draft.selectedBackground = character.background
+        draft.isRandomSpawn = true
+        draft.selectedStartMode = .quickStart
+
+        commitCharacterCreation(from: draft)
+
+        // Ensure starters
+        if !character.startingAssets.isEmpty {
+            applyStarterAssets(to: &state, for: character.background)
+        }
+
+        let _ = orchestrator.activatePreview(state: &state)
+        refreshDerivedState()
+        save()
+        print("Random spawn complete, state set with name \(state.player.name)")
     }
 
     func performQuickAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
@@ -2349,6 +2795,16 @@ final class GameViewModel: ObservableObject {
             markMVPOnboardingQuickBeatIfNeeded()
         }
 
+        var focusChildID: UUID?
+        var bondBefore = 0
+        var devNotesBefore = 0
+        if Self.parentingChoiceIDs.contains(choiceID),
+           let child = FamilyHouseholdSnapshot.focusChildForParenting(in: state.family) {
+            focusChildID = child.id
+            bondBefore = child.bondWithPlayer
+            devNotesBefore = child.developmentNotes.count
+        }
+
         let result = orchestrator.applyInstantActionWithAutonomousReaction(choiceID, domain: domain, state: &state)
         surfaceInstantActionFeedback(
             result: result,
@@ -2357,9 +2813,44 @@ final class GameViewModel: ObservableObject {
             fallbackDetail: result.notes.first?.text ?? definition.identityLine
         )
 
+        if Self.parentingChoiceIDs.contains(choiceID) {
+            surfaceParentingActionFeedback(
+                focusChildID: focusChildID,
+                bondBefore: bondBefore,
+                devNotesBefore: devNotesBefore
+            )
+            if !state.discoverability.seenFirstParentingActionCoach {
+                state.discoverability.pendingFamilyHouseholdBanner = DiscoverabilityTeaching.firstParentingActionLine
+            }
+        }
+
         orchestrator.applyAmbientPressureSync(state: &state)
         refreshDerivedState()
-        save()
+        scheduleDebouncedSave()
+    }
+
+    private func surfaceParentingActionFeedback(
+        focusChildID: UUID?,
+        bondBefore: Int,
+        devNotesBefore: Int
+    ) {
+        guard let focusChildID,
+              let index = state.family.children.firstIndex(where: { $0.id == focusChildID }) else { return }
+        let child = state.family.children[index]
+        let delta = child.bondWithPlayer - bondBefore
+        if delta != 0 {
+            let tempNote = child.temperament == .sensitive || child.temperament == .intense
+                ? "\(child.temperament.shortDescription) kids feel presence fast"
+                : "bond carries into their adult story"
+            pushAutonomyToast(
+                title: "\(child.name)'s bond \(delta > 0 ? "+" : "")\(delta)",
+                detail: tempNote,
+                tone: delta > 0 ? .positive : .warning
+            )
+        }
+        if child.developmentNotes.count > devNotesBefore, let note = child.developmentNotes.last {
+            pushAutonomyToast(title: "\(child.name)", detail: note, tone: .neutral)
+        }
     }
 
     private func performInstantAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
@@ -2382,7 +2873,7 @@ final class GameViewModel: ObservableObject {
         orchestrator.applyAmbientPressureSync(state: &state)
 
         refreshDerivedState()
-        save()
+        scheduleDebouncedSave()
     }
 
     private func queueCommittedAction(_ choiceID: ActionChoiceID, for domain: ActionDomain) {
@@ -2450,7 +2941,7 @@ final class GameViewModel: ObservableObject {
         ))
         showTransientActivityPulse()
         refreshDerivedState()
-        save()
+        scheduleDebouncedSave()
     }
 
     /// BitLife-style instant hub: all flex/quick actions grouped for the Play tab.
@@ -2497,6 +2988,8 @@ final class GameViewModel: ObservableObject {
         }
 
         let domainLanes: [(ActionDomain, String, String)] = [
+            (.play, "Play", "sparkles"),
+            (.identity, "Self", "person.fill"),
             (.health, "Body", "heart.fill"),
             (.relationships, "Love", "person.2.fill"),
             (.finance, "Money", "dollarsign.circle.fill"),
@@ -2504,8 +2997,7 @@ final class GameViewModel: ObservableObject {
             (.education, "School", "book.closed.fill"),
             (.family, "Family", "figure.2.and.child.holdinghands"),
             (.military, "Duty", "shield.fill"),
-            (.crime, "Risk", "exclamationmark.shield.fill"),
-            (.identity, "Self", "person.fill")
+            (.crime, "Risk", "exclamationmark.shield.fill")
         ]
 
         for (domain, title, symbol) in domainLanes {
@@ -2550,6 +3042,7 @@ final class GameViewModel: ObservableObject {
         case .crime: return "exclamationmark.triangle.fill"
         case .legal: return "building.columns.fill"
         case .identity: return "person.fill"
+        case .play: return "sparkles"
         }
     }
 
@@ -2997,6 +3490,7 @@ final class GameViewModel: ObservableObject {
         case .crime: return "exclamationmark.triangle.fill"
         case .legal: return "building.columns.fill"
         case .identity: return "person.fill"
+        case .play: return "sparkles"
         }
     }
 
@@ -3257,6 +3751,55 @@ final class GameViewModel: ObservableObject {
         ]
     }
 
+    func highSchoolShapeMetrics() -> [(String, String, PlannerTone)] {
+        let profile = state.education.highSchoolProfile
+        return [
+            ("Future", profile.futureSeed.displayLabel, profile.futureSeed == .undecided ? .neutral : .positive),
+            ("Belonging", profile.socialShape.displayLabel, highSchoolBelongingTone(profile.socialShape)),
+            ("Pressure", profile.pressureShape.displayLabel, highSchoolPressureTone(profile.pressureShape))
+        ]
+    }
+
+    func highSchoolIdentityForcePreview(limit: Int = 3) -> [(String, String, PlannerTone)] {
+        state.education.highSchoolIdentityForces
+            .prefix(limit)
+            .map { force in
+                (force.role.displayLabel, force.name, highSchoolIdentityTone(force.tone))
+            }
+    }
+
+    func seniorLaunchSummaryItems() -> [String] {
+        guard state.education.seniorYearOutcome != .unresolved else { return [] }
+        return [
+            state.education.seniorYearOutcome.displayLabel,
+            state.education.highSchoolProfile.futureSeed.displayLabel,
+            state.education.highSchoolProfile.pressureShape.displayLabel
+        ]
+    }
+
+    private func highSchoolBelongingTone(_ shape: HighSchoolSocialShape) -> PlannerTone {
+        switch shape {
+        case .connected, .respected: return .positive
+        case .isolated, .volatile: return .warning
+        case .invisible: return .neutral
+        }
+    }
+
+    private func highSchoolPressureTone(_ shape: HighSchoolPressureShape) -> PlannerTone {
+        switch shape {
+        case .balanced: return .positive
+        case .burnedOut, .survivalMode, .reckless: return .warning
+        }
+    }
+
+    private func highSchoolIdentityTone(_ tone: HighSchoolIdentityForceTone) -> PlannerTone {
+        switch tone {
+        case .supportive: return .positive
+        case .tense, .volatile, .demanding: return .warning
+        case .neutral: return .neutral
+        }
+    }
+
     func teenUnlocks() -> [String] {
         var unlocks: [String] = []
         if state.player.age < 15 {
@@ -3504,6 +4047,14 @@ final class GameViewModel: ObservableObject {
             modal: modal,
             shouldSave: true
         )
+    }
+
+    #if DEBUG
+    var isHeavyConsoleCacheRefreshDeferred: Bool { deferredHeavyConsoleRefreshPending }
+    #endif
+
+    func refreshDerivedStateForTesting() {
+        refreshDerivedState()
     }
 
     func clearDebugScenario() {
@@ -3796,32 +4347,164 @@ final class GameViewModel: ObservableObject {
         }
     }
 
-    private func refreshDerivedState(forceInsights: Bool = false) {
+    private func refreshDerivedState(forceInsights: Bool = false, deferHeavyPanels: Bool = false) {
         let fingerprint = derivedStateFingerprint()
         let stateChanged = fingerprint != lastDerivedStateFingerprint
+        let shouldDeferHeavy = deferHeavyPanels
+            || ((presentedCard != nil || state.activeYearChapter != nil) && !forceInsights)
+
         if stateChanged {
             lastDerivedStateFingerprint = fingerprint
-            historyDigest = HistoryDigest(state: state)
+            if shouldDeferHeavy {
+                rebuildEssentialConsoleCaches()
+                deferredHeavyConsoleRefreshPending = true
+            } else {
+                rebuildConsoleDerivedCaches()
+            }
+        } else if deferredHeavyConsoleRefreshPending && !shouldDeferHeavy {
+            rebuildDeferredConsoleCaches()
         }
+
+        let presentationChanged = presentationStateFingerprint() != lastPresentationFingerprint
+        if presentationChanged {
+            refreshPresentationCaches()
+        } else if stateChanged && !shouldDeferHeavy {
+            lastPresentationFingerprint = presentationStateFingerprint()
+        }
+
         if forceInsights || stateChanged || latestYearSummary?.age != lastChangeInsightSummaryAge {
             lastChangeInsightSummaryAge = latestYearSummary?.age
             refreshChangeInsights()
         }
-        DomainActionRegistry.refreshSuggestedAction(in: &state, isTeenExperience: isTeenExperience)
+        if stateChanged {
+            DomainActionRegistry.refreshSuggestedAction(in: &state, isTeenExperience: isTeenExperience)
+        }
         #if DEBUG
         lastTimingSnapshot = orchestrator.latestTimingSnapshot ?? lastTimingSnapshot
         #endif
     }
 
+    private func refreshDerivedStateAfterCardTransition() {
+        if presentedCard == nil {
+            refreshDerivedState()
+        } else {
+            refreshDerivedState(deferHeavyPanels: true)
+        }
+    }
+
+    private func refreshPresentationCaches() {
+        lastPresentationFingerprint = presentationStateFingerprint()
+        nowLaneSnapshotCache = nowLaneSnapshot()
+    }
+
+    private func rebuildEssentialConsoleCaches() {
+        consoleSnapshot = lifeConsoleSnapshot()
+        momentumStripSnapshot = buildMomentumStripSnapshot()
+        nowLaneSnapshotCache = nowLaneSnapshot()
+        lastPresentationFingerprint = presentationStateFingerprint()
+    }
+
+    private func rebuildDeferredConsoleCaches() {
+        historyDigest = HistoryDigest(state: state)
+        rebuildFamilyHouseholdSnapshotCache()
+        rebuildAtHomeChildrenGlanceCache()
+        rebuildAdultChildrenGlanceCache()
+        rebuildConsolePresentationCache()
+        deferredHeavyConsoleRefreshPending = false
+    }
+
+    private func rebuildConsoleDerivedCaches() {
+        rebuildEssentialConsoleCaches()
+        rebuildDeferredConsoleCaches()
+    }
+
+    private func buildMomentumStripSnapshot() -> MomentumStripSnapshot {
+        let momentum = state.instantMomentum
+        let top = momentum.rankedDomainMomentum.first
+        let microHint: String? = {
+            guard let top, top.value >= 8 else { return nil }
+            return DiscoverabilityTeaching.momentumDomainMicroHint(domain: top.domain, value: top.value)
+        }()
+        return MomentumStripSnapshot(
+            showsStrip: !recentInstantReactions.isEmpty || momentum.isVisible,
+            momentum: momentum,
+            recentReactions: Array(recentInstantReactions.prefix(3)),
+            lifeShape: currentLifeShape,
+            resilience: state.resilience,
+            seenMomentumStripIntro: state.discoverability.seenMomentumStripIntro,
+            seenLifeShapeTeach: state.discoverability.seenLifeShapeTeach,
+            shouldAutoExpandHint: shouldAutoExpandMomentumHint(),
+            topDomainMicroHint: microHint
+        )
+    }
+
     private func derivedStateFingerprint() -> UInt64 {
         var hasher = Hasher()
         hasher.combine(state.player.age)
+        hasher.combine(state.player.name)
+        hasher.combine(state.player.health)
         hasher.combine(state.pendingActions.count)
         hasher.combine(state.career.status)
+        hasher.combine(state.career.roleID)
         hasher.combine(state.career.performance)
         hasher.combine(state.finance.cashOnHand)
         hasher.combine(state.finance.financialStress)
+        hasher.combine(state.resilience)
+        hasher.combine(state.instantMomentum.overallStrength)
+        hasher.combine(state.instantMomentum.healthMomentum)
+        hasher.combine(state.instantMomentum.financeMomentum)
+        hasher.combine(state.instantMomentum.relationshipMomentum)
+        hasher.combine(state.discoverability.seenMomentumStripIntro)
+        hasher.combine(state.discoverability.seenLifeShapeTeach)
+        hasher.combine(state.discoverability.seenAdultChildrenCoach)
+        hasher.combine(state.discoverability.pendingFamilyHouseholdBanner)
+        hasher.combine(state.family.childCount)
+        hasher.combine(state.family.dependentChildCount)
+        hasher.combine(state.family.isPregnant)
+        hasher.combine(adultChildrenGlanceFingerprint())
+        hasher.combine(atHomeChildrenGlanceFingerprint())
+        hasher.combine(recentInstantReactions)
+        hasher.combine(currentLifeShape)
         hasher.combine(selectedTab)
+        return UInt64(bitPattern: Int64(hasher.finalize()))
+    }
+
+    private func presentationStateFingerprint() -> UInt64 {
+        var hasher = Hasher()
+        hasher.combine(presentedCardFingerprint())
+        hasher.combine(state.activeYearChapter?.targetAge)
+        hasher.combine(state.activeYearChapter?.phase)
+        hasher.combine(state.isGameOver)
+        hasher.combine(state.softRunGoal?.title)
+        hasher.combine(state.softRunGoal?.status)
+        return UInt64(bitPattern: Int64(hasher.finalize()))
+    }
+
+    private func presentedCardFingerprint() -> String {
+        presentedCard?.id ?? "none"
+    }
+
+    private func adultChildrenGlanceFingerprint() -> UInt64 {
+        var hasher = Hasher()
+        for child in state.family.children where !child.livesAtHome {
+            hasher.combine(child.id)
+            hasher.combine(child.age)
+            hasher.combine(child.name)
+            hasher.combine(child.adultProfile?.outcome)
+            hasher.combine(child.adultProfile?.relationshipQuality)
+            hasher.combine(child.bondWithPlayer)
+        }
+        return UInt64(bitPattern: Int64(hasher.finalize()))
+    }
+
+    private func atHomeChildrenGlanceFingerprint() -> UInt64 {
+        var hasher = Hasher()
+        for child in state.family.children where child.livesAtHome {
+            hasher.combine(child.id)
+            hasher.combine(child.age)
+            hasher.combine(child.bondWithPlayer)
+            hasher.combine(child.supportLoad)
+        }
         return UInt64(bitPattern: Int64(hasher.finalize()))
     }
 
@@ -3894,6 +4577,7 @@ final class GameViewModel: ObservableObject {
         case .health: return "Health"
         case .family: return "Family"
         case .identity: return "Identity"
+        case .play: return "Play"
         }
     }
 
@@ -4336,6 +5020,14 @@ extension GameViewModel {
                 tone: .neutral,
                 destination: .lifeHistory
             )
+        case .play:
+            pressure = PressureSummary(
+                symbol: "sparkles",
+                title: "Play & Recovery",
+                detail: "Instant hobbies and outings keep the year feeling alive.",
+                tone: .positive,
+                destination: nil
+            )
         }
 
         return TabOverviewModel(
@@ -4441,7 +5133,7 @@ extension GameViewModel {
             trendLabel: educationTrendLabel(),
             detailDestination: .educationOverview,
             topSignals: makeOverviewSignals(
-                teenSchoolClimateMetrics(),
+                isTeenExperience ? highSchoolShapeMetrics() : teenSchoolClimateMetrics(),
                 symbols: ["graduationcap.fill", "person.crop.circle.badge.checkmark", "flame.fill"]
             ).map { OverviewSignal(symbol: $0.symbol, title: $0.title, value: $0.value, tone: $0.tone, insightTopic: .work) },
             primaryPressure: pressure,
@@ -5135,4 +5827,3 @@ struct HistoryDigest {
         return Array(history.lazy.filter { !$0.tags.isEmpty && !tagSet.isDisjoint(with: $0.tags) }.prefix(budget))
     }
 }
-

@@ -107,6 +107,14 @@ struct EducationSystem {
         if player.age <= 17 {
             let momentumShift = (education.engagement - 52) / 10
             education.activityMomentum = (education.activityMomentum + momentumShift).clamped(to: 0...100)
+            accumulateHighSchoolResidue(
+                player: player,
+                education: &education,
+                finance: finance,
+                relationships: relationships,
+                health: health,
+                childhoodDossier: dossier
+            )
         }
 
         let standingShift =
@@ -498,6 +506,12 @@ struct EducationSystem {
             education.activityMomentum += 12
             education.schoolBelonging += 6
             education.engagement += 4
+            bumpHighSchoolTag("athlete_seed", by: 12, education: &education)
+            bumpHighSchoolTag("identity_reps", by: 5, education: &education)
+            addHighSchoolIdentityForce(
+                HighSchoolIdentityForce(id: "activity-signal", name: "Coach Hale", role: .activityCoachForce, tone: .demanding, storyLine: "Practice is turning into a place where your future feels physical.", strength: 64),
+                education: &education
+            )
             if specialCareer.athlete.naturalPotential < 80 {
                 specialCareer.athlete.naturalPotential = min(100, specialCareer.athlete.naturalPotential + 5)
             }
@@ -506,6 +520,12 @@ struct EducationSystem {
         case .teenSideHustle:
             education.applicationReadiness += 8
             education.activityMomentum += 8
+            bumpHighSchoolTag("founder_seed", by: 12, education: &education)
+            bumpHighSchoolTag("money_pressure", by: 3, education: &education)
+            addHighSchoolIdentityForce(
+                HighSchoolIdentityForce(id: "home-pressure", name: "Money pressure", role: .homePressure, tone: .demanding, storyLine: "Cash starts feeling like identity before adulthood officially begins.", strength: 58),
+                education: &education
+            )
             specialCareer.founder.execution = min(100, specialCareer.founder.execution + 4)
             if specialCareer.track == .inactive {
                 specialCareer.audience = max(specialCareer.audience, 8)
@@ -515,6 +535,12 @@ struct EducationSystem {
             education.engagement += 10
             education.activityMomentum += 6
             education.schoolBelonging += 4
+            bumpHighSchoolTag("creator_seed", by: 12, education: &education)
+            bumpHighSchoolTag("identity_reps", by: 5, education: &education)
+            addHighSchoolIdentityForce(
+                HighSchoolIdentityForce(id: "activity-signal", name: "The project room", role: .activityCoachForce, tone: .neutral, storyLine: "The work you make after class is becoming a private compass.", strength: 62),
+                education: &education
+            )
             specialCareer.creator.contentQuality = min(100, specialCareer.creator.contentQuality + 5)
             specialCareer.creator.personalBrand = min(100, specialCareer.creator.personalBrand + 3)
             result.notes.append(DomainNote(title: "Creative Project", text: "You poured yourself into something original. The work is amateur but the voice is already yours — this is the seed of a platform.", tags: [.education]))
@@ -522,12 +548,24 @@ struct EducationSystem {
             education.schoolBelonging += 10
             education.teacherSupport += 6
             education.mentorSupport += 5
+            bumpHighSchoolTag("politics_seed", by: 12, education: &education)
+            bumpHighSchoolTag("mentor_support", by: 5, education: &education)
+            addHighSchoolIdentityForce(
+                HighSchoolIdentityForce(id: "mentor-anchor", name: "Ms. Rivera", role: .mentorAdult, tone: .supportive, storyLine: "An adult notices that people already look to you.", strength: 64),
+                education: &education
+            )
             specialCareer.politics.charisma = min(100, specialCareer.politics.charisma + 5)
             specialCareer.politics.approvalRating = min(100, specialCareer.politics.approvalRating + 4)
             result.notes.append(DomainNote(title: "Lead Initiative", text: "You stepped up and organized something. People listened. The social and leadership wiring from childhood is getting real reps.", tags: [.education, .relationships]))
         case .teenRiskyExperiment:
             education.reputationRisk += 8
             education.activityMomentum += 5
+            bumpHighSchoolTag("risk_seed", by: 12, education: &education)
+            bumpHighSchoolTag("volatile_social", by: 6, education: &education)
+            addHighSchoolIdentityForce(
+                HighSchoolIdentityForce(id: "rival-heat", name: "Hallway heat", role: .rivalHeatSource, tone: .volatile, storyLine: "The thrill comes with attention you cannot fully steer.", strength: 62),
+                education: &education
+            )
             specialCareer.enterprise.riskTolerance = min(100, specialCareer.enterprise.riskTolerance + 6)
             specialCareer.enterprise.networkStrength = min(100, specialCareer.enterprise.networkStrength + 3)
             result.notes.append(DomainNote(title: "Risky Experiment", text: "You tried something that could have gone sideways. The thrill and the lesson both stick — this is how certain paths start in the shadows.", tags: [.education, .risk]))
@@ -563,7 +601,356 @@ struct EducationSystem {
         }
 
         education.clamp()
+        refreshHighSchoolProfile(for: &education)
         return result
+    }
+
+    private func bumpHighSchoolTag(_ tag: String, by amount: Int, education: inout EducationState) {
+        guard amount != 0 else { return }
+        education.formativeSchoolTags[tag, default: 0] = (education.formativeSchoolTags[tag, default: 0] + amount).clamped(to: 0...100)
+    }
+
+    private func addHighSchoolIdentityForce(_ force: HighSchoolIdentityForce, education: inout EducationState) {
+        var copy = force
+        copy.clamp()
+        if let index = education.highSchoolIdentityForces.firstIndex(where: { $0.id == copy.id }) {
+            education.highSchoolIdentityForces[index].strength = max(education.highSchoolIdentityForces[index].strength, copy.strength)
+            education.highSchoolIdentityForces[index].storyLine = copy.storyLine
+            education.highSchoolIdentityForces[index].tone = copy.tone
+        } else {
+            education.highSchoolIdentityForces.append(copy)
+        }
+        education.clamp()
+    }
+
+    private func accumulateHighSchoolResidue(
+        player: Player,
+        education: inout EducationState,
+        finance: FinanceState,
+        relationships: RelationshipState,
+        health: HealthState,
+        childhoodDossier: ChildhoodDossier?
+    ) {
+        if education.schoolStanding >= 76 { bumpHighSchoolTag("academic_strength", by: 5, education: &education) }
+        if education.schoolStanding <= 44 { bumpHighSchoolTag("academic_strain", by: 6, education: &education) }
+        if education.academicTrack == .vocational || education.studyFocus == .trades { bumpHighSchoolTag("trade_seed", by: 6, education: &education) }
+        if education.schoolBelonging >= 62 || relationships.friends.strongestBond >= 65 {
+            bumpHighSchoolTag("belonging", by: 5, education: &education)
+        }
+        if education.schoolBelonging <= 34 || relationships.friends.isEmpty {
+            bumpHighSchoolTag("isolation", by: 6, education: &education)
+        }
+        if education.reputationRisk >= 58 || education.peerPressure >= 58 {
+            bumpHighSchoolTag("volatile_social", by: 5, education: &education)
+        }
+        if education.disciplineRecord <= 42 {
+            bumpHighSchoolTag("discipline_scar", by: 5, education: &education)
+        }
+        if education.teacherSupport >= 64 || education.mentorSupport >= 58 {
+            bumpHighSchoolTag("mentor_support", by: 6, education: &education)
+        }
+        if education.teacherSupport <= 32 {
+            bumpHighSchoolTag("adult_friction", by: 5, education: &education)
+        }
+        if education.burnoutRisk >= 58 {
+            bumpHighSchoolTag("burnout", by: 6, education: &education)
+        }
+        if education.attendancePressure >= 58 || finance.financialStress >= 45 || health.mentalWellness <= 42 {
+            bumpHighSchoolTag("survival_pressure", by: 5, education: &education)
+        }
+        if player.smarts >= 68 || education.applicationReadiness >= 62 {
+            bumpHighSchoolTag("academic_seed", by: 4, education: &education)
+        }
+        if let d = childhoodDossier {
+            if d.aptitudes.physical >= 58 { bumpHighSchoolTag("athlete_seed", by: 2, education: &education) }
+            if d.aptitudes.entrepreneurial >= 58 { bumpHighSchoolTag("founder_seed", by: 2, education: &education) }
+            if d.aptitudes.creative >= 58 { bumpHighSchoolTag("creator_seed", by: 2, education: &education) }
+            if d.aptitudes.social >= 58 { bumpHighSchoolTag("politics_seed", by: 2, education: &education) }
+        }
+        refreshHighSchoolProfile(for: &education)
+        refreshHighSchoolIdentityForces(
+            player: player,
+            education: &education,
+            finance: finance,
+            relationships: relationships,
+            health: health,
+            childhoodDossier: childhoodDossier
+        )
+    }
+
+    func refreshHighSchoolIdentityForces(
+        player: Player,
+        education: inout EducationState,
+        finance: FinanceState,
+        relationships: RelationshipState,
+        health: HealthState,
+        childhoodDossier: ChildhoodDossier?
+    ) {
+        guard (14...18).contains(player.age) else { return }
+
+        var candidates: [HighSchoolIdentityForce] = []
+
+        if education.teacherSupport >= 62 || education.mentorSupport >= 54 || education.highSchoolProfile.adultSupportShape == .mentored {
+            candidates.append(HighSchoolIdentityForce(
+                id: "mentor-anchor",
+                name: "Ms. Rivera",
+                role: .mentorAdult,
+                tone: .supportive,
+                storyLine: "An adult at school is starting to treat your future as real.",
+                strength: max(education.teacherSupport, education.mentorSupport)
+            ))
+            bumpHighSchoolTag("mentor_anchor", by: 5, education: &education)
+        }
+
+        if education.schoolBelonging >= 60 || relationships.friends.strongestBond >= 62 {
+            candidates.append(HighSchoolIdentityForce(
+                id: "peer-anchor",
+                name: relationships.friends.max { $0.bond < $1.bond }?.name ?? "A steady friend",
+                role: .peerAlly,
+                tone: .supportive,
+                storyLine: "Someone your age makes school feel less like a solo project.",
+                strength: max(education.schoolBelonging, relationships.friends.strongestBond)
+            ))
+            bumpHighSchoolTag("peer_anchor", by: 4, education: &education)
+        }
+
+        if education.reputationRisk >= 56 || education.peerPressure >= 58 || education.highSchoolProfile.socialShape == .volatile {
+            candidates.append(HighSchoolIdentityForce(
+                id: "rival-heat",
+                name: "Hallway heat",
+                role: .rivalHeatSource,
+                tone: education.reputationRisk >= 68 ? .volatile : .tense,
+                storyLine: "Reputation, rumors, or a rival crowd keep pulling focus from the future.",
+                strength: max(education.reputationRisk, education.peerPressure)
+            ))
+            bumpHighSchoolTag("rival_heat", by: 5, education: &education)
+        }
+
+        if education.activityMomentum >= 58 || [.athlete, .creator, .politics, .trade].contains(education.highSchoolProfile.futureSeed) {
+            let name: String
+            switch education.highSchoolProfile.futureSeed {
+            case .athlete: name = "Coach Hale"
+            case .creator: name = "The project room"
+            case .politics: name = "The organizer circle"
+            case .trade: name = "The shop teacher"
+            default: name = "After-school momentum"
+            }
+            candidates.append(HighSchoolIdentityForce(
+                id: "activity-signal",
+                name: name,
+                role: .activityCoachForce,
+                tone: .demanding,
+                storyLine: "The work outside ordinary class is becoming part of your identity.",
+                strength: max(education.activityMomentum, education.formativeSchoolTags["identity_reps", default: 0])
+            ))
+            bumpHighSchoolTag("coach_signal", by: 4, education: &education)
+        }
+
+        if finance.financialStress >= 42 || health.mentalWellness <= 42 || education.attendancePressure >= 58 || education.highSchoolProfile.pressureShape == .survivalMode {
+            candidates.append(HighSchoolIdentityForce(
+                id: "home-pressure",
+                name: "Home pressure",
+                role: .homePressure,
+                tone: .demanding,
+                storyLine: "Money, health, or family strain is following you into school.",
+                strength: max(finance.financialStress, max(100 - health.mentalWellness, education.attendancePressure))
+            ))
+            bumpHighSchoolTag("home_pressure", by: 5, education: &education)
+        }
+
+        if let d = childhoodDossier {
+            if d.aptitudes.physical >= 65 && !candidates.contains(where: { $0.role == .activityCoachForce }) {
+                candidates.append(HighSchoolIdentityForce(id: "body-signal", name: "Physical edge", role: .activityCoachForce, tone: .demanding, storyLine: "Your body keeps giving you a louder path than the classroom does.", strength: d.aptitudes.physical))
+            } else if d.aptitudes.creative >= 65 && !candidates.contains(where: { $0.role == .activityCoachForce }) {
+                candidates.append(HighSchoolIdentityForce(id: "creative-signal", name: "Creative current", role: .activityCoachForce, tone: .neutral, storyLine: "The thing you make after class feels more honest than the assignments.", strength: d.aptitudes.creative))
+            }
+        }
+
+        var merged: [String: HighSchoolIdentityForce] = [:]
+        for force in education.highSchoolIdentityForces + candidates {
+            var copy = force
+            copy.clamp()
+            let existing = merged[copy.id]
+            copy.strength = min(100, max(copy.strength, existing?.strength ?? 0))
+            merged[copy.id] = copy
+        }
+        education.highSchoolIdentityForces = Array(merged.values.sorted { $0.strength > $1.strength }.prefix(3))
+        education.clamp()
+    }
+
+    func prepareHighSchoolIdentityBeat(playerAge: Int, education: inout EducationState) -> GameEvent? {
+        guard (14...17).contains(playerAge), education.lastHighSchoolIdentityBeatAge != playerAge else { return nil }
+        guard let force = education.highSchoolIdentityForces.first(where: { $0.strength >= 58 }) else { return nil }
+        education.lastHighSchoolIdentityBeatAge = playerAge
+
+        let event = highSchoolIdentityEvent(for: force, age: playerAge, profile: education.highSchoolProfile)
+        return event
+    }
+
+    private func highSchoolIdentityEvent(for force: HighSchoolIdentityForce, age: Int, profile: HighSchoolProfile) -> GameEvent {
+        let headline: String
+        let text: String
+        let choices: [EventChoice]
+
+        switch force.role {
+        case .mentorAdult:
+            headline = "A Mentor Notices Your Direction"
+            text = "\(force.name) sees the shape forming before you fully trust it."
+            choices = [
+                EventChoice(text: "Take the guidance", effects: ChoiceEffects(education: EducationEffects(schoolStanding: 2, applicationReadiness: 4, mentorSupport: 5)), microBeat: "You write down what they said."),
+                EventChoice(text: "Keep it casual", effects: ChoiceEffects(education: EducationEffects(schoolBelonging: 1, mentorSupport: 1)), microBeat: "You nod, but keep distance."),
+                EventChoice(text: "Reject the pressure", effects: ChoiceEffects(education: EducationEffects(teacherSupport: -3, peerPressure: 2)), microBeat: "Being seen feels too expensive.", baseFriction: .resistance)
+            ]
+        case .peerAlly:
+            headline = "A Friend Makes School Bearable"
+            text = "\(force.name) turns the year from something endured into something witnessed."
+            choices = [
+                EventChoice(text: "Lean into the bond", effects: ChoiceEffects(education: EducationEffects(schoolBelonging: 5, burnoutRisk: -2)), microBeat: "You stop eating alone."),
+                EventChoice(text: "Keep your routine first", effects: ChoiceEffects(education: EducationEffects(schoolStanding: 2, schoolBelonging: 1)), microBeat: "You stay kind, but focused."),
+                EventChoice(text: "Follow the crowd", effects: ChoiceEffects(education: EducationEffects(schoolBelonging: 2, reputationRisk: 3, peerPressure: 4)), microBeat: "It feels good to be included.", baseFriction: .warning)
+            ]
+        case .rivalHeatSource:
+            headline = "Hallway Heat Finds Your Name"
+            text = "Reputation is starting to move faster than your actual choices."
+            choices = [
+                EventChoice(text: "De-escalate it", effects: ChoiceEffects(education: EducationEffects(reputationRisk: -5, disciplineRecord: 2)), microBeat: "You let silence do work."),
+                EventChoice(text: "Stand your ground", effects: ChoiceEffects(education: EducationEffects(schoolBelonging: 2, reputationRisk: 2, peerPressure: 3)), microBeat: "People notice the edge.", baseFriction: .resistance),
+                EventChoice(text: "Make it louder", effects: ChoiceEffects(education: EducationEffects(reputationRisk: 6, disciplineRecord: -4, peerPressure: 4)), microBeat: "The room reacts before you think.", baseFriction: .warning)
+            ]
+        case .activityCoachForce:
+            headline = "The After-School Thing Gets Real"
+            text = "\(force.name) is becoming a place where your future has a texture."
+            choices = [
+                EventChoice(text: "Commit to the reps", effects: ChoiceEffects(education: EducationEffects(activityMomentum: 5, applicationReadiness: 2, burnoutRisk: 2)), microBeat: "Practice runs late."),
+                EventChoice(text: "Use it for balance", effects: ChoiceEffects(education: EducationEffects(schoolBelonging: 3, burnoutRisk: -2)), microBeat: "It gives the week shape."),
+                EventChoice(text: "Chase the shortcut", effects: ChoiceEffects(education: EducationEffects(activityMomentum: 2, reputationRisk: 3)), microBeat: "You want proof now.", baseFriction: profile.futureSeed == .riskLane ? .warning : .none)
+            ]
+        case .homePressure:
+            headline = "Home Pressure Enters The Classroom"
+            text = "The year is asking you to be a student while carrying more than school."
+            choices = [
+                EventChoice(text: "Ask for help", effects: ChoiceEffects(education: EducationEffects(attendancePressure: -3, burnoutRisk: -2, mentorSupport: 4)), microBeat: "The ask is smaller than the silence."),
+                EventChoice(text: "Compartmentalize it", effects: ChoiceEffects(education: EducationEffects(schoolStanding: 2, burnoutRisk: 3)), microBeat: "You put the worry in a box."),
+                EventChoice(text: "Disappear for air", effects: ChoiceEffects(education: EducationEffects(attendancePressure: 4, schoolBelonging: -2, burnoutRisk: -1)), microBeat: "One absent day becomes tempting.", baseFriction: .resistance)
+            ]
+        }
+
+        return GameEvent(
+            id: "high-school-identity-\(force.id)-\(age)",
+            category: .education,
+            tags: ["school", "teen", "identity"],
+            severity: force.tone == .volatile ? .consequential : .routine,
+            title: headline,
+            text: text,
+            minAge: age,
+            maxAge: age,
+            weight: 100,
+            cooldownYears: 99,
+            triggerOnce: true,
+            requirements: [],
+            choices: Array(choices.prefix(3))
+        )
+    }
+
+    private func refreshHighSchoolProfile(for education: inout EducationState) {
+        let tags = education.formativeSchoolTags
+        let academicShape: HighSchoolAcademicShape
+        if education.pathway == .dropout || tags["discipline_scar", default: 0] >= 45 || (education.attendancePressure >= 66 && education.schoolStanding < 52) {
+            academicShape = .dropoutRisk
+        } else if education.academicTrack == .vocational || tags["trade_seed", default: 0] >= 28 {
+            academicShape = .vocational
+        } else if education.academicTrack == .honors || tags["academic_strength", default: 0] >= 30 || education.schoolStanding >= 78 {
+            academicShape = .honors
+        } else if tags["academic_strain", default: 0] >= 28 || education.schoolStanding <= 44 {
+            academicShape = .struggling
+        } else {
+            academicShape = .steady
+        }
+
+        let socialShape: HighSchoolSocialShape
+        if tags["volatile_social", default: 0] >= 30 || education.reputationRisk >= 62 {
+            socialShape = .volatile
+        } else if tags["isolation", default: 0] >= 30 || education.schoolBelonging <= 32 {
+            socialShape = .isolated
+        } else if tags["mentor_support", default: 0] >= 28 && education.schoolBelonging >= 55 {
+            socialShape = .respected
+        } else if tags["belonging", default: 0] >= 24 || education.schoolBelonging >= 60 {
+            socialShape = .connected
+        } else {
+            socialShape = .invisible
+        }
+
+        let supportShape: HighSchoolAdultSupportShape
+        if tags["adult_friction", default: 0] >= 24 || education.teacherSupport <= 30 {
+            supportShape = .adversarial
+        } else if tags["mentor_support", default: 0] >= 32 || education.mentorSupport >= 62 {
+            supportShape = .mentored
+        } else if education.teacherSupport >= 58 || education.disciplineRecord >= 78 {
+            supportShape = .protected
+        } else {
+            supportShape = .overlooked
+        }
+
+        let pressureShape: HighSchoolPressureShape
+        if tags["risk_seed", default: 0] >= 28 || education.reputationRisk >= 68 {
+            pressureShape = .reckless
+        } else if tags["burnout", default: 0] >= 28 || education.burnoutRisk >= 64 {
+            pressureShape = .burnedOut
+        } else if tags["survival_pressure", default: 0] >= 28 || education.attendancePressure >= 64 {
+            pressureShape = .survivalMode
+        } else {
+            pressureShape = .balanced
+        }
+
+        education.highSchoolProfile = HighSchoolProfile(
+            academicShape: academicShape,
+            socialShape: socialShape,
+            adultSupportShape: supportShape,
+            pressureShape: pressureShape,
+            futureSeed: resolvedFutureSeed(for: education)
+        )
+        education.highSchoolLegacyLine = highSchoolLegacyLine(for: education.highSchoolProfile)
+    }
+
+    private func resolvedFutureSeed(for education: EducationState) -> HighSchoolFutureSeed {
+        let tags = education.formativeSchoolTags
+        let candidates: [(HighSchoolFutureSeed, Int)] = [
+            (.athlete, tags["athlete_seed", default: 0]),
+            (.founder, tags["founder_seed", default: 0]),
+            (.creator, tags["creator_seed", default: 0]),
+            (.politics, tags["politics_seed", default: 0]),
+            (.riskLane, tags["risk_seed", default: 0]),
+            (.trade, max(tags["trade_seed", default: 0], education.academicTrack == .vocational ? 35 : 0)),
+            (.academic, max(tags["academic_seed", default: 0], education.schoolStanding >= 74 ? 28 : 0))
+        ]
+        let winner = candidates.max { $0.1 < $1.1 }
+        guard let winner, winner.1 >= 18 else { return .undecided }
+        return winner.0
+    }
+
+    private func highSchoolLegacyLine(for profile: HighSchoolProfile) -> String {
+        if profile.pressureShape == .burnedOut && profile.academicShape == .honors {
+            return "Burned-out achiever: doors opened, but recovery became part of the bill."
+        }
+        if profile.socialShape == .isolated {
+            return "Invisible survivor: you learned to move alone, and adulthood remembers it."
+        }
+        if profile.socialShape == .respected || profile.adultSupportShape == .mentored {
+            return "Respected organizer: people and adults started treating your presence as real."
+        }
+        if profile.futureSeed == .riskLane || profile.pressureShape == .reckless {
+            return "Risky hustler: the shortcut impulse became part of your adult shape."
+        }
+        if profile.academicShape == .vocational || profile.futureSeed == .trade {
+            return "Trade-ready: practical momentum gave adulthood a sturdier first rung."
+        }
+        if profile.academicShape == .dropoutRisk {
+            return "Drifting dropout: school pressure narrowed the launch before adulthood began."
+        }
+        if profile.futureSeed == .academic || profile.academicShape == .honors {
+            return "Late bloomer: school started turning effort into visible future doors."
+        }
+        return "Steady launch: high school left options open without deciding the whole story."
     }
 
     private func resolvedAcademicTrack(for education: EducationState) -> AcademicTrack {
@@ -589,6 +976,7 @@ struct EducationSystem {
         finance: FinanceState,
         result: inout DomainYearResult
     ) {
+        refreshHighSchoolProfile(for: &education)
         let graduationBuffer = education.teacherSupport >= 64 ? 6 : 0
         let dropoutExposure = education.schoolBelonging < 36 || education.reputationRisk >= 66 || education.disciplineRecord < 35
 
@@ -601,6 +989,8 @@ struct EducationSystem {
             education.pathway = .dropout
             education.stage = .inactive
             career.status = .unemployed
+            education.seniorYearOutcome = .dropoutDrift
+            applyHighSchoolCarryForward(education: education, career: &career, result: &result)
             result.notes.append(DomainNote(title: "Education", text: "School slipped out of reach and you dropped out under pressure."))
             return
         }
@@ -614,6 +1004,8 @@ struct EducationSystem {
                 education.credentials.append("Certificate Track")
             }
             career.status = .student
+            education.seniorYearOutcome = education.highSchoolProfile.futureSeed == .athlete || education.highSchoolProfile.futureSeed == .founder || education.highSchoolProfile.futureSeed == .creator || education.highSchoolProfile.futureSeed == .politics || education.highSchoolProfile.futureSeed == .riskLane ? .specialCareerSeed : .tradeTrack
+            applyHighSchoolCarryForward(education: education, career: &career, result: &result)
             result.notes.append(DomainNote(title: "Education", text: "You moved into practical training, choosing steadier skills over prestige."))
             return
         }
@@ -637,12 +1029,16 @@ struct EducationSystem {
             let routeText: String
             if education.hasScholarship && education.schoolStanding >= 84 {
                 routeText = "You entered a high-pressure university track with strong academics but real performance pressure."
+                education.seniorYearOutcome = .scholarshipRoute
             } else if education.hasScholarship {
                 routeText = "You entered university with scholarship help, trading money pressure for a heavier expectations game."
+                education.seniorYearOutcome = .scholarshipRoute
             } else if finance.financialStress >= 35 {
                 routeText = "You made it into a lower-cost commuter university route. It is viable, but the margin is thin."
+                education.seniorYearOutcome = .commuterCollege
             } else {
                 routeText = "You entered university, opening more doors but also inviting debt and burnout risk."
+                education.seniorYearOutcome = education.highSchoolProfile.futureSeed == .athlete || education.highSchoolProfile.futureSeed == .founder || education.highSchoolProfile.futureSeed == .creator || education.highSchoolProfile.futureSeed == .politics || education.highSchoolProfile.futureSeed == .riskLane ? .specialCareerSeed : .universityTrack
             }
             result.notes.append(DomainNote(title: "Education", text: routeText, tags: [.education, .finance]))
             // D3: Honors/uni handoff bonus to career starting (prestige/longevity + special entry bias seed)
@@ -656,6 +1052,7 @@ struct EducationSystem {
                 // Standard uni balanced ramp
                 career.annualIncome += 400
             }
+            applyHighSchoolCarryForward(education: education, career: &career, result: &result)
             return
         }
 
@@ -673,13 +1070,145 @@ struct EducationSystem {
             }
             education.studyFocus = education.studyFocus ?? .generalStudies
             career.status = .partTime
+            education.seniorYearOutcome = .adultEdRebuild
+            applyHighSchoolCarryForward(education: education, career: &career, result: &result)
             result.notes.append(DomainNote(title: "Education", text: "You left school without a clean university launch and moved into a slower adult-ed route."))
             return
         }
 
         education.stage = .inactive
         career.status = .unemployed
+        education.seniorYearOutcome = education.pathway == .graduate ? .earlyWorkRoute : .dropoutDrift
+        applyHighSchoolCarryForward(education: education, career: &career, result: &result)
         result.notes.append(DomainNote(title: "Education", text: "Adulthood arrived without a stable education path. Work and drift now compete for the same space."))
+    }
+
+    private func applyHighSchoolCarryForward(
+        education: EducationState,
+        career: inout CareerState,
+        result: inout DomainYearResult
+    ) {
+        let profile = education.highSchoolProfile
+        var publicReputation = 0
+        var privateReputation = 0
+        var rumorHeat = 0
+        var healthMental = 0
+        var healthStress = 0
+        var fame: FameEffects?
+
+        switch profile.academicShape {
+        case .honors:
+            career.performance = (career.performance + 4).clamped(to: 0...100)
+            career.jobSecurity = (career.jobSecurity + 2).clamped(to: 0...100)
+        case .steady:
+            career.performance = (career.performance + 1).clamped(to: 0...100)
+        case .struggling:
+            career.performance = (career.performance - 2).clamped(to: 0...100)
+        case .vocational:
+            career.jobSecurity = (career.jobSecurity + 4).clamped(to: 0...100)
+            career.annualIncome += 500
+        case .dropoutRisk:
+            career.jobSecurity = (career.jobSecurity - 4).clamped(to: 0...100)
+            career.performance = (career.performance - 3).clamped(to: 0...100)
+        }
+
+        switch profile.socialShape {
+        case .connected:
+            privateReputation += 3
+        case .respected:
+            publicReputation += 4
+            privateReputation += 2
+        case .invisible:
+            privateReputation -= 1
+        case .isolated:
+            privateReputation -= 4
+            healthMental -= 1
+        case .volatile:
+            publicReputation -= 3
+            rumorHeat += 5
+        }
+
+        switch profile.adultSupportShape {
+        case .mentored:
+            career.jobSecurity = (career.jobSecurity + 3).clamped(to: 0...100)
+            privateReputation += 2
+        case .protected:
+            career.jobSecurity = (career.jobSecurity + 1).clamped(to: 0...100)
+        case .overlooked:
+            break
+        case .adversarial:
+            publicReputation -= 2
+            rumorHeat += 3
+        }
+
+        switch profile.pressureShape {
+        case .balanced:
+            healthStress += 1
+        case .burnedOut:
+            healthMental -= 2
+            healthStress -= 3
+            career.burnout = (career.burnout + 3).clamped(to: 0...100)
+        case .survivalMode:
+            healthMental -= 1
+            healthStress -= 2
+        case .reckless:
+            rumorHeat += 4
+            publicReputation -= 1
+        }
+
+        switch profile.futureSeed {
+        case .creator:
+            fame = FameEffects(culturalFame: 2, addKnownFor: "High-school creator")
+        case .athlete:
+            fame = FameEffects(culturalFame: 1, addKnownFor: "High-school athlete")
+        case .politics:
+            fame = FameEffects(culturalFame: 1, addKnownFor: "Student leader")
+        case .riskLane:
+            fame = FameEffects(notoriety: 2, addKnownFor: "Risky youth")
+        case .founder:
+            career.performance = (career.performance + 2).clamped(to: 0...100)
+        case .academic, .trade, .undecided:
+            break
+        }
+
+        if publicReputation != 0 || privateReputation != 0 || rumorHeat != 0 {
+            result.relationshipEffects = RelationshipEffects(
+                publicReputationChange: publicReputation == 0 ? nil : publicReputation,
+                privateReputationChange: privateReputation == 0 ? nil : privateReputation,
+                rumorHeatChange: rumorHeat == 0 ? nil : rumorHeat
+            )
+        }
+        if healthMental != 0 || healthStress != 0 {
+            result.healthEffects = HealthEffects(
+                mental: healthMental == 0 ? nil : healthMental,
+                stressManagement: healthStress == 0 ? nil : healthStress
+            )
+        }
+        if let fame {
+            result.fameEffects = fame
+        }
+
+        result.notes.append(
+            DomainNote(
+                title: seniorHeadline(for: education),
+                text: education.highSchoolLegacyLine,
+                tags: [.education, .progress]
+            )
+        )
+    }
+
+    private func seniorHeadline(for education: EducationState) -> String {
+        switch education.seniorYearOutcome {
+        case .scholarshipRoute: return "Scholarship Route Opened"
+        case .commuterCollege: return "Commuter College Launch"
+        case .universityTrack: return "University Track Opened"
+        case .tradeTrack: return "Trade Track Took Shape"
+        case .adultEdRebuild: return "Adult Rebuild Begins"
+        case .dropoutDrift: return "School Drift Became Real"
+        case .earlyWorkRoute: return "Early Work Route Begins"
+        case .specialCareerSeed: return "A Future Seed Carried"
+        case .unresolved: return "High School Shape Set"
+        }
     }
 
     private func advancePostSecondaryStage(
@@ -917,54 +1446,174 @@ struct HousingSystem {
     }
 }
 
-// D1: Minimal identity action handler (light, always instant, dossier + ledger aware)
+// D1+: Identity static instants — dossier, resilience, shape, fame depth
 private func applyIdentityAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
     var result = DomainYearResult()
-    let d = state.childhoodDossier
+    let grounded = StaticInstantActionFlavor.isGrounded(state)
+    let resilient = StaticInstantActionFlavor.isResilient(state)
+
     switch choiceID {
     case .morningReflection:
-        state.identityCoherence = (state.identityCoherence + 6).clamped(to: 0...100)
-        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 4).clamped(to: 0...100)
-        state.correlationLedger.publish(CorrelationSignal(kind: .instantActionPulse, domain: "identity", strength: 18, age: state.player.age))
-        var note = "You sat with the quiet version of yourself for ten minutes. The year felt a fraction more yours."
-        if let d = d, d.aptitudes.analytical >= 55 {
-            note = "The analytical wiring from before 14 made the reflection sharper than usual."
+        let mental = StaticInstantActionFlavor.resilienceScaled(state, grounded: 6, resilient: 4)
+        state.identityCoherence = (state.identityCoherence + mental).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + mental).clamped(to: 0...100)
+        StaticInstantActionFlavor.publishPulse(&state, domain: "identity", strength: 18)
+        var note = "You sat with the quiet version of yourself. The year felt a fraction more yours."
+        if StaticInstantActionFlavor.dossierAnalytical(state) {
+            note = "The analytical wiring from before 14 made the reflection sharper — you named the pattern, not just the feeling."
         }
         result.notes.append(DomainNote(title: "Reflection", text: note, tags: [.health, .identity]))
+
     case .reconcileWithPast:
         state.identityCoherence = (state.identityCoherence + 8).clamped(to: 0...100)
-        if let d = d {
-            // Dossier reconciliation gives small bond/mental if high social or analytical
-            if d.aptitudes.social >= 50 || d.aptitudes.analytical >= 50 {
-                state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 5).clamped(to: 0...100)
-            }
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 5).clamped(to: 0...100)
+        var text = "You made a little peace with the shape you were given at 14."
+        if let streak = StaticInstantActionFlavor.stanceStreakLine(state) {
+            text += " \(streak)"
         }
-        result.notes.append(DomainNote(title: "Reconciled", text: "You made a little peace with the shape you were given at 14. It stopped fighting you quite so hard.", tags: [.family, .identity]))
+        StaticInstantActionFlavor.publishPulse(&state, domain: "identity", strength: 17)
+        result.notes.append(DomainNote(title: "Reconciled", text: text, tags: [.family, .identity]))
+
+    case .protectYourEnergy:
+        let mental = StaticInstantActionFlavor.resilienceScaled(state, grounded: 8, resilient: 5)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + mental).clamped(to: 0...100)
+        state.consequences.adjustPressure(domain: "health", delta: grounded ? -4 : -2)
+        state.consequences.adjustPressure(domain: "career", delta: -2)
+        state.career.burnout = max(0, state.career.burnout - StaticInstantActionFlavor.resilienceScaled(state, grounded: 6, resilient: 3))
+        let energyNote = grounded
+            ? "You drew a hard line and it actually worked. The air cleared faster than you expected."
+            : "You stopped letting everything drain you at once. Recovery became deliberate."
+        StaticInstantActionFlavor.publishPulse(&state, domain: "identity", strength: 16)
+        result.notes.append(DomainNote(title: "Energy Guard", text: energyNote, tags: [.health, .identity, .career]))
+
     case .tryNewPersona:
-        state.identityCoherence = (state.identityCoherence + 4).clamped(to: 0...100) // experiment costs a little coherence until it settles
+        state.identityCoherence = (state.identityCoherence + 4).clamped(to: 0...100)
         state.relationships.publicReputation = (state.relationships.publicReputation + 5).clamped(to: 0...100)
         state.specialCareer.audience = min(100, state.specialCareer.audience + 3)
-        result.notes.append(DomainNote(title: "New Persona", text: "You tried on a different version of yourself in public. Some people liked it. Some people miss the old one.", tags: [.social, .identity, .risk]))
+        var personaText = "You tried on a different version of yourself in public."
+        personaText += StaticInstantActionFlavor.fameGravitySuffix(
+            state,
+            highFame: " People noticed the shift — some liked it, some miss the old story.",
+            lowFame: " Some people liked it. Some people miss the old one."
+        )
+        StaticInstantActionFlavor.publishPulse(&state, domain: "identity", strength: 15)
+        result.notes.append(DomainNote(title: "New Persona", text: personaText, tags: [.social, .identity, .risk]))
+
     case .publicReset:
         state.identityCoherence = (state.identityCoherence + 5).clamped(to: 0...100)
         state.relationships.publicReputation = (state.relationships.publicReputation + 7).clamped(to: 0...100)
-        state.specialCareer.fame = max(0, state.specialCareer.fame - 3) // cost to the old story
+        state.specialCareer.fame = max(0, state.specialCareer.fame - 3)
         result.notes.append(DomainNote(title: "Public Reset", text: "You told the world a cleaner version of the story. The old one still exists in the comments.", tags: [.social, .career]))
+
     case .therapySession:
         state.identityCoherence = (state.identityCoherence + 9).clamped(to: 0...100)
         state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 7).clamped(to: 0...100)
         result.financeEffects = FinanceEffects(cashDelta: -120)
-        result.notes.append(DomainNote(title: "Therapy", text: "You paid someone to help you hear yourself. It cost money and it cost the story you were telling about not needing help.", tags: [.health, .finance]))
+        result.notes.append(DomainNote(title: "Therapy", text: "You paid someone to help you hear yourself.", tags: [.health, .finance]))
+
     case .processCrisis:
         state.identityCoherence = (state.identityCoherence + 12).clamped(to: 0...100)
-        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness - 2).clamped(to: 0...100) // painful but clarifying
-        // Slight realign pressure toward protectHealth or repairPeople
+        if grounded {
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 4).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Identity Work", text: "You stopped running from the fracture. In a Grounded life, facing it felt like fighting back — and winning a round.", tags: [.health, .identity, .risk]))
+        } else if resilient {
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness - 1).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Identity Work", text: "You absorbed the hit and kept moving. The clarity is real, but the scar stayed visible.", tags: [.health, .identity, .risk]))
+        } else {
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness - 2).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Identity Work", text: "You stopped running from the fracture. The pieces are still sharp, but they are on the table now.", tags: [.health, .identity, .risk]))
+        }
         state.consequences.adjustPressure(domain: "health", delta: 3)
-        result.notes.append(DomainNote(title: "Identity Work", text: "You stopped running from the fracture. The pieces are still sharp, but they are on the table now.", tags: [.health, .identity, .risk]))
+        StaticInstantActionFlavor.publishPulse(&state, domain: "identity", strength: 20)
+
+    case .journalTheShape:
+        state.identityCoherence = (state.identityCoherence + 5).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 4).clamped(to: 0...100)
+        StaticInstantActionFlavor.publishPulse(&state, domain: "identity", strength: 22)
+        let shapeLine = StaticInstantActionFlavor.shapeResidueLine(state) ?? "You wrote down who you've been lately before the year could decide for you."
+        result.notes.append(DomainNote(title: "Shape Named", text: shapeLine, tags: [.identity, .progress]))
+
+    case .quietTheNoise:
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 5).clamped(to: 0...100)
+        state.relationships.activeRumorHeat = max(0, state.relationships.activeRumorHeat - StaticInstantActionFlavor.resilienceScaled(state, grounded: 10, resilient: 6))
+        if state.fame.notoriety >= 40 {
+            state.fame.notoriety = max(0, state.fame.notoriety - 2)
+        }
+        StaticInstantActionFlavor.publishPulse(&state, domain: "identity", strength: 16)
+        result.notes.append(DomainNote(
+            title: "Noise Down",
+            text: "You stepped away from the story other people were telling about you." + StaticInstantActionFlavor.fameGravitySuffix(state, highFame: " Even the loud version of your name got quieter for a night."),
+            tags: [.identity, .social]
+        ))
+
     default:
         break
     }
     state.identityCoherence = state.identityCoherence.clamped(to: 0...100)
+    state.player.clampStats()
+    return result
+}
+
+// Static play / hobby instant actions — recovery, dossier, resilience depth
+private func applyPlayAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
+    var result = DomainYearResult()
+    let grounded = StaticInstantActionFlavor.isGrounded(state)
+    switch choiceID {
+    case .hobbySession:
+        state.activities.recoveryBalance = (state.activities.recoveryBalance + 6).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 4).clamped(to: 0...100)
+        state.player.happiness = (state.player.happiness + 3).clamped(to: 0...100)
+        var hobbyText = "You lost an hour to something that exists only because you like it. The year feels lighter."
+        if StaticInstantActionFlavor.dossierSocial(state) {
+            hobbyText = "The social wiring from 14 made the hobby feel like belonging, not escape."
+        }
+        StaticInstantActionFlavor.publishPulse(&state, domain: "play", strength: 14)
+        result.notes.append(DomainNote(title: "Hobby Time", text: hobbyText, tags: [.health, .identity]))
+    case .socialOuting:
+        state.activities.recoveryBalance = (state.activities.recoveryBalance + 4).clamped(to: 0...100)
+        state.player.happiness = (state.player.happiness + 5).clamped(to: 0...100)
+        if !state.relationships.friends.isEmpty {
+            state.relationships.friends[0].bond = (state.relationships.friends[0].bond + 4).clamped(to: 0...100)
+        }
+        result.financeEffects = FinanceEffects(cashDelta: -40)
+        var outingText = "You showed up in person. The group chat energy finally matched real life."
+        outingText += StaticInstantActionFlavor.fameGravitySuffix(state, highFame: " A few phones came out anyway.")
+        StaticInstantActionFlavor.publishPulse(&state, domain: "play", strength: 15)
+        result.notes.append(DomainNote(title: "Out With People", text: outingText, tags: [.relationships, .social]))
+    case .creativeOutlet:
+        state.identityCoherence = (state.identityCoherence + 5).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 5).clamped(to: 0...100)
+        state.activities.recoveryBalance = (state.activities.recoveryBalance + 3).clamped(to: 0...100)
+        if state.specialCareer.track == .contentCreator {
+            state.specialCareer.audience = min(100, state.specialCareer.audience + 2)
+        }
+        StaticInstantActionFlavor.publishPulse(&state, domain: "play", strength: 16)
+        result.notes.append(DomainNote(title: "Creative Hour", text: "You made something that nobody assigned. It reminded you who you are outside the grind.", tags: [.identity, .health]))
+    case .adventure:
+        state.activities.riskLoad = (state.activities.riskLoad + 3).clamped(to: 0...100)
+        state.player.happiness = (state.player.happiness + 6).clamped(to: 0...100)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 2).clamped(to: 0...100)
+        result.financeEffects = FinanceEffects(cashDelta: -120)
+        var adventureText = grounded
+            ? "You chased a little chaos on purpose — but you picked the version you could survive."
+            : "You chased a little chaos on purpose. The story is worth more than the cost."
+        if state.fame.notoriety >= 40 {
+            adventureText += " Someone almost turned it into content."
+        }
+        StaticInstantActionFlavor.publishPulse(&state, domain: "play", strength: 17)
+        result.notes.append(DomainNote(title: "Adventure", text: adventureText, tags: [.risk, .health]))
+    case .relaxRoutine:
+        let mental = StaticInstantActionFlavor.resilienceScaled(state, grounded: 8, resilient: 5)
+        state.activities.recoveryBalance = (state.activities.recoveryBalance + 8).clamped(to: 0...100)
+        state.activities.riskLoad = max(0, state.activities.riskLoad - 2)
+        state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + mental).clamped(to: 0...100)
+        state.career.burnout = max(0, state.career.burnout - StaticInstantActionFlavor.resilienceScaled(state, grounded: 4, resilient: 2))
+        StaticInstantActionFlavor.publishPulse(&state, domain: "play", strength: 18)
+        result.notes.append(DomainNote(title: "Downshift", text: grounded ? "You built a deliberate slow patch into the year. Recovery is finally audible — and earned." : "You built a deliberate slow patch into the year. Recovery is finally audible.", tags: [.health, .career]))
+    default:
+        break
+    }
+    state.player.clampStats()
     return result
 }
 
@@ -1027,7 +1676,7 @@ struct ActionSystem {
                 if specialCareerSystem.handles(action.choiceID) {
                     actionResult = specialCareerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, specialCareer: &state.specialCareer, childhoodDossier: state.childhoodDossier, finance: &state.finance)
                 } else {
-                    actionResult = careerSystem.applyAction(action.choiceID, player: &state.player, career: &state.career, fame: &state.fame)
+                    actionResult = careerSystem.applyAction(action.choiceID, state: &state)
                 }
             case .military:
                 actionResult = militarySystem.applyAction(action.choiceID, player: &state.player, military: &state.military, career: &state.career, education: state.education)
@@ -1042,17 +1691,19 @@ struct ActionSystem {
                 } else if [.hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection].contains(action.choiceID) {
                     actionResult = luxurySystem.applyAction(action.choiceID, state: state)
                 } else {
-                    actionResult = financeSystem.applyAction(action.choiceID, finance: &state.finance, player: &state.player)
+                    actionResult = financeSystem.applyAction(action.choiceID, state: &state)
                 }
             case .relationships:
                 actionResult = relationshipSystem.applyAction(action.choiceID, state: &state)
             case .health:
-                actionResult = healthSystem.applyAction(action.choiceID, player: &state.player, health: &state.healthProfile)
+                actionResult = healthSystem.applyAction(action.choiceID, state: &state)
             case .family:
                 actionResult = familySystem.applyAction(action.choiceID, state: &state)
             case .identity:
                 // D1: Light identity apply — always instant self-work with dossier/ledger flavor
                 actionResult = applyIdentityAction(action.choiceID, state: &state)
+            case .play:
+                actionResult = applyPlayAction(action.choiceID, state: &state)
             }
 
             effectApplier.apply(
@@ -1324,6 +1975,22 @@ struct CareerSystem {
         }
         if input.prisonResidueTags.contains("hardened"), career.regularArchetype == .salesNetworker {
             career.performance = min(100, career.performance + 1)
+        }
+        if input.prisonResidueTags.contains("institutionalized") {
+            career.jobSecurity = min(career.jobSecurity, 38)
+            career.burnout = min(100, career.burnout + 3)
+        }
+        if input.prisonResidueTags.contains("straightPath") {
+            career.performance = min(100, career.performance + 2)
+            career.jobSecurity = min(100, career.jobSecurity + 2)
+        }
+        if input.prisonResidueTags.contains("insideContactOutside") {
+            career.performance = min(100, career.performance + 1)
+            career.jobSecurity = min(100, career.jobSecurity + 1)
+        }
+        if input.prisonResidueTags.contains("unfinishedInsideConflict") {
+            career.burnout = min(100, career.burnout + 2)
+            career.jobSecurity = max(0, career.jobSecurity - 1)
         }
         return advanceYear(
             player: &player,
@@ -1801,7 +2468,30 @@ struct CareerSystem {
         career.clamp()
     }
 
+    func applyAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
+        var player = state.player
+        var career = state.career
+        var fame = state.fame
+        let result = applyActionImpl(choiceID, player: &player, career: &career, fame: &fame, state: &state)
+        state.player = player
+        state.career = career
+        state.fame = fame
+        return result
+    }
+
     func applyAction(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState, fame: inout FameProfile) -> DomainYearResult {
+        var state = GameState()
+        state.player = player
+        state.career = career
+        state.fame = fame
+        let result = applyAction(choiceID, state: &state)
+        player = state.player
+        career = state.career
+        fame = state.fame
+        return result
+    }
+
+    private func applyActionImpl(_ choiceID: ActionChoiceID, player: inout Player, career: inout CareerState, fame: inout FameProfile, state: inout GameState) -> DomainYearResult {
         var result = DomainYearResult()
 
         switch choiceID {
@@ -1828,7 +2518,7 @@ struct CareerSystem {
                 result.notes.append(DomainNote(title: "New Role", text: "You accepted the CTO position.", tags: [.career]))
             }
             
-        case .workHard:
+        case .workHard, .extraEffort, .putYourHeadDown:
             career.performance += 8
             career.burnout += max(4, 10 - career.scheduleControl / 20)
             career.schedulePressure += 6
@@ -1837,13 +2527,36 @@ struct CareerSystem {
             career.ambitionYears += 1
             result.healthEffects = HealthEffects(physical: nil, mental: -3, exercise: nil, nutrition: nil, stressManagement: -2, addCondition: nil, removeCondition: nil, hasPrimaryCare: nil)
             result.relationshipEffects = RelationshipEffects(meetNewFriend: nil, friendChange: -1, startDating: nil, partnerChange: -1, setPartnerStage: nil, setCohabiting: nil, commitmentAlignmentChange: -2, loseFriend: nil, breakup: nil)
-            result.notes.append(
-                DomainNote(
-                    title: "Career Focus",
-                    text: "You leaned into work hard enough to move performance, but the pace bled into recovery and the people around you.",
-                    tags: [.career, .health, .relationships]
-                )
-            )
+            var grindText: String = {
+                switch choiceID {
+                case .putYourHeadDown: return "You put your head down and the work moved. Performance answered — everything else paid the tax."
+                case .extraEffort: return "You pushed harder than the job strictly required. Performance moved, but so did the exhaustion tax."
+                default: return "You leaned into work hard enough to move performance, but the pace bled into recovery and the people around you."
+                }
+            }()
+            if choiceID == .putYourHeadDown {
+                if LifeShapeResolver.resolveOrPragmatic(from: state) == .drivenCurrent {
+                    grindText = "The driven current made this feel almost automatic. You put your head down and the work moved."
+                }
+                if let streak = StaticInstantActionFlavor.stanceStreakLine(state) {
+                    grindText += " \(streak)"
+                }
+                StaticInstantActionFlavor.publishPulse(&state, domain: "career", strength: 16)
+            }
+            result.notes.append(DomainNote(title: "Career Focus", text: grindText, tags: [.career, .health, .relationships]))
+        case .protectWorkLifeLine:
+            career.performance += 1
+            career.burnout = max(0, career.burnout - 8)
+            career.schedulePressure = max(0, career.schedulePressure - 6)
+            career.relationshipSpillover = max(0, career.relationshipSpillover - 5)
+            career.scheduleControl += 5
+            career.protectiveYears += 1
+            result.healthEffects = HealthEffects(physical: 2, mental: 6, exercise: nil, nutrition: nil, stressManagement: 5, addCondition: nil, removeCondition: nil, hasPrimaryCare: nil)
+            let workLifeText = StaticInstantActionFlavor.isGrounded(state)
+                ? "You closed the laptop on purpose. The relief wasn't theoretical — you felt it in your chest."
+                : "You closed the laptop on purpose. The job didn't get to eat the whole person tonight."
+            StaticInstantActionFlavor.publishPulse(&state, domain: "career", strength: 18)
+            result.notes.append(DomainNote(title: "Work-Life Line", text: workLifeText, tags: [.career, .health, .relationships]))
         case .protectYourEnergy:
             career.performance += 1
             career.burnout = max(0, career.burnout - (career.workIdentity == .caretaker ? 10 : 8))
@@ -1865,6 +2578,27 @@ struct CareerSystem {
             result.relationshipEffects = RelationshipEffects(meetNewFriend: true, friendChange: 1, startDating: nil, partnerChange: nil, setPartnerStage: nil, setCohabiting: nil, commitmentAlignmentChange: nil, loseFriend: nil, breakup: nil)
             result.coreEffects = CoreStatEffects(happiness: player.traits.contains(.anxious) ? -1 : 1, smarts: nil, looks: nil, health: nil)
             result.notes.append(DomainNote(title: "Career Focus", text: "You spent the year converting conversations into leverage. The upside is real, but it can make the rest of life feel transactional.", tags: [.career, .relationships]))
+        case .seekMentor:
+            career.performance += 3
+            career.jobSecurity += 3
+            career.schedulePressure += 1
+            result.relationshipEffects = RelationshipEffects(meetNewFriend: true, friendChange: 1, startDating: nil, partnerChange: nil, setPartnerStage: nil, setCohabiting: nil, commitmentAlignmentChange: nil, loseFriend: nil, breakup: nil)
+            result.notes.append(DomainNote(title: "Mentorship", text: "Someone ahead of you shared the map. It cost humility and bought clarity.", tags: [.career, .relationships]))
+        case .documentWins:
+            career.performance += 4
+            career.jobSecurity += 2
+            result.notes.append(DomainNote(title: "Documented Win", text: "You wrote the work down where people actually look. Credit has a better chance of sticking.", tags: [.career]))
+        case .improveSkill:
+            career.performance += 3
+            career.burnout += 2
+            career.schedulePressure += 2
+            player.smarts = (player.smarts + 2).clamped(to: 0...100)
+            result.notes.append(DomainNote(title: "Skill Stack", text: "You invested deliberate hours in getting sharper. The job feels slightly less like guesswork.", tags: [.career, .education]))
+        case .managePolitics:
+            career.jobSecurity += 4
+            career.managerFriction += 2
+            career.performance += 2
+            result.notes.append(DomainNote(title: "Office Politics", text: "You played the room instead of only the deliverables. Security improved; authenticity got thinner.", tags: [.career, .relationships]))
         case .retrain:
             career.performance += 2
             if career.retrainingTargetProfile == nil {

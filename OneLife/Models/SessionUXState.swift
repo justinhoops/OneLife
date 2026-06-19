@@ -314,6 +314,10 @@ enum PlayerPattern: String, Codable, CaseIterable, Identifiable {
 /// Blunt first-session copy for the two-speed mental model (journal, coach banner, MVP steps).
 enum TwoSpeedTeaching {
     static let line = "Tap Right Now to move the world a little — you get feedback immediately. Age Up commits a full year and lets bigger things compound. Use both."
+
+    static let firstAgeUpReflection = "Quick actions give instant feedback and build momentum. Age Up commits to a full year shaped by what you've been doing."
+
+    static let lifeShapeCarryPhrase = "This will carry into your life shape and what the world offers in quieter years."
 }
 
 /// Snapshot of instant momentum captured at Age Up — powers year-summary "From Your Moves" teach.
@@ -345,6 +349,101 @@ struct InstantMomentumCarrySnapshot: Codable, Equatable {
     }
 }
 
+/// Tier A cache: household at-a-glance for People tab when family phase is active.
+struct FamilyHouseholdSnapshot: Equatable {
+    var atHomeCount: Int = 0
+    var adultCount: Int = 0
+    var pregnancyActive: Bool = false
+    var strongestBondChildName: String?
+    var strongestBondValue: Int = 0
+    var topPressureLine: String?
+    var headlineChildLine: String?
+    var bannerLine: String?
+
+    static let empty = FamilyHouseholdSnapshot()
+
+    static func build(from family: FamilyState, bannerLine: String? = nil) -> FamilyHouseholdSnapshot {
+        let atHome = family.children.filter(\.livesAtHome)
+        let adults = family.children.filter { !$0.livesAtHome }
+        let strongest = atHome.max(by: { $0.bondWithPlayer < $1.bondWithPlayer })
+
+        var pressure: String?
+        if family.isPregnant {
+            pressure = "Pregnancy active — planning and energy both spike."
+        } else if family.postpartumYearsRemaining > 0 {
+            pressure = "Postpartum — extra support load on the household."
+        } else if let strained = adults
+            .filter({ ($0.adultProfile?.relationshipQuality ?? 55) < 35 })
+            .min(by: { ($0.adultProfile?.relationshipQuality ?? 55) < ($1.adultProfile?.relationshipQuality ?? 55) }) {
+            pressure = "\(strained.name) feels distant — strained adult bond."
+        } else if let highLoad = atHome.filter({ $0.supportLoad >= 60 }).max(by: { $0.supportLoad < $1.supportLoad }) {
+            pressure = "\(highLoad.name) needs more support this year."
+        } else if !atHome.isEmpty {
+            let avgLoad = atHome.map(\.supportLoad).reduce(0, +) / atHome.count
+            if avgLoad >= 55 {
+                pressure = "Household support load is elevated."
+            }
+        }
+
+        var headline: String?
+        if let youngest = atHome.min(by: { lhs, rhs in
+            lhs.age != rhs.age ? lhs.age < rhs.age : lhs.bondWithPlayer < rhs.bondWithPlayer
+        }) {
+            headline = youngest.currentVibe
+        } else if let strainedAdult = adults.min(by: {
+            ($0.adultProfile?.relationshipQuality ?? 55) < ($1.adultProfile?.relationshipQuality ?? 55)
+        }) {
+            headline = strainedAdult.currentVibe
+        }
+
+        return FamilyHouseholdSnapshot(
+            atHomeCount: atHome.count,
+            adultCount: adults.count,
+            pregnancyActive: family.isPregnant,
+            strongestBondChildName: strongest?.name,
+            strongestBondValue: strongest?.bondWithPlayer ?? 0,
+            topPressureLine: pressure,
+            headlineChildLine: headline,
+            bannerLine: bannerLine
+        )
+    }
+
+    /// Youngest at-home child, or lowest-bond at-home when ages tie — for parenting previews and feedback.
+    static func focusChildForParenting(in family: FamilyState) -> ChildRecord? {
+        let atHome = family.children.filter(\.livesAtHome)
+        guard !atHome.isEmpty else { return nil }
+        return atHome.min(by: { lhs, rhs in
+            lhs.age != rhs.age ? lhs.age < rhs.age : lhs.bondWithPlayer < rhs.bondWithPlayer
+        })
+    }
+}
+
+/// Detects family teach moments from year-to-year diffs (birth, leave-home).
+enum FamilyDiscoverabilityMoments {
+    static func applyYearDiff(
+        before: FamilyState,
+        after: FamilyState,
+        discoverability: inout DiscoverabilityState
+    ) {
+        if after.childCount == 1, before.childCount == 0, !discoverability.seenFirstChildBornCoach {
+            discoverability.pendingFamilyHouseholdBanner = DiscoverabilityTeaching.firstChildBornLine
+        }
+
+        guard !discoverability.seenFirstLeaveHomeCoach else { return }
+        for child in after.children {
+            guard let previous = before.children.first(where: { $0.id == child.id }) else { continue }
+            if previous.livesAtHome, !child.livesAtHome {
+                let age = child.leftHomeAtAge ?? child.age
+                discoverability.pendingFamilyHouseholdBanner = DiscoverabilityTeaching.firstLeaveHomeLine(
+                    name: child.name,
+                    age: age
+                )
+                break
+            }
+        }
+    }
+}
+
 /// Inline teach copy for Slice A discoverability (decision-point micro-hints).
 enum DiscoverabilityTeaching {
     static func firstQuickActionLine(resilience: LifeResilience) -> String {
@@ -356,11 +455,50 @@ enum DiscoverabilityTeaching {
         }
     }
 
-    static let longPressFooterLine = "This biases the year before you Age Up."
+    static let longPressFooterLine = "Hold any action to preview before you tap. This biases the year before you Age Up."
 
-    static let firstMomentumAgeUpLine = "Your recent moves carry into this year."
+    static let firstMomentumAgeUpLine = "Your recent moves carry into this year—the bars above Age Up show where."
+
+    static let adultChildTransitionLine = "These are the same children from earlier years. Their outcomes now carry forward independently."
 
     static let adultChildFocusHistoryLine = "Their arc remembers your focus history—stance and time spent still echo."
+
+    static let firstChildBornLine = "This child will remember how you show up."
+
+    static func firstLeaveHomeLine(name: String, age: Int) -> String {
+        "\(name) left at \(age) — their adult story starts now."
+    }
+
+    static let firstParentingActionLine = "Bond and development notes stack into who they become."
+
+    static let momentumStripDetailLine = "High momentum in a domain biases events and softens pressure in the next Age Up. Built by focused instant actions — carries forward until you shift focus."
+
+    static let dossierStanceCoachLine = "What you were at 14 still wires how the world answers you. Stance choices compound into your life shape."
+
+    static let longPressDiscoveryPulseDetail = "Hold any Right Now action to see what it does before you commit. Try it on your next move."
+
+    static func momentumStripIntroLine(resilience: LifeResilience) -> String {
+        switch resilience {
+        case .resilient:
+            return "The purple strip tracks momentum from quick moves. Repeats in one lane bias the next year's events."
+        case .grounded:
+            return "The purple strip tracks momentum. Repeats land harder in Grounded—watch Body, Money, and People bars."
+        }
+    }
+
+    static func lifeShapeIntroLine(shape: String, resilience: LifeResilience) -> String {
+        let shapeNote = shape.contains("driven")
+            ? "A driven shape pushes harder years and bigger upside."
+            : shape.contains("loose")
+                ? "Loose edges soften pressure but drift can compound."
+                : "Your recent stances are writing a life shape that echoes in quiet years."
+        switch resilience {
+        case .resilient:
+            return "Shape: \(shape). \(shapeNote)"
+        case .grounded:
+            return "Shape: \(shape). \(shapeNote) Grounded runs feel this at full weight."
+        }
+    }
 
     static func instantMomentumCarryLine(snapshot: InstantMomentumCarrySnapshot, resilience: LifeResilience) -> String {
         let parts = snapshot.rankedDomains.map { entry in
@@ -382,6 +520,146 @@ enum DiscoverabilityTeaching {
         case .resilient:
             return "You have recovery room—repeats and stance can still bend this year."
         }
+    }
+
+    static func momentumDomainMicroHint(domain: ActionDomain, value: Int) -> String {
+        let label = momentumDomainLabel(domain)
+        switch domain {
+        case .health:
+            return "Building \(label) momentum (+\(value)) → next year favors recovery chances."
+        case .finance:
+            return "Building \(label) momentum (+\(value)) → next year favors money openings."
+        case .relationships:
+            return "Building \(label) momentum (+\(value)) → next year favors social pressure relief."
+        default:
+            return "Building \(label) momentum (+\(value)) → biases next year's events."
+        }
+    }
+
+    static func resilienceForecastLine(resilience: LifeResilience, momentumVisible: Bool, recoveryTone: Bool) -> String? {
+        switch resilience {
+        case .grounded:
+            if recoveryTone {
+                return "Your Grounded stance made this recovery feel earned."
+            }
+            if momentumVisible {
+                return "Grounded — fighting back hits harder. Momentum still carries at full weight."
+            }
+            return nil
+        case .resilient:
+            if momentumVisible {
+                return "Resilient years compound — the speed is still in your bones."
+            }
+            if recoveryTone {
+                return "Resilient room let this year bend back without breaking."
+            }
+            return nil
+        }
+    }
+
+    static func resilienceYearSummaryLine(resilience: LifeResilience, hadRecovery: Bool, momentumCarried: Bool) -> String? {
+        if hadRecovery {
+            return resilienceForecastLine(resilience: resilience, momentumVisible: momentumCarried, recoveryTone: true)
+        }
+        if momentumCarried {
+            return resilienceForecastLine(resilience: resilience, momentumVisible: true, recoveryTone: false)
+        }
+        return nil
+    }
+
+    /// D4 / momentum consequence lines appended to long-press previews (1–2 when relevant).
+    static func previewContextLines(choiceID: ActionChoiceID, domain: ActionDomain, state: GameState) -> [String] {
+        let parentingIDs: Set<ActionChoiceID> = [
+            .spendTimeWithKids, .checkInOnChild, .enforceRoutine, .encourageIndependence
+        ]
+        if parentingIDs.contains(choiceID) {
+            return familyParentingPreviewLines(choiceID: choiceID, state: state)
+        }
+
+        let definition = ActionChoiceCatalog.definition(for: choiceID)
+        let tagBlob = (definition.previewTags + [definition.subtitle, definition.identityLine])
+            .joined(separator: " ")
+            .lowercased()
+        let careerWeight = definition.preferredEventTags["career"] ?? 0
+        var lines: [String] = []
+
+        let protectiveIDs: Set<ActionChoiceID> = [
+            .rest, .protectSleep, .seeDoctor, .protectYourEnergy, .repairTension,
+            .takeRealBreak, .recoveryFocus, .therapySession
+        ]
+        let looseIDs: Set<ActionChoiceID> = [
+            .coast, .skipAndDrift, .spendForRelief, .spendToCope
+        ]
+        let driven = careerWeight >= 6
+            || tagBlob.contains("performance")
+            || tagBlob.contains("grind")
+            || tagBlob.contains("overtime")
+            || tagBlob.contains("compete")
+            || tagBlob.contains("training")
+            || tagBlob.contains("hustle")
+        let protective = protectiveIDs.contains(choiceID)
+            || tagBlob.contains("rest")
+            || tagBlob.contains("recovery")
+            || tagBlob.contains("protect")
+            || tagBlob.contains("mental relief")
+            || tagBlob.contains("therapy")
+        let loose = looseIDs.contains(choiceID)
+            || tagBlob.contains("drift")
+            || tagBlob.contains("cope")
+            || tagBlob.contains("relief")
+
+        if driven {
+            lines.append("This pushes your life shape toward driven current and will color quiet years.")
+        } else if protective {
+            if state.resilience == .grounded {
+                lines.append("This leans protective — Grounded mode will make the payoff hit harder later.")
+            } else {
+                lines.append("This leans protective — recovery room carries into quieter years.")
+            }
+        } else if loose {
+            lines.append("This nudges toward loose edges — quieter years will feel more drift.")
+        }
+
+        switch domain {
+        case .health:
+            lines.append("Builds momentum in Health that softens next year's pressure.")
+        case .finance:
+            lines.append("Builds momentum in Money that biases next year's financial openings.")
+        case .relationships:
+            lines.append("Builds momentum in People that shapes social pressure next year.")
+        default:
+            break
+        }
+
+        if lines.isEmpty {
+            lines.append(TwoSpeedTeaching.lifeShapeCarryPhrase)
+        } else if lines.count == 1, !lines[0].contains("life shape") {
+            lines.append(TwoSpeedTeaching.lifeShapeCarryPhrase)
+        }
+
+        return Array(lines.prefix(2))
+    }
+
+    private static func familyParentingPreviewLines(choiceID: ActionChoiceID, state: GameState) -> [String] {
+        guard let child = FamilyHouseholdSnapshot.focusChildForParenting(in: state.family) else {
+            return ["Parenting actions shape who your kids become over time."]
+        }
+        let temp = child.temperament.shortDescription
+        var lines: [String] = []
+        switch choiceID {
+        case .spendTimeWithKids:
+            lines.append("\(child.name) is \(temp) — presence lands fast on sensitive kids.")
+        case .checkInOnChild:
+            lines.append("Check in with \(child.name) (\(temp)) — bond stacks into adult outcomes.")
+        case .enforceRoutine:
+            lines.append("Structure hits \(temp) temperaments differently — watch \(child.name)'s bond.")
+        case .encourageIndependence:
+            lines.append("\(child.name)'s \(temp) streak shapes how independence lands.")
+        default:
+            break
+        }
+        lines.append("Feeds development notes → who they become as adults.")
+        return Array(lines.prefix(2))
     }
 
     private static func momentumDomainLabel(_ domain: ActionDomain) -> String {
@@ -410,6 +688,20 @@ struct DiscoverabilityState: Codable, Equatable {
     var seenFirstLongPressTeach: Bool = false
     var seenFirstMomentumAgeUpTeach: Bool = false
     var seenInstantMomentumYearSummary: Bool = false
+    /// Tier 2: auto-expanded momentum strip intro (first time strip appears).
+    var seenMomentumStripIntro: Bool = false
+    /// Tier 2: first time life shape surfaces in the momentum strip.
+    var seenLifeShapeTeach: Bool = false
+    /// Tier 2: dossier + stance compounding coach (early life).
+    var seenDossierStanceCoach: Bool = false
+    /// First Age Up reflection in year summary (instant ↔ yearly loop).
+    var seenFirstAgeUpReflection: Bool = false
+    /// Family polish: first child born, first leave-home, first parenting action.
+    var seenFirstChildBornCoach: Bool = false
+    var seenFirstLeaveHomeCoach: Bool = false
+    var seenFirstParentingActionCoach: Bool = false
+    /// Auto-dismiss household strip banner (birth / leave-home / parenting teach).
+    var pendingFamilyHouseholdBanner: String? = nil
 
     mutating func markLongPressSeen() {
         seenLongPressCoach = true
@@ -433,6 +725,26 @@ struct DiscoverabilityState: Codable, Equatable {
     mutating func markFirstLongPressTeachSeen() { markLongPressSeen() }
     mutating func markFirstMomentumAgeUpTeachSeen() { markMomentumSeen() }
     mutating func markInstantMomentumYearSummarySeen() { seenInstantMomentumYearSummary = true }
+    mutating func markMomentumStripIntroSeen() { seenMomentumStripIntro = true }
+    mutating func markLifeShapeTeachSeen() { seenLifeShapeTeach = true }
+    mutating func markDossierStanceCoachSeen() { seenDossierStanceCoach = true }
+    mutating func markFirstAgeUpReflectionSeen() { seenFirstAgeUpReflection = true }
+    mutating func markFirstChildBornCoachSeen() { seenFirstChildBornCoach = true }
+    mutating func markFirstLeaveHomeCoachSeen() { seenFirstLeaveHomeCoach = true }
+    mutating func markFirstParentingActionCoachSeen() { seenFirstParentingActionCoach = true }
+
+    mutating func clearFamilyHouseholdBanner() {
+        if let banner = pendingFamilyHouseholdBanner {
+            if banner == DiscoverabilityTeaching.firstChildBornLine {
+                seenFirstChildBornCoach = true
+            } else if banner.contains("left at") {
+                seenFirstLeaveHomeCoach = true
+            } else if banner == DiscoverabilityTeaching.firstParentingActionLine {
+                seenFirstParentingActionCoach = true
+            }
+        }
+        pendingFamilyHouseholdBanner = nil
+    }
 
     /// Whether to show inline teach under quick-action tray after first tap.
     func shouldShowFirstQuickActionTeach() -> Bool {
@@ -442,6 +754,30 @@ struct DiscoverabilityState: Codable, Equatable {
     /// Whether hold-to-preview badge should still appear.
     func shouldShowHoldHint() -> Bool {
         !seenFirstLongPressTeach
+    }
+
+    /// Auto-expand the momentum strip hint the first time momentum becomes visible.
+    func shouldAutoExpandMomentumHint(momentumVisible: Bool) -> Bool {
+        momentumVisible && !seenMomentumStripIntro
+    }
+
+    /// One contextual coach line at a time — priority: momentum → dossier → life shape.
+    func pendingCoachLine(
+        age: Int,
+        momentumVisible: Bool,
+        lifeShapeNonEmpty: Bool,
+        earlyDossierActive: Bool
+    ) -> String? {
+        if momentumVisible, !seenMomentumStripIntro {
+            return nil // handled by auto-expanded strip hint
+        }
+        if earlyDossierActive, age >= 14, age < 22, !seenDossierStanceCoach {
+            return DiscoverabilityTeaching.dossierStanceCoachLine
+        }
+        if lifeShapeNonEmpty, !seenLifeShapeTeach {
+            return nil // handled inline in momentum strip
+        }
+        return nil
     }
 }
 
@@ -493,6 +829,7 @@ extension YearlyOutcomeSummary {
         case .legal: return .legal
         case .family: return .family
         case .identity: return .progress
+        case .play: return .progress
         }
     }
 }
@@ -525,6 +862,42 @@ struct NowLaneSnapshot: Equatable {
     var ageUpHint: String
     var tone: PlannerTone
     var showsQuickAction: Bool
+
+    static let empty = NowLaneSnapshot(
+        headline: "",
+        detail: "",
+        quickActionTitle: nil,
+        quickActionDomain: nil,
+        quickActionChoice: nil,
+        ageUpHint: "",
+        tone: .neutral,
+        showsQuickAction: false
+    )
+}
+
+/// Smoothness Tier A: read-only momentum strip payload refreshed in `refreshDerivedState`.
+struct MomentumStripSnapshot: Equatable {
+    var showsStrip: Bool
+    var momentum: InstantMomentumState
+    var recentReactions: [String]
+    var lifeShape: String
+    var resilience: LifeResilience
+    var seenMomentumStripIntro: Bool
+    var seenLifeShapeTeach: Bool
+    var shouldAutoExpandHint: Bool
+    var topDomainMicroHint: String?
+
+    static let empty = MomentumStripSnapshot(
+        showsStrip: false,
+        momentum: InstantMomentumState(),
+        recentReactions: [],
+        lifeShape: "",
+        resilience: .resilient,
+        seenMomentumStripIntro: false,
+        seenLifeShapeTeach: false,
+        shouldAutoExpandHint: false,
+        topDomainMicroHint: nil
+    )
 }
 
 struct CastStripMember: Identifiable, Equatable {
@@ -562,14 +935,14 @@ struct MVPOnboardingState: Codable, Equatable {
         if hadMajorMoment {
             completed = true
             endedByMajorMoment = true
-        } else if age - startAge >= 3 {
+        } else if age - startAge >= 8 {
             completed = true
         }
     }
 
     func isActive(at age: Int) -> Bool {
         guard let startAge, !completed else { return false }
-        return age - startAge < 3
+        return age - startAge < 8
     }
 
     func elapsedYears(at age: Int) -> Int {
@@ -582,9 +955,12 @@ struct MVPOnboardingState: Codable, Equatable {
         age: Int,
         performedQuickAction: Bool,
         seenHoldCoach: Bool,
-        hasYearStance: Bool
+        hasYearStance: Bool,
+        momentumVisible: Bool = false,
+        lifeShapeNonEmpty: Bool = false
     ) -> String? {
         guard isActive(at: age) else { return nil }
+        let step = elapsedYears(at: age)
         if !beatQuickActionDone, !performedQuickAction {
             return "Step 1: Tap a quick action below — instant feedback, no year lost."
         }
@@ -594,7 +970,19 @@ struct MVPOnboardingState: Codable, Equatable {
         if !beatForecastCommitDone, !hasYearStance {
             return "Step 3: Age Up commits the year—momentum from quick moves carries forward."
         }
-        return "Step 4: Finish the year cards, then repeat — quick moves stack momentum."
+        if step <= 3 {
+            return "Step 4: Finish the year cards, then repeat — quick moves stack momentum."
+        }
+        if step == 4, !momentumVisible {
+            return "Step 5: Repeat quick actions in one lane — the purple momentum strip appears when a pattern builds."
+        }
+        if step == 5 {
+            return "Step 6: Your \(lifeShapeNonEmpty ? "life shape" : "stances") quietly rewrite future years. Check the strip after Age Up."
+        }
+        if step == 6 {
+            return "Step 7: Resilient vs Grounded changes recovery—tap the shield/triangle pill in the header to compare."
+        }
+        return "Step 8: You know the loop—quick moves, hold to preview, Age Up with a stance. Depth is in the pattern."
     }
 }
 

@@ -235,38 +235,14 @@ struct LifeLogView: View {
                 }
                 .frame(maxWidth: .infinity, minHeight: 400)
             } else {
-                ForEach(filteredHistory) { entry in
-                    HStack(alignment: .top, spacing: 16) {
-                        Text("\(entry.age)")
-                            .font(.system(size: 12, weight: .black, design: .rounded))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 30, alignment: .trailing)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(entry.title)
-                                .font(.system(size: 15, weight: .bold))
-                            Text(entry.text)
-                                .font(.system(size: 14))
-                                .foregroundStyle(.secondary)
-
-                            HStack(spacing: 4) {
-                                ForEach(entry.tags, id: \.self) { tag in
-                                    Text(tag.rawValue.capitalized)
-                                        .font(.system(size: 8, weight: .bold))
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 2)
-                                        .background(Color.primary.opacity(0.1))
-                                        .clipShape(Capsule())
-                                }
-                            }
-                            .padding(.top, 2)
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filteredHistory) { entry in
+                            LifeLogRow(entry: entry)
+                            Divider()
+                                .padding(.leading, 66)
                         }
                     }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 20)
-
-                    Divider()
-                        .padding(.leading, 66)
                 }
             }
         }
@@ -290,6 +266,42 @@ struct LifeLogView: View {
         .buttonStyle(.plain)
     }
 }
+
+private struct LifeLogRow: View {
+    let entry: HistoryEntry
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            Text("\(entry.age)")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .foregroundStyle(.secondary)
+                .frame(width: 30, alignment: .trailing)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.title)
+                    .font(.system(size: 15, weight: .bold))
+                Text(entry.text)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 4) {
+                    ForEach(entry.tags, id: \.self) { tag in
+                        Text(tag.rawValue.capitalized)
+                            .font(.system(size: 8, weight: .bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+    }
+}
+
 struct ActivityCategoryCard: View {
     let title: String
     let icon: String
@@ -362,13 +374,18 @@ struct LegacySelectionView: View {
                         Spacer()
                         legacyMetric("Legacy", "\(summary.legacyScore)")
                         Spacer()
-                        legacyMetric("Next Life", "+\(summary.legacyPointsEarned)")
+                        legacyMetric("Ending", summary.endgameMode)
                     }
+                    Text(summary.meaningLine)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(20)
                 .glassCard(radius: DesignSystem.Radius.large)
                 .padding(.horizontal)
 
+                legacyAxisStrip(summary.legacyAxes)
                 legacyList(title: "What Lasted", items: summary.achievements, symbol: "sparkles", color: .green)
                 legacyList(title: "What Stayed Unfinished", items: summary.regrets, symbol: "ellipsis.circle.fill", color: .orange)
                 
@@ -377,25 +394,31 @@ struct LegacySelectionView: View {
                         .font(.caption.weight(.black))
                         .foregroundStyle(.secondary)
                     
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Total Wealth")
-                                .font(.caption.bold())
-                                .foregroundStyle(.secondary)
-                            Text("$\(vm.state.finance.totalWealth)")
-                                .font(.title3.bold())
-                        }
-                        Spacer()
-                        if vm.state.assets.ownsHome {
-                            VStack(alignment: .trailing) {
-                                Text("Property")
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("Total Wealth")
                                     .font(.caption.bold())
                                     .foregroundStyle(.secondary)
-                                Text(vm.state.assets.primaryResidence?.homeValue ?? 0 > 0 ? "Bequeathed" : "None")
+                                Text("$\(vm.state.finance.totalWealth)")
                                     .font(.title3.bold())
-                                    .foregroundStyle(DesignSystem.Colors.positive)
+                            }
+                            Spacer()
+                            if vm.state.assets.ownsHome {
+                                VStack(alignment: .trailing) {
+                                    Text("Property")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.secondary)
+                                    Text(vm.state.assets.primaryResidence?.homeValue ?? 0 > 0 ? "Bequeathed" : "None")
+                                        .font(.title3.bold())
+                                        .foregroundStyle(DesignSystem.Colors.positive)
+                                }
                             }
                         }
+                        Text(summary.inheritedPressureSummary)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(20)
                     .glassCard(radius: DesignSystem.Radius.medium)
@@ -407,8 +430,8 @@ struct LegacySelectionView: View {
                         .font(.caption.weight(.black))
                         .foregroundStyle(.secondary)
                     
-                    ForEach(vm.state.family.children) { child in
-                        Button {
+	                    ForEach(vm.state.family.children) { child in
+	                        Button {
                             withAnimation {
                                 vm.switchToChild(child)
                             }
@@ -421,13 +444,18 @@ struct LegacySelectionView: View {
                                     .background(DesignSystem.Colors.accent.opacity(0.15))
                                     .clipShape(Circle())
                                 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(child.name)
-                                        .font(.headline.bold())
-                                    Text("Age \(child.age) · \(child.temperament.rawValue.capitalized)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+	                                VStack(alignment: .leading, spacing: 2) {
+	                                    Text(child.name)
+	                                        .font(.headline.bold())
+	                                    Text(successorLine(for: child))
+	                                        .font(.caption)
+	                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                    Text(successorPressure(for: child))
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.tertiary)
+                                        .lineLimit(1)
+	                                }
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.caption.bold())
@@ -471,6 +499,47 @@ struct LegacySelectionView: View {
         }
     }
 
+    private func legacyAxisStrip(_ axes: [LifeSummarySnapshot.LegacyAxis]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(axes) { axis in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(axis.title)
+                            .font(.caption2.weight(.black))
+                            .foregroundStyle(.secondary)
+                        Text(axis.value)
+                            .font(.caption.weight(.heavy))
+                            .foregroundStyle(axis.tone.color)
+                        Text(axis.detail)
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                    }
+                    .frame(width: 132, alignment: .leading)
+                    .padding(10)
+                    .background(axis.tone.fill)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
+            .padding(.horizontal)
+        }
+        .accessibilityIdentifier("legacy-axis-strip")
+    }
+
+    private func successorLine(for child: ChildRecord) -> String {
+        let outcome = child.adultProfile?.outcome.rawValue.capitalized ?? "Still forming"
+        let story = child.adultProfile?.keyStories.last ?? child.adultProfile?.lifeVibe ?? child.currentVibe
+        return "Age \(child.age) · \(outcome) · \(story)"
+    }
+
+    private func successorPressure(for child: ChildRecord) -> String {
+        let bond = child.adultProfile?.relationshipQuality ?? child.bondWithPlayer
+        if bond < 40 { return "Inherited pressure: strained bond" }
+        if vm.state.fame.notoriety >= 60 { return "Inherited pressure: family name" }
+        if vm.state.finance.totalWealth >= 500_000 { return "Inherited floor: estate friction applies" }
+        return "Inherited pressure: light"
+    }
+
     private func legacyList(title: String, items: [String], symbol: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
@@ -488,4 +557,3 @@ struct LegacySelectionView: View {
         .padding(.horizontal)
     }
 }
-

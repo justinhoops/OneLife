@@ -68,10 +68,39 @@ struct LegalExposureFactory {
 }
 
 struct LegalSystem {
+    private enum CustodyIncidentKind: String {
+        case safety
+        case debt
+        case staff
+        case program
+        case family
+        case transfer
+        case contact
+        case parole
+    }
+
     private func enterpriseProxyEligible(legal: LegalState, notoriety: Int) -> Bool {
         legal.custodyProfile.experienceTier == .enterprise
             && (legal.custodyProfile.facility == .federalPen || notoriety >= 45
                 || legal.convictions.contains(where: { $0.offense == .enterpriseCrime }))
+    }
+
+    private func canApplyCustodyAction(_ choiceID: ActionChoiceID, legal: LegalState, fame: FameProfile) -> Bool {
+        guard legal.isInCustody else { return false }
+        let profile = legal.custodyProfile
+        switch choiceID {
+        case .alignWithFaction, .payProtection, .prisonWorkDetail, .studyProgram:
+            return profile.lockdownYearsRemaining == 0
+        case .callFamily:
+            return profile.totalFamilyCallsMade < profile.lifetimeFamilyContactsMax
+                && profile.familyCallsThisYear < 2
+        case .delegateFromInside, .callLieutenant, .authorizeOutsideMove:
+            return enterpriseProxyEligible(legal: legal, notoriety: fame.notoriety)
+        case .requestParoleHearing:
+            return legal.paroleEligible && profile.paroleHearingDeniedYears == 0
+        default:
+            return true
+        }
     }
 
     func applyAction(
@@ -82,6 +111,9 @@ struct LegalSystem {
     ) -> DomainYearResult {
         var result = DomainYearResult()
 
+        if legal.isInCustody {
+            guard canApplyCustodyAction(choiceID, legal: legal, fame: fame) else { return result }
+        }
         if legal.isInCustody, CustodyProfile.discretionaryActionIDs.contains(choiceID) {
             guard legal.custodyProfile.spendDiscretionaryAction(for: choiceID) else {
                 result.notes.append(DomainNote(title: "No Moves Left", text: "You've used the meaningful choices this sentence allows. Time passes whether you act or not.", tags: [.legal, .progress]))
@@ -91,11 +123,9 @@ struct LegalSystem {
 
         switch choiceID {
         case .retainCounsel:
-            guard legal.hasActiveCase else { return result }
+            guard legal.hasActiveCase, legal.counselQuality == 0 else { return result }
             let cost = min(max(1_500, finance.cashOnHand / 5), 12_000)
             legal.counselQuality += finance.cashOnHand >= cost ? 24 : 10
-            legal.pendingDecision = .retainCounsel
-            legal.stage = .awaitingResolution
             result.financeEffects = FinanceEffects(cashDelta: -min(cost, max(0, finance.cashOnHand)))
             result.notes.append(DomainNote(title: "Counsel Retained", text: "A lawyer took control of the case strategy.", tags: [.legal, .finance]))
         case .cooperateWithInvestigation:
@@ -119,10 +149,13 @@ struct LegalSystem {
             result.financeEffects = FinanceEffects(cashDelta: -min(4_000, max(0, finance.cashOnHand)))
         case .postBail:
             guard legal.stage == .charged, legal.bailAmount > 0, !legal.bailPosted else { return result }
+            guard finance.cashOnHand >= legal.bailAmount else {
+                result.notes.append(DomainNote(title: "Bail Out Of Reach", text: "The bond amount exceeded the cash you could put up.", tags: [.legal, .finance]))
+                return result
+            }
             legal.bailPosted = true
-            legal.pendingDecision = .postBail
-            legal.stage = .awaitingResolution
-            result.financeEffects = FinanceEffects(cashDelta: -min(legal.bailAmount, max(0, finance.cashOnHand)))
+            result.financeEffects = FinanceEffects(cashDelta: -legal.bailAmount)
+            result.notes.append(DomainNote(title: "Released Before Trial", text: "Bail kept you outside while the case waited for a strategy.", tags: [.legal, .finance]))
         case .complyWithSupervision:
             guard legal.stage == .supervision else { return result }
             legal.pendingDecision = .comply
@@ -177,23 +210,20 @@ struct LegalSystem {
             legal.custodyProfile.cooperatedWithAuthorities = true
             legal.custodyProfile.snitchRisk += 18
             legal.custodyProfile.factionLoyalty = max(0, legal.custodyProfile.factionLoyalty - 12)
-            legal.custodyProfile.goodTimeCredits += 1
-            fame.notoriety = min(100, fame.notoriety + 5)
-            if !fame.knownFor.contains("Informant") {
-                fame.knownFor.append("Informant")
-            }
-            result.fameEffects = FameEffects(notoriety: 5)
+            legal.custodyProfile.addGoodTimeProgress(45)
+            result.fameEffects = FameEffects(notoriety: 5, addKnownFor: "Informant")
             result.notes.append(DomainNote(title: "Deal Made", text: "Information traded for time. Trust inside fractured.", tags: [.legal, .crime, .risk]))
         case .prisonWorkDetail:
             guard legal.isInCustody, legal.custodyProfile.lockdownYearsRemaining == 0 else { return result }
             legal.custodyProfile.conductScore += 5
-            legal.custodyProfile.goodTimeCredits += 1
+            legal.custodyProfile.addGoodTimeProgress(30)
             result.financeEffects = FinanceEffects(cashDelta: 350)
             result.notes.append(DomainNote(title: "Shift Done", text: "Boring labor bought commissary money and a cleaner file.", tags: [.legal, .finance, .progress]))
         case .studyProgram:
             guard legal.isInCustody, legal.custodyProfile.lockdownYearsRemaining == 0 else { return result }
             legal.custodyProfile.programProgress += 12
             legal.custodyProfile.conductScore += 3
+            legal.custodyProfile.addGoodTimeProgress(18)
             result.healthEffects = HealthEffects(mental: -2)
             result.notes.append(DomainNote(title: "Program Progress", text: "The parole board reads paperwork too.", tags: [.legal, .education]))
         case .callFamily:
@@ -221,7 +251,6 @@ struct LegalSystem {
                 empire.networkStrength = min(100, empire.networkStrength + 6)
                 legal.custodyProfile.outsideEmpireSnapshot = empire
             }
-            fame.notoriety = min(100, fame.notoriety + 3)
             result.fameEffects = FameEffects(notoriety: 3)
             result.notes.append(DomainNote(title: "Lieutenant Briefed", text: "The network remembered who signs the orders — and who is watching.", tags: [.legal, .crime, .fame]))
         case .authorizeOutsideMove:
@@ -287,6 +316,49 @@ struct LegalSystem {
         }
         if let delta = effect.evidenceDelta {
             legal.evidenceStrength += delta
+        }
+        if let delta = effect.conductDelta {
+            legal.custodyProfile.conductScore += delta
+        }
+        if let delta = effect.violenceRiskDelta {
+            legal.custodyProfile.violenceRisk += delta
+        }
+        if let delta = effect.yardReputationDelta {
+            legal.custodyProfile.yardReputation += delta
+        }
+        if let delta = effect.protectionDebtDelta {
+            legal.custodyProfile.protectionDebt += delta
+        }
+        if let delta = effect.snitchRiskDelta {
+            legal.custodyProfile.snitchRisk += delta
+        }
+        if let delta = effect.programProgressDelta {
+            legal.custodyProfile.programProgress += delta
+        }
+        if let delta = effect.goodTimeProgressDelta {
+            legal.custodyProfile.addGoodTimeProgress(delta)
+        }
+        if let delta = effect.lockdownYearsDelta {
+            legal.custodyProfile.lockdownYearsRemaining += delta
+        }
+        if let delta = effect.infractionDelta {
+            legal.custodyProfile.infractions += delta
+        }
+        if let delta = effect.familyCallsThisYearDelta {
+            legal.custodyProfile.familyCallsThisYear += delta
+        }
+        if let delta = effect.totalFamilyCallsDelta {
+            legal.custodyProfile.totalFamilyCallsMade += delta
+        }
+        if let targetID = effect.targetCustodyContactID,
+           let index = legal.custodyProfile.contacts.firstIndex(where: { $0.id == targetID }) {
+            legal.custodyProfile.contacts[index].trust += effect.contactTrustDelta ?? 0
+            legal.custodyProfile.contacts[index].danger += effect.contactDangerDelta ?? 0
+            legal.custodyProfile.contacts[index].leverage += effect.contactLeverageDelta ?? 0
+            legal.custodyProfile.contacts[index].influence += effect.contactInfluenceDelta ?? 0
+            if let status = effect.setContactStatus {
+                legal.custodyProfile.contacts[index].status = status
+            }
         }
         legal.clamp()
     }
@@ -367,6 +439,7 @@ struct LegalSystem {
         legal.jurisdiction = exposures.contains(where: { $0.jurisdiction == .military }) ? .military : .civilian
         legal.caseSeverity = exposures.map(\.severity).max() ?? .minor
         legal.evidenceStrength = min(100, (exposures.map(\.evidence).max() ?? 0) + max(0, exposures.count - 1) * 6)
+        legal.counselQuality = 0
         legal.stage = exposures.contains(where: \.immediateCharge) ? .charged : .investigation
         legal.bailAmount = legal.stage == .charged ? bailAmount(for: exposures) : 0
         legal.bailPosted = false
@@ -475,6 +548,11 @@ struct LegalSystem {
         legal.caseSeverity = .minor
         result.financeEffects = FinanceEffects(cashDelta: -(fine + seizure))
         result.fameEffects = FameEffects(notoriety: severity.rawValue * 4)
+        if legal.bailAmount > 0, !legal.bailPosted {
+            result.healthEffects = HealthEffects(physical: -1, mental: -5, stressManagement: -3)
+            result.relationshipEffects = RelationshipEffects(friendChange: -2, partnerChange: -4, privateReputationChange: -2)
+            result.notes.append(DomainNote(title: "Held Before Trial", text: "You waited for resolution in custody, losing time and contact before the sentence was imposed.", tags: [.legal, .health, .relationships]))
+        }
         result.legalCaseSummary = LegalCaseSummary(
             id: "legal-sentenced-\(player.age)",
             title: sentence > 0 ? "Custodial Sentence" : "Convicted",
@@ -510,6 +588,11 @@ struct LegalSystem {
             facility: facility,
             experienceTier: tier,
             securityRegime: regime,
+            maximumGoodTimeCredits: CustodyProfile.goodTimeCap(
+                for: sentenceYears,
+                severity: severity,
+                offense: offense
+            ),
             discretionaryActionsRemaining: CustodyProfile.sentenceBudget(for: sentenceYears),
             lifetimeFamilyContactsMax: CustodyProfile.familyContactCap(for: sentenceYears)
         )
@@ -524,7 +607,7 @@ struct LegalSystem {
             profile.violenceRisk = 30
             profile.yardReputation = 35
             profile.protectionDebt = 12
-            profile.faction = .oldGuard
+            profile.faction = PrisonFaction.oldGuard
             profile.factionLoyalty = 20
         case .enterprise:
             profile.conductScore = 52
@@ -554,7 +637,95 @@ struct LegalSystem {
             profile.conductScore = max(0, profile.conductScore - 8)
         }
 
+        profile.contacts = initializeCustodyContacts(
+            facility: facility,
+            tier: tier,
+            regime: regime,
+            faction: profile.faction,
+            notoriety: fame.notoriety
+        )
         return profile
+    }
+
+    private func initializeCustodyContacts(
+        facility: CustodyFacility,
+        tier: CustodyExperienceTier,
+        regime: CustodySecurityRegime,
+        faction: PrisonFaction?,
+        notoriety: Int
+    ) -> [CustodyContact] {
+        var contacts: [CustodyContact] = [
+            CustodyContact(
+                id: "custody-cellmate",
+                name: facility == .federalPen ? "Darius Cole" : "Marcus Reed",
+                role: .cellmate,
+                trust: tier == .street ? 30 : 42,
+                danger: regime == .maximum ? 48 : 30,
+                influence: 28
+            ),
+            CustodyContact(
+                id: "custody-officer",
+                name: facility == .countyJail ? "Officer Ruiz" : "Officer Bennett",
+                role: .officer,
+                trust: 20,
+                danger: 35,
+                leverage: 18,
+                influence: regime == .maximum ? 70 : 55
+            )
+        ]
+
+        if let faction {
+            contacts.append(CustodyContact(
+                id: "custody-faction",
+                name: faction == .oldGuard ? "Leon Price" : "Trey Maddox",
+                role: .factionRepresentative,
+                status: .protective,
+                trust: 38,
+                danger: 58,
+                leverage: 30,
+                influence: 65,
+                releaseRelevant: tier != .street
+            ))
+        } else if tier == .street {
+            contacts.append(CustodyContact(
+                id: "custody-rival",
+                name: "Calvin Shaw",
+                role: .rival,
+                status: .strained,
+                trust: 8,
+                danger: 55,
+                leverage: 12,
+                influence: 35
+            ))
+        }
+
+        if facility != .countyJail {
+            contacts.append(CustodyContact(
+                id: "custody-counselor",
+                name: "Ms. Holloway",
+                role: .programCounselor,
+                trust: 45,
+                danger: 5,
+                leverage: 22,
+                influence: 48,
+                releaseRelevant: true
+            ))
+        }
+
+        if tier == .enterprise || notoriety >= 55 {
+            contacts.append(CustodyContact(
+                id: "custody-ally",
+                name: "Victor Hale",
+                role: .ally,
+                status: .protective,
+                trust: 50,
+                danger: 42,
+                leverage: 35,
+                influence: 72,
+                releaseRelevant: true
+            ))
+        }
+        return Array(contacts.prefix(5))
     }
 
     private func advanceCustody(
@@ -647,6 +818,398 @@ struct LegalSystem {
         return result
     }
 
+    func prepareCustodyIncident(playerAge: Int, legal: inout LegalState) -> GameEvent? {
+        guard legal.isInCustody else { return nil }
+        var profile = legal.custodyProfile
+        let event = custodyIncident(playerAge: playerAge, legal: legal, profile: &profile)
+        legal.custodyProfile = profile
+        legal.clamp()
+        return event
+    }
+
+    private func custodyIncident(
+        playerAge: Int,
+        legal: LegalState,
+        profile: inout CustodyProfile
+    ) -> GameEvent? {
+        guard profile.lastIncidentAge != playerAge else { return nil }
+
+        var candidates: [CustodyIncidentKind] = [.safety, .staff, .contact]
+        if profile.faction != nil || profile.protectionDebt > 0 { candidates.append(.debt) }
+        if profile.programProgress > 0 || profile.contacts.contains(where: { $0.role == .programCounselor }) {
+            candidates.append(.program)
+        }
+        if profile.totalFamilyCallsMade < profile.lifetimeFamilyContactsMax { candidates.append(.family) }
+        if profile.securityRegime != .standard || profile.lockdownYearsRemaining > 0 { candidates.append(.transfer) }
+        if legal.paroleEligible { candidates.append(.parole) }
+
+        let recent = Set(profile.incidentHistory.suffix(2))
+        let fresh = candidates.filter { !recent.contains($0.rawValue) }
+        let pool = fresh.isEmpty ? candidates : fresh
+        let seed = abs(playerAge * 31 + legal.timeServed * 17 + profile.conductScore * 7 + profile.violenceRisk)
+        let kind = pool[seed % pool.count]
+        profile.lastIncidentAge = playerAge
+        profile.incidentHistory.append(kind.rawValue)
+
+        let contact = targetedContact(for: kind, profile: profile)
+        let targetID = contact?.id
+        let targetName = contact?.name ?? "someone on the block"
+
+        switch kind {
+        case .safety:
+            return GameEvent(
+                id: "custody-safety-\(playerAge)",
+                category: .general,
+                tags: ["legal", "risk", "health"],
+                severity: .consequential,
+                title: "The Yard Tests Your Nerve",
+                text: "\(targetName) turns a routine movement into a public test. Everyone nearby waits to see what you tolerate.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "De-escalate without folding",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                conductDelta: 5,
+                                violenceRiskDelta: -5,
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: 4,
+                                contactDangerDelta: -4
+                            )
+                        ),
+                        microBeat: "You leave them no clean opening."
+                    ),
+                    EventChoice(
+                        text: "Make the threat expensive",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                conductDelta: -7,
+                                violenceRiskDelta: 12,
+                                yardReputationDelta: 9,
+                                infractionDelta: 1,
+                                targetCustodyContactID: targetID,
+                                contactDangerDelta: 8,
+                                setContactStatus: .hostile
+                            ),
+                            health: HealthEffects(physical: -3, mental: -2)
+                        ),
+                        microBeat: "The room learns your price.",
+                        baseFriction: .warning
+                    )
+                ]
+            )
+        case .debt:
+            return GameEvent(
+                id: "custody-debt-\(playerAge)",
+                category: .finance,
+                tags: ["legal", "crime", "money"],
+                severity: .consequential,
+                title: "An Old Favor Comes Due",
+                text: "\(targetName) reminds you that protection inside was never charity.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Pay what you can",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                violenceRiskDelta: -5,
+                                protectionDebtDelta: -12,
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: 5
+                            ),
+                            finance: FinanceEffects(cashDelta: -900)
+                        ),
+                        microBeat: "The ledger gets a little lighter.",
+                        baseFriction: .resistance
+                    ),
+                    EventChoice(
+                        text: "Promise another favor",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                protectionDebtDelta: 10,
+                                targetCustodyContactID: targetID,
+                                contactLeverageDelta: 12,
+                                contactInfluenceDelta: 4
+                            )
+                        ),
+                        microBeat: "The debt changes shape.",
+                        baseFriction: .warning
+                    ),
+                    EventChoice(
+                        text: "Refuse the collection",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                violenceRiskDelta: 14,
+                                yardReputationDelta: 7,
+                                protectionDebtDelta: -5,
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: -12,
+                                setContactStatus: .hostile
+                            )
+                        ),
+                        microBeat: "The answer travels.",
+                        baseFriction: .warning
+                    )
+                ]
+            )
+        case .staff:
+            return GameEvent(
+                id: "custody-staff-\(playerAge)",
+                category: .general,
+                tags: ["legal", "risk"],
+                severity: .consequential,
+                title: "Staff Offer A Quiet Bargain",
+                text: "\(targetName) offers easier conditions in exchange for information that will not stay private.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Give them something small",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                snitchRiskDelta: 12,
+                                goodTimeProgressDelta: 30,
+                                targetCustodyContactID: targetID,
+                                contactLeverageDelta: 10
+                            ),
+                            fame: FameEffects(notoriety: 2, addKnownFor: "Cooperator")
+                        ),
+                        microBeat: "The door closes softly.",
+                        baseFriction: .warning
+                    ),
+                    EventChoice(
+                        text: "Say nothing",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                conductDelta: -3,
+                                yardReputationDelta: 5,
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: -5
+                            )
+                        ),
+                        microBeat: "Silence becomes the answer."
+                    )
+                ]
+            )
+        case .program:
+            return GameEvent(
+                id: "custody-program-\(playerAge)",
+                category: .education,
+                tags: ["legal", "education", "progress"],
+                severity: .consequential,
+                title: "A Program Seat Opens Up",
+                text: "\(targetName) can move your name onto a limited class roster, but the work will cost energy and status.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Take the seat",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                conductDelta: 4,
+                                programProgressDelta: 20,
+                                goodTimeProgressDelta: 20,
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: 8
+                            ),
+                            health: HealthEffects(mental: -2)
+                        ),
+                        microBeat: "Your name reaches the roster."
+                    ),
+                    EventChoice(
+                        text: "Pass it to someone else",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                yardReputationDelta: 4,
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: 5
+                            )
+                        ),
+                        microBeat: "Someone remembers the gesture."
+                    )
+                ]
+            )
+        case .family:
+            return GameEvent(
+                id: "custody-family-\(playerAge)",
+                category: .relationships,
+                tags: ["legal", "family", "relationships"],
+                severity: .consequential,
+                title: "The Outside World Stops Waiting",
+                text: "A message from home makes clear that silence is becoming its own decision.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Use a precious call",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                conductDelta: 2,
+                                familyCallsThisYearDelta: 1,
+                                totalFamilyCallsDelta: 1
+                            ),
+                            relationship: RelationshipEffects(friendChange: 2, partnerChange: 6),
+                            health: HealthEffects(mental: 2)
+                        ),
+                        microBeat: "The timer starts immediately."
+                    ),
+                    EventChoice(
+                        text: "Write what you cannot say",
+                        effects: ChoiceEffects(
+                            relationship: RelationshipEffects(partnerChange: 3, privateReputationChange: 1),
+                            health: HealthEffects(mental: -1)
+                        ),
+                        microBeat: "The page takes the weight."
+                    ),
+                    EventChoice(
+                        text: "Leave them alone",
+                        effects: ChoiceEffects(
+                            relationship: RelationshipEffects(friendChange: -2, partnerChange: -5),
+                            health: HealthEffects(mental: -2)
+                        ),
+                        microBeat: "Nothing goes out."
+                    )
+                ]
+            )
+        case .transfer:
+            return GameEvent(
+                id: "custody-transfer-\(playerAge)",
+                category: .general,
+                tags: ["legal", "risk"],
+                severity: .consequential,
+                title: "A Transfer List Starts Moving",
+                text: "Rumor says the next bus could reset your routine, contacts, and access to programs.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Keep your name off it",
+                        effects: ChoiceEffects(legal: LegalEffects(conductDelta: 5, lockdownYearsDelta: -1)),
+                        microBeat: "You become administratively boring."
+                    ),
+                    EventChoice(
+                        text: "Ask for the move",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                violenceRiskDelta: -8,
+                                yardReputationDelta: -5,
+                                programProgressDelta: -8
+                            )
+                        ),
+                        microBeat: "A new block means starting over.",
+                        baseFriction: .resistance
+                    )
+                ]
+            )
+        case .contact:
+            return GameEvent(
+                id: "custody-contact-\(playerAge)",
+                category: .social,
+                tags: ["legal", "social", "risk"],
+                severity: .consequential,
+                title: "Trust Breaks Inside The Block",
+                text: "\(targetName) is caught telling two versions of the same story.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Confront them privately",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: -3,
+                                contactDangerDelta: -4,
+                                contactLeverageDelta: 7
+                            )
+                        ),
+                        microBeat: "The truth gets smaller in private."
+                    ),
+                    EventChoice(
+                        text: "Cut them loose",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(
+                                violenceRiskDelta: 4,
+                                targetCustodyContactID: targetID,
+                                contactTrustDelta: -20,
+                                setContactStatus: .strained
+                            )
+                        ),
+                        microBeat: "Distance becomes policy."
+                    )
+                ]
+            )
+        case .parole:
+            return GameEvent(
+                id: "custody-parole-ready-\(playerAge)",
+                category: .general,
+                tags: ["legal", "progress", "family"],
+                severity: .consequential,
+                title: "Your Parole Window Finally Opens",
+                text: "The board can now hear your case. Your conduct, programs, and record will all enter the room first.",
+                minAge: playerAge,
+                maxAge: playerAge,
+                weight: 1,
+                cooldownYears: 0,
+                requirements: [],
+                choices: [
+                    EventChoice(
+                        text: "Prepare the strongest file",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(conductDelta: 4, programProgressDelta: 8)
+                        ),
+                        microBeat: "Every page gets reviewed."
+                    ),
+                    EventChoice(
+                        text: "Wait another year",
+                        effects: ChoiceEffects(
+                            legal: LegalEffects(conductDelta: 2, goodTimeProgressDelta: 10)
+                        ),
+                        microBeat: "Patience becomes strategy."
+                    )
+                ]
+            )
+        }
+    }
+
+    private func targetedContact(
+        for kind: CustodyIncidentKind,
+        profile: CustodyProfile
+    ) -> CustodyContact? {
+        let preferredRole: CustodyContactRole
+        switch kind {
+        case .debt: preferredRole = .factionRepresentative
+        case .staff: preferredRole = .officer
+        case .program: preferredRole = .programCounselor
+        case .safety: preferredRole = .rival
+        default: preferredRole = .cellmate
+        }
+        return profile.contacts.first(where: { $0.role == preferredRole })
+            ?? profile.contacts.first(where: { $0.status == .active || $0.status == .strained })
+    }
+
     private func resolveParoleHearing(
         playerAge: Int,
         legal: inout LegalState,
@@ -729,12 +1292,33 @@ struct LegalSystem {
         if profile.snitchRisk >= 50 || profile.cooperatedWithAuthorities {
             residueTags.append("paranoid")
         }
+        if profile.contacts.contains(where: { $0.status == .hostile && $0.danger >= 55 }) {
+            residueTags.append("unfinishedInsideConflict")
+        }
+        let releaseContact = profile.contacts
+            .filter { $0.releaseRelevant && $0.status != .hostile && $0.trust >= 45 }
+            .max(by: { $0.influence < $1.influence })
+            .map {
+                AmbientContact(
+                    id: "custody-release-\($0.id)",
+                    name: $0.name,
+                    role: $0.role == .programCounselor ? .mentor : .friend,
+                    bond: $0.trust,
+                    reliability: max(20, 100 - $0.danger),
+                    cadence: .quiet,
+                    memoryFlags: ["met_in_custody", $0.role.rawValue]
+                )
+            }
+        if releaseContact != nil {
+            residueTags.append("insideContactOutside")
+        }
         let pressureFloor = min(60, 12 + legal.convictions.count * 8 + (profile.experienceTier == .enterprise ? 10 : 0))
         legal.prisonResidue = PrisonResidue(
             tags: residueTags,
             yearsRemaining: max(3, legal.sentenceYears / 2),
             experienceTier: profile.experienceTier,
-            recordPressureFloor: pressureFloor
+            recordPressureFloor: pressureFloor,
+            outsideContact: releaseContact
         )
         legal.recordPressure = max(legal.recordPressure, pressureFloor)
 
@@ -813,7 +1397,7 @@ struct LegalSystem {
             profile.conductScore = max(0, profile.conductScore - 2)
         case .carefulShape:
             profile.conductScore += 4
-            profile.goodTimeCredits += resilience == .grounded ? 0 : 1
+            profile.addGoodTimeProgress(resilience == .grounded ? 8 : 16)
         case .looseEdges:
             profile.infractions += Int.random(in: 0...1)
             profile.programProgress = max(0, profile.programProgress - 4)
@@ -920,6 +1504,9 @@ struct LegalSystem {
         }
         if legal.convictions.count > 0 {
             years = min(range.upperBound, years + min(3, legal.convictions.count))
+        }
+        if legal.counselQuality >= 45 {
+            years = max(range.lowerBound, years - 1)
         }
         return years
     }

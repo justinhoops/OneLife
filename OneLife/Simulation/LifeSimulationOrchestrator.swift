@@ -202,7 +202,27 @@ final class LifeSimulationOrchestrator {
         var selectionState = state
         selectionState.player.age = targetAge
         let selectionWorld = rebuildWorldSnapshot(from: selectionState)
-        let scheduledEvent = consumeDueConsequenceEvent(from: &state, dueBy: targetAge)
+        let custodyEvent = legalSystem.prepareCustodyIncident(playerAge: targetAge, legal: &state.legal)
+        if let custodyEvent {
+            eventEngine.registerDynamicEvent(custodyEvent)
+        }
+        let scheduledEvent = custodyEvent == nil ? consumeDueConsequenceEvent(from: &state, dueBy: targetAge) : nil
+        var teenPlayer = state.player
+        teenPlayer.age = targetAge
+        educationSystem.refreshHighSchoolIdentityForces(
+            player: teenPlayer,
+            education: &state.education,
+            finance: state.finance,
+            relationships: state.relationships,
+            health: state.healthProfile,
+            childhoodDossier: state.childhoodDossier
+        )
+        let teenIdentityEvent = custodyEvent == nil && scheduledEvent == nil
+            ? educationSystem.prepareHighSchoolIdentityBeat(playerAge: targetAge, education: &state.education)
+            : nil
+        if let teenIdentityEvent {
+            eventEngine.registerDynamicEvent(teenIdentityEvent)
+        }
         let actionWeights = committedActionWeights(
             from: ActionChoiceCatalog.preferredEventWeights(for: plannedActions),
             plannedActions: plannedActions
@@ -212,7 +232,7 @@ final class LifeSimulationOrchestrator {
             extraTags: state.originProfile?.focusTags ?? [],
             extraWeights: actionWeights
         )
-        let event = scheduledEvent?.1 ?? eventEngine.pickEvent(for: selectionState, preferredTagWeights: preferredWeights)
+        let event = custodyEvent ?? scheduledEvent?.1 ?? teenIdentityEvent ?? eventEngine.pickEvent(for: selectionState, preferredTagWeights: preferredWeights)
         let stakes = buildTurnStakesSnapshot(
             for: state,
             targetAge: targetAge,
@@ -278,7 +298,27 @@ final class LifeSimulationOrchestrator {
         var selectionState = state
         selectionState.player.age = targetAge
         let selectionWorld = rebuildWorldSnapshot(from: selectionState)
-        let scheduledEvent = consumeDueConsequenceEvent(from: &state, dueBy: targetAge)
+        let custodyEvent = legalSystem.prepareCustodyIncident(playerAge: targetAge, legal: &state.legal)
+        if let custodyEvent {
+            eventEngine.registerDynamicEvent(custodyEvent)
+        }
+        let scheduledEvent = custodyEvent == nil ? consumeDueConsequenceEvent(from: &state, dueBy: targetAge) : nil
+        var teenPlayer = state.player
+        teenPlayer.age = targetAge
+        educationSystem.refreshHighSchoolIdentityForces(
+            player: teenPlayer,
+            education: &state.education,
+            finance: state.finance,
+            relationships: state.relationships,
+            health: state.healthProfile,
+            childhoodDossier: state.childhoodDossier
+        )
+        let teenIdentityEvent = custodyEvent == nil && scheduledEvent == nil
+            ? educationSystem.prepareHighSchoolIdentityBeat(playerAge: targetAge, education: &state.education)
+            : nil
+        if let teenIdentityEvent {
+            eventEngine.registerDynamicEvent(teenIdentityEvent)
+        }
         let actionWeights = committedActionWeights(
             from: ActionChoiceCatalog.preferredEventWeights(for: plannedActions),
             plannedActions: plannedActions
@@ -288,7 +328,7 @@ final class LifeSimulationOrchestrator {
             extraTags: state.originProfile?.focusTags ?? [],
             extraWeights: actionWeights
         )
-        let event = scheduledEvent?.1 ?? eventEngine.pickEvent(for: selectionState, preferredTagWeights: preferredWeights)
+        let event = custodyEvent ?? scheduledEvent?.1 ?? teenIdentityEvent ?? eventEngine.pickEvent(for: selectionState, preferredTagWeights: preferredWeights)
         let stakes = buildTurnStakesSnapshot(
             for: state,
             targetAge: targetAge,
@@ -491,6 +531,23 @@ final class LifeSimulationOrchestrator {
             )
         }
 
+        if let fameEffects = choice.effects.fame {
+            effectApplier.apply(
+                result: DomainYearResult(fameEffects: fameEffects),
+                to: &state,
+                trajectorySystem: trajectorySystem,
+                educationSystem: educationSystem,
+                careerSystem: careerSystem,
+                specialCareerSystem: specialCareerSystem,
+                militarySystem: militarySystem,
+                crimeSystem: crimeSystem,
+                financeSystem: financeSystem,
+                relationshipSystem: relationshipSystem,
+                healthSystem: healthSystem,
+                housingSystem: housingSystem
+            )
+        }
+
         if let financeEffects = choice.effects.finance {
             financeSystem.apply(effect: financeEffects, finance: &state.finance, player: &state.player)
         }
@@ -569,6 +626,31 @@ final class LifeSimulationOrchestrator {
 
     func roleTitle(for career: CareerState) -> String {
         careerSystem.roleTitle(for: career)
+    }
+
+    private func applyPublicIdentityEcho(to state: inout GameState) {
+        let publicIdentity = PublicIdentitySystem().snapshot(for: state)
+        guard publicIdentity.score >= 55 else { return }
+        guard !state.history.prefix(4).contains(where: { $0.title == "Public Name" }) else { return }
+
+        if publicIdentity.tone == .warning {
+            state.relationships.activeRumorHeat = min(100, state.relationships.activeRumorHeat + 4)
+            state.consequences.pressureByDomain["relationships", default: 0] = min(100, state.consequences.pressureByDomain["relationships", default: 0] + 4)
+        } else {
+            state.relationships.publicReputation = min(100, state.relationships.publicReputation + 2)
+            state.consequences.pressureByDomain["career", default: 0] = max(0, state.consequences.pressureByDomain["career", default: 0] - 2)
+        }
+
+        state.history.insert(
+            HistoryEntry(
+                age: state.player.age,
+                title: "Public Name",
+                text: "\(publicIdentity.label): \(publicIdentity.detail)",
+                tags: [.fame, .relationships]
+            ),
+            at: 0
+        )
+        enforceHistoryBudget(on: &state)
     }
 
     // =========================================================================
@@ -715,15 +797,28 @@ final class LifeSimulationOrchestrator {
         }
         newState.player.traits = traitSystem.generateInitialTraits(count: 3, preferredTraits: preferredTraits)
 
-        // 2. Financial Inheritance (50% of total wealth)
+        let legacyAxes = lifeSummary.legacyAxes
+        let familyMemory = legacyAxes.first(where: { $0.id == "family" })?.value ?? "Mixed"
+        let publicShadow = legacyAxes.first(where: { $0.id == "public" })?.value ?? lifeSummary.reputationLine
+        let parentalPattern = LifeShapeResolver.resolve(from: parentState)?.label ?? "unwritten"
+
+        // 2. Financial Inheritance (estate friction prevents automatic zillionaire starts)
         let totalLegacyWealth = parentState.finance.totalWealth
-        let inheritanceAmount = totalLegacyWealth / 2
+        let estateFrictionRate = parentState.legal.convictions.isEmpty ? 35 : 50
+        let estateFriction = max(0, totalLegacyWealth * estateFrictionRate / 100)
+        let inheritanceAmount = max(0, min(2_000_000, (totalLegacyWealth - estateFriction) / 3))
         newState.finance.cashOnHand = 5000 + inheritanceAmount // Base + inheritance
+        if inheritanceAmount >= 500_000 {
+            newState.finance.financialStress = max(0, newState.finance.financialStress - 12)
+        }
 
         // 3. Property Inheritance
         if let parentHome = parentState.assets.primaryResidence {
             var inheritedHome = parentHome
-            inheritedHome.mortgagePrincipal = 0 // Assume it's passed down free and clear or sold/settled
+            inheritedHome.mortgagePrincipal = max(0, inheritedHome.mortgagePrincipal / 2)
+            inheritedHome.maintenanceReserve = max(0, inheritedHome.maintenanceReserve / 2)
+            inheritedHome.status = .current
+            inheritedHome.normalize()
             newState.assets.primaryResidence = inheritedHome
             newState.housing.livingArrangement = .ownerOccupied
         }
@@ -733,6 +828,24 @@ final class LifeSimulationOrchestrator {
         newState.relationships.publicReputation = (50 + parentState.relationships.publicReputation) / 2
         newState.fame.culturalFame = parentState.fame.culturalFame / 5
         newState.fame.notoriety = parentState.fame.notoriety / 4
+        newState.relationships.privateReputation = max(30, min(80, child.adultProfile?.relationshipQuality ?? child.bondWithPlayer))
+        if parentState.fame.notoriety >= 60 || !parentState.legal.convictions.isEmpty {
+            newState.relationships.activeRumorHeat = min(70, 20 + parentState.fame.notoriety / 3)
+            newState.relationships.tensions.append(RelationshipTension(
+                headline: "Inherited Name",
+                impactLine: "People react to the family story before they know yours.",
+                severity: min(75, 30 + parentState.fame.notoriety / 2),
+                source: .rumor,
+                target: .socialCircle,
+                createdAge: child.age,
+                impactedDomains: [.relationships, .fame]
+            ))
+        }
+        if let profile = child.adultProfile, profile.outcome == .struggling {
+            newState.healthProfile.mentalWellness = max(30, newState.healthProfile.mentalWellness - 8)
+            newState.finance.financialStress = min(65, newState.finance.financialStress + 12)
+        }
+        HousingClassSystem().update(state: &newState)
 
         // 5. Narrative Start
         newState.inheritedLegacy = LegacyInheritanceSnapshot(
@@ -743,15 +856,21 @@ final class LifeSimulationOrchestrator {
             inheritedProperty: newState.assets.primaryResidence,
             inheritedReputation: newState.relationships.publicReputation,
             parentDeathAge: parentState.player.age,
-            parentLegacyHeadline: lifeSummary.headline
+            parentLegacyHeadline: lifeSummary.headline,
+            familyMemory: familyMemory,
+            reputationShadow: publicShadow,
+            wealthContext: inheritanceAmount >= 500_000 ? "Estate gave you a real floor" : (inheritanceAmount > 0 ? "Estate helped, but did not solve life" : "Little money survived the estate"),
+            parentalPattern: parentalPattern,
+            estateFriction: estateFriction,
+            inheritedPressureSummary: lifeSummary.inheritedPressureSummary
         )
-        newState.openingSummary = "\(lifeSummary.headline). You buried \(parentState.player.name) and inherited $\(inheritanceAmount), along with the parts of their name that money cannot settle."
+        newState.openingSummary = "\(lifeSummary.headline). You buried \(parentState.player.name) and inherited $\(inheritanceAmount) after the estate took its cut. \(lifeSummary.inheritedPressureSummary)."
         newState.startupState = .active
 
         newState.history.append(HistoryEntry(
             age: child.age,
             title: "Heritage",
-            text: "You begin as \(parentState.player.name)'s successor. \(lifeSummary.reputationLine)",
+            text: "You begin as \(parentState.player.name)'s successor. \(lifeSummary.reputationLine) \(lifeSummary.inheritedPressureSummary).",
             tags: [.lifeEvent, .progress]
         ))
 
@@ -931,6 +1050,11 @@ final class LifeSimulationOrchestrator {
                 )
             }
             apply(result: legalResult, to: &state)
+            if !state.legal.isInCustody,
+               let outsideContact = state.legal.prisonResidue?.outsideContact,
+               !state.relationships.ambientContacts.contains(where: { $0.id == outsideContact.id }) {
+                state.relationships.ambientContacts.append(outsideContact)
+            }
             if legalResult.legalCaseSummary?.id.hasPrefix("legal-sentenced") == true, state.legal.stage == .custody {
                 state.crime.status = .layingLow
                 state.crime.heat = 0
@@ -981,9 +1105,15 @@ final class LifeSimulationOrchestrator {
             world = rebuildWorldSnapshot(from: state)
         }
         if systemRegistry.isActive(.family, in: world) {
+            let familyBefore = state.family
             let result = measure("Family") {
                 familySystem.advanceYear(input: world.family, family: &state.family)
             }
+            FamilyDiscoverabilityMoments.applyYearDiff(
+                before: familyBefore,
+                after: state.family,
+                discoverability: &state.discoverability
+            )
             record(result, in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
         }
@@ -1038,6 +1168,26 @@ final class LifeSimulationOrchestrator {
             record(result, in: &state, results: &yearResults)
             world = rebuildWorldSnapshot(from: state)
         }
+
+        // Phase 2 (char-phase2): Year events for asset degradation/appreciation on starters
+        var assetNotes: [DomainNote] = []
+        for i in state.assets.vehicles.indices {
+            if Int.random(in: 0...100) < 25 {
+                state.assets.vehicles[i].baseHandling = max(20, state.assets.vehicles[i].baseHandling - 2)
+                assetNotes.append(DomainNote(title: "Vehicle Wear", text: "\(state.assets.vehicles[i].name) lost some handling from use and age.", tags: [.finance]))
+            }
+        }
+        for i in state.assets.jewelry.indices {
+            if Int.random(in: 0...100) < 15 {
+                state.assets.jewelry[i].resaleValue = max(50, state.assets.jewelry[i].resaleValue - 20)
+                assetNotes.append(DomainNote(title: "Asset Depreciation", text: "\(state.assets.jewelry[i].name) lost some value this year.", tags: [.finance]))
+            }
+        }
+        if !assetNotes.isEmpty {
+            record(DomainYearResult(notes: assetNotes), in: &state, results: &yearResults)
+            world = rebuildWorldSnapshot(from: state)
+        }
+
         if systemRegistry.isActive(.luxury, in: world) {
             let result = measure("Luxury") {
                 luxurySystem.advanceYear(state: state)
@@ -1137,6 +1287,13 @@ final class LifeSimulationOrchestrator {
         record(checkpointResult, in: &state, results: &yearResults)
         world = rebuildWorldSnapshot(from: state)
 
+        let careResult = CareLoadSystem().resolveYear(state: &state)
+        record(careResult, in: &state, results: &yearResults)
+        let bodyLoadResult = BodyLoadSystem().update(state: &state)
+        record(bodyLoadResult, in: &state, results: &yearResults)
+        HousingClassSystem().update(state: &state)
+        world = rebuildWorldSnapshot(from: state)
+
         state.player.clampStats()
         state.specialCareer.clamp()
         state.fame.clamp()
@@ -1147,6 +1304,7 @@ final class LifeSimulationOrchestrator {
         // Fame Web F1: Connect every avenue that can make you known.
         // Runs after special career, military, assets, relationships, and world autonomy have all contributed.
         FameSystem().propagateYear(to: &state)
+        applyPublicIdentityEcho(to: &state)
         CorrelationEchoSystem().resolveYear(state: &state)
 
         // Phase 2: Clear momentum after it has influenced this year's simulation
@@ -1190,6 +1348,7 @@ final class LifeSimulationOrchestrator {
             let highNotoriety = state.fame.notoriety >= 70 || state.crime.heat >= 70
             let longLife = state.player.age >= 78
             let noKids = state.family.children.isEmpty
+            let endgameMode = EndgameSummarySystem().mode(for: state)
 
             if causeWealth && highNotoriety {
                 endText = "The money ran out and the heat finally caught up. The life you built in the shadows left nothing to fall back on."
@@ -1210,7 +1369,7 @@ final class LifeSimulationOrchestrator {
             }
 
             state.history.insert(
-                HistoryEntry(age: state.player.age, title: "Life Ended", text: endText, tags: [.health, .progress]),
+                HistoryEntry(age: state.player.age, title: endgameMode, text: endText, tags: [.health, .progress]),
                 at: 0
             )
             enforceHistoryBudget(on: &state)
@@ -1234,7 +1393,7 @@ final class LifeSimulationOrchestrator {
         chapter.pendingLegalCase = yearResults.compactMap(\.legalCaseSummary).last
         chapter.pendingSummary = latestYearSummary
         chapter.pendingConsequencePreview = dominantConsequence
-        chapter.pendingResolution = buildResolutionPreview(
+        chapter.pendingResolution = buildSeniorLaunchResolution(for: &state) ?? buildResolutionPreview(
             for: state,
             dominantConsequence: dominantConsequence,
             summary: latestYearSummary
@@ -1552,19 +1711,7 @@ final class LifeSimulationOrchestrator {
             }
         }
 
-        // Fame Web F3: Fame flavor in quiet momentum notes
-        let fameRecord = state.fame
-        if fameRecord.recognition >= 55 && state.history.prefix(2).allSatisfy({ !$0.title.contains("Recognition") && !$0.title.contains("Name") }) {
-            let fameFlavor: String
-            if fameRecord.isInfamous {
-                fameFlavor = "Even in a quiet stretch, the shadow of your name follows you into rooms."
-            } else if fameRecord.isHouseholdName {
-                fameFlavor = "The world has decided who you are. Even silence carries your reputation now."
-            } else {
-                fameFlavor = "Your name is starting to open doors (and close others) without you lifting a finger."
-            }
-            state.history.insert(HistoryEntry(age: state.player.age, title: "Recognition Echo", text: fameFlavor, tags: [.progress]), at: 0)
-        }
+        // P5 Cohesion Gate: fame flavor routed through quiet notes (SilentYearEngine), not duplicate history inserts
 
         // Engine1: Correlation ledger gives quiet years texture based on recent instant/autonomous activity
         let recentHeat = state.correlationLedger.recentActivityLevel
@@ -2351,18 +2498,23 @@ extension LifeSimulationOrchestrator {
             finalSubtitle += " • \(domainHint) helping"
         }
 
-        // Fame Web F3: Fame changes the forecast tone
-        let f = state.fame
-        if f.recognition >= 50 {
-            if f.isInfamous {
-                finalSubtitle += " • Your name carries weight (and risk)"
-            } else if f.isHouseholdName {
-                finalSubtitle += " • The world already has expectations of you"
-            } else if f.culturalFame >= 45 {
-                finalSubtitle += " • Recognition is opening (and closing) paths"
-            }
+        // P5 Cohesion Gate: unified forecast clauses
+        if let recognitionClause = CohesionNarrative.forecastRecognitionClause(state: state) {
+            finalSubtitle += " • \(recognitionClause)"
         } else if let momentum = momentum {
             finalSubtitle += " • \(momentum.title)"
+        }
+
+        if let shapeClause = CohesionNarrative.forecastLifeShapeClause(state: state) {
+            finalSubtitle += " • \(shapeClause)"
+        }
+
+        if let familyClause = CohesionNarrative.forecastAdultChildClause(state: state) {
+            finalSubtitle += " • \(familyClause)"
+        }
+
+        if let collectionClause = CohesionNarrative.forecastCollectionClause(state: state) {
+            finalSubtitle += " • \(collectionClause)"
         }
 
         // Econ2: Economic character in forecast subtitles — the macro era now explicitly comments on your special career identity
@@ -2387,14 +2539,14 @@ extension LifeSimulationOrchestrator {
                     }
                 } else if scTrack == .founder {
                     finalSubtitle += " • Capital winter is here. Every decision is now a runway decision."
-                } else if scTrack == .athlete {
-                    finalSubtitle += " • Sponsorships are drying up. The economy just made your body worth less on the open market."
+                } else if scTrack == .athlete, let athleteClause = CohesionNarrative.forecastAthleteClause(state: state) {
+                    finalSubtitle += " • \(athleteClause)"
                 }
             case .bullMarket, .techBoom:
                 if scTrack == .founder {
                     finalSubtitle += " • The money is flowing. The question is what it will turn you into."
-                } else if scTrack == .athlete {
-                    finalSubtitle += " • Winning feels louder when the economy is celebrating winners."
+                } else if scTrack == .athlete, let athleteClause = CohesionNarrative.forecastAthleteClause(state: state) {
+                    finalSubtitle += " • \(athleteClause)"
                 } else if scTrack == .contentCreator {
                     let c = state.specialCareer.creator
                     if c.brandDealValue >= 45 {
@@ -2670,6 +2822,111 @@ extension LifeSimulationOrchestrator {
             detail: detail,
             actionTitle: "Back to Feed"
         )
+    }
+
+    private func buildSeniorLaunchResolution(for state: inout GameState) -> ResolutionPreview? {
+        guard state.player.age == 18,
+              state.education.seniorYearOutcome != .unresolved,
+              state.education.seniorLaunchPresentedAge != state.player.age else {
+            return nil
+        }
+
+        state.education.seniorLaunchPresentedAge = state.player.age
+        let outcome = state.education.seniorYearOutcome
+        let profile = state.education.highSchoolProfile
+        let impacts = seniorLaunchImpacts(for: state).prefix(3)
+        let carried = [
+            "Future: \(profile.futureSeed.displayLabel)",
+            "Belonging: \(profile.socialShape.displayLabel)",
+            "Pressure: \(profile.pressureShape.displayLabel)"
+        ]
+            .joined(separator: " | ")
+        let detail = [
+            "Top impacts: \(impacts.joined(separator: " "))",
+            "Carried forward: \(carried).",
+            state.education.highSchoolLegacyLine
+        ]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+
+        return ResolutionPreview(
+            id: "senior-launch-\(state.player.age)-\(outcome.rawValue)",
+            title: seniorLaunchHeadline(for: outcome, profile: profile),
+            detail: detail,
+            actionTitle: "Enter Adulthood"
+        )
+    }
+
+    private func seniorLaunchHeadline(for outcome: SeniorYearOutcome, profile: HighSchoolProfile) -> String {
+        switch outcome {
+        case .scholarshipRoute: return "Scholarship Door Opens"
+        case .commuterCollege: return "College Starts Close To Home"
+        case .universityTrack: return "University Track Takes Shape"
+        case .tradeTrack: return "Trade Path Gets Real"
+        case .adultEdRebuild: return "A Slower Rebuild Begins"
+        case .dropoutDrift: return "School Drift Reaches Adulthood"
+        case .earlyWorkRoute: return "Work Starts Before Certainty"
+        case .specialCareerSeed:
+            switch profile.futureSeed {
+            case .athlete: return "Athlete Seed Leaves School"
+            case .creator: return "Creative Seed Leaves School"
+            case .founder: return "Founder Seed Leaves School"
+            case .politics: return "Leadership Seed Leaves School"
+            case .riskLane: return "Risk Lane Leaves School"
+            default: return "A Special Seed Carries Forward"
+            }
+        case .unresolved: return "High School Is Still Forming"
+        }
+    }
+
+    private func seniorLaunchImpacts(for state: GameState) -> [String] {
+        var impacts: [String] = []
+        let education = state.education
+        switch education.seniorYearOutcome {
+        case .scholarshipRoute:
+            impacts.append("Debt pressure softened without making adulthood easy.")
+        case .commuterCollege:
+            impacts.append("School stays possible, but home and money remain close.")
+        case .universityTrack:
+            impacts.append("Academic doors opened with delayed payoff.")
+        case .tradeTrack:
+            impacts.append("Practical credentials gave work a sturdier first rung.")
+        case .adultEdRebuild:
+            impacts.append("The route stays alive, but it starts slower.")
+        case .dropoutDrift:
+            impacts.append("Missing structure makes early adulthood less forgiving.")
+        case .earlyWorkRoute:
+            impacts.append("Income starts sooner, but direction stays unsettled.")
+        case .specialCareerSeed:
+            impacts.append("A visible teen lane carries into adulthood as pressure, not a guarantee.")
+        case .unresolved:
+            break
+        }
+
+        switch education.highSchoolProfile.socialShape {
+        case .connected, .respected:
+            impacts.append("People are easier to approach because school left some social proof.")
+        case .isolated, .invisible:
+            impacts.append("Social recovery may take effort because school taught distance.")
+        case .volatile:
+            impacts.append("Reputation heat follows the launch if you keep feeding it.")
+        }
+
+        switch education.highSchoolProfile.pressureShape {
+        case .burnedOut:
+            impacts.append("Recovery matters early because achievement came with a bill.")
+        case .survivalMode:
+            impacts.append("Money, health, or home pressure still compresses choices.")
+        case .reckless:
+            impacts.append("Risk tolerance is useful only if it stops driving the car.")
+        case .balanced:
+            impacts.append("No single pressure owns the launch yet.")
+        }
+
+        if let force = education.highSchoolIdentityForces.first {
+            impacts.append("\(force.name) still echoes: \(force.role.displayLabel.lowercased()) shaped the exit.")
+        }
+        return impacts
     }
 
     private func adultPressureReactionCard(

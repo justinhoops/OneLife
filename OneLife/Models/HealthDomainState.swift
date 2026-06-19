@@ -28,6 +28,28 @@ struct HealthCondition: Codable, Identifiable, Equatable {
     }
 }
 
+struct BodyLoadState: Codable, Equatable {
+    var mobilityStrain: Int = 0
+    var cognitiveStrain: Int = 0
+    var recoveryDrag: Int = 0
+    var stressDebt: Int = 0
+    var preventiveCare: Int = 35
+    var summaryLine: String = "Body load is quiet"
+
+    var totalLoad: Int {
+        ((mobilityStrain + cognitiveStrain + recoveryDrag + stressDebt) / 4).clamped(to: 0...100)
+    }
+
+    mutating func clamp() {
+        mobilityStrain = mobilityStrain.clamped(to: 0...100)
+        cognitiveStrain = cognitiveStrain.clamped(to: 0...100)
+        recoveryDrag = recoveryDrag.clamped(to: 0...100)
+        stressDebt = stressDebt.clamped(to: 0...100)
+        preventiveCare = preventiveCare.clamped(to: 0...100)
+        if summaryLine.isEmpty { summaryLine = "Body load is quiet" }
+    }
+}
+
 struct HealthState: Codable, Equatable {
     var physicalWellness: Int = 60
     var mentalWellness: Int = 55
@@ -35,6 +57,7 @@ struct HealthState: Codable, Equatable {
     var habits: LifestyleHabits = LifestyleHabits()
     var activeConditions: [HealthCondition] = []
     var hasPrimaryCare: Bool = false
+    var bodyLoad: BodyLoadState = BodyLoadState()
 
     init(
         physicalWellness: Int = 60,
@@ -42,7 +65,8 @@ struct HealthState: Codable, Equatable {
         addiction: Int = 0,
         habits: LifestyleHabits = LifestyleHabits(),
         activeConditions: [HealthCondition] = [],
-        hasPrimaryCare: Bool = false
+        hasPrimaryCare: Bool = false,
+        bodyLoad: BodyLoadState = BodyLoadState()
     ) {
         self.physicalWellness = physicalWellness
         self.mentalWellness = mentalWellness
@@ -50,6 +74,7 @@ struct HealthState: Codable, Equatable {
         self.habits = habits
         self.activeConditions = activeConditions
         self.hasPrimaryCare = hasPrimaryCare
+        self.bodyLoad = bodyLoad
     }
 
     init(from decoder: Decoder) throws {
@@ -60,6 +85,7 @@ struct HealthState: Codable, Equatable {
         habits = try container.decodeIfPresent(LifestyleHabits.self, forKey: .habits) ?? LifestyleHabits()
         activeConditions = try container.decodeIfPresent([HealthCondition].self, forKey: .activeConditions) ?? []
         hasPrimaryCare = try container.decodeIfPresent(Bool.self, forKey: .hasPrimaryCare) ?? false
+        bodyLoad = try container.decodeIfPresent(BodyLoadState.self, forKey: .bodyLoad) ?? BodyLoadState()
         clamp()
     }
 
@@ -69,6 +95,6 @@ struct HealthState: Codable, Equatable {
         addiction = addiction.clamped(to: 0...100)
         habits.clamp()
         activeConditions.indices.forEach { activeConditions[$0].clamp() }
+        bodyLoad.clamp()
     }
 }
-

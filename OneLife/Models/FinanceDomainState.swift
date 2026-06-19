@@ -694,6 +694,14 @@ extension LifeResilience {
         }
     }
 
+    /// Persistent header label so the mode stays visible during play.
+    var persistentPlayLabel: String {
+        switch self {
+        case .grounded: return "Grounded — fighting back hits harder"
+        case .resilient: return "Resilient — compounds fast but scars linger"
+        }
+    }
+
     /// Evolving journal texture so the chosen Life Feel stays visible over decades.
     func journalReflection(forAge age: Int) -> (title: String, text: String)? {
         switch self {

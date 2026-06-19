@@ -11,6 +11,7 @@ struct PlannerDetailSheet: View {
     let showingEducationAsPrimaryTab: Bool
     let historyDigest: HistoryDigest
     let latestYearSummary: YearlyOutcomeSummary?
+    var onDismissAdultChildrenCoach: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -177,6 +178,28 @@ struct PlannerDetailSheet: View {
         case .careerHistory:
             DetailHistoryList(entries: historyDigest.all)
         case .educationOverview:
+            if showingEducationAsPrimaryTab || state.player.age <= 18 || state.education.seniorYearOutcome != .unresolved {
+                DetailCard(title: "High School Shape", subtitle: state.education.seniorYearOutcome.displayLabel) {
+                    DetailMetricRow(items: [
+                        ("Future", state.education.highSchoolProfile.futureSeed.displayLabel),
+                        ("Social", state.education.highSchoolProfile.socialShape.displayLabel),
+                        ("Pressure", state.education.highSchoolProfile.pressureShape.displayLabel)
+                    ])
+                    DetailMetricRow(items: [
+                        ("Academic", state.education.highSchoolProfile.academicShape.displayLabel),
+                        ("Adults", state.education.highSchoolProfile.adultSupportShape.displayLabel),
+                        ("Tags", "\(state.education.formativeSchoolTags.count)")
+                    ])
+                    if !state.education.highSchoolIdentityForces.isEmpty {
+                        DetailMetricRow(items: state.education.highSchoolIdentityForces.prefix(3).map {
+                            ($0.role.displayLabel, $0.name)
+                        })
+                    }
+                    DetailBodyText(text: state.education.highSchoolLegacyLine)
+                    DetailBulletList(items: highSchoolIdentityForceDetails)
+                    DetailBulletList(items: highSchoolTagDetails)
+                }
+            }
             DetailCard(title: showingEducationAsPrimaryTab ? "Education is primary" : "Education context", subtitle: "School trajectory") {
                 DetailMetricRow(items: [
                     ("Standing", "\(state.education.schoolStanding)"),
@@ -295,7 +318,12 @@ struct PlannerDetailSheet: View {
                 DetailBulletList(items: state.relationships.tensions.prefix(3).map { "\($0.headline) • \($0.impactLine)" }.isEmpty ? ["No loose ends are active right now."] : Array(state.relationships.tensions.prefix(3).map { "\($0.headline) • \($0.impactLine)" }))
             }
         case .relationshipsFamily:
-            FamilyDetailCard(state: state)
+            FamilyDetailCard(
+                state: state,
+                showAdultChildCoach: !state.discoverability.seenAdultChildrenCoach
+                    && state.family.children.contains(where: { !$0.livesAtHome }),
+                onDismissAdultChildCoach: onDismissAdultChildrenCoach
+            )
         case .relationshipsHistory:
             DetailHistoryList(entries: historyDigest.relationships)
         case .healthOverview:
@@ -349,12 +377,15 @@ struct PlannerDetailSheet: View {
                 DetailBodyText(text: "Housing is the floor under the rest of the sim. When this slips, money and health usually start leaking soon after.")
             }
         case .lifeLegacy:
+            let summary = LifeSummarySystem().build(from: state)
             DetailCard(title: legacyTitle, subtitle: "Life path and milestones") {
                 DetailMetricRow(items: [
                     ("Legacy score", "\(state.progress.legacyScore)"),
-                    ("Milestones", "\(state.progress.unlockedMilestones.count)"),
-                    ("Paths", "\(state.progress.unlockedLifePaths.count)")
+                    ("Ending", summary.endgameMode),
+                    ("Next life", "+\(summary.legacyPointsEarned)")
                 ])
+                DetailBodyText(text: summary.meaningLine)
+                DetailBulletList(items: summary.legacyAxes.map { "\($0.title): \($0.value) — \($0.detail)" })
                 if !state.progress.unlockedMilestones.isEmpty {
                     DetailBulletList(items: state.progress.unlockedMilestones.map { "\($0.id.rawValue.capitalized) at age \($0.unlockedAtAge)" })
                 }
@@ -372,6 +403,54 @@ struct PlannerDetailSheet: View {
         if state.education.teacherSupport < 38 { items.append("Teacher support is thin.") }
         if items.isEmpty { items.append("School pressure is present, but there is still room to stabilize it.") }
         return items
+    }
+
+    private var highSchoolTagDetails: [String] {
+        let tags = state.education.formativeSchoolTags
+            .sorted { lhs, rhs in
+                if lhs.value == rhs.value { return lhs.key < rhs.key }
+                return lhs.value > rhs.value
+            }
+            .prefix(5)
+            .map { "\(schoolTagLabel($0.key)): \($0.value)" }
+        return tags.isEmpty ? ["No strong formative school residue yet."] : Array(tags)
+    }
+
+    private var highSchoolIdentityForceDetails: [String] {
+        let forces = state.education.highSchoolIdentityForces.prefix(3).map {
+            "\($0.name): \($0.storyLine)"
+        }
+        return forces.isEmpty ? ["No named school force is dominant yet."] : Array(forces)
+    }
+
+    private func schoolTagLabel(_ key: String) -> String {
+        switch key {
+        case "academic_strength": return "Academic strength"
+        case "academic_strain": return "Academic strain"
+        case "trade_seed": return "Trade seed"
+        case "belonging": return "Belonging"
+        case "isolation": return "Isolation"
+        case "volatile_social": return "Volatile social"
+        case "discipline_scar": return "Discipline scar"
+        case "mentor_support": return "Mentor support"
+        case "adult_friction": return "Adult friction"
+        case "burnout": return "Burnout"
+        case "survival_pressure": return "Survival pressure"
+        case "mentor_anchor": return "Mentor anchor"
+        case "peer_anchor": return "Peer anchor"
+        case "rival_heat": return "Rival heat"
+        case "home_pressure": return "Home pressure"
+        case "coach_signal": return "Coach signal"
+        case "academic_seed": return "Academic seed"
+        case "athlete_seed": return "Athlete seed"
+        case "founder_seed": return "Founder seed"
+        case "creator_seed": return "Creator seed"
+        case "politics_seed": return "Leadership seed"
+        case "risk_seed": return "Risk seed"
+        case "identity_reps": return "Identity reps"
+        case "money_pressure": return "Money pressure"
+        default: return key.replacingOccurrences(of: "_", with: " ").capitalized
+        }
     }
 
     private var relationshipHeader: String {
@@ -886,4 +965,3 @@ struct FlowLayout: View {
         }
     }
 }
-

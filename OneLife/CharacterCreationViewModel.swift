@@ -1,6 +1,154 @@
 import Combine
 import SwiftUI
 
+// MARK: - Character Creation Overhaul Models (Phase 1)
+
+enum Gender: String, Codable, CaseIterable, Identifiable {
+    case male, female, nonBinary
+    var id: String { rawValue }
+}
+
+enum Background: String, Codable, CaseIterable, Identifiable {
+    case average
+    case wealthy
+    case poor
+    case immigrant
+    case militaryFamily
+    case singleParent
+    case academicGrind
+    case streetHustler
+    case rebel
+    case blueCollar
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .average: return "Average Suburbs"
+        case .wealthy: return "Trust Fund / Affluent"
+        case .poor: return "Working Poor / Struggling"
+        case .immigrant: return "New to the Country"
+        case .militaryFamily: return "Military Family"
+        case .singleParent: return "Single Parent Household"
+        case .academicGrind: return "Academic / Scholar Path"
+        case .streetHustler: return "Street Smart / Hustler"
+        case .rebel: return "Rebel / Troublemaker"
+        case .blueCollar: return "Blue Collar Roots"
+        }
+    }
+
+    var cashRange: ClosedRange<Int> {
+        switch self {
+        case .wealthy: return 25000...60000
+        case .average: return 3000...8000
+        case .poor, .singleParent, .immigrant: return 200...1500
+        case .militaryFamily, .blueCollar: return 1500...5000
+        case .academicGrind: return 2000...6000
+        case .streetHustler, .rebel: return 500...3000
+        }
+    }
+
+    var possibleStarterAssetTypes: [String] {
+        switch self {
+        case .wealthy: return ["luxury_car", "small_investment_portfolio"]
+        case .average: return ["used_car", "basic_savings"]
+        case .poor, .singleParent: return ["old_bike", "family_heirloom"]
+        case .immigrant: return ["family_savings", "work_tools"]
+        case .militaryFamily: return ["military_memento", "reliable_truck"]
+        case .blueCollar: return ["work_truck", "tools_set"]
+        case .academicGrind: return ["laptop", "books_collection"]
+        case .streetHustler, .rebel: return ["beat_up_car", "street_gear"]
+        }
+    }
+}
+
+struct CharacterTemplate: Codable, Identifiable, Equatable {
+    let id: UUID
+    let name: String
+    let description: String
+    let baseStats: [String: Int] // e.g. "smarts": 50, "looks": 45, etc.
+    let traits: [String] // trait raw values
+    let background: Background
+    let startingCashRange: ClosedRange<Int>
+}
+
+struct AppearanceDesc: Codable, Equatable {
+    var height: String = "average"
+    var build: String = "average"
+    var hair: String = "brown"
+    var eyes: String = "brown"
+    var style: String = "casual"
+}
+
+struct MorphParams: Equatable {
+    var name: String = ""
+    var pointsToSpend: Int = 10
+    var statDeltas: [String: Int] = [:]
+    var selectedTraits: Set<String> = []
+    var chosenBackground: Background = .average
+}
+
+struct Character: Codable, Identifiable, Equatable {
+    let id: UUID
+    var name: String
+    var birthYear: Int
+    var gender: Gender
+    var traits: Set<String>
+    var stats: [String: Int]
+    var background: Background
+    var appearance: AppearanceDesc
+    var startingAssets: [String] // asset type ids or simple refs
+}
+
+// MARK: - Generation Helpers (Phase 1)
+extension Character {
+    static func generateRandom(seed: Int? = nil) -> Character {
+        let rng = seed.map { s in { (max: Int) -> Int in (s &* 1103515245 + 12345) % 2147483647 % max } } ?? { max in Int.random(in: 0..<max) }
+        let name = randomCharacterName()
+        let bg = Background.allCases.randomElement()!
+        var stats: [String: Int] = ["smarts": 45, "looks": 45, "health": 55, "happiness": 50, "reputation": 40]
+        // variance
+        for key in stats.keys {
+            stats[key] = (stats[key]! + (rng(21) - 10)).clamped(to: 20...80)
+        }
+        let traits = Set(["resilient", "curious"].shuffled().prefix(2).map { $0 })
+        let gender: Gender = [.male, .female, .nonBinary].randomElement()!
+        let app = AppearanceDesc()
+        let assets = bg.possibleStarterAssetTypes.prefix(1).map { $0 }
+        return Character(id: UUID(), name: name, birthYear: 2000 + rng(20), gender: gender, traits: traits, stats: stats, background: bg, appearance: app, startingAssets: Array(assets))
+    }
+}
+
+extension CharacterTemplate {
+    static let presets: [CharacterTemplate] = [
+        CharacterTemplate(id: UUID(), name: "Average Joe", description: "Solid middle ground. Reliable but unremarkable start.", baseStats: ["smarts":50,"looks":48,"health":55,"happiness":52,"reputation":45], traits: ["average","steady"], background: .average, startingCashRange: 3000...8000),
+        CharacterTemplate(id: UUID(), name: "Trust Fund Kid", description: "Head start in cash, risk of entitlement.", baseStats: ["smarts":55,"looks":60,"health":60,"happiness":45,"reputation":55], traits: ["privileged","ambitious"], background: .wealthy, startingCashRange: 25000...60000),
+        CharacterTemplate(id: UUID(), name: "Street Hustler", description: "Low cash, high street smarts and grit.", baseStats: ["smarts":40,"looks":45,"health":58,"happiness":48,"reputation":35], traits: ["hustler","resilient"], background: .streetHustler, startingCashRange: 500...3000),
+        // Add 4+ more as needed
+    ]
+}
+
+// End new models
+
+extension CharacterCreationViewModel {
+    func generateStarterAssets(for background: Background) -> [String] {
+        return Array(background.possibleStarterAssetTypes.prefix(1))
+    }
+
+    func applyBackgroundToDraft(_ bg: Background) {
+        draft.selectedBackground = bg
+        // In full flow, this would adjust preview stats/cash
+    }
+
+    func generateAndApplyStarterAssets(to state: inout GameState, background: Background) {
+        let starters = generateStarterAssets(for: background)
+        // Tie into existing AssetState (simplified for Phase 1)
+        // For demo, just log; real would add to state.assets
+        print("Starter assets for \(background): \(starters)")
+        // Example: could set state.assets.signatureAssets or vehicles etc.
+    }
+}
+
 /// Lightweight draft for character creation — no `GameState`, orchestrator, or domain systems.
 struct CharacterCreationDraft: Equatable {
     var step: CharacterCreationStep = .name
@@ -10,6 +158,10 @@ struct CharacterCreationDraft: Equatable {
     var selectedResilience: LifeResilience = .resilient
     var selectedStartMode: StartMode = .quickStart
     var selectedTemplate: OriginTemplateID = .stableHomeAverageMeans
+    // Overhaul additions
+    var selectedBackground: Background? = nil
+    var morphPointsRemaining: Int = 10
+    var isRandomSpawn: Bool = false
 }
 
 /// UI-only snapshot built from a one-shot preview generation (not a live `GameState` binding).

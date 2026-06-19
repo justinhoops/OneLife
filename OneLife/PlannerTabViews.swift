@@ -57,10 +57,18 @@ struct EducationPlannerTab: View {
                 detailAction: { openDetail(.educationOverview) }
             ) {
                 VStack(alignment: .leading, spacing: 12) {
-                    MetricRow(metrics: [
-                        ("Standing", "\(state.education.schoolStanding)", state.education.schoolStanding >= 70 ? .positive : (state.education.schoolStanding < 40 ? .warning : .neutral)),
-                        (isTeenExperience ? "Readiness" : "Campus Fit", isTeenExperience ? "\(state.education.applicationReadiness)" : "\(state.education.campusFit)", (isTeenExperience ? state.education.applicationReadiness : state.education.campusFit) >= 60 ? .positive : ((isTeenExperience ? state.education.applicationReadiness : state.education.campusFit) < 40 ? .warning : .neutral))
-                    ])
+                    if isTeenExperience {
+                        Text(state.education.highSchoolLegacyLine)
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                        MetricRow(metrics: schoolClimateMetrics)
+                    } else {
+                        MetricRow(metrics: [
+                            ("Standing", "\(state.education.schoolStanding)", state.education.schoolStanding >= 70 ? .positive : (state.education.schoolStanding < 40 ? .warning : .neutral)),
+                            ("Campus Fit", "\(state.education.campusFit)", state.education.campusFit >= 60 ? .positive : (state.education.campusFit < 40 ? .warning : .neutral))
+                        ])
+                    }
                     Text(educationSummary)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -82,7 +90,7 @@ struct EducationPlannerTab: View {
                     detailAction: { openDetail(.educationClimate) }
                 ) {
                     ChipStrip(
-                        title: "Live pressure",
+                        title: isTeenExperience ? "High school shape" : "Live pressure",
                         items: Array((pressureSources + comingUpItems).prefix(4)),
                         tone: pressureSources.isEmpty ? .neutral : .warning,
                         identifier: "education-pressure-strip"
@@ -216,106 +224,365 @@ struct CareerPlannerTab: View {
     let onSelectLegalAction: (ActionChoiceID) -> Void
     let comingUpItems: [String]
     let openDetail: (PlannerDetailDestination) -> Void
+    @Binding var selectedSubTab: CareersSubTab
+
+    @Namespace private var careersPillNamespace
+
+    private var pillItems: [PillTabItem] {
+        CareersSubTab.allCases.map { PillTabItem(id: $0.id, title: $0.title, symbol: $0.symbol) }
+    }
 
     var body: some View {
-        VStack(spacing: 20) {
-            PlannerSectionCard(
-                title: "Career",
-                symbol: "briefcase.fill",
-                status: roleTitle,
-                tone: state.career.status == .unemployed ? .warning : (state.career.performance >= 75 ? .positive : .neutral),
-                detailTitle: "Details",
-                detailIdentifier: "career-overview-detail-button",
-                detailAction: { openDetail(.careerOverview) }
-            ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    MetricRow(metrics: [
-                        ("Performance", "\(state.career.performance)", state.career.performance >= 75 ? .positive : (state.career.performance < 35 ? .warning : .neutral)),
-                        ("Income", "$\(state.career.annualIncome)", state.career.annualIncome > 0 ? .positive : .warning),
-                        ("Years", "\(state.career.yearsWorked)", .neutral)
-                    ])
-                    Text(careerSummary)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                }
-            }
-            .accessibilityIdentifier("career-overview-header")
-
-            AuditStrip(insights: auditInsights, identifier: "career-overview-audit")
-
-            if let specialMetrics {
-                let diamondTracks: Set<SpecialCareerTrack> = [.movieProducer, .recordLabelOwner, .sportsOwner, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire]
-                let isDiamond = diamondTracks.contains(state.specialCareer.track)
-                PlannerSectionCard(
-                    title: isDiamond ? "♦ Empire" : "Special Career",
-                    symbol: isDiamond ? "crown.fill" : (state.specialCareer.track == .crime ? "flame.fill" : "sparkles"),
-                    status: isDiamond ? "Institutional / Legacy tier" : (state.specialCareer.track == .crime ? "High volatility" : "Spotlight pressure"),
-                    tone: isDiamond ? .positive : (state.specialCareer.burnout >= 70 || state.specialCareer.track == .crime ? .warning : .neutral)
-                ) {
-                    MetricRow(metrics: specialMetrics)
-                }
-            }
-
-            // Fame Web F3: Recognition card with flavor and downside hints
-            let f = state.fame
-            if f.recognition > 24 {
-                let label = f.isInfamous ? "Infamous" : (f.isHouseholdName ? "Household Name" : (f.recognition > 55 ? "Widely Known" : "Name Travels"))
-                let tone: PlannerTone = f.isInfamous ? .warning : (f.culturalFame > f.notoriety ? .positive : .neutral)
-                let recognitionItems: [(String, String, PlannerTone)] = {
-                    var items: [(String, String, PlannerTone)] = [
-                        ("Fame", "\(f.culturalFame)", f.culturalFame >= 55 ? .positive : .neutral),
-                        ("Notoriety", "\(f.notoriety)", f.notoriety >= 45 ? .warning : .neutral)
-                    ]
-                    if f.isInfamous {
-                        items.append(("Scrutiny", "High", .warning))
-                    } else if f.isHouseholdName {
-                        items.append(("Expectations", "Heavy", .neutral))
+        VStack(spacing: 12) {
+            PillTabBar(
+                items: pillItems,
+                selection: Binding(
+                    get: { selectedSubTab.id },
+                    set: { newID in
+                        if let tab = CareersSubTab.allCases.first(where: { $0.id == newID }) {
+                            selectedSubTab = tab
+                        }
                     }
-                    return items
-                }()
-                PlannerSectionCard(title: "Recognition", symbol: "star.fill", status: label, tone: tone) {
-                    MetricRow(metrics: recognitionItems)
+                ),
+                namespace: careersPillNamespace
+            )
+
+            Group {
+                switch selectedSubTab {
+                case .overview:
+                    careerOverviewContent
+                case .currentJob:
+                    careerCurrentJobContent
+                case .opportunities:
+                    careerOpportunitiesContent
+                case .skills:
+                    careerSkillsContent
+                case .history:
+                    careerHistoryContent
                 }
             }
-
-            if showsCrimeCareerSection {
-                PlannerSectionCard(
-                    title: "Crime",
-                    symbol: "flame.fill",
-                    status: crimeStatus,
-                    tone: crimeTone
-                ) {
-                    MetricRow(metrics: [
-                        ("Heat", "\(state.crime.heat)", state.crime.heat >= 65 ? .warning : .neutral),
-                        ("Loyalty", "\(state.crime.loyalty)", state.crime.loyalty >= 55 ? .positive : .neutral),
-                        ("Pressure", "\(state.crime.territoryPressure)", state.crime.territoryPressure >= 60 ? .warning : .neutral)
-                    ])
-
-                    ActionSelectionModule(actionChoices: crimeActionChoices, onSelectAction: onSelectCrimeAction)
-                }
-                .accessibilityIdentifier("crime-career-section")
-            }
-
-            if showsLegalSection {
-                PlannerSectionCard(
-                    title: state.legal.isInCustody ? "Custody" : "Legal Case",
-                    symbol: "building.columns.fill",
-                    status: legalStatus,
-                    tone: state.legal.stage == .released ? .neutral : .warning
-                ) {
-                    MetricRow(metrics: legalMetrics)
-                    if !legalActionChoices.isEmpty {
-                        let legalLimit = state.legal.isInCustody ? 6 : 3
-                        ActionSelectionModule(actionChoices: Array(legalActionChoices.prefix(legalLimit)), onSelectAction: onSelectLegalAction)
-                    }
-                }
-                .accessibilityIdentifier("legal-career-section")
-            }
-
-            ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
+            .accessibilityIdentifier("careers-subtab-\(selectedSubTab.id)-content")
         }
         .accessibilityIdentifier("career-tab-content")
+    }
+
+    @ViewBuilder
+    private var careerOverviewContent: some View {
+        PlannerSectionCard(
+            title: "Career Pulse",
+            symbol: "briefcase.fill",
+            status: roleTitle,
+            tone: state.career.status == .unemployed ? .warning : (state.career.performance >= 75 ? .positive : .neutral),
+            detailTitle: "Details",
+            detailIdentifier: "career-overview-detail-button",
+            detailAction: { openDetail(.careerOverview) }
+        ) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(careerSummary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                MetricRow(metrics: [
+                    ("Performance", "\(state.career.performance)", state.career.performance >= 75 ? .positive : (state.career.performance < 35 ? .warning : .neutral)),
+                    ("Income", "$\(state.career.annualIncome)", state.career.annualIncome > 0 ? .positive : .warning),
+                    ("Burnout", "\(state.career.burnout)", state.career.burnout >= 68 ? .warning : .neutral)
+                ])
+            }
+        }
+
+        AuditStrip(insights: auditInsights, identifier: "career-overview-audit")
+
+        if !comingUpItems.isEmpty {
+            PlannerSectionCard(title: "Coming Up", symbol: "calendar", status: "\(comingUpItems.count) signals", tone: .neutral) {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(comingUpItems.prefix(3), id: \.self) { item in
+                        Text(item)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+
+        Text("Explore Career")
+            .font(.caption.weight(.black))
+            .foregroundStyle(.secondary)
+
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            careerShopLink(title: "Current Job", symbol: "briefcase.fill", tab: .currentJob)
+            careerShopLink(title: "Opportunities", symbol: "door.left.hand.open", tab: .opportunities)
+            careerShopLink(title: "Skills", symbol: "chart.line.uptrend.xyaxis", tab: .skills)
+            careerShopLink(title: "History", symbol: "clock.arrow.circlepath", tab: .history)
+        }
+    }
+
+    private func careerShopLink(title: String, symbol: String, tab: CareersSubTab) -> some View {
+        Button {
+            AppFeedback.impact(.light)
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                selectedSubTab = tab
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.caption.weight(.bold))
+                Text(title)
+                    .font(.caption.weight(.heavy))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(10)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("careers-shop-link-\(tab.id)")
+    }
+
+    @ViewBuilder
+    private var careerCurrentJobContent: some View {
+        PlannerSectionCard(
+            title: "Current Job",
+            symbol: "briefcase.fill",
+            status: roleTitle,
+            tone: state.career.status == .unemployed ? .warning : (state.career.performance >= 75 ? .positive : .neutral),
+            detailTitle: "Details",
+            detailIdentifier: "career-overview-detail-button",
+            detailAction: { openDetail(.careerOverview) }
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                MetricRow(metrics: [
+                    ("Performance", "\(state.career.performance)", state.career.performance >= 75 ? .positive : (state.career.performance < 35 ? .warning : .neutral)),
+                    ("Income", "$\(state.career.annualIncome)", state.career.annualIncome > 0 ? .positive : .warning),
+                    ("Years", "\(state.career.yearsWorked)", .neutral)
+                ])
+                Text(careerSummary)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(4)
+            }
+        }
+
+        if let specialMetrics {
+            let diamondTracks: Set<SpecialCareerTrack> = [.movieProducer, .recordLabelOwner, .sportsOwner, .shadowOperative, .trader, .ventureCapitalist, .corporateRaider, .fightEmpire]
+            let isDiamond = diamondTracks.contains(state.specialCareer.track)
+            PlannerSectionCard(
+                title: isDiamond ? "♦ Empire" : "Special Career",
+                symbol: isDiamond ? "crown.fill" : (state.specialCareer.track == .crime ? "flame.fill" : "sparkles"),
+                status: isDiamond ? "Institutional / Legacy tier" : (state.specialCareer.track == .crime ? "High volatility" : "Spotlight pressure"),
+                tone: isDiamond ? .positive : (state.specialCareer.burnout >= 70 || state.specialCareer.track == .crime ? .warning : .neutral)
+            ) {
+                MetricRow(metrics: specialMetrics)
+            }
+        }
+
+        if showsCrimeCareerSection {
+            PlannerSectionCard(
+                title: "Crime",
+                symbol: "flame.fill",
+                status: crimeStatus,
+                tone: crimeTone
+            ) {
+                MetricRow(metrics: [
+                    ("Heat", "\(state.crime.heat)", state.crime.heat >= 65 ? .warning : .neutral),
+                    ("Loyalty", "\(state.crime.loyalty)", state.crime.loyalty >= 55 ? .positive : .neutral),
+                    ("Pressure", "\(state.crime.territoryPressure)", state.crime.territoryPressure >= 60 ? .warning : .neutral)
+                ])
+                ActionSelectionModule(actionChoices: crimeActionChoices, onSelectAction: onSelectCrimeAction)
+            }
+            .accessibilityIdentifier("crime-career-section")
+        }
+
+        if showsLegalSection {
+            PlannerSectionCard(
+                title: state.legal.isInCustody ? "Custody" : "Legal Case",
+                symbol: "building.columns.fill",
+                status: legalStatus,
+                tone: state.legal.stage == .released ? .neutral : .warning
+            ) {
+                MetricRow(metrics: legalMetrics)
+                if state.legal.isInCustody {
+                    DisclosureGroup("Inside Details") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            MetricRow(metrics: custodyDetailMetrics)
+                            if !state.legal.custodyProfile.contacts.isEmpty {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("People Inside")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundStyle(.secondary)
+                                    ForEach(state.legal.custodyProfile.contacts) { contact in
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(contact.name)
+                                                    .font(.caption.weight(.semibold))
+                                                Text("\(contact.role.displayName) · \(contact.status.rawValue.capitalized)")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                            Spacer()
+                                            Text("T \(contact.trust) · D \(contact.danger)")
+                                                .font(.caption2.monospacedDigit())
+                                                .foregroundStyle(contact.danger >= 60 ? .red : .secondary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+                if !legalActionChoices.isEmpty {
+                    let legalLimit = state.legal.isInCustody ? 6 : 4
+                    ActionSelectionModule(actionChoices: Array(legalActionChoices.prefix(legalLimit)), onSelectAction: onSelectLegalAction)
+                }
+            }
+            .accessibilityIdentifier("legal-career-section")
+        }
+
+        ActionSelectionModule(actionChoices: actionChoices, onSelectAction: onSelectAction)
+    }
+
+    @ViewBuilder
+    private var careerOpportunitiesContent: some View {
+        PlannerSectionCard(
+            title: "Opportunity Window",
+            symbol: "door.left.hand.open",
+            status: state.career.activeOpportunityDoor?.shortLabel ?? (state.career.opportunityDoorYearsRemaining > 0 ? "Door open" : "Scanning"),
+            tone: state.career.opportunityDoorYearsRemaining > 0 ? .positive : .neutral
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                if let door = state.career.activeOpportunityDoor {
+                    Text("Active door: \(door.shortLabel)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                if state.career.opportunityDoorYearsRemaining > 0 {
+                    Text("\(state.career.opportunityDoorYearsRemaining) year(s) to act")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                }
+                Text("Special readiness: \(specialCareerReadinessLabel)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(specialCareerReadinessTone.color)
+            }
+        }
+
+        PlannerSectionCard(
+            title: "Qualified Roles",
+            symbol: "list.bullet.rectangle",
+            status: "\(qualifiedRoleCount) roles unlocked",
+            tone: qualifiedRoleCount > 0 ? .positive : .neutral
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(CareerCatalog.qualifiedRoles(for: state.player, career: state.career, education: state.education, childhoodDossier: state.childhoodDossier).prefix(6), id: \.id) { role in
+                    HStack {
+                        Text(role.title)
+                            .font(.caption.weight(.semibold))
+                        Spacer()
+                        Text("$\(role.annualIncome)")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if qualifiedRoleCount > 6 {
+                    Text("+\(qualifiedRoleCount - 6) more in career details")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        if !comingUpItems.isEmpty {
+            PlannerSectionCard(title: "Signals", symbol: "sparkles", status: "Forecast", tone: .neutral) {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(comingUpItems.prefix(4), id: \.self) { item in
+                        Text(item).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var careerSkillsContent: some View {
+        PlannerSectionCard(
+            title: "Skills & Progress",
+            symbol: "chart.line.uptrend.xyaxis",
+            status: experienceLaneLabel,
+            tone: state.career.performance >= 60 ? .positive : .neutral
+        ) {
+            MetricRow(metrics: [
+                ("Rank", state.career.professionalRank.isEmpty ? "—" : state.career.professionalRank, .neutral),
+                ("Experience", experienceLaneLabel, .neutral),
+                ("Years", "\(state.career.yearsWorked)", state.career.yearsWorked >= 3 ? .positive : .neutral),
+                ("Performance", "\(state.career.performance)", state.career.performance >= 75 ? .positive : (state.career.performance < 40 ? .warning : .neutral)),
+                ("Burnout", "\(state.career.burnout)", state.career.burnout >= 68 ? .warning : .neutral)
+            ])
+        }
+
+        if state.specialCareer.track != .inactive, let specialMetrics {
+            PlannerSectionCard(title: "Special Track", symbol: "sparkles", status: state.specialCareer.track.rawValue.capitalized, tone: .positive) {
+                MetricRow(metrics: specialMetrics)
+            }
+        }
+
+        PlannerSectionCard(title: "Year Plan", symbol: "calendar.badge.clock", status: "\(actionChoices.count) actions", tone: .neutral) {
+            ActionSelectionModule(actionChoices: Array(actionChoices.prefix(6)), onSelectAction: onSelectAction)
+        }
+    }
+
+    @ViewBuilder
+    private var careerHistoryContent: some View {
+        PlannerSectionCard(
+            title: "Career History",
+            symbol: "clock.arrow.circlepath",
+            status: "\(recentHistory.count) recent beats",
+            tone: .neutral,
+            detailTitle: "Full Log",
+            detailIdentifier: "career-history-detail-button",
+            detailAction: { openDetail(.careerHistory) }
+        ) {
+            VStack(alignment: .leading, spacing: 10) {
+                if recentHistory.isEmpty {
+                    Text("No career beats logged yet.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(recentHistory.prefix(8)) { entry in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.title)
+                                .font(.caption.weight(.bold))
+                            Text(entry.text)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+            }
+        }
+
+        if !summaryItems.isEmpty {
+            PlannerSectionCard(title: "Recent Outcomes", symbol: "doc.text.fill", status: "Year summary", tone: .neutral) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(summaryItems.prefix(4)) { item in
+                        HStack(alignment: .top) {
+                            Text(item.title)
+                                .font(.caption.weight(.semibold))
+                            Spacer(minLength: 8)
+                            Text(item.detail)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private var showsCrimeCareerSection: Bool {
@@ -341,32 +608,37 @@ struct CareerPlannerTab: View {
     private var legalMetrics: [(String, String, PlannerTone)] {
         if state.legal.isInCustody {
             let profile = state.legal.custodyProfile
-            var metrics: [(String, String, PlannerTone)] = [
-                ("Facility", profile.facility.displayName, .warning),
-                ("Tier", profile.experienceTier.displayName, .neutral),
-                ("Regime", profile.securityRegime.displayName, profile.securityRegime == .maximum ? .warning : .neutral),
-                ("Served", "\(state.legal.effectiveTimeServed)", .neutral),
+            return [
                 ("Remaining", "\(state.legal.yearsRemaining)", .warning),
                 ("Conduct", "\(profile.conductScore)", profile.conductScore >= 55 ? .positive : .warning),
-                ("Choices Left", "\(profile.discretionaryActionsRemaining)", profile.discretionaryActionsRemaining <= 1 ? .warning : .neutral),
-                ("Family Calls", "\(profile.lifetimeFamilyContactsMax - profile.totalFamilyCallsMade)", .neutral)
+                ("Danger", "\(profile.violenceRisk)", profile.violenceRisk >= 55 ? .warning : .neutral)
             ]
-            if let faction = profile.faction {
-                metrics.append(("Faction", faction.displayName, .neutral))
-            }
-            if profile.snitchRisk >= 25 {
-                metrics.append(("Snitch Risk", "\(profile.snitchRisk)", profile.snitchRisk >= 50 ? .warning : .neutral))
-            }
-            if profile.programProgress > 0 {
-                metrics.append(("Program", "\(profile.programProgress)%", profile.programProgress >= 75 ? .positive : .neutral))
-            }
-            return metrics
         }
         return [
             ("Evidence", "\(state.legal.evidenceStrength)", state.legal.evidenceStrength >= 65 ? .warning : .neutral),
             ("Counsel", "\(state.legal.counselQuality)", state.legal.counselQuality >= 45 ? .positive : .neutral),
             ("Record", "\(state.legal.convictions.count)", state.legal.convictions.isEmpty ? .neutral : .warning)
         ]
+    }
+
+    private var custodyDetailMetrics: [(String, String, PlannerTone)] {
+        let profile = state.legal.custodyProfile
+        var metrics: [(String, String, PlannerTone)] = [
+            ("Facility", profile.facility.displayName, .warning),
+            ("Regime", profile.securityRegime.displayName, profile.securityRegime == .maximum ? .warning : .neutral),
+            ("Served", "\(state.legal.effectiveTimeServed)", .neutral),
+            ("Credit", "\(profile.goodTimeProgress)% · \(profile.goodTimeCredits)/\(profile.maximumGoodTimeCredits)y", profile.goodTimeCredits > 0 ? .positive : .neutral),
+            ("Program", "\(profile.programProgress)%", profile.programProgress >= 75 ? .positive : .neutral),
+            ("Choices", "\(profile.discretionaryActionsRemaining)", profile.discretionaryActionsRemaining <= 1 ? .warning : .neutral),
+            ("Calls", "\(max(0, profile.lifetimeFamilyContactsMax - profile.totalFamilyCallsMade))", .neutral)
+        ]
+        if let faction = profile.faction {
+            metrics.append(("Faction", faction.displayName, .neutral))
+        }
+        if profile.snitchRisk >= 25 {
+            metrics.append(("Snitch Risk", "\(profile.snitchRisk)", profile.snitchRisk >= 50 ? .warning : .neutral))
+        }
+        return metrics
     }
 
     private var crimeStatus: String {
@@ -581,27 +853,16 @@ struct CareerPlannerTab: View {
                     m.append(("Crew", "\(ent.crewSize)", .positive))
                 }
             }
-            // Fame Web F1
-            let fame = state.fame
-            if fame.recognition > 22 {
-                m.append(("Recognition", "\(fame.recognition)", fame.culturalFame > fame.notoriety ? .positive : .neutral))
-            }
-            // E4: Dedicated founder CEO dashboard (rich, glanceable)
+            // Fame Web: unified recognition surfaced on Life tab (Cohesion Gate P5)
+
+            // Econ2: Dedicated founder CEO dashboard (rich, glanceable)
             if state.specialCareer.track == .founder {
                 let fd = state.specialCareer.founder
-                m.append(("Vision", "\(fd.vision)", fd.vision >= 70 ? .positive : .neutral))
-                m.append(("Execution", "\(fd.execution)", fd.execution >= 68 ? .positive : (fd.execution < 45 ? .warning : .neutral)))
+                m.append(("Stage", fd.stage.displayName, fd.stage == .scale || fd.stage == .mature ? .positive : .neutral))
+                m.append(("Valuation", fd.valuationTrend.displayName, fd.valuationTrend == .falling ? .warning : (fd.valuationTrend == .surging ? .positive : .neutral)))
+                m.append(("Burn", "\(fd.burnRate)", fd.burnRate >= 70 ? .warning : (fd.burnRate <= 35 ? .positive : .neutral)))
                 m.append(("Team", "\(fd.teamHealth)", fd.teamHealth >= 65 ? .positive : (fd.teamHealth < 40 ? .warning : .neutral)))
-                m.append(("Stage", "\(fd.productStage)", fd.productStage >= 70 ? .positive : .neutral))
-                if fd.founderMentalLoad > 55 {
-                    m.append(("Mental Load", "\(fd.founderMentalLoad)", .warning))
-                }
-                if fd.control < 60 {
-                    m.append(("Control", "\(fd.control)", .warning))
-                }
-                if fd.personalLegend >= 50 {
-                    m.append(("Legend", "\(fd.personalLegend)", .positive))
-                }
+                m.append(("Control", "\(fd.control)%", fd.control < 55 ? .warning : .neutral))
             }
             // C4: Dedicated creator dashboard (rich, glanceable)
             if state.specialCareer.track == .contentCreator {
@@ -693,12 +954,6 @@ struct CareerPlannerTab: View {
             // Show enhancement heat if active
             if a.enhancementHeat > 25 {
                 metrics.append(("Edge Heat", "\(a.enhancementHeat)", a.enhancementHeat > 60 ? .warning : .neutral))
-            }
-            // Fame Web F1: unified recognition (the thing that actually travels outside your sport)
-            let f = state.fame
-            if f.recognition > 20 {
-                let recLabel = f.isHouseholdName ? "Household Name" : (f.recognition > 55 ? "Widely Known" : "Rising Name")
-                metrics.append((recLabel, "\(f.recognition)", f.culturalFame >= 60 ? .positive : .neutral))
             }
             // Econ1: Glanceable macro context (sponsorships & fan spending are economy-tied)
             metrics.append(("Economy", state.currentEra.displayName, state.currentEra.tone))
@@ -1277,6 +1532,7 @@ struct HealthPlannerTab: View {
 
 struct AssetsPlannerTab: View {
     let state: GameState
+    @Binding var selectedSubTab: AssetsSubTab
     let onBuyFirearm: (Firearm, Int) -> Void
     let onUpgradeFirearm: (UUID, WeaponUpgrade) -> Void
     let onBuyVehicle: (Vehicle, Int) -> Void
@@ -1294,10 +1550,50 @@ struct AssetsPlannerTab: View {
     let onBuySignature: (SignatureAsset) -> Void
     let onSellSignature: (UUID) -> Void
 
+    @Namespace private var assetsPillNamespace
+
+    private var pillItems: [PillTabItem] {
+        AssetsSubTab.allCases.map { PillTabItem(id: $0.id, title: $0.title, symbol: $0.symbol) }
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Very aggressive QoL: Rich visual portfolio + Lifestyle Score
+        VStack(alignment: .leading, spacing: 12) {
+            PillTabBar(
+                items: pillItems,
+                selection: Binding(
+                    get: { selectedSubTab.id },
+                    set: { newID in
+                        if let tab = AssetsSubTab.allCases.first(where: { $0.id == newID }) {
+                            selectedSubTab = tab
+                        }
+                    }
+                ),
+                namespace: assetsPillNamespace
+            )
+
+            ScrollView {
+                VStack(spacing: 20) {
+                    switch selectedSubTab {
+                    case .overview:
+                        assetsOverviewContent
+                    case .vehicles:
+                        garageSection
+                    case .property:
+                        propertyStackContent
+                    case .jewelry:
+                        jewelrySection
+                    case .weapons:
+                        armorySection
+                    }
+                }
+                .padding(.bottom, 100)
+            }
+            .accessibilityIdentifier("assets-subtab-\(selectedSubTab.id)-content")
+        }
+    }
+
+    @ViewBuilder
+    private var assetsOverviewContent: some View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -1335,7 +1631,68 @@ struct AssetsPlannerTab: View {
                         .font(.caption2.italic())
                         .foregroundStyle(.secondary)
                 }
-                
+
+                Text("Browse Collections")
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    assetsShopLink(title: "Vehicles", symbol: "car.fill", tab: .vehicles)
+                    assetsShopLink(title: "Property", symbol: "house.fill", tab: .property)
+                    assetsShopLink(title: "Jewelry", symbol: "sparkles", tab: .jewelry)
+                    assetsShopLink(title: "Weapons", symbol: "shield.fill", tab: .weapons)
+                }
+
+                if let identity = AssetCatalog.collectionIdentity(from: state.assets) {
+                    PlannerSectionCard(
+                        title: "Collection Identity",
+                        symbol: "crown.fill",
+                        status: identity.label,
+                        tone: .positive
+                    ) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(identity.subtitle)
+                                .font(.caption.weight(.semibold))
+                            if !identity.completedSets.isEmpty {
+                                Text(identity.completedSets.map(\.title).joined(separator: " · "))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                signatureSectionIfAvailable
+    }
+
+    private func assetsShopLink(title: String, symbol: String, tab: AssetsSubTab) -> some View {
+        Button {
+            AppFeedback.impact(.light)
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                selectedSubTab = tab
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.caption.weight(.bold))
+                Text(title)
+                    .font(.caption.weight(.heavy))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(10)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("assets-shop-link-\(tab.id)")
+    }
+
+    @ViewBuilder
+    private var propertyStackContent: some View {
                 // REAL ESTATE SECTION
                 if let home = state.assets.primaryResidence {
                     PlannerSectionCard(
@@ -1399,7 +1756,13 @@ struct AssetsPlannerTab: View {
                     }
                 }
 
-                // JEWELRY SECTION
+                aviationSection
+                marineSection
+                signatureSectionIfAvailable
+    }
+
+    @ViewBuilder
+    private var jewelrySection: some View {
                 PlannerSectionCard(
                     title: "Boutique",
                     symbol: "sparkles",
@@ -1419,17 +1782,45 @@ struct AssetsPlannerTab: View {
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                JewelryMarketCard(name: "Steel Watch", type: .watch, cost: 2500, resale: 1800, rarity: .common, onBuy: onBuyJewelry)
-                                JewelryMarketCard(name: "Gold Chain", type: .chain, cost: 5500, resale: 4800, rarity: .rare, onBuy: onBuyJewelry)
-                                JewelryMarketCard(name: "Diamond Studs", type: .earrings, cost: 12000, resale: 9000, rarity: .exotic, onBuy: onBuyJewelry)
-                                JewelryMarketCard(name: "Bust-down AP", type: .watch, cost: 65000, resale: 45000, rarity: .exotic, onBuy: onBuyJewelry)
-                                JewelryMarketCard(name: "Royal Crown Jewel", type: .pendant, cost: 150000, resale: 120000, rarity: .prototype, onBuy: onBuyJewelry)
+                                ForEach(AssetCatalog.jewelryMarket, id: \.name) { listing in
+                                    JewelryMarketCard(
+                                        name: listing.name,
+                                        type: listing.type,
+                                        cost: listing.cost,
+                                        resale: listing.resale,
+                                        rarity: listing.rarity,
+                                        onBuy: onBuyJewelry
+                                    )
+                                }
+                            }
+                        }
+
+                        let completedSets = AssetCatalog.completedCollectorSets(in: state.assets)
+                        if !completedSets.isEmpty || state.assets.jewelry.count + state.assets.firearms.count >= 2 {
+                            Divider()
+                            Text("Collector Sets")
+                                .font(.caption.weight(.bold))
+                            ForEach(AssetCollectorSet.allCases, id: \.self) { set in
+                                HStack {
+                                    Image(systemName: AssetCatalog.isComplete(set, in: state.assets) ? "checkmark.seal.fill" : "circle")
+                                        .foregroundStyle(AssetCatalog.isComplete(set, in: state.assets) ? .green : .secondary)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(set.title)
+                                            .font(.caption.weight(.semibold))
+                                        Text(set.subtitle)
+                                            .font(.system(size: 9))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                }
                             }
                         }
                     }
                 }
+    }
 
-                // AVIATION SECTION
+    @ViewBuilder
+    private var aviationSection: some View {
                 PlannerSectionCard(
                     title: "Hangar",
                     symbol: "airplane",
@@ -1457,8 +1848,10 @@ struct AssetsPlannerTab: View {
                         }
                     }
                 }
+    }
 
-                // MARINE SECTION
+    @ViewBuilder
+    private var marineSection: some View {
                 PlannerSectionCard(
                     title: "Marina",
                     symbol: "sailboat.fill",
@@ -1486,8 +1879,10 @@ struct AssetsPlannerTab: View {
                         }
                     }
                 }
+    }
 
-                // ARMORY SECTION
+    @ViewBuilder
+    private var armorySection: some View {
                 PlannerSectionCard(
                     title: "Armory",
                     symbol: "shield.fill",
@@ -1509,9 +1904,18 @@ struct AssetsPlannerTab: View {
                             .font(.caption.weight(.bold))
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                MarketCard(name: "9mm Handgun", type: .handgun, cost: 600, isLegal: true, power: 15, reliability: 90, onBuy: { onBuyFirearm($0, $1) })
-                                MarketCard(name: "Pump Shotgun", type: .shotgun, cost: 1200, isLegal: true, power: 25, reliability: 85, onBuy: { onBuyFirearm($0, $1) })
-                                MarketCard(name: "Precision Bolt-Action", type: .precisionRifle, cost: 3500, isLegal: true, power: 40, reliability: 95, onBuy: { onBuyFirearm($0, $1) })
+                                ForEach(AssetCatalog.legalFirearms, id: \.name) { listing in
+                                    MarketCard(
+                                        name: listing.name,
+                                        type: listing.type,
+                                        cost: listing.cost,
+                                        isLegal: listing.isLegal,
+                                        power: listing.power,
+                                        reliability: listing.reliability,
+                                        rarity: listing.rarity,
+                                        onBuy: onBuyFirearm
+                                    )
+                                }
                             }
                         }
 
@@ -1520,10 +1924,18 @@ struct AssetsPlannerTab: View {
                             .foregroundColor(.red)
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                MarketCard(name: "G-Series Handgun", type: .handgun, cost: 850, isLegal: false, power: 18, reliability: 85, onBuy: { onBuyFirearm($0, $1) })
-                                MarketCard(name: "Modified SMG", type: .handgun, cost: 2500, isLegal: false, power: 35, reliability: 65, onBuy: { onBuyFirearm($0, $1) })
-                                MarketCard(name: "Sawn-off Shotgun", type: .shotgun, cost: 1800, isLegal: false, power: 30, reliability: 60, onBuy: { onBuyFirearm($0, $1) })
-                                MarketCard(name: "Tactical Carbine", type: .rifle, cost: 6500, isLegal: false, power: 55, reliability: 80, onBuy: { onBuyFirearm($0, $1) })
+                                ForEach(AssetCatalog.blackMarketFirearms, id: \.name) { listing in
+                                    MarketCard(
+                                        name: listing.name,
+                                        type: listing.type,
+                                        cost: listing.cost,
+                                        isLegal: listing.isLegal,
+                                        power: listing.power,
+                                        reliability: listing.reliability,
+                                        rarity: listing.rarity,
+                                        onBuy: onBuyFirearm
+                                    )
+                                }
                             }
                         }
 
@@ -1532,15 +1944,26 @@ struct AssetsPlannerTab: View {
                             .foregroundColor(.purple)
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                MarketCard(name: "Gold-Plated Deagle", type: .handgun, cost: 15000, isLegal: true, power: 45, reliability: 70, rarity: .exotic, onBuy: { onBuyFirearm($0, $1) })
-                                MarketCard(name: "Experimental Railgun", type: .precisionRifle, cost: 85000, isLegal: false, power: 120, reliability: 40, rarity: .prototype, onBuy: { onBuyFirearm($0, $1) })
-                                MarketCard(name: "Antique Duelling Pistol", type: .handgun, cost: 12000, isLegal: true, power: 10, reliability: 30, rarity: .rare, onBuy: { onBuyFirearm($0, $1) })
+                                ForEach(AssetCatalog.exoticFirearms, id: \.name) { listing in
+                                    MarketCard(
+                                        name: listing.name,
+                                        type: listing.type,
+                                        cost: listing.cost,
+                                        isLegal: listing.isLegal,
+                                        power: listing.power,
+                                        reliability: listing.reliability,
+                                        rarity: listing.rarity,
+                                        onBuy: onBuyFirearm
+                                    )
+                                }
                             }
                         }
                     }
                 }
+    }
 
-                // GARAGE SECTION
+    @ViewBuilder
+    private var garageSection: some View {
                 PlannerSectionCard(
                     title: "Garage",
                     symbol: "car.fill",
@@ -1570,12 +1993,15 @@ struct AssetsPlannerTab: View {
                         }
                     }
                 }
+    }
 
-                // Assets2: Signature Holdings — Career-specific high-status assets
+    @ViewBuilder
+    private var signatureSectionIfAvailable: some View {
                 if state.specialCareer.track == .athlete ||
                    state.specialCareer.track == .founder ||
                    state.specialCareer.track == .contentCreator ||
-                   state.specialCareer.track == .politics {
+                   state.specialCareer.track == .politics ||
+                   state.specialCareer.track == .crime {
 
                     PlannerSectionCard(
                         title: "Signature Holdings",
@@ -1609,7 +2035,6 @@ struct AssetsPlannerTab: View {
                             Text("Available for Your Path")
                                 .font(.headline)
 
-                            // Career-specific signature asset market (Assets2)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
                                     SignatureAssetMarketCards(
@@ -1621,9 +2046,6 @@ struct AssetsPlannerTab: View {
                         }
                     }
                 }
-            }
-            .padding(.bottom, 100)
-        }
     }
 }
 
@@ -2378,6 +2800,8 @@ struct AssetsHousingLegacySection: View {
 
 struct FamilyDetailCard: View {
     let state: GameState
+    var showAdultChildCoach: Bool = false
+    var onDismissAdultChildCoach: (() -> Void)? = nil
     @State private var showAtHomeDetails = false
     @State private var showAdultDetails = false
 
@@ -2416,8 +2840,14 @@ struct FamilyDetailCard: View {
                         compact: compact
                     ) {
                         ForEach(atHome) { child in
-                            Text("• \(child.name), age \(child.age)")
-                                .font(.caption)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("• \(child.name), age \(child.age)")
+                                    .font(.caption.weight(.semibold))
+                                Text(child.currentVibe)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(compact ? 2 : 4)
+                            }
                         }
                     }
                 }
@@ -2429,17 +2859,45 @@ struct FamilyDetailCard: View {
                         expanded: $showAdultDetails,
                         compact: compact
                     ) {
+                        if showAdultChildCoach {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(DiscoverabilityTeaching.adultChildTransitionLine)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text(DiscoverabilityTeaching.adultChildFocusHistoryLine)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                Button("Got it") {
+                                    onDismissAdultChildCoach?()
+                                }
+                                .font(.caption2.weight(.black))
+                                .buttonStyle(.bordered)
+                            }
+                            .padding(8)
+                            .background(Color.purple.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .accessibilityIdentifier("adult-children-detail-coach")
+                        }
                         ForEach(adults) { child in
-                            let vibe = child.adultProfile?.lifeVibe
-                            let outcome = child.adultProfile?.outcome
+                            let profile = child.adultProfile
+                            let outcome = profile?.outcome
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("• \(child.name) (\(child.age))")
                                     .font(.caption.weight(.semibold))
                                 if let outcome {
-                                    Text(outcome.rawValue.capitalized + (vibe.map { " — \($0)" } ?? ""))
-                                        .font(.caption2)
+                                    Text("\(outcome.rawValue.capitalized) · quality \(profile?.relationshipQuality ?? child.bondWithPlayer)")
+                                        .font(.caption2.weight(.semibold))
                                         .foregroundStyle(.secondary)
-                                        .lineLimit(compact ? 2 : 4)
+                                }
+                                Text(child.currentVibe)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(compact ? 2 : 4)
+                                if let story = profile?.keyStories.last, !story.isEmpty {
+                                    Text(story)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                        .lineLimit(compact ? 2 : 3)
                                 }
                             }
                         }

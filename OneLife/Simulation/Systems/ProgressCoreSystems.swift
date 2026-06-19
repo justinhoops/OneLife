@@ -202,6 +202,275 @@ struct LifePathDefinition {
     var score: (GameState) -> Int
 }
 
+struct PublicIdentitySnapshot: Codable, Equatable {
+    var label: String
+    var score: Int
+    var tone: PlannerTone
+    var detail: String
+    var consequences: [String]
+}
+
+struct PublicIdentitySystem {
+    func snapshot(for state: GameState) -> PublicIdentitySnapshot {
+        let legalDrag = state.legal.convictions.isEmpty ? 0 : 16
+        let wealthVisibility = min(22, max(0, state.finance.totalWealth) / 250_000)
+        let careerVisibility = state.specialCareer.track == .inactive ? min(10, state.career.yearsWorked / 2) : 18
+        let scandalHeat = max(state.fame.notoriety, state.relationships.activeRumorHeat, state.crime.heat + legalDrag)
+        let cleanReach = max(state.fame.culturalFame, state.relationships.publicReputation + wealthVisibility + careerVisibility)
+        let score = max(cleanReach, scandalHeat).clamped(to: 0...100)
+        let isDark = scandalHeat >= max(45, cleanReach - 4)
+
+        let label: String
+        let tone: PlannerTone
+        if isDark && scandalHeat >= 70 {
+            label = "Infamous Name"
+            tone = .warning
+        } else if isDark && scandalHeat >= 45 {
+            label = "Complicated Name"
+            tone = .warning
+        } else if cleanReach >= 78 {
+            label = "Household Name"
+            tone = .positive
+        } else if cleanReach >= 55 {
+            label = "Public Figure"
+            tone = .positive
+        } else {
+            label = "Local Reputation"
+            tone = .neutral
+        }
+
+        var consequences: [String] = []
+        if cleanReach >= 55 { consequences.append("Doors open faster") }
+        if scandalHeat >= 45 { consequences.append("Scrutiny follows choices") }
+        if state.family.childCount > 0 && scandalHeat >= 55 { consequences.append("Family carries the shadow") }
+        if wealthVisibility >= 12 { consequences.append("Money is visible") }
+        if state.legal.stage != .inactive { consequences.append("Legal exposure colors the name") }
+        if consequences.isEmpty { consequences.append("Mostly private life") }
+
+        return PublicIdentitySnapshot(
+            label: label,
+            score: score,
+            tone: tone,
+            detail: isDark ? "Attention is carrying heat more than warmth." : "Recognition is becoming useful, and harder to put down.",
+            consequences: Array(consequences.prefix(3))
+        )
+    }
+}
+
+struct LegacySignalSystem {
+    func axes(for state: GameState) -> [LifeSummarySnapshot.LegacyAxis] {
+        let familyAxis = familyMemoryAxis(state)
+        let publicAxis = publicNameAxis(state)
+        let wealthAxis = wealthFootprintAxis(state)
+        let scarsAxis = harmAndScarsAxis(state)
+        let unfinishedAxis = unfinishedBusinessAxis(state)
+        return [familyAxis, publicAxis, wealthAxis, scarsAxis, unfinishedAxis]
+    }
+
+    func compactSignals(for state: GameState) -> [String] {
+        axes(for: state).map { "\($0.title): \($0.value)" }
+    }
+
+    private func familyMemoryAxis(_ state: GameState) -> LifeSummarySnapshot.LegacyAxis {
+        let adults = state.family.children.compactMap(\.adultProfile)
+        let strong = adults.filter { $0.relationshipQuality >= 60 && ($0.outcome == .thriving || $0.outcome == .stable) }.count
+        let strained = adults.filter { $0.relationshipQuality < 40 || $0.outcome == .distant }.count
+        if strong >= 2 {
+            return axis("family", "Family Memory", "Held", .positive, "The people closest to you had something solid to inherit emotionally.")
+        }
+        if strained > 0 {
+            return axis("family", "Family Memory", "Strained", .warning, "Some relationships survived as facts more than warmth.")
+        }
+        if state.family.childCount > 0 {
+            return axis("family", "Family Memory", "Mixed", .neutral, "The family story is still complicated, but present.")
+        }
+        return axis("family", "Family Memory", "Branch Ends", .neutral, "No children carried the line forward.")
+    }
+
+    private func publicNameAxis(_ state: GameState) -> LifeSummarySnapshot.LegacyAxis {
+        let publicIdentity = PublicIdentitySystem().snapshot(for: state)
+        return axis("public", "Public Name", publicIdentity.label, publicIdentity.tone, publicIdentity.consequences.joined(separator: " · "))
+    }
+
+    private func wealthFootprintAxis(_ state: GameState) -> LifeSummarySnapshot.LegacyAxis {
+        if state.finance.totalWealth >= 5_000_000 {
+            return axis("wealth", "Wealth Footprint", "Dynastic", .positive, "The estate can change the next life, even after friction.")
+        }
+        if state.finance.totalWealth >= 500_000 || state.assets.ownsHome {
+            return axis("wealth", "Wealth Footprint", "Anchored", .positive, "Property or savings left a real floor behind.")
+        }
+        if state.finance.totalWealth < 0 {
+            return axis("wealth", "Wealth Footprint", "Debt Shadow", .warning, "The ending leaves paperwork and pressure.")
+        }
+        return axis("wealth", "Wealth Footprint", "Modest", .neutral, "There is something to settle, but not enough to define the next life.")
+    }
+
+    private func harmAndScarsAxis(_ state: GameState) -> LifeSummarySnapshot.LegacyAxis {
+        let load = max(state.healthProfile.bodyLoad.totalLoad, state.correlationLedger.recentActivityLevel, state.legal.convictions.isEmpty ? 0 : 55, state.crime.heat)
+        if load >= 75 {
+            return axis("scars", "Harm & Scars", "Heavy", .warning, "The life cost more than it looked like from outside.")
+        }
+        if load >= 45 {
+            return axis("scars", "Harm & Scars", "Visible", .warning, "Stress, record, health, or heat left marks.")
+        }
+        return axis("scars", "Harm & Scars", "Contained", .neutral, "The damage stayed survivable.")
+    }
+
+    private func unfinishedBusinessAxis(_ state: GameState) -> LifeSummarySnapshot.LegacyAxis {
+        var unresolved = 0
+        if state.relationships.activeTensionCount > 0 { unresolved += 1 }
+        if state.finance.financialStress >= 55 { unresolved += 1 }
+        if state.healthProfile.activeConditions.contains(where: { $0.severity >= 55 }) { unresolved += 1 }
+        if state.legal.stage != .inactive && state.legal.stage != .released { unresolved += 1 }
+        if state.family.children.contains(where: { ($0.adultProfile?.relationshipQuality ?? $0.bondWithPlayer) < 40 }) { unresolved += 1 }
+
+        if unresolved >= 3 {
+            return axis("unfinished", "Unfinished", "Loud", .warning, "Several parts of the life still wanted attention at the end.")
+        }
+        if unresolved > 0 {
+            return axis("unfinished", "Unfinished", "Present", .neutral, "A few loose ends remain visible.")
+        }
+        return axis("unfinished", "Unfinished", "Quiet", .positive, "The major loose ends were mostly settled.")
+    }
+
+    private func axis(_ id: String, _ title: String, _ value: String, _ tone: PlannerTone, _ detail: String) -> LifeSummarySnapshot.LegacyAxis {
+        LifeSummarySnapshot.LegacyAxis(id: id, title: title, value: value, tone: tone, detail: detail)
+    }
+}
+
+struct CareLoadSystem {
+    func resolveYear(state: inout GameState) -> DomainYearResult {
+        seedCareNeedsIfNeeded(state: &state)
+        guard state.relationships.careLoad.isActive else { return DomainYearResult() }
+
+        var result = DomainYearResult()
+        state.relationships.careLoad.records.indices.forEach {
+            state.relationships.careLoad.records[$0].yearsActive += 1
+            state.relationships.careLoad.records[$0].intensity = max(0, state.relationships.careLoad.records[$0].intensity - 3)
+        }
+        state.relationships.careLoad.clamp()
+
+        let intensity = state.relationships.careLoad.totalIntensity
+        state.healthProfile.mentalWellness = max(0, state.healthProfile.mentalWellness - max(1, intensity / 18))
+        state.relationships.privateReputation = min(100, state.relationships.privateReputation + max(1, intensity / 25))
+        state.finance.cashOnHand -= max(0, intensity * 35)
+        state.consequences.pressureByDomain["relationships", default: 0] = min(100, state.consequences.pressureByDomain["relationships", default: 0] + max(2, intensity / 12))
+        state.consequences.pressureByDomain["health", default: 0] = min(100, state.consequences.pressureByDomain["health", default: 0] + max(1, intensity / 18))
+        result.notes.append(DomainNote(title: "Care Load", text: state.relationships.careLoad.topLine, tags: [.relationships, .family, .health]))
+        return result
+    }
+
+    private func seedCareNeedsIfNeeded(state: inout GameState) {
+        guard state.player.age >= 45 else { return }
+        guard state.relationships.careLoad.records.isEmpty else { return }
+
+        if let partner = state.relationships.primaryPartner, partner.bond >= 35, state.player.age >= 62 {
+            state.relationships.careLoad.records.append(CareLoadRecord(source: .sickPartner, personName: partner.name, intensity: 34, storyLine: "\(partner.name) needs more care than last year."))
+        } else if let adult = state.family.children.first(where: { !$0.livesAtHome && (($0.adultProfile?.outcome == .struggling) || ($0.adultProfile?.relationshipQuality ?? $0.bondWithPlayer) < 42) }) {
+            state.relationships.careLoad.records.append(CareLoadRecord(source: .dependentAdultChild, personName: adult.name, intensity: 30, storyLine: "\(adult.name) is grown, but not fully steady."))
+        } else if state.player.age >= 55 && state.relationships.privateReputation >= 45 {
+            state.relationships.careLoad.records.append(CareLoadRecord(source: .agingParent, personName: "Family", intensity: 24, storyLine: "An older relative starts needing practical help."))
+        }
+        state.relationships.careLoad.clamp()
+    }
+}
+
+struct BodyLoadSystem {
+    func update(state: inout GameState) -> DomainYearResult {
+        let ageLoad = max(0, state.player.age - 42)
+        let conditionLoad = min(45, state.healthProfile.activeConditions.reduce(0) { $0 + $1.severity / 4 })
+        let addictionLoad = state.healthProfile.addiction / 3
+        let mentalLoad = max(0, 55 - state.healthProfile.mentalWellness)
+        let careLoad = state.relationships.careLoad.totalIntensity / 3
+        let habitProtection = (state.healthProfile.habits.exercise + state.healthProfile.habits.nutrition + state.healthProfile.habits.stressManagement) / 9
+
+        state.healthProfile.bodyLoad.mobilityStrain = (ageLoad + conditionLoad - habitProtection).clamped(to: 0...100)
+        state.healthProfile.bodyLoad.cognitiveStrain = (ageLoad / 2 + mentalLoad + addictionLoad).clamped(to: 0...100)
+        state.healthProfile.bodyLoad.recoveryDrag = (ageLoad + conditionLoad + careLoad - (state.healthProfile.hasPrimaryCare ? 10 : 0)).clamped(to: 0...100)
+        state.healthProfile.bodyLoad.stressDebt = (mentalLoad + careLoad + state.career.burnout / 2).clamped(to: 0...100)
+        state.healthProfile.bodyLoad.preventiveCare = (state.healthProfile.hasPrimaryCare ? 62 : 34) + habitProtection
+
+        let total = state.healthProfile.bodyLoad.totalLoad
+        if total >= 65 {
+            state.healthProfile.bodyLoad.summaryLine = "Body load is shaping every year now."
+            state.consequences.pressureByDomain["health", default: 0] = min(100, state.consequences.pressureByDomain["health", default: 0] + 8)
+            return DomainYearResult(notes: [DomainNote(title: "Body Load", text: state.healthProfile.bodyLoad.summaryLine, tags: [.health])])
+        }
+        if total >= 35 {
+            state.healthProfile.bodyLoad.summaryLine = "Recovery is slower than it used to be."
+        } else {
+            state.healthProfile.bodyLoad.summaryLine = "Body load is quiet."
+        }
+        return DomainYearResult()
+    }
+}
+
+struct HousingClassSystem {
+    func update(state: inout GameState) {
+        state.housing.lifeStage = housingStage(for: state)
+        state.housing.socialClassBand = socialClass(for: state)
+        state.housing.stabilityHistory.append(state.housing.housingStability)
+        state.housing.clamp()
+    }
+
+    private func housingStage(for state: GameState) -> HousingState.HousingLifeStage {
+        if let home = state.assets.primaryResidence, home.status == .foreclosed { return .foreclosed }
+        if state.inheritedLegacy?.inheritedProperty != nil && state.assets.ownsHome { return .inheritedHome }
+        if state.assets.lifestyleScore >= 75 && state.assets.ownsHome { return .luxuryEstate }
+        if state.assets.ownsHome && state.finance.financialStress >= 60 { return .housePoor }
+        if state.assets.ownsHome { return .ownerOccupied }
+        if state.housing.housingStability < 30 { return .unsafeRental }
+        switch state.housing.livingArrangement {
+        case .familyHome: return .familyHome
+        case .roommates: return .roommates
+        case .soloRenting: return .soloRenting
+        case .ownerOccupied: return .ownerOccupied
+        case .couchSurfing: return .unsafeRental
+        }
+    }
+
+    private func socialClass(for state: GameState) -> HousingState.SocialClassBand {
+        let wealth = state.finance.totalWealth
+        if wealth >= 100_000_000 || state.fame.recognition >= 90 { return .untouchable }
+        if wealth >= 10_000_000 || state.assets.lifestyleScore >= 85 { return .elite }
+        if wealth >= 1_000_000 || state.career.annualIncome >= 220_000 { return .affluent }
+        if wealth >= 80_000 && state.housing.housingStability >= 55 && state.finance.financialStress < 45 { return .stableMiddle }
+        if state.finance.cashOnHand < 0 || state.housing.housingStability < 35 { return .precarious }
+        return .working
+    }
+}
+
+struct EndgameSummarySystem {
+    func mode(for state: GameState) -> String {
+        if state.legal.isInCustody { return "Prison Ending" }
+        if state.fame.notoriety >= 75 || state.crime.heat >= 80 { return "Scandal Collapse" }
+        if state.player.age >= 78 && state.relationships.privateReputation >= 60 && state.finance.totalWealth < 1_000_000 { return "Broke But Loved" }
+        if state.finance.totalWealth >= 5_000_000 && state.relationships.privateReputation < 45 { return "Rich And Alone" }
+        if state.specialCareer.track != .inactive && state.progress.legacyScore >= 120 { return "Empire Handoff" }
+        if state.player.age >= 78 { return "Quiet Old Age" }
+        if state.player.health <= 0 || state.healthProfile.physicalWellness <= 0 || state.healthProfile.bodyLoad.totalLoad >= 70 { return "Medical Decline" }
+        if state.family.childCount == 0 && state.player.age >= 60 { return "Branch Ends" }
+        if state.family.children.contains(where: { ($0.adultProfile?.relationshipQuality ?? $0.bondWithPlayer) >= 70 }) { return "Family Reconciliation" }
+        return "Unfinished Life"
+    }
+
+    func meaningLine(for state: GameState, axes: [LifeSummarySnapshot.LegacyAxis]) -> String {
+        if axes.contains(where: { $0.id == "family" && $0.value == "Held" }) {
+            return "The clearest proof of the life is in the people who still answer."
+        }
+        if state.finance.totalWealth >= 5_000_000 {
+            return "The money lasted; the question is what it cost to make it."
+        }
+        if state.fame.notoriety >= 70 {
+            return "Being remembered is not the same as being forgiven."
+        }
+        if state.progress.currentLifePath == .survivor {
+            return "Survival became its own kind of authorship."
+        }
+        return "The meaning is not clean, but it is traceable."
+    }
+}
+
 struct ProgressSystem {
     private let balanceProfile: SimulationBalanceProfile
 
@@ -381,25 +650,8 @@ struct ProgressSystem {
         
         result.notes.append(DomainNote(title: "Legacy", text: legacyIntro))
 
-        // P5-5: Richer end payoff reacting to full P4 (shape + resilience + era)
-        let shape = LifeShapeResolver.label(from: state)
-        let res = state.resilience
-        let era = state.currentEra
-        var closer = ""
-        
-        switch LifeShapeResolver.resolveOrPragmatic(from: state) {
-        case .drivenCurrent: closer += " You ended the race at full speed, still chasing the horizon."
-        case .looseEdges: closer += " You let the edges fray at the end, finding a quiet, unscripted peace."
-        case .carefulShape: closer += " Every choice was weighed; you finished exactly as you intended."
-        case .pragmatic: closer += " You settled the accounts and met the end with a steady eye."
-        }
-
-        if res == .grounded {
-            closer += " You fought it all the way."
-        } else if era == .recession || era == .highInflation {
-            closer += " The times were against you at the close, but the record stands."
-        }
-        
+        // P5 Cohesion Gate: composed closer from unified narrative router
+        let closer = CohesionNarrative.legacyCloserText(state: state)
         if !closer.isEmpty {
             result.notes.append(DomainNote(title: "The End", text: "The final chapter wrote itself.\(closer)", tags: [.progress]))
         }
@@ -727,12 +979,15 @@ struct ProgressSystem {
 
 struct LifeSummarySystem {
     private let progressSystem = ProgressSystem()
+    private let legacySignalSystem = LegacySignalSystem()
+    private let endgameSystem = EndgameSummarySystem()
 
     func build(from state: GameState) -> LifeSummarySnapshot {
         let path = state.progress.finalLifePath ?? state.progress.currentLifePath
         let pathTitle = path.map { LifePathCatalog.profile(for: $0).title } ?? "Unfinished"
         let achievements = achievementLines(from: state)
         let regrets = regretLines(from: state)
+        let axes = legacySignalSystem.axes(for: state)
 
         return LifeSummarySnapshot(
             headline: headline(for: state, pathTitle: pathTitle),
@@ -743,8 +998,27 @@ struct LifeSummarySystem {
             achievements: Array(achievements.prefix(3)),
             regrets: Array(regrets.prefix(3)),
             legacyScore: state.progress.legacyScore,
-            legacyPointsEarned: progressSystem.legacyPointsEarned(from: state)
+            legacyPointsEarned: progressSystem.legacyPointsEarned(from: state),
+            legacyAxes: axes,
+            legacySignals: legacySignalSystem.compactSignals(for: state),
+            endgameMode: endgameSystem.mode(for: state),
+            meaningLine: endgameSystem.meaningLine(for: state, axes: axes),
+            inheritedPressureSummary: inheritancePressureSummary(for: state, axes: axes)
         )
+    }
+
+    private func inheritancePressureSummary(for state: GameState, axes: [LifeSummarySnapshot.LegacyAxis]) -> String {
+        let warningAxes = axes.filter { $0.tone == .warning }.map(\.title)
+        if !warningAxes.isEmpty {
+            return "Inherited pressure: \(warningAxes.prefix(2).joined(separator: ", "))"
+        }
+        if state.finance.totalWealth >= 500_000 {
+            return "Inherited floor: estate and reputation"
+        }
+        if state.relationships.privateReputation >= 65 {
+            return "Inherited warmth: people still answer"
+        }
+        return "Inherited pressure is light"
     }
 
     private func headline(for state: GameState, pathTitle: String) -> String {
@@ -1517,6 +1791,11 @@ struct YearlyOutcomeAggregator {
             tone = .neutral
             impactScore = 5
             detail = "\(definition.title) shaped your personal path."
+        case .play:
+            let delta = after.activities.recoveryBalance - before.activities.recoveryBalance
+            tone = delta >= 0 ? .positive : .neutral
+            impactScore = max(4, abs(delta / 2))
+            detail = "\(definition.title) made the year feel a little more alive."
         }
 
         return YearlyOutcomeItem(
@@ -1679,6 +1958,7 @@ struct YearlyOutcomeAggregator {
         case .health: return .health
         case .family: return .family
         case .identity: return .lifeEvent
+        case .play: return .lifeEvent
         }
     }
 

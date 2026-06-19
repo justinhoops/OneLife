@@ -35,6 +35,186 @@ enum StudyFocus: String, Codable, CaseIterable {
     case trades
 }
 
+enum HighSchoolAcademicShape: String, Codable, CaseIterable {
+    case honors
+    case steady
+    case struggling
+    case vocational
+    case dropoutRisk
+
+    var displayLabel: String {
+        switch self {
+        case .honors: return "Honors"
+        case .steady: return "Steady"
+        case .struggling: return "Struggling"
+        case .vocational: return "Vocational"
+        case .dropoutRisk: return "Dropout risk"
+        }
+    }
+}
+
+enum HighSchoolSocialShape: String, Codable, CaseIterable {
+    case connected
+    case invisible
+    case volatile
+    case respected
+    case isolated
+
+    var displayLabel: String {
+        switch self {
+        case .connected: return "Connected"
+        case .invisible: return "Invisible"
+        case .volatile: return "Volatile"
+        case .respected: return "Respected"
+        case .isolated: return "Isolated"
+        }
+    }
+}
+
+enum HighSchoolAdultSupportShape: String, Codable, CaseIterable {
+    case mentored
+    case overlooked
+    case protected
+    case adversarial
+
+    var displayLabel: String {
+        switch self {
+        case .mentored: return "Mentored"
+        case .overlooked: return "Overlooked"
+        case .protected: return "Protected"
+        case .adversarial: return "Adversarial"
+        }
+    }
+}
+
+enum HighSchoolPressureShape: String, Codable, CaseIterable {
+    case balanced
+    case burnedOut
+    case survivalMode
+    case reckless
+
+    var displayLabel: String {
+        switch self {
+        case .balanced: return "Balanced"
+        case .burnedOut: return "Burned-out"
+        case .survivalMode: return "Survival mode"
+        case .reckless: return "Reckless"
+        }
+    }
+}
+
+enum HighSchoolFutureSeed: String, Codable, CaseIterable {
+    case academic
+    case trade
+    case creator
+    case athlete
+    case founder
+    case politics
+    case riskLane
+    case undecided
+
+    var displayLabel: String {
+        switch self {
+        case .academic: return "Academic"
+        case .trade: return "Trade"
+        case .creator: return "Creator"
+        case .athlete: return "Athlete"
+        case .founder: return "Founder"
+        case .politics: return "Leadership"
+        case .riskLane: return "Risk lane"
+        case .undecided: return "Undecided"
+        }
+    }
+}
+
+enum SeniorYearOutcome: String, Codable, CaseIterable {
+    case unresolved
+    case scholarshipRoute
+    case commuterCollege
+    case universityTrack
+    case tradeTrack
+    case adultEdRebuild
+    case dropoutDrift
+    case earlyWorkRoute
+    case specialCareerSeed
+
+    var displayLabel: String {
+        switch self {
+        case .unresolved: return "Still forming"
+        case .scholarshipRoute: return "Scholarship route"
+        case .commuterCollege: return "Commuter college"
+        case .universityTrack: return "University track"
+        case .tradeTrack: return "Trade track"
+        case .adultEdRebuild: return "Adult-ed rebuild"
+        case .dropoutDrift: return "Dropout drift"
+        case .earlyWorkRoute: return "Early work route"
+        case .specialCareerSeed: return "Special seed"
+        }
+    }
+}
+
+struct HighSchoolProfile: Codable, Equatable {
+    var academicShape: HighSchoolAcademicShape = .steady
+    var socialShape: HighSchoolSocialShape = .connected
+    var adultSupportShape: HighSchoolAdultSupportShape = .overlooked
+    var pressureShape: HighSchoolPressureShape = .balanced
+    var futureSeed: HighSchoolFutureSeed = .undecided
+
+    static let empty = HighSchoolProfile()
+}
+
+enum HighSchoolIdentityForceRole: String, Codable, CaseIterable {
+    case mentorAdult
+    case peerAlly
+    case rivalHeatSource
+    case activityCoachForce
+    case homePressure
+
+    var displayLabel: String {
+        switch self {
+        case .mentorAdult: return "Mentor"
+        case .peerAlly: return "Ally"
+        case .rivalHeatSource: return "Heat"
+        case .activityCoachForce: return "Activity"
+        case .homePressure: return "Home"
+        }
+    }
+}
+
+enum HighSchoolIdentityForceTone: String, Codable, CaseIterable {
+    case supportive
+    case tense
+    case volatile
+    case demanding
+    case neutral
+
+    var displayLabel: String {
+        switch self {
+        case .supportive: return "Support"
+        case .tense: return "Tense"
+        case .volatile: return "Volatile"
+        case .demanding: return "Demanding"
+        case .neutral: return "Neutral"
+        }
+    }
+}
+
+struct HighSchoolIdentityForce: Codable, Equatable, Identifiable {
+    var id: String
+    var name: String
+    var role: HighSchoolIdentityForceRole
+    var tone: HighSchoolIdentityForceTone
+    var storyLine: String
+    var strength: Int
+
+    mutating func clamp() {
+        if id.isEmpty { id = role.rawValue }
+        if name.isEmpty { name = role.displayLabel }
+        if storyLine.isEmpty { storyLine = "This part of school is shaping you." }
+        strength = strength.clamped(to: 0...100)
+    }
+}
+
 struct EducationState: Codable, Equatable {
     var pathway: EducationPathway = .student
     var stage: EducationStage = .secondary
@@ -60,6 +240,13 @@ struct EducationState: Codable, Equatable {
     /// Used for handoff income ramps, special entry bias, and long-term credential value in career.
     var credentialStrength: Int = 65
     var yearsSinceCredential: Int = 0
+    var highSchoolProfile: HighSchoolProfile = .empty
+    var formativeSchoolTags: [String: Int] = [:]
+    var seniorYearOutcome: SeniorYearOutcome = .unresolved
+    var highSchoolLegacyLine: String = "High school is still taking shape."
+    var highSchoolIdentityForces: [HighSchoolIdentityForce] = []
+    var lastHighSchoolIdentityBeatAge: Int? = nil
+    var seniorLaunchPresentedAge: Int? = nil
 
     private enum CodingKeys: String, CodingKey {
         case pathway
@@ -84,6 +271,13 @@ struct EducationState: Codable, Equatable {
         case hasScholarship
         case credentialStrength  // D3
         case yearsSinceCredential
+        case highSchoolProfile
+        case formativeSchoolTags
+        case seniorYearOutcome
+        case highSchoolLegacyLine
+        case highSchoolIdentityForces
+        case lastHighSchoolIdentityBeatAge
+        case seniorLaunchPresentedAge
     }
 
     init() {}
@@ -112,6 +306,13 @@ struct EducationState: Codable, Equatable {
         hasScholarship = try container.decodeIfPresent(Bool.self, forKey: .hasScholarship) ?? false
         credentialStrength = try container.decodeIfPresent(Int.self, forKey: .credentialStrength) ?? 65
         yearsSinceCredential = try container.decodeIfPresent(Int.self, forKey: .yearsSinceCredential) ?? 0
+        highSchoolProfile = try container.decodeIfPresent(HighSchoolProfile.self, forKey: .highSchoolProfile) ?? .empty
+        formativeSchoolTags = try container.decodeIfPresent([String: Int].self, forKey: .formativeSchoolTags) ?? [:]
+        seniorYearOutcome = try container.decodeIfPresent(SeniorYearOutcome.self, forKey: .seniorYearOutcome) ?? .unresolved
+        highSchoolLegacyLine = try container.decodeIfPresent(String.self, forKey: .highSchoolLegacyLine) ?? "High school is still taking shape."
+        highSchoolIdentityForces = try container.decodeIfPresent([HighSchoolIdentityForce].self, forKey: .highSchoolIdentityForces) ?? []
+        lastHighSchoolIdentityBeatAge = try container.decodeIfPresent(Int.self, forKey: .lastHighSchoolIdentityBeatAge)
+        seniorLaunchPresentedAge = try container.decodeIfPresent(Int.self, forKey: .seniorLaunchPresentedAge)
         clamp()
     }
 
@@ -132,6 +333,13 @@ struct EducationState: Codable, Equatable {
         yearsInStage = max(0, yearsInStage)
         credentialStrength = credentialStrength.clamped(to: 0...100)
         yearsSinceCredential = max(0, yearsSinceCredential)
+        formativeSchoolTags = formativeSchoolTags.reduce(into: [:]) { partial, pair in
+            let value = pair.value.clamped(to: 0...100)
+            if value > 0 {
+                partial[pair.key] = value
+            }
+        }
+        highSchoolIdentityForces.indices.forEach { highSchoolIdentityForces[$0].clamp() }
+        highSchoolIdentityForces = Array(highSchoolIdentityForces.filter { $0.strength > 0 }.sorted { $0.strength > $1.strength }.prefix(3))
     }
 }
-

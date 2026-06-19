@@ -27,6 +27,7 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
     case legalReleased
     case eventPreview
     case yearSummaryPreview
+    case longLifeStressTest
 
     var id: String { rawValue }
 
@@ -58,6 +59,7 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
         case .legalReleased: return "Released"
         case .eventPreview: return "Event Sheet Preview"
         case .yearSummaryPreview: return "Year Summary Preview"
+        case .longLifeStressTest: return "Long Life Stress (Age 72)"
         }
     }
 
@@ -115,6 +117,8 @@ enum DebugScenarioID: String, CaseIterable, Identifiable {
             return "Launch directly into an event sheet without waiting for random event selection."
         case .yearSummaryPreview:
             return "Launch directly into a year summary sheet without progressing a turn."
+        case .longLifeStressTest:
+            return "Age 72 with four adult children, capped history, and visible momentum — for long-run smoothness QA."
         }
     }
 }
@@ -211,6 +215,157 @@ struct DebugTestingCoordinator {
             return eventPreview()
         case .yearSummaryPreview:
             return yearSummaryPreview()
+        case .longLifeStressTest:
+            return longLifeStressTest()
+        }
+    }
+
+    private func longLifeStressTest() -> DebugScenarioPayload {
+        var state = baseState(name: "Jordan", age: 72)
+        state.player.traits = [.disciplined, .charismatic, .lucky]
+        state.player.health = 58
+        state.player.happiness = 62
+        state.resilience = .resilient
+        state.career.status = .fullTime
+        state.career.roleID = "operations_coordinator"
+        state.career.level = 6
+        state.career.annualIncome = 68_000
+        state.career.performance = 71
+        state.career.yearsWorked = 38
+        state.career.burnout = 48
+        state.finance.cashOnHand = 84_000
+        state.finance.annualGrossIncome = 68_000
+        state.finance.annualNetIncome = 52_000
+        state.finance.annualTotalExpenses = 41_000
+        state.finance.lastYearBalanceDelta = 6_200
+        state.finance.financialStress = 31
+        state.assets.ownsHome = true
+        state.housing.livingArrangement = .ownerOccupied
+        state.housing.housingStability = 78
+        state.relationships.romanticPartners = [
+            Relationship(
+                name: "Alex",
+                type: .romantic,
+                status: .active,
+                bond: 68,
+                yearsKnown: 42,
+                stage: .married,
+                isCohabiting: true,
+                commitmentAlignment: 72
+            )
+        ]
+        state.family.children = longLifeStressAdultChildren()
+        state.yearlyStance.recentStances = [.stabilizeMoney, .repairPeople, .protectHealth]
+        state.yearlyStance.lastCompletedStance = .protectHealth
+        state.yearlyStance.repeatCount = 2
+        state.instantMomentum.healthMomentum = 28
+        state.instantMomentum.financeMomentum = 16
+        state.instantMomentum.relationshipMomentum = 22
+        state.instantMomentum.overallStrength = 22
+        state.instantMomentum.lastUpdatedAge = 72
+        state.correlationLedger.publish(
+            CorrelationSignal(kind: .instantActionPulse, domain: "debug", strength: 44, age: 72)
+        )
+        state.discoverability.seenMomentumStripIntro = true
+        state.discoverability.seenFirstLongPressTeach = true
+        state.discoverability.seenFirstAgeUpReflection = true
+        state.discoverability.seenAdultChildrenCoach = false
+        state.mvpOnboarding.completed = true
+        state.progress.currentLifePath = .provider
+        state.progress.unlockedMilestones = [
+            MilestoneUnlock(id: .raisedGoodKids, unlockedAtAge: 58),
+            MilestoneUnlock(id: .millionaire, unlockedAtAge: 64)
+        ]
+        state.pendingActions = [
+            PlayerYearAction(domain: .health, choiceID: .rest),
+            PlayerYearAction(domain: .relationships, choiceID: .reachOut),
+            PlayerYearAction(domain: .finance, choiceID: .cutSpending)
+        ]
+        state.history = longLifeStressHistory()
+        return finalized(state)
+    }
+
+    private func longLifeStressAdultChildren() -> [ChildRecord] {
+        [
+            ChildRecord(
+                name: "Maya",
+                age: 44,
+                livesAtHome: false,
+                otherParentName: "Alex",
+                supportLoad: 0,
+                temperament: .spirited,
+                bondWithPlayer: 62,
+                leftHomeAtAge: 22,
+                adultProfile: AdultChildProfile(
+                    outcome: .thriving,
+                    relationshipQuality: 74,
+                    lifeVibe: "teacher in Denver, two kids, calls every month",
+                    keyStories: ["Became a teacher against the odds.", "Asked you to walk her down the aisle.", "Still sends photos of the grandkids."]
+                )
+            ),
+            ChildRecord(
+                name: "Theo",
+                age: 41,
+                livesAtHome: false,
+                otherParentName: "Alex",
+                supportLoad: 0,
+                temperament: .independent,
+                bondWithPlayer: 51,
+                leftHomeAtAge: 19,
+                adultProfile: AdultChildProfile(
+                    outcome: .stable,
+                    relationshipQuality: 55,
+                    lifeVibe: "logistics manager, lives two states away",
+                    keyStories: ["Left at 19 after a quiet fight.", "Called when his first kid was born.", "Shows up for holidays, not much else."]
+                )
+            ),
+            ChildRecord(
+                name: "Sage",
+                age: 38,
+                livesAtHome: false,
+                otherParentName: "Alex",
+                supportLoad: 0,
+                temperament: .sensitive,
+                bondWithPlayer: 58,
+                leftHomeAtAge: 21,
+                adultProfile: AdultChildProfile(
+                    outcome: .struggling,
+                    relationshipQuality: 48,
+                    lifeVibe: "freelance designer, patchy income, still figuring it out",
+                    keyStories: ["Asked for help with rent at 26.", "Sent a long text about feeling behind.", "You helped once; the distance stayed."]
+                )
+            ),
+            ChildRecord(
+                name: "River",
+                age: 35,
+                livesAtHome: false,
+                otherParentName: "Alex",
+                supportLoad: 0,
+                temperament: .easygoing,
+                bondWithPlayer: 66,
+                leftHomeAtAge: 23,
+                adultProfile: AdultChildProfile(
+                    outcome: .stable,
+                    relationshipQuality: 61,
+                    lifeVibe: "nurse practitioner, married, steady life nearby",
+                    keyStories: ["Chose nursing after watching you push through hard years.", "Checks in when health scares you.", "The easiest adult relationship in the family."]
+                )
+            )
+        ]
+    }
+
+    private func longLifeStressHistory() -> [HistoryEntry] {
+        let tags: [HistoryDomainTag] = [.career, .finance, .health, .family, .progress, .relationships]
+        return (0..<PerformanceBudgets.maxPersistedHistoryItems).map { index in
+            let age = max(14, 72 - (PerformanceBudgets.maxPersistedHistoryItems - 1 - index) / 4)
+            let tag = tags[index % tags.count]
+            return HistoryEntry(
+                id: UUID(uuidString: String(format: "B1000000-0000-4000-8000-%012X", index))!,
+                age: age,
+                title: "Age \(age) — \(tag.rawValue.capitalized)",
+                text: "Routine year note for long-life smoothness stress testing. Entry \(index + 1) of \(PerformanceBudgets.maxPersistedHistoryItems).",
+                tags: [tag]
+            )
         }
     }
 

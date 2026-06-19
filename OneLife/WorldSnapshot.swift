@@ -133,6 +133,8 @@ struct SpecialCareerDomainSnapshot: Equatable {
     var housing: HousingState
     var worldEra: WorldEra
     var childhoodDossier: ChildhoodDossier?
+    var recentStances: [YearlyStanceID] = []
+    var resilience: LifeResilience = .resilient
 }
 
 struct CrimeDomainSnapshot: Equatable {
@@ -281,7 +283,20 @@ struct WorldSnapshot: Equatable {
     }
 
     var specialCareer: SpecialCareerDomainSnapshot {
-        SpecialCareerDomainSnapshot(world: cache, player: state.player, career: state.career, specialCareer: state.specialCareer, finance: state.finance, health: state.healthProfile, relationships: state.relationships, housing: state.housing, worldEra: state.currentEra, childhoodDossier: state.childhoodDossier)
+        SpecialCareerDomainSnapshot(
+            world: cache,
+            player: state.player,
+            career: state.career,
+            specialCareer: state.specialCareer,
+            finance: state.finance,
+            health: state.healthProfile,
+            relationships: state.relationships,
+            housing: state.housing,
+            worldEra: state.currentEra,
+            childhoodDossier: state.childhoodDossier,
+            recentStances: state.yearlyStance.recentStances,
+            resilience: state.resilience
+        )
     }
 
     var crime: CrimeDomainSnapshot {

@@ -47,7 +47,6 @@ struct SilentYearEngine {
         let momentum = state.instantMomentum.overallStrength
         let recentAutonomy = state.correlationLedger.recentSignals(kind: .npcAutonomyPulse, minStrength: 5).count +
                              state.correlationLedger.recentSignals(kind: .worldAutonomyPulse, minStrength: 5).count
-        let recentFocus = state.correlationLedger.recentSignals(kind: .focusStance, minStrength: 10).count
 
         if heat >= 55 && momentum < 20 {
             if tone == .burnedOut || tone == .grinding || tone == .cornered {
@@ -65,30 +64,18 @@ struct SilentYearEngine {
             baseNote += " The world didn't pause just because you did."
         }
 
-        if recentFocus >= 2, LifeShapeResolver.stanceStreak(in: state, minimum: 3) == nil {
-            baseNote += " The shape of what you focused on (or avoided) is still audible."
-        }
-
-        let shapeLabel = LifeShapeResolver.label(from: state, includeActivityHeat: true)
-        if !shapeLabel.isEmpty {
-            baseNote += " (\(shapeLabel))"
-        }
-
-        if state.correlationLedger.recentActivityLevel < 20 && shapeLabel.contains("loose") {
-            baseNote += " The shape feels diffuse; doors stayed closed without drama."
-        }
-
         if state.player.age >= 80, Int.random(in: 0...100) < 18 {
             baseNote += " At this age the quiet is no longer empty — it is the sound of everything that came before."
-        }
-        if state.fame.notoriety >= 65 || state.crime.heat >= 60, Int.random(in: 0...100) < 12 {
-            baseNote += " Even in stillness, the name (or the heat) travels ahead of you."
         }
         if state.family.children.isEmpty && state.player.age >= 50, Int.random(in: 0...100) < 10 {
             baseNote += " The house is quiet in a different way. The future will not carry your name the same way."
         }
         if state.finance.cashOnHand < 0 && state.player.age >= 45, Int.random(in: 0...100) < 10 {
             baseNote += " The margin is gone. The quiet years now carry the weight of every choice that spent it."
+        }
+
+        if let cohesion = CohesionNarrative.quietNoteEcho(state: state, tone: tone) {
+            baseNote += " \(cohesion)"
         }
 
         return baseNote

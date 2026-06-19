@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var showLifeFeedSheet = false
     @State private var showLifeJournalSheet = false
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -164,6 +165,7 @@ struct ContentView: View {
                                     onSelectStance: { vm.setYearlyStance($0) },
                                     onPrepareForecast: { vm.prepareForecastCommitmentIfNeeded() },
                                     onDismissMomentumCarry: { vm.markInstantMomentumYearSummarySeen() },
+                                    onDismissFirstAgeUpReflection: { vm.markFirstAgeUpReflectionSeen() },
                                     onAdvance: {
                                         AppFeedback.impact(.light)
                                         vm.dismissPresentedCard()
@@ -207,7 +209,8 @@ struct ContentView: View {
                     policyLabel: vm.policyLabel(),
                     showingEducationAsPrimaryTab: vm.showingEducationAsPrimaryTab,
                     historyDigest: vm.historyDigest,
-                    latestYearSummary: vm.latestYearSummary
+                    latestYearSummary: vm.latestYearSummary,
+                    onDismissAdultChildrenCoach: { vm.markAdultChildrenCoachSeen() }
                 )
             }
             .sheet(item: $vm.selectedInsight) { topic in
@@ -237,7 +240,8 @@ struct ContentView: View {
                             compactMode: vm.prefersCompactLateGameUI,
                             signals: topSignals(),
                             summaryItems: vm.feedSummaryItems(),
-                            urgencyItems: vm.feedUrgencyItems(limit: vm.prefersCompactLateGameUI ? 3 : nil),
+                            urgencyItems: vm.prefersCompactLateGameUI ? vm.compactPressureItems(limit: 3) : vm.feedUrgencyItems(),
+                            secondaryUrgencyItems: vm.prefersCompactLateGameUI ? vm.secondaryPressureItems(after: 3) : [],
                             nextDecisionTitle: vm.nextDecisionPrompt(),
                             nextDecisionDetail: vm.nextDecisionDetail(),
                             queuedInteractionCount: vm.interactionQueueDepth,
@@ -301,6 +305,10 @@ struct ContentView: View {
             .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.chrome.saveStatusBanner)
             .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.chrome.activityPulse)
             .animation(vm.animationSetting == .off ? nil : .easeInOut(duration: vm.animationSetting == .reduced ? 0.14 : 0.24), value: vm.returnPrompt)
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .background || phase == .inactive else { return }
+                Task { await vm.flushPendingSave() }
+            }
         }
     }
 
@@ -732,13 +740,6 @@ struct ContentView: View {
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.7)
                                     }
-                                    // D4 residue
-                                    if vm.state.yearlyStance.recentStances.count >= 2 {
-                                        let echo = vm.state.yearlyStance.recentStances.prefix(2).map { $0.title }.joined(separator: " → ")
-                                        Text("Recent: \(echo)")
-                                            .font(.caption2.italic())
-                                            .foregroundStyle(.tertiary)
-                                    }
                                 }
                                 .padding(10)
                                 .background(PlannerTone.positive.fill)
@@ -797,16 +798,16 @@ struct ContentView: View {
                 PlannerSectionCard(
                     title: compactHome ? "Signals" : "Top Status",
                     symbol: "exclamationmark.bubble.fill",
-                    status: vm.feedUrgencyItems().first(where: { $0.tone == .warning })?.value
-                        ?? vm.feedUrgencyItems().first?.value
+                    status: (compactHome ? vm.compactPressureItems(limit: 3) : vm.feedUrgencyItems()).first(where: { $0.tone == .warning })?.value
+                        ?? (compactHome ? vm.compactPressureItems(limit: 1) : vm.feedUrgencyItems(limit: 1)).first?.value
                         ?? "Glance",
-                    tone: vm.feedUrgencyItems().contains(where: { $0.tone == .warning }) ? .warning : .neutral,
+                    tone: (compactHome ? vm.compactPressureItems(limit: 3) : vm.feedUrgencyItems()).contains(where: { $0.tone == .warning }) ? .warning : .neutral,
                     collapsible: compactHome,
                     startsCollapsed: compactHome
                 ) {
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 10) {
-                            ForEach(vm.feedUrgencyItems(limit: compactHome ? 2 : nil)) { item in
+                            ForEach(compactHome ? vm.compactPressureItems(limit: 3) : vm.feedUrgencyItems()) { item in
                                 Button {
                                     if let dest = vm.plannerDestination(forUrgencyItemTitle: item.title) {
                                         AppFeedback.impact(.light)
@@ -820,6 +821,15 @@ struct ContentView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier(homeUrgencyAccessibilityId(forTitle: item.title))
+                            }
+                            if compactHome {
+                                let more = vm.secondaryPressureItems(after: 3)
+                                if !more.isEmpty {
+                                    Text("+\(more.count) more pressures")
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.tertiary)
+                                        .accessibilityIdentifier("home-more-pressures-count")
+                                }
                             }
                         }
                     }
@@ -904,7 +914,7 @@ struct ContentView: View {
                         state: vm.state,
                         isTeenExperience: vm.isTeenExperience,
                         whyItMatters: vm.educationWhyItMatters(),
-                        schoolClimateMetrics: vm.teenSchoolClimateMetrics(),
+                        schoolClimateMetrics: vm.isTeenExperience ? vm.highSchoolShapeMetrics() : vm.teenSchoolClimateMetrics(),
                         pressureSources: vm.teenPressureSources(),
                         nextUnlocks: vm.teenUnlocks(),
                         summaryItems: vm.summaryItems(for: .occupation),
@@ -927,7 +937,11 @@ struct ContentView: View {
                         legalActionChoices: vm.actionChoices(for: .legal),
                         onSelectLegalAction: { vm.setAction($0, for: .legal) },
                         comingUpItems: vm.comingUpItems(for: .occupation),
-                        openDetail: vm.openDetail(_:)
+                        openDetail: vm.openDetail(_:),
+                        selectedSubTab: Binding(
+                            get: { vm.consoleNavigation.careersSubTab },
+                            set: { vm.consoleNavigation.careersSubTab = $0 }
+                        )
                     )
                 }
             }
@@ -967,6 +981,10 @@ struct ContentView: View {
 
                 AssetsPlannerTab(
                     state: vm.state,
+                    selectedSubTab: Binding(
+                        get: { vm.consoleNavigation.assetsSubTab },
+                        set: { vm.consoleNavigation.assetsSubTab = $0 }
+                    ),
                     onBuyFirearm: { vm.buyFirearm($0, cost: $1) },
                     onUpgradeFirearm: { vm.upgradeFirearm($0, upgrade: $1) },
                     onBuyVehicle: { vm.buyVehicle($0, cost: $1) },
@@ -1189,7 +1207,8 @@ struct DebugScenarioLabSheet: View {
              .legalInvestigation, .legalCharged, .legalConvicted, .legalCustody, .legalSupervision:
             return .warning
         case .adultCareerFlow, .specialCareerEntertainment, .partnerCohabitationFlow, .universityTrack, .tradeTrack,
-             .combatBoxing, .combatMMA, .combatCrossover, .combatChampion, .fightEmpire, .sportsOwnerBillionaire:
+             .combatBoxing, .combatMMA, .combatCrossover, .combatChampion, .fightEmpire, .sportsOwnerBillionaire,
+             .longLifeStressTest:
             return .positive
         case .adultEdRebuild, .eventPreview, .combatInjured, .legalReleased:
             return .neutral
@@ -1224,6 +1243,8 @@ struct DebugScenarioLabSheet: View {
             return "bolt.fill"
         case .yearSummaryPreview:
             return "doc.text.fill"
+        case .longLifeStressTest:
+            return "clock.arrow.circlepath"
         }
     }
 }
@@ -1268,7 +1289,8 @@ private struct PreviewLifeHeaderShell: View {
                         SignalSummary(symbol: "briefcase.fill", title: "Career", value: "Full-time", tone: .neutral)
                     ],
                     summaryItems: [],
-                    urgencyItems: vm.feedUrgencyItems(),
+                    urgencyItems: vm.prefersCompactLateGameUI ? vm.compactPressureItems(limit: 3) : vm.feedUrgencyItems(),
+                    secondaryUrgencyItems: vm.prefersCompactLateGameUI ? vm.secondaryPressureItems(after: 3) : [],
                     nextDecisionTitle: vm.nextDecisionPrompt(),
                     nextDecisionDetail: vm.nextDecisionDetail(),
                     queuedInteractionCount: vm.interactionQueueDepth,

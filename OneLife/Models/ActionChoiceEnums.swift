@@ -13,6 +13,7 @@ enum ActionDomain: String, Codable, CaseIterable, Identifiable {
     case legal
     case family
     case identity
+    case play
 
     var id: String { rawValue }
 }
@@ -34,6 +35,14 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case teenCreativeProject    // creative -> creator
     case teenLeadInitiative     // social -> politics
     case teenRiskyExperiment    // high risk tolerance lean -> criminal enterprise
+    // Character Creation Overhaul (console-first, pre-life + morphing + assets)
+    case createRandomCharacter
+    case createFromTemplate
+    case customizeCharacter
+    case applyBackground
+    case generateStarterAssets
+    case buyStarterAsset
+    case morphIdentity
     case workHard
     case protectYourEnergy
     case network
@@ -408,13 +417,46 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
     case gigMaintainRating
     case gigRestDay
 
+    // Static instant actions — guideline-aligned always-available taps
+    case improveSleep
+    case setBoundary
+    case sideGig
+    case negotiateBill
+    case treatYourself
+    case extraEffort
+    case seekMentor
+    case documentWins
+    case improveSkill
+    case managePolitics
+    case hobbySession
+    case socialOuting
+    case creativeOutlet
+    case adventure
+    case relaxRoutine
+
+    // Core static instants — OneLife depth (BitLife density + dossier/resilience/fame)
+    case journalTheShape
+    case quietTheNoise
+    case sleepLikeItMatters
+    case coldExposureDrill
+    case negotiateBetterTerms
+    case quietlyBuildCushion
+    case reviewNumbersRuthlessly
+    case realConversation
+    case networkWithoutMask
+    case putYourHeadDown
+    case protectWorkLifeLine
+
     var id: String { rawValue }
     
     var domain: ActionDomain {
         switch self {
         case .studyHard, .studyConsistently, .cramAndSurvive, .lockInRoutine, .joinClub, .buildPortfolio, .skipClass, .skipAndDrift, .joinROTC, .leaveROTC:
             return .education
-        case .workHard, .network, .pivotCareer, .trainNewSkill, .retire, .jobHunt, .takeOvertime, .takeExtraShifts, .chaseSpotlight, .startMovieActor, .auditionRole, .actingClass, .buildActingReel, .takeIndieRole, .managePublicist, .startMusicProducer, .produceTrack, .runStudioSession, .shopBeats, .collaborateWithArtist, .polishSignatureSound, .manageProducerCredits, .startMovieProducer, .optionScript, .castProject, .shootFilm, .handleProductionCrisis, .secureDistribution, .manageBackEndPoints, .startRecordLabel, .signArtist, .developArtist, .releaseRecord, .bookTour, .payArtists, .pushSingle, .handleArtistDrama, .startCoachingCareer, .recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .startSportsOwnership, .acquireFranchise, .hireGeneralManager, .negotiateMediaDeal, .investInBrand, .expandPortfolio, .sellFranchise, .startCompany, .pitchDeck, .pivotBusiness, .raiseCapital, .aggressiveExpansion, .ipoExit, .hireAdvisor, .compete, .intenseTraining, .recoveryFocus, .mediaAppearance, .teamBonding, .extraTrainingSession, .edgeProtocol, .gatherIntelligence, .exploitLeverage, .applyForResidency, .completeResidency, .openPrivatePractice, .passBarExam, .makePartner, .becomeCTO, .launchStartupSpinOff,
+        case .workHard, .network, .pivotCareer, .trainNewSkill, .retire, .jobHunt, .takeOvertime, .takeExtraShifts, .chaseSpotlight,
+             .extraEffort, .seekMentor, .documentWins, .improveSkill, .managePolitics,
+             .putYourHeadDown, .protectWorkLifeLine,
+             .startMovieActor, .auditionRole, .actingClass, .buildActingReel, .takeIndieRole, .managePublicist, .startMusicProducer, .produceTrack, .runStudioSession, .shopBeats, .collaborateWithArtist, .polishSignatureSound, .manageProducerCredits, .startMovieProducer, .optionScript, .castProject, .shootFilm, .handleProductionCrisis, .secureDistribution, .manageBackEndPoints, .startRecordLabel, .signArtist, .developArtist, .releaseRecord, .bookTour, .payArtists, .pushSingle, .handleArtistDrama, .startCoachingCareer, .recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .startSportsOwnership, .acquireFranchise, .hireGeneralManager, .negotiateMediaDeal, .investInBrand, .expandPortfolio, .sellFranchise, .startCompany, .pitchDeck, .pivotBusiness, .raiseCapital, .aggressiveExpansion, .ipoExit, .hireAdvisor, .compete, .intenseTraining, .recoveryFocus, .mediaAppearance, .teamBonding, .extraTrainingSession, .edgeProtocol, .gatherIntelligence, .exploitLeverage, .applyForResidency, .completeResidency, .openPrivatePractice, .passBarExam, .makePartner, .becomeCTO, .launchStartupSpinOff,
              .closeMajorDeal, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent,
              .postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal,
              .townHall, .politicalFundraise, .scandalResponse, .policyPush, .backroomDeal, .mediaHit, .takeAStand, .attackOpponent:
@@ -437,16 +479,21 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
         case .cutSpending, .spendForRelief, .spendToCope, .saveForEscape, .payDownDebt, .consolidateDebt, .minimumPayments, .deferStudentLoans, .declareBankruptcy, .dayTrade, .analyzeMarkets, .buyStocks, .sellStocks, .buyCrypto, .sellCrypto, .buyRentalProperty, .sellRentalProperty, .manageRentals, .claimPension,
              .saveForDownPayment, .depositToHouseFund, .buyStarterHome, .refinanceMortgage, .buildMaintenanceReserve, .topUpHouseReserve, .sellHome,
              .buildEmergencyFund, .buyIndexFund, .speculateStocks, .holdPositions, .sellToCover, .takeSideWork, .smallHustle,
-             .panicSell, .aggressiveSideHustle, .bigLifestylePurchase, .rideTheWave, .quietFinancialQuit:
+             .panicSell, .aggressiveSideHustle, .bigLifestylePurchase, .rideTheWave, .quietFinancialQuit,
+             .sideGig, .negotiateBill, .treatYourself,
+             .negotiateBetterTerms, .quietlyBuildCushion, .reviewNumbersRuthlessly:
             return .finance
-        case .reachOut, .repairTension, .keepDistance, .discussFuture, .moveInTogether, .callInFavor, .startAffair, .endAffair, .buyEngagementRing, .signPrenup, .proposeMarriage, .planWedding, .fileForDivorce:
+        case .reachOut, .repairTension, .keepDistance, .discussFuture, .moveInTogether, .callInFavor, .startAffair, .endAffair, .buyEngagementRing, .signPrenup, .proposeMarriage, .planWedding, .fileForDivorce,
+             .setBoundary, .realConversation, .networkWithoutMask:
             return .relationships
-        case .seeDoctor, .rest, .protectSleep, .pushThrough, .seekVAHealthcare:
+        case .seeDoctor, .rest, .protectSleep, .pushThrough, .seekVAHealthcare, .improveSleep,
+             .sleepLikeItMatters, .coldExposureDrill:
             return .health
         case .tryForBaby, .avoidPregnancy, .letChanceDecide, .checkInOnChild, .spendTimeWithKids, .enforceRoutine, .encourageIndependence:
             return .family
         // D1 new actions
-        case .morningReflection, .reconcileWithPast, .tryNewPersona, .publicReset, .therapySession, .processCrisis:
+        case .morningReflection, .reconcileWithPast, .tryNewPersona, .publicReset, .therapySession, .processCrisis,
+             .journalTheShape, .quietTheNoise, .protectYourEnergy:
             return .identity
         case .familyMeal, .storyTime:
             return .family
@@ -467,6 +514,8 @@ enum ActionChoiceID: String, Codable, CaseIterable, Identifiable {
              .salesClientOutreach, .salesPipelineGrind, .salesRecoveryCall,
              .gigAcceptSurge, .gigMaintainRating, .gigRestDay:
             return .career
+        case .hobbySession, .socialOuting, .creativeOutlet, .adventure, .relaxRoutine:
+            return .play
         default:
             return .career
         }

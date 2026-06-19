@@ -182,14 +182,51 @@ struct TrajectoryState: Codable, Equatable {
     }
 }
 struct HousingState: Codable, Equatable {
+    enum HousingLifeStage: String, Codable, CaseIterable, Equatable {
+        case familyHome
+        case unsafeRental
+        case roommates
+        case soloRenting
+        case housePoor
+        case ownerOccupied
+        case foreclosed
+        case downsized
+        case inheritedHome
+        case luxuryEstate
+    }
+
+    enum SocialClassBand: String, Codable, CaseIterable, Equatable {
+        case precarious
+        case working
+        case stableMiddle
+        case affluent
+        case elite
+        case untouchable
+
+        var title: String {
+            switch self {
+            case .precarious: return "Precarious"
+            case .working: return "Working Class"
+            case .stableMiddle: return "Stable Middle"
+            case .affluent: return "Affluent"
+            case .elite: return "Elite"
+            case .untouchable: return "Untouchable"
+            }
+        }
+    }
+
     var livingArrangement: LivingArrangement = .familyHome
     var housingCostBand: Int = 25
     var housingStability: Int = 68
     var hasRoommate: Bool = false
+    var lifeStage: HousingLifeStage = .familyHome
+    var socialClassBand: SocialClassBand = .working
+    var stabilityHistory: [Int] = []
 
     mutating func clamp() {
         housingCostBand = housingCostBand.clamped(to: 0...100)
         housingStability = housingStability.clamped(to: 0...100)
+        stabilityHistory = Array(stabilityHistory.suffix(6))
     }
 }
 struct LegacyInheritanceSnapshot: Codable, Equatable {
@@ -201,9 +238,23 @@ struct LegacyInheritanceSnapshot: Codable, Equatable {
     var inheritedReputation: Int
     var parentDeathAge: Int
     var parentLegacyHeadline: String? = nil
+    var familyMemory: String = ""
+    var reputationShadow: String = ""
+    var wealthContext: String = ""
+    var parentalPattern: String = ""
+    var estateFriction: Int = 0
+    var inheritedPressureSummary: String = ""
 }
 
 struct LifeSummarySnapshot: Codable, Equatable {
+    struct LegacyAxis: Codable, Equatable, Identifiable {
+        var id: String
+        var title: String
+        var value: String
+        var tone: PlannerTone
+        var detail: String
+    }
+
     var headline: String
     var closingLine: String
     var lifePathTitle: String
@@ -213,5 +264,9 @@ struct LifeSummarySnapshot: Codable, Equatable {
     var regrets: [String]
     var legacyScore: Int
     var legacyPointsEarned: Int
+    var legacyAxes: [LegacyAxis] = []
+    var legacySignals: [String] = []
+    var endgameMode: String = "Unfinished"
+    var meaningLine: String = ""
+    var inheritedPressureSummary: String = ""
 }
-

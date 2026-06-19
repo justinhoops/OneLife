@@ -15,6 +15,339 @@ private func cappedHeatReduction(current: Int, relief: Int, notoriety: Int) -> I
     return max(0, current - effectiveRelief)
 }
 
+private struct FounderYearResolution {
+    var ousted = false
+}
+
+private struct FounderCareerSystem {
+    func advanceYear(
+        input: SpecialCareerDomainSnapshot,
+        player: Player,
+        specialCareer: inout SpecialCareerState,
+        result: inout DomainYearResult
+    ) -> FounderYearResolution {
+        var founder = specialCareer.founder
+        founder.clamp()
+
+        let startingAudience = specialCareer.audience
+        let startingStage = founder.stage
+        let shape = LifeShapeResolver.resolve(recentStances: input.recentStances) ?? .pragmatic
+        let grounded = input.resilience == .grounded
+
+        var sectorBurn = 0
+        var sectorGrowth = 0
+        switch specialCareer.sector {
+        case .semiconductors: sectorBurn = 24; sectorGrowth = -4
+        case .restaurants: sectorBurn = -8; sectorGrowth = 7
+        case .automobiles: sectorBurn = 30; sectorGrowth = -2
+        case .gaming: sectorBurn = 5; sectorGrowth = 10
+        case .general: break
+        }
+
+        var eraBurn = 0
+        var eraGrowth = 0
+        switch input.worldEra {
+        case .recession: eraBurn = 10; eraGrowth = -12
+        case .bullMarket: eraBurn = 2; eraGrowth = 10
+        case .techBoom: eraBurn = 4; eraGrowth = specialCareer.sector == .restaurants ? 6 : 16
+        case .highInflation: eraBurn = 14; eraGrowth = -4
+        case .pandemic:
+            eraBurn = specialCareer.sector == .restaurants ? 18 : 5
+            eraGrowth = specialCareer.sector == .gaming ? 12 : -5
+        case .wartime: eraBurn = 8; eraGrowth = -7
+        case .stable: break
+        }
+
+        let stageBurn: Int
+        switch startingStage {
+        case .idea: stageBurn = 12
+        case .seed: stageBurn = 22
+        case .early: stageBurn = 34
+        case .scale: stageBurn = 50
+        case .mature: stageBurn = 42
+        }
+
+        var advisorFees = 0
+        var advisorGrowth = 0
+        var advisorBurnRelief = 0
+        for advisor in specialCareer.advisors {
+            advisorFees += advisor.yearlyFee
+            switch advisor.specialty {
+            case .growth: advisorGrowth += 5
+            case .strategy: advisorBurnRelief += 6
+            case .political: specialCareer.boardPressure = max(0, specialCareer.boardPressure - 5)
+            }
+        }
+        if advisorFees > 0 {
+            result.financeEffects = FinanceEffects(cashDelta: -advisorFees)
+        }
+
+        let hiringCost = founder.keyHires / 6
+        let executionRelief = max(0, founder.execution - 50) / 3
+        let culturePenalty = max(0, 50 - founder.companyCulture) / 4
+        founder.burnRate = (
+            stageBurn + sectorBurn + eraBurn + hiringCost + culturePenalty - executionRelief - advisorBurnRelief
+        ).clamped(to: 5...100)
+
+        var growthScore = (founder.vision + founder.execution + founder.teamHealth + founder.competitiveMoat) / 4
+        growthScore += sectorGrowth + eraGrowth + advisorGrowth
+        growthScore -= max(0, founder.burnRate - 55) / 2
+        growthScore -= max(0, 45 - founder.teamHealth) / 2
+
+        switch shape {
+        case .drivenCurrent:
+            growthScore += 8
+            founder.founderMentalLoad += grounded ? 7 : 5
+        case .carefulShape:
+            founder.burnRate = max(5, founder.burnRate - 7)
+            founder.founderMentalLoad -= grounded ? 5 : 3
+        case .looseEdges:
+            growthScore -= grounded ? 10 : 6
+            founder.companyCulture -= grounded ? 4 : 2
+        case .pragmatic:
+            founder.burnRate = max(5, founder.burnRate - 3)
+        }
+
+        if input.health.mentalWellness < 40 {
+            growthScore -= 6
+            founder.founderMentalLoad += grounded ? 5 : 3
+        }
+
+        let audienceDelta: Int
+        switch growthScore {
+        case 78...: audienceDelta = startingStage == .mature ? 5 : 9
+        case 64..<78: audienceDelta = startingStage == .mature ? 3 : 6
+        case 50..<64: audienceDelta = 2
+        case 38..<50: audienceDelta = -3
+        default: audienceDelta = grounded ? -9 : -6
+        }
+        specialCareer.audience = (specialCareer.audience + audienceDelta).clamped(to: 0...100)
+
+        let canAdvance: Bool
+        switch startingStage {
+        case .idea:
+            canAdvance = specialCareer.audience >= 18 && founder.vision >= 48
+        case .seed:
+            canAdvance = specialCareer.audience >= 32 && founder.execution >= 50 && founder.teamHealth >= 40
+        case .early:
+            canAdvance = specialCareer.audience >= 55 && founder.execution >= 58 && founder.competitiveMoat >= 25
+        case .scale:
+            canAdvance = specialCareer.audience >= 78 && founder.execution >= 65 && founder.teamHealth >= 52
+        case .mature:
+            canAdvance = false
+        }
+
+        if canAdvance {
+            let stageGain = max(3, min(8, growthScore / 12))
+            founder.productStage = min(100, founder.productStage + stageGain)
+        } else if audienceDelta < 0 && founder.burnRate >= 75 {
+            founder.productStage = max(0, founder.productStage - (grounded ? 5 : 3))
+        }
+
+        let stageChanged = founder.stage != startingStage
+        if stageChanged {
+            result.notes.append(DomainNote(
+                title: "\(founder.stage.displayName) Stage",
+                text: stageTransitionText(for: founder.stage),
+                tags: [.career, .progress]
+            ))
+        }
+
+        let valuationScore = audienceDelta * 5
+            + max(0, founder.competitiveMoat - 45) / 2
+            + max(0, founder.execution - 55) / 3
+            + max(0, founder.teamHealth - 55) / 4
+            - max(0, founder.burnRate - 60) / 2
+        founder.valuationTrend = switch valuationScore {
+        case 24...: .surging
+        case 7..<24: .growing
+        case -8..<7: .flat
+        default: .falling
+        }
+
+        let equityControl = Int((specialCareer.equityOwned * 100).rounded())
+        let pressureControl = equityControl - specialCareer.boardPressure / 3
+        founder.control = min(founder.control, pressureControl.clamped(to: 10...100))
+
+        if founder.burnRate >= 75 {
+            specialCareer.burnout += grounded ? 10 : 7
+            founder.founderMentalLoad += grounded ? 7 : 4
+            specialCareer.boardPressure += grounded ? 9 : 6
+        } else if founder.burnRate <= 35 && founder.valuationTrend != .falling {
+            specialCareer.boardPressure = max(0, specialCareer.boardPressure - 5)
+        }
+
+        if founder.teamHealth < 40 {
+            specialCareer.boardPressure += grounded ? 8 : 5
+            founder.companyCulture -= 3
+        } else if founder.teamHealth >= 68 {
+            founder.companyCulture += 2
+            specialCareer.boardPressure = max(0, specialCareer.boardPressure - 3)
+        }
+
+        let stageLoad: Int
+        switch founder.stage {
+        case .idea: stageLoad = 1
+        case .seed: stageLoad = 2
+        case .early: stageLoad = 3
+        case .scale: stageLoad = 5
+        case .mature: stageLoad = 4
+        }
+        founder.founderMentalLoad += stageLoad
+        if founder.valuationTrend == .falling {
+            founder.founderMentalLoad += grounded ? 7 : 4
+        } else if founder.valuationTrend == .surging {
+            founder.personalLegend += 3
+        }
+
+        if specialCareer.burnout > 55 {
+            if founder.lastHighBurnoutAge > 0 && player.age - founder.lastHighBurnoutAge <= 1 {
+                specialCareer.boardPressure += grounded ? 18 : 14
+                result.notes.append(DomainNote(
+                    title: "Board Reality",
+                    text: "Burnout is no longer private. The board sees the missed decisions and the exhausted team.",
+                    tags: [.career, .risk]
+                ))
+            }
+            founder.lastHighBurnoutAge = player.age
+        } else {
+            founder.lastHighBurnoutAge = 0
+        }
+
+        applyDeterministicEvent(
+            seed: eventSeed(player: player, specialCareer: specialCareer, founder: founder),
+            grounded: grounded,
+            specialCareer: &specialCareer,
+            founder: &founder,
+            result: &result
+        )
+
+        if founder.founderMentalLoad >= 55 {
+            let baseTax = max(2, founder.founderMentalLoad / 18)
+            let mentalTax = grounded ? baseTax + 2 : baseTax
+            result.healthEffects = HealthEffects(
+                physical: founder.founderMentalLoad >= 80 ? -2 : nil,
+                mental: -mentalTax,
+                stressManagement: -(mentalTax + 1)
+            )
+        } else if shape == .carefulShape && founder.burnRate <= 45 {
+            result.healthEffects = HealthEffects(mental: grounded ? 3 : 2, stressManagement: grounded ? 4 : 3)
+        }
+
+        if specialCareer.audience > 55 && founder.control > 65 {
+            founder.personalLegend += 2
+        }
+        if founder.personalLegend > 35 {
+            specialCareer.fame += max(1, founder.personalLegend / 20)
+        }
+
+        founder.clamp()
+        specialCareer.boardPressure = specialCareer.boardPressure.clamped(to: 0...100)
+        specialCareer.burnout = specialCareer.burnout.clamped(to: 0...100)
+        specialCareer.founder = founder
+
+        if specialCareer.boardPressure >= 100 {
+            let text = founder.founderMentalLoad >= 70
+                ? "The board removed you after the company consumed the person who built it."
+                : "The board removed you. The company keeps the product, the team, and part of your name."
+            result.notes.append(DomainNote(title: "The Coup — End of the Road", text: text, tags: [.career, .progress]))
+            return FounderYearResolution(ousted: true)
+        }
+
+        if startingAudience != specialCareer.audience {
+            result.notes.append(DomainNote(
+                title: "Valuation \(founder.valuationTrend.displayName)",
+                text: valuationText(for: founder.valuationTrend, burnRate: founder.burnRate),
+                tags: [.career, .finance]
+            ))
+        }
+        return FounderYearResolution()
+    }
+
+    private func eventSeed(player: Player, specialCareer: SpecialCareerState, founder: FounderState) -> Int {
+        player.age * 97
+            + specialCareer.yearsActive * 53
+            + specialCareer.sector.rawValue.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+            + founder.productStage * 7
+            + founder.execution * 3
+            + founder.teamHealth
+    }
+
+    private func applyDeterministicEvent(
+        seed: Int,
+        grounded: Bool,
+        specialCareer: inout SpecialCareerState,
+        founder: inout FounderState,
+        result: inout DomainYearResult
+    ) {
+        let roll = normalizedRoll(seed)
+        guard roll < 24 else { return }
+
+        switch founder.stage {
+        case .idea, .seed:
+            if founder.execution < 52 {
+                founder.productStage = max(0, founder.productStage - 3)
+                founder.founderMentalLoad += grounded ? 6 : 4
+                result.notes.append(DomainNote(title: "Validation Failed", text: "The pitch survived contact with customers. The product did not.", tags: [.career, .risk]))
+            } else {
+                founder.keyHires += 5
+                founder.teamHealth += 3
+                result.notes.append(DomainNote(title: "First Believer", text: "A crucial early hire joined before the outcome was obvious.", tags: [.career, .social]))
+            }
+        case .early:
+            if founder.companyCulture < 48 {
+                founder.teamHealth -= grounded ? 8 : 6
+                result.notes.append(DomainNote(title: "Culture Fracture", text: "The values on the wall and the behavior in the room stopped matching.", tags: [.career, .social]))
+            } else {
+                founder.competitiveMoat += 5
+                result.notes.append(DomainNote(title: "Product-Market Pull", text: "Customers started dragging the product into places you did not have to sell it.", tags: [.career, .progress]))
+            }
+        case .scale:
+            if founder.teamHealth < 55 {
+                founder.keyHires = max(0, founder.keyHires - 6)
+                specialCareer.boardPressure += grounded ? 10 : 7
+                result.notes.append(DomainNote(title: "Executive Exit", text: "A key leader left, and everyone has a different story about why.", tags: [.career, .risk]))
+            } else {
+                founder.competitiveMoat += 4
+                founder.personalLegend += 3
+                result.notes.append(DomainNote(title: "Competitor Blinked", text: "A rival retreated from the market you forced them to fight in.", tags: [.career, .progress]))
+            }
+        case .mature:
+            if founder.control < 50 {
+                specialCareer.boardPressure += grounded ? 12 : 8
+                result.notes.append(DomainNote(title: "Succession Question", text: "The board asked whether the company has outgrown its founder.", tags: [.career, .risk]))
+            } else {
+                founder.personalLegend += 4
+                result.notes.append(DomainNote(title: "Institutional Weight", text: "The company now changes the market simply by choosing a direction.", tags: [.career, .progress]))
+            }
+        }
+    }
+
+    private func normalizedRoll(_ seed: Int) -> Int {
+        let mixed = seed &* 1_103_515_245 &+ 12_345
+        return ((mixed % 100) + 100) % 100
+    }
+
+    private func stageTransitionText(for stage: FounderProductStage) -> String {
+        switch stage {
+        case .idea: return "The company is still a conviction looking for proof."
+        case .seed: return "The idea has enough proof to become a company with obligations."
+        case .early: return "The product has traction. Delivery and culture now matter as much as vision."
+        case .scale: return "Growth is no longer a campaign. It is an operating system."
+        case .mature: return "The company has become an institution, and control is now the central fight."
+        }
+    }
+
+    private func valuationText(for trend: FounderValuationTrend, burnRate: Int) -> String {
+        switch trend {
+        case .falling: return "The market is marking the story down. Burn sits at \(burnRate), and patience is shortening."
+        case .flat: return "The company held its ground. Burn sits at \(burnRate), so execution matters more than narrative."
+        case .growing: return "The fundamentals improved and the market noticed. Burn sits at \(burnRate)."
+        case .surging: return "Traction, delivery, and belief aligned. Burn sits at \(burnRate), but the story is outrunning it."
+        }
+    }
+}
+
 struct SpecialCareerSystem {
     static func qualificationIssue(for choiceID: ActionChoiceID, state: GameState) -> String? {
         let dossier = state.childhoodDossier
@@ -237,7 +570,7 @@ struct SpecialCareerSystem {
         case .politics:
             resolvePoliticsYear(player: &player, career: &career, specialCareer: &specialCareer, health: input.health, worldEra: input.worldEra, result: &result)
         case .founder:
-            resolveFounderYear(player: &player, career: &career, specialCareer: &specialCareer, health: input.health, worldEra: input.worldEra, dossier: dossier, result: &result)
+            resolveFounderYear(input: input, player: &player, specialCareer: &specialCareer, result: &result)
         case .athlete:
             if specialCareer.athlete.sport == .combatSports, specialCareer.athlete.combat.discipline != nil {
                 result = CombatCareerSystem().advanceCombatYear(player: &player, specialCareer: &specialCareer)
@@ -353,6 +686,8 @@ struct SpecialCareerSystem {
             guard specialCareer.track == .founder else { break }
             let injection = Int(Double(specialCareer.audience) * 600)
             specialCareer.equityOwned -= 0.12
+            specialCareer.founder.control -= 10
+            specialCareer.founder.burnRate = max(5, specialCareer.founder.burnRate - 8)
             specialCareer.boardPressure += 15
             specialCareer.audience += 12
             result.financeEffects = FinanceEffects(cashDelta: injection)
@@ -363,6 +698,9 @@ struct SpecialCareerSystem {
             specialCareer.boardPressure = max(0, specialCareer.boardPressure - 12)
             specialCareer.audience = max(8, specialCareer.audience - 6)
             specialCareer.burnout += 4
+            specialCareer.founder.burnRate = max(5, specialCareer.founder.burnRate - 14)
+            specialCareer.founder.productStage = max(0, specialCareer.founder.productStage - 4)
+            specialCareer.founder.valuationTrend = .flat
             result.notes.append(DomainNote(title: "Founder Pivot", text: "You cut away the idea that was not working. Momentum dipped, but the burn got more survivable.", tags: [.career, .finance]))
 
         case .aggressiveExpansion:
@@ -371,6 +709,9 @@ struct SpecialCareerSystem {
             specialCareer.audience += 18
             specialCareer.heat += 30
             specialCareer.burnout += 18
+            specialCareer.founder.burnRate += 20
+            specialCareer.founder.founderMentalLoad += 10
+            specialCareer.founder.valuationTrend = .growing
 
         case .ipoExit:
             guard specialCareer.track == .founder, specialCareer.audience >= 80 else { break }
@@ -408,6 +749,7 @@ struct SpecialCareerSystem {
             guard specialCareer.track == .founder else { break }
             specialCareer.audience = min(100, specialCareer.audience + 10)
             specialCareer.founder.execution = min(100, specialCareer.founder.execution + 6)
+            specialCareer.founder.valuationTrend = .growing
             let dealCash = 3_000 + specialCareer.audience * 80
             result.financeEffects = FinanceEffects(cashDelta: dealCash)
             specialCareer.boardPressure += 8
@@ -416,6 +758,7 @@ struct SpecialCareerSystem {
             guard specialCareer.track == .founder else { break }
             specialCareer.founder.teamHealth = min(100, specialCareer.founder.teamHealth + 12)
             specialCareer.founder.execution = min(100, specialCareer.founder.execution + 3)
+            specialCareer.founder.companyCulture = min(100, specialCareer.founder.companyCulture + 5)
             specialCareer.burnout = cappedBurnoutRecovery(current: specialCareer.burnout, relief: 4)
             result.notes.append(DomainNote(title: "All Hands", text: "You stood in front of everyone and reminded them why. The room feels like it can run through a wall — for a week or two.", tags: [.career, .social]))
         case .fundraiseSprint:
@@ -423,6 +766,8 @@ struct SpecialCareerSystem {
             let raise = 8_000 + specialCareer.audience * 120
             result.financeEffects = FinanceEffects(cashDelta: raise)
             specialCareer.equityOwned = max(0.1, specialCareer.equityOwned - 0.08)
+            specialCareer.founder.control = max(10, specialCareer.founder.control - 7)
+            specialCareer.founder.burnRate = max(5, specialCareer.founder.burnRate - 6)
             specialCareer.boardPressure += 12
             specialCareer.burnout += 6
             result.notes.append(DomainNote(title: "Sprint Raise", text: "You sold the vision hard for 10 days straight. The runway lengthened. Your soul is a little thinner.", tags: [.career, .finance]))
@@ -431,6 +776,7 @@ struct SpecialCareerSystem {
             specialCareer.burnout = cappedBurnoutRecovery(current: specialCareer.burnout, relief: 14)
             specialCareer.founder.founderMentalLoad = max(0, specialCareer.founder.founderMentalLoad - 10)
             specialCareer.founder.execution = max(0, specialCareer.founder.execution - 3)
+            specialCareer.founder.burnRate = max(5, specialCareer.founder.burnRate - 4)
             result.healthEffects = HealthEffects(physical: 2, mental: 5, exercise: nil, nutrition: nil, stressManagement: 5)
             result.notes.append(DomainNote(title: "Real Break", text: "You actually stepped away. The company didn't die. Neither did you — this week.", tags: [.career, .health]))
         case .hireKeyTalent:
@@ -438,6 +784,8 @@ struct SpecialCareerSystem {
             specialCareer.founder.execution = min(100, specialCareer.founder.execution + 8)
             specialCareer.audience = min(100, specialCareer.audience + 5)
             specialCareer.founder.teamHealth = min(100, specialCareer.founder.teamHealth + 5)
+            specialCareer.founder.keyHires = min(100, specialCareer.founder.keyHires + 10)
+            specialCareer.founder.burnRate = min(100, specialCareer.founder.burnRate + 7)
             specialCareer.boardPressure += 4
             result.financeEffects = FinanceEffects(cashDelta: -2_200)
             result.notes.append(DomainNote(title: "Key Hire", text: "You brought in someone who actually moves the needle. The burn rate went up so the ceiling could too.", tags: [.career, .finance]))
@@ -1114,7 +1462,27 @@ struct SpecialCareerSystem {
         return result
     }
 
-    private func resolveFounderYear(player: inout Player, career: inout CareerState, specialCareer: inout SpecialCareerState, health: HealthState, worldEra: WorldEra, dossier: ChildhoodDossier? = nil, result: inout DomainYearResult) {
+    private func resolveFounderYear(
+        input: SpecialCareerDomainSnapshot,
+        player: inout Player,
+        specialCareer: inout SpecialCareerState,
+        result: inout DomainYearResult
+    ) {
+        let resolution = FounderCareerSystem().advanceYear(
+            input: input,
+            player: player,
+            specialCareer: &specialCareer,
+            result: &result
+        )
+        if resolution.ousted {
+            exitTrack(on: &specialCareer)
+            return
+        }
+        handleCommonBurnout(specialCareer: &specialCareer, result: &result)
+    }
+
+    // Kept temporarily as a reference while founder balance data migrates to FounderCareerSystem.
+    private func resolveFounderYearLegacy(player: inout Player, career: inout CareerState, specialCareer: inout SpecialCareerState, health: HealthState, worldEra: WorldEra, dossier: ChildhoodDossier? = nil, result: inout DomainYearResult) {
         var f = specialCareer.founder
         f.clamp()
 
@@ -3048,24 +3416,20 @@ struct SpecialCareerSystem {
 
             // E1 + dossier: entrepreneurial/analytical kids get stronger founder DNA at entry
             if track == .founder {
-                if specialCareer.founder.vision < 45 {
-                    var vision = Int.random(in: 50...72)
-                    var execution = Int.random(in: 48...70)
-                    if let d = dossier {
-                        if d.aptitudes.entrepreneurial >= 55 {
-                            vision = max(vision, ent + Int.random(in: 0...8))
-                            execution = max(execution, (ent + anal) / 2 + Int.random(in: 0...6))
-                        }
-                    }
-                    specialCareer.founder.vision = vision
-                    specialCareer.founder.execution = execution
-                    specialCareer.founder.teamHealth = Int.random(in: 52...68)
-                    specialCareer.founder.productStage = Int.random(in: 12...25)
-                    specialCareer.founder.control = Int.random(in: 82...95)
-                    specialCareer.founder.founderMentalLoad = Int.random(in: 22...38)
-                    specialCareer.founder.personalLegend = Int.random(in: 15...28)
-                    specialCareer.founder.companyCulture = Int.random(in: 45...65)
-                }
+                var founder = FounderState()
+                founder.vision = (50 + max(0, ent - 45) / 2 + max(0, soc - 55) / 5).clamped(to: 48...82)
+                founder.execution = (48 + max(0, anal - 45) / 2 + max(0, ent - 55) / 5).clamped(to: 46...80)
+                founder.teamHealth = (54 + max(0, soc - 50) / 4).clamped(to: 52...70)
+                founder.productStage = (14 + max(0, ent - 50) / 5).clamped(to: 12...25)
+                founder.control = 90
+                founder.founderMentalLoad = (30 - max(0, anal - 55) / 8).clamped(to: 22...34)
+                founder.personalLegend = (17 + max(0, ent - 55) / 6).clamped(to: 15...28)
+                founder.companyCulture = (50 + max(0, soc - 50) / 4).clamped(to: 45...68)
+                founder.keyHires = (8 + max(0, soc - 50) / 5).clamped(to: 8...18)
+                founder.competitiveMoat = (12 + max(0, tech - 45) / 4 + max(0, anal - 55) / 6).clamped(to: 10...28)
+                founder.burnRate = 32
+                founder.valuationTrend = .flat
+                specialCareer.founder = founder
             }
             if track == .movieActor {
                 if specialCareer.movieActor.roleCredits == 0 && specialCareer.movieActor.actingSkill < 45 {

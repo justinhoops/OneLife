@@ -38,6 +38,21 @@ struct OneLifeTests {
         )
     }
 
+    private func applyEducationAction(
+        _ choiceID: ActionChoiceID,
+        system: EducationSystem,
+        player: inout Player,
+        education: inout EducationState,
+        specialCareer: inout SpecialCareerState
+    ) -> DomainYearResult {
+        system.applyAction(
+            choiceID,
+            player: &player,
+            education: &education,
+            specialCareer: &specialCareer
+        )
+    }
+
     private func temporaryPersistence() -> PersistenceCoordinator {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         return PersistenceCoordinator(
@@ -54,6 +69,32 @@ struct OneLifeTests {
         let defaults = UserDefaults(suiteName: suiteName)!
         defaults.removePersistentDomain(forName: suiteName)
         return defaults
+    }
+
+    private func founderSnapshot(
+        player: Player,
+        career: CareerState,
+        specialCareer: SpecialCareerState,
+        era: WorldEra = .stable,
+        health: HealthState = HealthState(),
+        dossier: ChildhoodDossier? = nil,
+        stances: [YearlyStanceID] = [],
+        resilience: LifeResilience = .resilient
+    ) -> SpecialCareerDomainSnapshot {
+        SpecialCareerDomainSnapshot(
+            world: WorldCache(),
+            player: player,
+            career: career,
+            specialCareer: specialCareer,
+            finance: FinanceState(),
+            health: health,
+            relationships: RelationshipState(),
+            housing: HousingState(),
+            worldEra: era,
+            childhoodDossier: dossier,
+            recentStances: stances,
+            resilience: resilience
+        )
     }
 
     private func makeViewModel(_ scenarioID: DebugScenarioID) -> GameViewModel {
@@ -392,15 +433,15 @@ struct OneLifeTests {
         #expect(CharacterCreationStep.allCases == [.name, .origin, .trait, .resilience])
     }
 
-    @Test func firstLifeOnboardingExpiresAfterThreeYearsOrMajorMoment() async throws {
+    @Test func firstLifeOnboardingExpiresAfterEightYearsOrMajorMoment() async throws {
         var onboarding = MVPOnboardingState()
         onboarding.activate(at: 14)
 
-        onboarding.advance(afterAge: 15, hadMajorMoment: false)
-        #expect(onboarding.isActive(at: 15))
+        onboarding.advance(afterAge: 20, hadMajorMoment: false)
+        #expect(onboarding.isActive(at: 20))
 
-        onboarding.advance(afterAge: 17, hadMajorMoment: false)
-        #expect(!onboarding.isActive(at: 17))
+        onboarding.advance(afterAge: 22, hadMajorMoment: false)
+        #expect(!onboarding.isActive(at: 22))
         #expect(!onboarding.endedByMajorMoment)
 
         var majorOnboarding = MVPOnboardingState()
@@ -443,7 +484,10 @@ struct OneLifeTests {
         flags.markFirstQuickActionTeachSeen()
         #expect(flags.shouldShowFirstQuickActionTeach() == false)
 
+        #expect(DiscoverabilityTeaching.longPressFooterLine.contains("Hold") == true)
         #expect(DiscoverabilityTeaching.longPressFooterLine.contains("Age Up") == true)
+        #expect(DiscoverabilityTeaching.dossierStanceCoachLine.contains("14") == true)
+        #expect(DiscoverabilityTeaching.momentumStripIntroLine(resilience: .resilient).contains("momentum") == true)
 
         var carry = InstantMomentumCarrySnapshot()
         carry.healthMomentum = 18
@@ -456,6 +500,20 @@ struct OneLifeTests {
         flags.markFirstLongPressTeachSeen()
         #expect(flags.shouldShowHoldHint() == false)
         #expect(flags.seenFirstLongPressTeach == true)
+
+        #expect(flags.shouldAutoExpandMomentumHint(momentumVisible: true) == true)
+        flags.markMomentumStripIntroSeen()
+        #expect(flags.shouldAutoExpandMomentumHint(momentumVisible: true) == false)
+
+        let coach = flags.pendingCoachLine(age: 16, momentumVisible: false, lifeShapeNonEmpty: false, earlyDossierActive: true)
+        #expect(coach?.contains("14") == true)
+        flags.markDossierStanceCoachSeen()
+        #expect(flags.pendingCoachLine(age: 16, momentumVisible: false, lifeShapeNonEmpty: false, earlyDossierActive: true) == nil)
+
+        let previewLines = DiscoverabilityTeaching.previewContextLines(choiceID: .rest, domain: .health, state: GameState())
+        #expect(previewLines.contains(where: { $0.contains("Health") || $0.contains("protective") }) == true)
+        #expect(LifeResilience.grounded.persistentPlayLabel.contains("fighting back") == true)
+        #expect(LifeResilience.resilient.persistentPlayLabel.contains("compounds") == true)
     }
 
     @Test func instantMomentumCarryPersistenceRoundTrip() async throws {
@@ -482,9 +540,78 @@ struct OneLifeTests {
         let adults = family.children.filter { !$0.livesAtHome }
         #expect(!adults.isEmpty)
         #expect(flags.seenAdultChildrenCoach == false)
+        #expect(flags.seenFirstChildBornCoach == false)
+        #expect(flags.seenFirstLeaveHomeCoach == false)
+        #expect(flags.seenFirstParentingActionCoach == false)
+        #expect(DiscoverabilityTeaching.adultChildTransitionLine.contains("same children") == true)
         #expect(DiscoverabilityTeaching.adultChildFocusHistoryLine.contains("focus history") == true)
         flags.markAdultChildrenSeen()
         #expect(flags.seenAdultChildrenCoach == true)
+        flags.pendingFamilyHouseholdBanner = DiscoverabilityTeaching.firstParentingActionLine
+        flags.clearFamilyHouseholdBanner()
+        #expect(flags.seenFirstParentingActionCoach == true)
+        #expect(flags.pendingFamilyHouseholdBanner == nil)
+    }
+
+    @Test func familyHouseholdSnapshotSummarizesAtHomeAndAdults() async throws {
+        var family = FamilyState()
+        family.children = [
+            ChildRecord(name: "Maya", age: 8, livesAtHome: true, otherParentName: "Alex", temperament: .sensitive, bondWithPlayer: 72),
+            ChildRecord(
+                name: "Theo",
+                age: 24,
+                livesAtHome: false,
+                otherParentName: "Alex",
+                bondWithPlayer: 48,
+                leftHomeAtAge: 19,
+                adultProfile: AdultChildProfile(outcome: .struggling, relationshipQuality: 32, lifeVibe: "freelance, rarely calls")
+            )
+        ]
+        let snapshot = FamilyHouseholdSnapshot.build(from: family)
+        #expect(snapshot.atHomeCount == 1)
+        #expect(snapshot.adultCount == 1)
+        #expect(snapshot.strongestBondChildName == "Maya")
+        #expect(snapshot.strongestBondValue == 72)
+        #expect(snapshot.topPressureLine?.contains("Theo") == true)
+        #expect(snapshot.headlineChildLine?.isEmpty == false)
+    }
+
+    @Test func adultChildGlanceIncludesContinuityFields() async throws {
+        let vm = makeViewModel(.longLifeStressTest)
+        await vm.flushPendingSave()
+        vm.refreshDerivedStateForTesting()
+        let glance = vm.cachedAdultChildrenGlance.first
+        #expect(glance != nil)
+        #expect(glance?.continuityHint.contains("since") == true)
+        #expect(!(glance?.storyTease.isEmpty ?? true))
+        #expect(glance?.relationshipQuality ?? 0 > 0)
+    }
+
+    @Test func parentingPreviewContextLinesMentionChildTemperament() async throws {
+        var state = GameState()
+        state.family.children = [
+            ChildRecord(name: "Maya", age: 6, livesAtHome: true, otherParentName: "Alex", temperament: .sensitive, bondWithPlayer: 60)
+        ]
+        let lines = DiscoverabilityTeaching.previewContextLines(choiceID: .checkInOnChild, domain: .relationships, state: state)
+        #expect(lines.joined().contains("Maya") == true)
+        #expect(lines.joined().contains("sensitive") == true)
+        #expect(lines.joined().contains("adult") == true)
+    }
+
+    @Test func familyDiscoverabilityMomentsDetectBirthAndLeaveHome() async throws {
+        var discoverability = DiscoverabilityState()
+        var before = FamilyState()
+        var after = FamilyState()
+        after.children = [ChildRecord(name: "Noah", age: 0, livesAtHome: true, otherParentName: "Alex")]
+        FamilyDiscoverabilityMoments.applyYearDiff(before: before, after: after, discoverability: &discoverability)
+        #expect(discoverability.pendingFamilyHouseholdBanner == DiscoverabilityTeaching.firstChildBornLine)
+
+        discoverability = DiscoverabilityState()
+        before.children = [ChildRecord(name: "Maya", age: 18, livesAtHome: true, otherParentName: "Alex")]
+        after.children = [ChildRecord(name: "Maya", age: 19, livesAtHome: false, otherParentName: "Alex", leftHomeAtAge: 19)]
+        FamilyDiscoverabilityMoments.applyYearDiff(before: before, after: after, discoverability: &discoverability)
+        #expect(discoverability.pendingFamilyHouseholdBanner?.contains("Maya") == true)
+        #expect(discoverability.pendingFamilyHouseholdBanner?.contains("19") == true)
     }
 
     @Test func viewModelFirstQuickActionTeachLineTracksDiscoverability() async throws {
@@ -550,6 +677,371 @@ struct OneLifeTests {
         vm.mutateStateForTesting { $0 = state }
         #expect(vm.prefersCompactLateGameUI == true)
         #expect(vm.lateGameContextRibbon()?.contains("adult child") == true)
+    }
+
+    @Test func compactAdultChildrenSummaryKeepsFullDepthAvailable() async throws {
+        let vm = makeViewModel(.longLifeStressTest)
+        await vm.flushPendingSave()
+        vm.refreshDerivedStateForTesting()
+
+        let summary = vm.adultChildrenCompactSummary(limit: 3)
+        #expect(summary.previewItems.count == 3)
+        #expect(summary.overflowCount == 1)
+        #expect(vm.cachedAdultChildrenGlance.count == 4)
+        #expect(vm.cachedConsolePresentation.familyGlance.adultChildrenFull.count == 4)
+        #expect(vm.cachedConsolePresentation.familyGlance.adultChildrenCompact.previewItems.count == 3)
+    }
+
+    @Test func recognitionGlanceSummarizesFameWithoutExtraCard() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting {
+            $0.player.age = 45
+            $0.fame.culturalFame = 72
+            $0.fame.notoriety = 20
+            $0.fame.knownFor = ["World champion"]
+        }
+        vm.refreshDerivedStateForTesting()
+
+        let cultural = vm.recognitionGlanceItem()
+        #expect(cultural?.label == "Household Name")
+        #expect(cultural?.score == 72)
+        #expect(cultural?.tone == .positive)
+        #expect(cultural?.subtitle == "World champion")
+        #expect(vm.cachedConsolePresentation.recognitionGlance == cultural)
+
+        vm.mutateStateForTesting {
+            $0.fame.culturalFame = 30
+            $0.fame.notoriety = 68
+            $0.fame.knownFor = []
+        }
+        vm.refreshDerivedStateForTesting()
+
+        let notorious = vm.recognitionGlanceItem()
+        #expect(notorious?.label == "Infamous")
+        #expect(notorious?.score == 68)
+        #expect(notorious?.tone == .warning)
+    }
+
+    @Test func cohesionGateAuditRibbonSkipsFameChipWhenRecognitionGlanceActive() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting {
+            $0.fame.culturalFame = 72
+            $0.fame.notoriety = 15
+        }
+        vm.refreshDerivedStateForTesting()
+
+        #expect(vm.recognitionGlanceItem() != nil)
+        let chips = vm.glanceAuditChips(limit: 5)
+        #expect(!chips.contains(where: { $0.id == "Fame" }))
+    }
+
+    @Test func cohesionGateAthletePillarsSurfaceOnWorkPanel() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting {
+            $0.specialCareer.track = .athlete
+            $0.specialCareer.athlete.peakPerformance = 82
+            $0.specialCareer.athlete.naturalPotential = 88
+            $0.specialCareer.athlete.personalBrand = 70
+            $0.specialCareer.athlete.accolades = ["MVP"]
+        }
+        vm.refreshDerivedStateForTesting()
+
+        let panel = vm.domainPanel(for: .work)
+        let titles = panel.metrics.map(\.title)
+        #expect(titles.contains("Peak"))
+        #expect(titles.contains("Potential"))
+        #expect(titles.contains("Brand"))
+        #expect(titles.contains("Accolade"))
+        #expect(panel.pressureLine.contains("Peak Form") || panel.pressureLine.contains("Brand"))
+    }
+
+    @Test func cohesionNarrativeRoutesRecognitionAcrossSurfaces() async throws {
+        var state = GameState()
+        state.fame.culturalFame = 72
+        state.fame.notoriety = 20
+        state.fame.knownFor = ["World champion"]
+
+        let summary = CohesionNarrative.recognitionEcho(state: state, surface: .yearSummary)
+        let forecast = CohesionNarrative.recognitionEcho(state: state, surface: .forecast)
+        let quiet = CohesionNarrative.recognitionEcho(state: state, surface: .quietNote)
+        let legacy = CohesionNarrative.recognitionEcho(state: state, surface: .legacyCloser)
+
+        #expect(summary?.contains("World champion") == true)
+        #expect(forecast?.contains("expectations") == true)
+        #expect(quiet != nil)
+        #expect(legacy?.contains("name") == true)
+    }
+
+    @Test func cohesionNarrativeRoutesLifeShapeAndFamilyEchoes() async throws {
+        var state = GameState()
+        state.yearlyStance.recentStances = [.pushCareer, .pushCareer, .pushCareer]
+        state.family.children = [
+            ChildRecord(
+                name: "Sam",
+                age: 24,
+                livesAtHome: false,
+                otherParentName: "Alex",
+                bondWithPlayer: 40,
+                adultProfile: AdultChildProfile(
+                    outcome: .struggling,
+                    relationshipQuality: 32,
+                    lifeVibe: "working two jobs far away"
+                )
+            )
+        ]
+
+        #expect(CohesionNarrative.lifeShapeEcho(state: state, surface: .yearSummary)?.contains("driven") == true)
+        #expect(CohesionNarrative.adultChildEcho(state: state, surface: .yearSummary)?.contains("Sam") == true)
+        #expect(CohesionNarrative.adultChildEcho(state: state, surface: .quietNote)?.contains("Sam") == true)
+    }
+
+    @Test func cohesionNarrativeLegacyCloserComposesMultipleThreads() async throws {
+        var state = GameState()
+        state.yearlyStance.recentStances = [.pushCareer, .pushCareer]
+        state.resilience = .grounded
+        state.fame.culturalFame = 75
+        state.fame.notoriety = 10
+        state.specialCareer.track = .athlete
+        state.specialCareer.athlete.personalBrand = 72
+        state.specialCareer.athlete.accolades = ["Hall of Fame"]
+
+        let closer = CohesionNarrative.legacyCloserText(state: state)
+        #expect(closer.contains("fought") || closer.contains("horizon") || closer.contains("speed"))
+        #expect(closer.contains("name") || closer.contains("Recognition") || closer.contains("brand"))
+    }
+
+    @Test func assetCatalogExpandsMarketAndDetectsCollectorSets() async throws {
+        #expect(AssetCatalog.jewelryMarket.count >= 10)
+        #expect(AssetCatalog.legalFirearms.count + AssetCatalog.blackMarketFirearms.count + AssetCatalog.exoticFirearms.count >= 10)
+
+        var assets = AssetState()
+        assets.jewelry = [
+            Jewelry(name: "Steel Watch", type: .watch, rarity: .common, cost: 2500, resaleValue: 1800),
+            Jewelry(name: "Timex Weekender", type: .watch, rarity: .common, cost: 180, resaleValue: 120),
+            Jewelry(name: "Bust-down AP", type: .watch, rarity: .exotic, cost: 65000, resaleValue: 45000),
+            Jewelry(name: "VVS Choker", type: .chain, rarity: .exotic, cost: 28000, resaleValue: 22000),
+        ]
+        assets.firearms = [
+            Firearm(name: "9mm", type: .handgun, isLegal: true, basePower: 15, reliability: 90),
+            Firearm(name: "Shotgun", type: .shotgun, isLegal: true, basePower: 25, reliability: 85),
+            Firearm(name: "Carbine", type: .rifle, isLegal: false, basePower: 55, reliability: 80),
+        ]
+
+        #expect(AssetCatalog.isComplete(.horologist, in: assets))
+        #expect(AssetCatalog.isComplete(.iceCollector, in: assets))
+        #expect(AssetCatalog.isComplete(.armoryCurator, in: assets))
+        #expect(AssetCatalog.collectionBonus(in: assets) >= 9)
+        #expect(AssetCatalog.premierShowpiece(from: assets)?.name == "Bust-down AP")
+    }
+
+    @Test func collectionGlanceSurfacesOnMoneyConsole() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting {
+            $0.assets.jewelry = [
+                Jewelry(name: "Gold Chain", type: .chain, rarity: .rare, cost: 5500, resaleValue: 4800),
+                Jewelry(name: "Cuban Link", type: .chain, rarity: .rare, cost: 12000, resaleValue: 9500),
+            ]
+            $0.finance.cashOnHand = 500_000
+        }
+        vm.refreshDerivedStateForTesting()
+
+        let glance = vm.collectionGlanceItem()
+        #expect(glance != nil)
+        #expect(glance?.label == "Jewelry Collector")
+
+        let panel = vm.buildDomainPanel(for: .money)
+        #expect(panel.velocity.contains("Gold Chain") || panel.velocity.contains("Cuban Link") || panel.velocity.contains("Jewelry"))
+    }
+
+    @Test func flexLuxuryAssetUsesPremierShowpieceNarrative() async throws {
+        var state = GameState()
+        state.finance.cashOnHand = 100_000
+        state.assets.jewelry = [
+            Jewelry(name: "Richard Mille RM", type: .watch, rarity: .prototype, cost: 280_000, resaleValue: 240_000)
+        ]
+
+        let financeSystem = FinanceSystem()
+        let result = financeSystem.applyAction(.flexLuxuryAsset, state: &state)
+
+        #expect(state.assets.lastShowcasedPieceName == "Richard Mille RM")
+        #expect(result.notes.contains(where: { $0.text.contains("Richard Mille RM") }))
+        #expect(CohesionNarrative.collectionEcho(state: state, surface: .quietNote)?.contains("Richard Mille RM") == true)
+    }
+
+    @Test func consoleNavigationCommandsRouteAssetsSubTabs() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.selectedTab = .home
+
+        let rootMessage = vm.handleConsoleNavigationCommand("nav root")
+        #expect(rootMessage?.contains("root") == true)
+        #expect(vm.selectedTab == .home)
+        #expect(vm.consoleNavigation.assetsSubTab == .overview)
+
+        let vehiclesMessage = vm.handleConsoleNavigationCommand("enter assets vehicles")
+        #expect(vehiclesMessage?.contains("Vehicles") == true)
+        #expect(vm.selectedTab == .assets)
+        #expect(vm.consoleNavigation.assetsSubTab == .vehicles)
+
+        vm.selectDockTab(.home)
+        vm.selectDockTab(.home)
+        #expect(vm.consoleNavigation.assetsSubTab == .overview)
+    }
+
+    @Test func consoleNavigationRoutesCareersSubTabs() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        let message = vm.handleConsoleNavigationCommand("enter careers opportunities")
+        #expect(message?.contains("Opportunities") == true)
+        #expect(vm.selectedTab == .occupation)
+        #expect(vm.consoleNavigation.careersSubTab == .opportunities)
+    }
+
+    @Test func compactPressureHelpersCapGlanceAndPreserveSecondaryDepth() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        vm.mutateStateForTesting {
+            $0.player.age = 48
+            $0.finance.cashOnHand = -500
+            $0.finance.financialStress = 80
+            $0.career.burnout = 80
+            $0.healthProfile.mentalWellness = 30
+            $0.relationships.tensions = [
+                RelationshipTension(headline: "Old friend conflict", impactLine: "Calls are getting shorter.", severity: 45, source: .ignoredConnection, target: .friend, createdAge: 48),
+                RelationshipTension(headline: "Partner strain", impactLine: "The house feels careful.", severity: 52, source: .workSpillover, target: .partner, createdAge: 48)
+            ]
+            $0.legal.stage = .investigation
+        }
+        vm.refreshDerivedStateForTesting()
+
+        #expect(vm.compactPressureItems(limit: 3).count == 3)
+        #expect(!vm.secondaryPressureItems(after: 3).isEmpty)
+        #expect(vm.feedUrgencyItems().count == vm.compactPressureItems(limit: 3).count + vm.secondaryPressureItems(after: 3).count)
+    }
+
+    @Test func legacySummaryBuildsCompressedAxesAndEndgameMode() async throws {
+        var state = GameState()
+        state.player.age = 84
+        state.progress.legacyScore = 130
+        state.finance.cashOnHand = 520_000
+        state.assets.primaryResidence = .legacyStarterHome()
+        state.family.children = [
+            ChildRecord(
+                name: "Maya",
+                age: 45,
+                livesAtHome: false,
+                otherParentName: "Alex",
+                bondWithPlayer: 78,
+                adultProfile: AdultChildProfile(outcome: .thriving, relationshipQuality: 82, lifeVibe: "calls every Sunday")
+            )
+        ]
+        state.relationships.publicReputation = 72
+        state.relationships.privateReputation = 70
+        state.isGameOver = true
+
+        let summary = LifeSummarySystem().build(from: state)
+        #expect(summary.legacyAxes.count == 5)
+        #expect(summary.legacyAxes.contains { $0.title == "Family Memory" && $0.value == "Held" })
+        #expect(!summary.meaningLine.isEmpty)
+        #expect(summary.endgameMode == "Broke But Loved" || summary.endgameMode == "Quiet Old Age")
+        #expect(!summary.inheritedPressureSummary.isEmpty)
+    }
+
+    @Test func successorInheritanceAppliesEstateFrictionAndFamilyPressure() async throws {
+        var parent = GameState()
+        parent.player.name = "Jordan"
+        parent.player.age = 78
+        parent.finance.cashOnHand = 4_000_000
+        parent.fame.notoriety = 72
+        parent.relationships.publicReputation = 35
+        parent.legal.convictions = [
+            LegalConviction(age: 45, offense: .organizedCrime, severity: .serious, jurisdiction: .civilian, sentenceYears: 4, fine: 20_000)
+        ]
+
+        let child = ChildRecord(
+            name: "Theo",
+            age: 32,
+            livesAtHome: false,
+            otherParentName: "Alex",
+            bondWithPlayer: 38,
+            adultProfile: AdultChildProfile(outcome: .struggling, relationshipQuality: 34, lifeVibe: "trying to restart")
+        )
+
+        let inherited = LifeSimulationOrchestrator().inheritLegacy(child: child, parentState: parent)
+        #expect(inherited.player.name == "Theo")
+        #expect(inherited.finance.cashOnHand < parent.finance.totalWealth / 2)
+        #expect(inherited.inheritedLegacy?.estateFriction ?? 0 > 0)
+        #expect(inherited.inheritedLegacy?.familyMemory.isEmpty == false)
+        #expect(inherited.relationships.activeRumorHeat > 10)
+        #expect(inherited.relationships.activeTensionCount > 0)
+    }
+
+    @Test func publicIdentityDistinguishesCleanFameFromNotoriety() async throws {
+        var clean = GameState()
+        clean.fame.culturalFame = 82
+        clean.fame.notoriety = 10
+        clean.relationships.publicReputation = 75
+
+        var notorious = clean
+        notorious.fame.culturalFame = 30
+        notorious.fame.notoriety = 78
+        notorious.legal.convictions = [
+            LegalConviction(age: 35, offense: .organizedCrime, severity: .serious, jurisdiction: .civilian, sentenceYears: 2, fine: 10_000)
+        ]
+
+        let cleanIdentity = PublicIdentitySystem().snapshot(for: clean)
+        let notoriousIdentity = PublicIdentitySystem().snapshot(for: notorious)
+        #expect(cleanIdentity.tone == .positive)
+        #expect(notoriousIdentity.tone == .warning)
+        #expect(notoriousIdentity.consequences.contains { $0.contains("Scrutiny") || $0.contains("Legal") })
+    }
+
+    @Test func careLoadHibernatesWhenInactiveAndMutatesWhenActive() async throws {
+        var quiet = GameState()
+        quiet.player.age = 44
+        let quietResult = CareLoadSystem().resolveYear(state: &quiet)
+        #expect(quiet.relationships.careLoad.isActive == false)
+        #expect(quietResult.notes.isEmpty)
+
+        var active = GameState()
+        active.player.age = 68
+        active.relationships.romanticPartners = [
+            Relationship(name: "Alex", type: .romantic, status: .active, bond: 70, stage: .married)
+        ]
+        let mentalBefore = active.healthProfile.mentalWellness
+        let activeResult = CareLoadSystem().resolveYear(state: &active)
+        #expect(active.relationships.careLoad.isActive)
+        #expect(active.healthProfile.mentalWellness < mentalBefore)
+        #expect(!activeResult.notes.isEmpty)
+    }
+
+    @Test func bodyLoadAndHousingClassDeriveFromExistingState() async throws {
+        var state = GameState()
+        state.player.age = 72
+        state.career.burnout = 70
+        state.healthProfile.mentalWellness = 35
+        state.healthProfile.activeConditions = [HealthCondition(name: "Chronic pain", severity: 70)]
+        state.finance.cashOnHand = 1_500_000
+        state.assets.primaryResidence = .legacyStarterHome()
+        state.housing.housingStability = 80
+
+        let bodyResult = BodyLoadSystem().update(state: &state)
+        HousingClassSystem().update(state: &state)
+
+        #expect(state.healthProfile.bodyLoad.totalLoad >= 35)
+        #expect(!state.healthProfile.bodyLoad.summaryLine.isEmpty)
+        #expect(state.housing.lifeStage == .ownerOccupied || state.housing.lifeStage == .inheritedHome)
+        #expect(state.housing.socialClassBand == .affluent || state.housing.socialClassBand == .elite)
+        #expect(bodyResult.notes.isEmpty == false || state.healthProfile.bodyLoad.totalLoad < 65)
+    }
+
+    @Test func endgameModesResolveFromStateShape() async throws {
+        var prison = GameState()
+        prison.legal = LegalState(stage: .custody, sentenceYears: 8, timeServed: 2, paroleEligibleAfter: 4)
+        #expect(EndgameSummarySystem().mode(for: prison) == "Prison Ending")
+
+        var richAlone = GameState()
+        richAlone.player.age = 80
+        richAlone.finance.cashOnHand = 8_000_000
+        richAlone.relationships.privateReputation = 25
+        #expect(EndgameSummarySystem().mode(for: richAlone) == "Rich And Alone")
     }
 
     @Test func yearlySummaryActionableLessonAppearsOnHarshYears() async throws {
@@ -1526,6 +2018,190 @@ struct OneLifeTests {
         _ = system.applyAction(.analyzeMarkets, player: &player, career: &traderCareer, specialCareer: &trader, finance: &finance)
         #expect(trader.track == .trader)
         #expect(trader.heat <= heatBeforeStudy)
+    }
+
+    @Test func founderStateLegacyDecodeDefaultsPersistentSignals() throws {
+        var founder = FounderState()
+        founder.productStage = 72
+        founder.burnRate = 81
+        founder.valuationTrend = .surging
+        let encoded = try JSONEncoder().encode(founder)
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object.removeValue(forKey: "burnRate")
+        object.removeValue(forKey: "valuationTrend")
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(FounderState.self, from: legacyData)
+
+        #expect(decoded.productStage == 72)
+        #expect(decoded.stage == .scale)
+        #expect(decoded.burnRate == 35)
+        #expect(decoded.valuationTrend == .flat)
+    }
+
+    @Test func founderStagesDeriveFromLegacyProgressScore() {
+        var founder = FounderState()
+        let cases: [(Int, FounderProductStage)] = [
+            (0, .idea), (20, .seed), (40, .early), (65, .scale), (85, .mature)
+        ]
+
+        for (score, expected) in cases {
+            founder.productStage = score
+            #expect(founder.stage == expected)
+        }
+    }
+
+    @Test func founderEntrySeedingUsesEntrepreneurialAndAnalyticalAptitude() {
+        let system = SpecialCareerSystem()
+        var player = Player()
+        player.age = 24
+        var career = CareerState()
+        var finance = FinanceState(cashOnHand: 20_000)
+        var strong = SpecialCareerState()
+        var average = SpecialCareerState()
+        let strongDossier = ChildhoodDossier(
+            narrative: "",
+            aptitudes: CareerAptitude(analytical: 88, creative: 50, physical: 50, social: 65, entrepreneurial: 92, technical: 72),
+            earlyInterests: [],
+            formativeEvent: "",
+            visibleHints: []
+        )
+        let averageDossier = ChildhoodDossier(
+            narrative: "",
+            aptitudes: CareerAptitude(),
+            earlyInterests: [],
+            formativeEvent: "",
+            visibleHints: []
+        )
+
+        _ = system.applyAction(.startCompany, player: &player, career: &career, specialCareer: &strong, childhoodDossier: strongDossier, finance: &finance)
+        _ = system.applyAction(.startCompany, player: &player, career: &career, specialCareer: &average, childhoodDossier: averageDossier, finance: &finance)
+
+        #expect(strong.founder.vision > average.founder.vision)
+        #expect(strong.founder.execution > average.founder.execution)
+        #expect(strong.founder.competitiveMoat > average.founder.competitiveMoat)
+    }
+
+    @Test func founderStageRequiresTractionAndExecutionToAdvance() {
+        let system = SpecialCareerSystem()
+        var player = Player()
+        player.age = 31
+        var career = CareerState()
+        var strong = SpecialCareerState(track: .founder, audience: 58)
+        strong.founder.productStage = 62
+        strong.founder.vision = 76
+        strong.founder.execution = 74
+        strong.founder.teamHealth = 72
+        strong.founder.competitiveMoat = 52
+        var weak = strong
+        weak.audience = 28
+        weak.founder.execution = 38
+        weak.founder.teamHealth = 34
+        weak.founder.competitiveMoat = 12
+
+        _ = system.advanceYear(
+            input: founderSnapshot(player: player, career: career, specialCareer: strong),
+            player: &player,
+            career: &career,
+            specialCareer: &strong
+        )
+        player.age = 31
+        career = CareerState()
+        _ = system.advanceYear(
+            input: founderSnapshot(player: player, career: career, specialCareer: weak),
+            player: &player,
+            career: &career,
+            specialCareer: &weak
+        )
+
+        #expect(strong.founder.stage == .scale)
+        #expect(weak.founder.stage != .scale)
+    }
+
+    @Test func founderEconomyChangesBurnAndValuationDeterministically() {
+        let system = SpecialCareerSystem()
+        var basePlayer = Player()
+        basePlayer.age = 34
+        let baseCareer = CareerState()
+        var recession = SpecialCareerState(track: .founder, audience: 50)
+        recession.sector = .semiconductors
+        recession.founder.productStage = 48
+        recession.founder.execution = 68
+        recession.founder.teamHealth = 66
+        recession.founder.competitiveMoat = 44
+        var boom = recession
+        var recessionPlayer = basePlayer
+        var boomPlayer = basePlayer
+        var recessionCareer = baseCareer
+        var boomCareer = baseCareer
+
+        _ = system.advanceYear(
+            input: founderSnapshot(player: recessionPlayer, career: recessionCareer, specialCareer: recession, era: .recession),
+            player: &recessionPlayer,
+            career: &recessionCareer,
+            specialCareer: &recession
+        )
+        _ = system.advanceYear(
+            input: founderSnapshot(player: boomPlayer, career: boomCareer, specialCareer: boom, era: .techBoom),
+            player: &boomPlayer,
+            career: &boomCareer,
+            specialCareer: &boom
+        )
+
+        #expect(recession.founder.burnRate > boom.founder.burnRate)
+        #expect(recession.audience < boom.audience)
+        #expect(recession.founder.valuationTrend != .surging)
+    }
+
+    @Test func groundedFounderPressureHitsHarderThanResilient() {
+        let system = SpecialCareerSystem()
+        var base = SpecialCareerState(track: .founder, audience: 42, burnout: 58)
+        base.founder.productStage = 45
+        base.founder.execution = 45
+        base.founder.teamHealth = 38
+        base.founder.founderMentalLoad = 68
+        base.founder.competitiveMoat = 18
+        var grounded = base
+        var resilient = base
+        var groundedPlayer = Player()
+        groundedPlayer.age = 38
+        var resilientPlayer = groundedPlayer
+        var groundedCareer = CareerState()
+        var resilientCareer = CareerState()
+
+        let groundedResult = system.advanceYear(
+            input: founderSnapshot(player: groundedPlayer, career: groundedCareer, specialCareer: grounded, era: .recession, stances: [.pushCareer], resilience: .grounded),
+            player: &groundedPlayer,
+            career: &groundedCareer,
+            specialCareer: &grounded
+        )
+        let resilientResult = system.advanceYear(
+            input: founderSnapshot(player: resilientPlayer, career: resilientCareer, specialCareer: resilient, era: .recession, stances: [.pushCareer], resilience: .resilient),
+            player: &resilientPlayer,
+            career: &resilientCareer,
+            specialCareer: &resilient
+        )
+
+        #expect(grounded.founder.founderMentalLoad > resilient.founder.founderMentalLoad)
+        #expect(grounded.boardPressure >= resilient.boardPressure)
+        #expect((groundedResult.healthEffects?.mental ?? 0) < (resilientResult.healthEffects?.mental ?? 0))
+    }
+
+    @Test func founderCapitalRaiseDilutesEquityControlAndAddsBoardPressure() {
+        let system = SpecialCareerSystem()
+        var player = Player()
+        player.age = 30
+        var career = CareerState()
+        var finance = FinanceState()
+        var founder = SpecialCareerState(track: .founder, audience: 45)
+        let equityBefore = founder.equityOwned
+        let controlBefore = founder.founder.control
+
+        _ = system.applyAction(.raiseCapital, player: &player, career: &career, specialCareer: &founder, finance: &finance)
+
+        #expect(founder.equityOwned < equityBefore)
+        #expect(founder.founder.control < controlBefore)
+        #expect(founder.boardPressure > 0)
     }
 
     @Test func runSchemeActivatesCrimeTrack() async throws {
@@ -2791,6 +3467,255 @@ struct OneLifeTests {
         #expect(education.teacherSupport < 44)
     }
 
+    @Test func highSchoolYearAccumulatesFormativeTagsDeterministically() async throws {
+        let system = EducationSystem()
+        var player = Player()
+        player.age = 16
+        player.smarts = 72
+        var education = EducationState()
+        education.schoolStanding = 82
+        education.applicationReadiness = 66
+        education.teacherSupport = 70
+        education.mentorSupport = 62
+        education.schoolBelonging = 64
+        var career = CareerState()
+        var military = MilitaryState()
+        var relationships = RelationshipState()
+        relationships.friends = [Relationship(name: "Ari", type: .friend, status: .active, bond: 70, yearsKnown: 1)]
+
+        _ = system.advanceYear(
+            player: &player,
+            education: &education,
+            military: &military,
+            career: &career,
+            finance: FinanceState(),
+            relationships: relationships,
+            health: HealthState(),
+            policySupport: 0
+        )
+
+        #expect((education.formativeSchoolTags["academic_strength"] ?? 0) > 0)
+        #expect((education.formativeSchoolTags["mentor_support"] ?? 0) > 0)
+        #expect(education.highSchoolProfile.academicShape == .honors)
+        #expect(education.highSchoolProfile.socialShape == .connected || education.highSchoolProfile.socialShape == .respected)
+    }
+
+    @Test func highSchoolIdentityForcesStayCappedAndMentorLed() async throws {
+        let system = EducationSystem()
+        var player = Player()
+        player.age = 16
+        var education = EducationState()
+        education.teacherSupport = 78
+        education.mentorSupport = 72
+        education.schoolBelonging = 66
+        education.activityMomentum = 64
+        education.reputationRisk = 62
+        var relationships = RelationshipState()
+        relationships.friends = [Relationship(name: "Ari", type: .friend, status: .active, bond: 74, yearsKnown: 2)]
+
+        system.refreshHighSchoolIdentityForces(
+            player: player,
+            education: &education,
+            finance: FinanceState(financialStress: 48),
+            relationships: relationships,
+            health: HealthState(mentalWellness: 50),
+            childhoodDossier: nil
+        )
+
+        #expect(education.highSchoolIdentityForces.count <= 3)
+        #expect(education.highSchoolIdentityForces.contains { $0.role == .mentorAdult })
+        #expect((education.formativeSchoolTags["mentor_anchor"] ?? 0) > 0)
+    }
+
+    @Test func highSchoolIdentityForcesCaptureRivalHeatAndHomePressure() async throws {
+        let system = EducationSystem()
+        var player = Player()
+        player.age = 15
+        var education = EducationState()
+        education.schoolBelonging = 24
+        education.reputationRisk = 78
+        education.peerPressure = 66
+        education.attendancePressure = 64
+
+        system.refreshHighSchoolIdentityForces(
+            player: player,
+            education: &education,
+            finance: FinanceState(financialStress: 62),
+            relationships: RelationshipState(),
+            health: HealthState(mentalWellness: 36),
+            childhoodDossier: nil
+        )
+
+        #expect(education.highSchoolIdentityForces.contains { $0.role == .rivalHeatSource })
+        #expect(education.highSchoolIdentityForces.contains { $0.role == .homePressure })
+        #expect((education.formativeSchoolTags["rival_heat"] ?? 0) > 0)
+        #expect((education.formativeSchoolTags["home_pressure"] ?? 0) > 0)
+    }
+
+    @Test func highSchoolScholarshipCarryForwardIsConservative() async throws {
+        let system = EducationSystem()
+        var player = Player()
+        player.age = 18
+        player.smarts = 76
+        var education = EducationState()
+        education.pathway = .student
+        education.schoolStanding = 86
+        education.applicationReadiness = 74
+        education.teacherSupport = 76
+        education.mentorSupport = 68
+        education.disciplineRecord = 84
+        education.hasScholarship = true
+        education.formativeSchoolTags = ["academic_strength": 34, "mentor_support": 32, "academic_seed": 28]
+        var career = CareerState()
+        let startingIncome = career.annualIncome
+        var military = MilitaryState()
+
+        _ = system.advanceYear(
+            player: &player,
+            education: &education,
+            military: &military,
+            career: &career,
+            finance: FinanceState(),
+            relationships: RelationshipState(),
+            health: HealthState(),
+            policySupport: 0
+        )
+
+        #expect(education.seniorYearOutcome == .scholarshipRoute)
+        #expect(education.highSchoolProfile.academicShape == .honors)
+        #expect(career.annualIncome - startingIncome <= 1_200)
+        #expect(career.performance <= 64)
+    }
+
+    @Test func lowBelongingHighReputationCreatesSocialScarAtEighteen() async throws {
+        let system = EducationSystem()
+        var player = Player()
+        player.age = 18
+        var education = EducationState()
+        education.pathway = .student
+        education.schoolStanding = 48
+        education.applicationReadiness = 44
+        education.attendancePressure = 70
+        education.schoolBelonging = 22
+        education.reputationRisk = 76
+        education.disciplineRecord = 30
+        education.teacherSupport = 22
+        education.formativeSchoolTags = ["isolation": 34, "volatile_social": 30, "adult_friction": 25, "survival_pressure": 28]
+        var career = CareerState()
+        var military = MilitaryState()
+
+        let result = system.advanceYear(
+            player: &player,
+            education: &education,
+            military: &military,
+            career: &career,
+            finance: FinanceState(),
+            relationships: RelationshipState(),
+            health: HealthState(),
+            policySupport: 0
+        )
+
+        #expect(education.seniorYearOutcome == .dropoutDrift)
+        #expect(education.highSchoolProfile.socialShape == .volatile || education.highSchoolProfile.socialShape == .isolated)
+        #expect((result.relationshipEffects?.rumorHeatChange ?? 0) > 0)
+        #expect((result.healthEffects?.mental ?? 0) <= 0)
+    }
+
+    @Test func teenPrecursorSeedsFutureLaneWithoutGuaranteedCareer() async throws {
+        let system = EducationSystem()
+        var player = Player()
+        player.age = 15
+        var education = EducationState()
+        var specialCareer = SpecialCareerState()
+
+        _ = applyEducationAction(.teenCreativeProject, system: system, player: &player, education: &education, specialCareer: &specialCareer)
+
+        #expect((education.formativeSchoolTags["creator_seed"] ?? 0) >= 12)
+        #expect(education.highSchoolProfile.futureSeed == .undecided || education.highSchoolProfile.futureSeed == .creator)
+        #expect(specialCareer.track == .inactive)
+        #expect(specialCareer.creator.contentQuality > 50)
+        #expect(education.highSchoolIdentityForces.contains { $0.role == .activityCoachForce })
+    }
+
+    @Test func highSchoolIdentityBeatFiresOnlyOncePerAge() async throws {
+        let system = EducationSystem()
+        var education = EducationState()
+        education.highSchoolIdentityForces = [
+            HighSchoolIdentityForce(
+                id: "mentor-anchor",
+                name: "Ms. Rivera",
+                role: .mentorAdult,
+                tone: .supportive,
+                storyLine: "An adult at school is starting to treat your future as real.",
+                strength: 70
+            )
+        ]
+
+        let first = system.prepareHighSchoolIdentityBeat(playerAge: 16, education: &education)
+        let second = system.prepareHighSchoolIdentityBeat(playerAge: 16, education: &education)
+
+        #expect(first != nil)
+        #expect(first?.choices.count == 3)
+        #expect(second == nil)
+        #expect(education.lastHighSchoolIdentityBeatAge == 16)
+    }
+
+    @Test func ageEighteenResolverCreatesDistinctSeniorOutcomes() async throws {
+        let system = EducationSystem()
+
+        var tradePlayer = Player()
+        tradePlayer.age = 18
+        var tradeEducation = EducationState()
+        tradeEducation.academicTrack = .vocational
+        tradeEducation.schoolStanding = 68
+        tradeEducation.applicationReadiness = 52
+        var tradeCareer = CareerState()
+        var tradeMilitary = MilitaryState()
+        _ = system.advanceYear(player: &tradePlayer, education: &tradeEducation, military: &tradeMilitary, career: &tradeCareer, finance: FinanceState(), relationships: RelationshipState(), health: HealthState(), policySupport: 0)
+        #expect([SeniorYearOutcome.tradeTrack, .specialCareerSeed].contains(tradeEducation.seniorYearOutcome))
+
+        var adultEdPlayer = Player()
+        adultEdPlayer.age = 18
+        var adultEdEducation = EducationState()
+        adultEdEducation.pathway = .student
+        adultEdEducation.schoolStanding = 64
+        adultEdEducation.applicationReadiness = 44
+        adultEdEducation.disciplineRecord = 65
+        var adultEdCareer = CareerState()
+        var adultEdMilitary = MilitaryState()
+        _ = system.advanceYear(player: &adultEdPlayer, education: &adultEdEducation, military: &adultEdMilitary, career: &adultEdCareer, finance: FinanceState(), relationships: RelationshipState(), health: HealthState(), policySupport: 0)
+        #expect(adultEdEducation.seniorYearOutcome == .adultEdRebuild)
+    }
+
+    @Test func ageEighteenTransitionShowsSeniorLaunchResolution() async throws {
+        let orchestrator = LifeSimulationOrchestrator(eventEngine: EventEngine(events: []))
+        var state = GameState()
+        state.startupState = .active
+        state.player.age = 17
+        state.player.smarts = 76
+        state.education.pathway = .student
+        state.education.schoolStanding = 86
+        state.education.applicationReadiness = 76
+        state.education.teacherSupport = 76
+        state.education.mentorSupport = 70
+        state.education.hasScholarship = true
+        state.education.formativeSchoolTags = ["academic_strength": 36, "mentor_support": 34, "academic_seed": 30]
+
+        let outcome = orchestrator.beginYearChapter(state: &state)
+        let seniorResolution = outcome.cards.compactMap { payload -> ResolutionPreview? in
+            if case .resolution(let resolution) = payload { return resolution }
+            return nil
+        }.first { $0.id.hasPrefix("senior-launch-") }
+
+        #expect(state.player.age == 18)
+        #expect(state.education.seniorYearOutcome == .scholarshipRoute)
+        #expect(state.education.seniorLaunchPresentedAge == 18)
+        #expect(seniorResolution != nil)
+        #expect(seniorResolution?.actionTitle == "Enter Adulthood")
+        #expect((seniorResolution?.detail.components(separatedBy: ". ").count ?? 0) <= 6)
+        #expect(state.finance.cashOnHand < 100_000)
+    }
+
     @Test func yearlySummaryCapturesSpilloversAndCheckpoint() async throws {
         let orchestrator = LifeSimulationOrchestrator(eventEngine: EventEngine(events: []))
         var state = GameState()
@@ -3630,6 +4555,194 @@ struct OneLifeTests {
         #expect(payload.state.pendingActions.contains(where: { $0.domain == .career && $0.choiceID == .workHard }))
         #expect(payload.event == nil)
         #expect(payload.yearSummary == nil)
+    }
+
+    @Test func debugScenarioSeedsLongLifeStressTestState() async throws {
+        let payload = DebugTestingCoordinator().payload(for: .longLifeStressTest)
+        let state = payload.state
+
+        #expect(state.player.age == 72)
+        #expect(state.family.children.count == 4)
+        #expect(state.family.children.allSatisfy { !$0.livesAtHome && $0.adultProfile != nil })
+        #expect(state.history.count == PerformanceBudgets.maxPersistedHistoryItems)
+        #expect(state.instantMomentum.overallStrength >= 12)
+        #expect(state.relationships.hasPartner)
+        #expect(state.assets.ownsHome)
+        #expect(state.yearlyStance.recentStances.count == 3)
+        #expect(payload.event == nil)
+        #expect(payload.yearSummary == nil)
+    }
+
+    @Test func refreshDerivedStateCachesConsoleSnapshots() async throws {
+        let vm = GameViewModel(
+            persistence: temporaryPersistence(),
+            defaults: temporaryDefaults(),
+            debugConfiguration: DebugTestingConfiguration(scenarioID: .longLifeStressTest, modal: .none)
+        )
+        await vm.flushPendingSave()
+
+        #expect(vm.consoleSnapshot.age == 72)
+        #expect(vm.consoleSnapshot.name == "Jordan")
+        #expect(vm.momentumStripSnapshot.showsStrip)
+        #expect(vm.cachedAdultChildrenGlance.count == 4)
+        #expect(vm.state.discoverability.seenAdultChildrenCoach == false)
+        #expect(vm.cachedFamilyHouseholdSnapshot.adultCount == 4)
+        #expect(vm.cachedConsolePresentation.panels[.people] != nil)
+        #expect(vm.cachedConsolePresentation.panels.count == ConsoleDomain.allCases.count)
+        #expect(vm.adultChildrenGlanceItems(limit: 3).count == 3)
+        #expect(!vm.nowLaneSnapshotCache.headline.isEmpty)
+
+        let digestCountBefore = vm.historyDigest.all.count
+        vm.refreshDerivedStateForTesting()
+        #expect(vm.historyDigest.all.count == digestCountBefore)
+    }
+
+    @Test func debouncedSaveDefersDiskWriteUntilFlush() async throws {
+        let persistence = temporaryPersistence()
+        let vm = GameViewModel(
+            persistence: persistence,
+            defaults: temporaryDefaults(),
+            debugConfiguration: DebugTestingConfiguration(scenarioID: .adultCareerFlow, modal: .none)
+        )
+        await vm.flushPendingSave()
+        await clearPresentedCards(vm)
+        vm.mutateStateForTesting {
+            $0.player.age = 18
+            $0.startupState = .active
+            $0.activeYearChapter = nil
+            $0.isGameOver = false
+            $0.quickActionMemory = QuickActionMemoryState()
+        }
+
+        let lane = vm.nowLaneSnapshot()
+        guard let domain = lane.quickActionDomain, let choice = lane.quickActionChoice else {
+            Issue.record("Expected quick action lane")
+            return
+        }
+
+        #expect(vm.isSaveDebounceActive == false)
+        vm.performQuickAction(choice, for: domain)
+        #expect(vm.isSaveDebounceActive == true)
+
+        await vm.flushPendingSave()
+        #expect(vm.isSaveDebounceActive == false)
+
+        let loaded = persistence.loadForStartup()
+        guard case .loaded(let result) = loaded else {
+            Issue.record("Expected persisted save after debounced flush")
+            return
+        }
+        #expect(result.state.discoverability.performedFirstQuickAction == true)
+    }
+
+    @Test func debouncedSaveCoalescesRapidQuickActions() async throws {
+        let persistence = temporaryPersistence()
+        let vm = GameViewModel(
+            persistence: persistence,
+            defaults: temporaryDefaults(),
+            debugConfiguration: DebugTestingConfiguration(scenarioID: .adultCareerFlow, modal: .none)
+        )
+        await vm.flushPendingSave()
+
+        let marker = "TierC-\(UUID().uuidString.prefix(8))"
+        vm.mutateStateForTesting {
+            $0.player.name = marker
+            $0.startupState = .active
+        }
+        vm.scheduleDebouncedSave()
+        vm.mutateStateForTesting { $0.player.name = "\(marker)-final" }
+        vm.scheduleDebouncedSave()
+        #expect(vm.isSaveDebounceActive == true)
+
+        await vm.flushPendingSave()
+        #expect(vm.isSaveDebounceActive == false)
+
+        let loaded = persistence.loadForStartup()
+        guard case .loaded(let result) = loaded else {
+            Issue.record("Expected persisted save after coalesced debounce flush")
+            return
+        }
+        #expect(result.state.player.name == "\(marker)-final")
+    }
+
+    @Test func syncPersistenceSaveSkipsDebounce() async throws {
+        setenv("ONELIFE_SYNC_PERSISTENCE_SAVE", "1", 1)
+        defer { unsetenv("ONELIFE_SYNC_PERSISTENCE_SAVE") }
+
+        let vm = makeViewModel(.adultCareerFlow)
+        await vm.flushPendingSave()
+        await clearPresentedCards(vm)
+        vm.mutateStateForTesting {
+            $0.player.age = 18
+            $0.startupState = .active
+            $0.activeYearChapter = nil
+            $0.isGameOver = false
+            $0.quickActionMemory = QuickActionMemoryState()
+        }
+
+        let lane = vm.nowLaneSnapshot()
+        guard let domain = lane.quickActionDomain, let choice = lane.quickActionChoice else {
+            Issue.record("Expected quick action lane")
+            return
+        }
+
+        vm.performQuickAction(choice, for: domain)
+        #expect(vm.isSaveDebounceActive == false)
+        await vm.flushPendingSave()
+    }
+
+    @Test func ageUpDefersHeavyConsoleCacheWhileCardPresent() async throws {
+        let vm = makeViewModel(.adultCareerFlow)
+        await clearPresentedCards(vm)
+        vm.mutateStateForTesting {
+            $0.player.age = 18
+            $0.startupState = .active
+            $0.activeYearChapter = nil
+            $0.isGameOver = false
+            $0.yearlyStance.selectedStance = nil
+        }
+
+        let ageBefore = vm.state.player.age
+        vm.ageUp()
+        #expect(vm.state.player.age == ageBefore + 1)
+
+        guard vm.presentedCard != nil else {
+            Issue.record("Expected year interaction card after Age Up")
+            return
+        }
+
+        #expect(vm.isHeavyConsoleCacheRefreshDeferred == true)
+        #expect(vm.consoleSnapshot.age == vm.state.player.age)
+
+        await clearPresentedCards(vm)
+        #expect(vm.presentedCard == nil)
+        #expect(vm.isHeavyConsoleCacheRefreshDeferred == false)
+        #expect(vm.cachedConsolePresentation.panels.count == ConsoleDomain.allCases.count)
+    }
+
+    @Test func deferredHeavyConsoleCacheFlushesHistoryDigest() async throws {
+        let vm = makeViewModel(.longLifeStressTest)
+        await vm.flushPendingSave()
+        await clearPresentedCards(vm)
+
+        let historyCountBefore = vm.state.history.count
+        vm.mutateStateForTesting {
+            $0.startupState = .active
+            $0.activeYearChapter = nil
+            $0.isGameOver = false
+            $0.yearlyStance.selectedStance = nil
+        }
+
+        vm.ageUp()
+        if vm.presentedCard != nil {
+            #expect(vm.isHeavyConsoleCacheRefreshDeferred == true)
+        }
+
+        await clearPresentedCards(vm)
+        #expect(vm.isHeavyConsoleCacheRefreshDeferred == false)
+        if vm.state.history.count != historyCountBefore {
+            #expect(!vm.historyDigest.all.isEmpty)
+        }
     }
 
     @Test func debugScenarioSeedsPregnancyAndModalPreviewStates() async throws {
@@ -4997,6 +6110,211 @@ struct OneLifeTests {
         #expect(actions == [.retainCounsel, .cooperateWithInvestigation, .refuseInterview])
     }
 
+    @Test func counselPreparesCaseWithoutCommittingResolutionStrategy() {
+        let system = LegalSystem()
+        var legal = LegalState(
+            stage: .investigation,
+            allegedOffenses: [.organizedCrime],
+            evidenceStrength: 64
+        )
+        var finance = FinanceState(cashOnHand: 20_000)
+        var fame = FameProfile()
+
+        let first = system.applyAction(.retainCounsel, legal: &legal, finance: &finance, fame: &fame)
+        let second = system.applyAction(.retainCounsel, legal: &legal, finance: &finance, fame: &fame)
+
+        #expect(legal.stage == .investigation)
+        #expect(legal.pendingDecision == .none)
+        #expect(legal.counselQuality > 0)
+        #expect((first.financeEffects?.cashDelta ?? 0) < 0)
+        #expect(second.financeEffects == nil)
+
+        _ = system.applyAction(.refuseInterview, legal: &legal, finance: &finance, fame: &fame)
+        #expect(legal.stage == .awaitingResolution)
+        #expect(legal.pendingDecision == .refuseInterview)
+    }
+
+    @Test func bailRequiresFullPaymentAndPreservesStrategyChoice() {
+        let system = LegalSystem()
+        var legal = LegalState(stage: .charged, evidenceStrength: 70, bailAmount: 5_000)
+        var finance = FinanceState(cashOnHand: 2_000)
+        var fame = FameProfile()
+
+        _ = system.applyAction(.postBail, legal: &legal, finance: &finance, fame: &fame)
+        #expect(!legal.bailPosted)
+        #expect(legal.stage == .charged)
+
+        finance.cashOnHand = 8_000
+        let result = system.applyAction(.postBail, legal: &legal, finance: &finance, fame: &fame)
+        #expect(legal.bailPosted)
+        #expect(legal.stage == .charged)
+        #expect(legal.pendingDecision == .none)
+        #expect(result.financeEffects?.cashDelta == -5_000)
+    }
+
+    @Test func custodyFameEffectsApplyExactlyOnceThroughActionSystem() {
+        var state = GameState()
+        state.player.age = 34
+        state.legal = LegalState(stage: .custody, sentenceYears: 6, timeServed: 1, paroleEligibleAfter: 3)
+        state.legal.custodyProfile.discretionaryActionsRemaining = 4
+        state.legal.custodyProfile.maximumGoodTimeCredits = 2
+
+        _ = ActionSystem().apply(
+            actions: [PlayerYearAction(domain: .legal, choiceID: .cooperateWithGuards)],
+            state: &state
+        )
+
+        #expect(state.fame.notoriety == 5)
+        #expect(state.fame.knownFor.filter { $0 == "Informant" }.count == 1)
+    }
+
+    @Test func staleCustodyActionDoesNotSpendSentenceChoice() {
+        let system = LegalSystem()
+        var legal = LegalState(stage: .custody, sentenceYears: 5, timeServed: 1, paroleEligibleAfter: 3)
+        legal.custodyProfile.lockdownYearsRemaining = 1
+        legal.custodyProfile.discretionaryActionsRemaining = 3
+        var finance = FinanceState()
+        var fame = FameProfile()
+
+        _ = system.applyAction(.studyProgram, legal: &legal, finance: &finance, fame: &fame)
+
+        #expect(legal.custodyProfile.discretionaryActionsRemaining == 3)
+        #expect(legal.custodyProfile.programProgress == 0)
+    }
+
+    @Test func goodTimeProgressConvertsAtHundredAndHonorsCap() {
+        var profile = CustodyProfile(maximumGoodTimeCredits: 2)
+
+        profile.addGoodTimeProgress(245)
+        #expect(profile.goodTimeCredits == 2)
+        #expect(profile.goodTimeProgress == 0)
+
+        profile.addGoodTimeProgress(100)
+        #expect(profile.goodTimeCredits == 2)
+        #expect(CustodyProfile.goodTimeCap(for: 9, severity: .aggravated, offense: .enterpriseCrime) == 2)
+        #expect(CustodyProfile.goodTimeCap(for: 3, severity: .moderate, offense: .streetCrime) == 1)
+    }
+
+    @Test func custodyIncidentIsDeterministicAndLimitedToOncePerAge() {
+        let system = LegalSystem()
+        var first = LegalState(stage: .custody, sentenceYears: 6, timeServed: 2, paroleEligibleAfter: 3)
+        first.custodyProfile = CustodyProfile(
+            facility: .statePrison,
+            experienceTier: .organization,
+            securityRegime: .heightened,
+            faction: .oldGuard,
+            protectionDebt: 20,
+            programProgress: 24,
+            lifetimeFamilyContactsMax: 3,
+            contacts: [
+                CustodyContact(id: "ally", name: "Leon", role: .factionRepresentative, trust: 40, danger: 55)
+            ]
+        )
+        var second = first
+
+        let firstEvent = system.prepareCustodyIncident(playerAge: 33, legal: &first)
+        let repeatedEvent = system.prepareCustodyIncident(playerAge: 33, legal: &first)
+        let secondEvent = system.prepareCustodyIncident(playerAge: 33, legal: &second)
+
+        #expect(firstEvent != nil)
+        #expect(firstEvent == secondEvent)
+        #expect(repeatedEvent == nil)
+        #expect((firstEvent?.choices.count ?? 0) <= 3)
+        #expect(first.custodyProfile.incidentHistory.count == 1)
+    }
+
+    @Test func custodyIncidentOwnsTheYearEventSlot() {
+        let orchestrator = LifeSimulationOrchestrator(eventEngine: EventEngine(events: []))
+        var state = GameState()
+        state.startupState = .active
+        state.player.age = 31
+        state.legal = LegalState(
+            stage: .custody,
+            sentenceYears: 5,
+            timeServed: 1,
+            paroleEligibleAfter: 3,
+            custodyStartedAge: 30
+        )
+        state.legal.custodyProfile = CustodyProfile(
+            facility: .statePrison,
+            experienceTier: .street,
+            securityRegime: .standard,
+            lifetimeFamilyContactsMax: 2,
+            contacts: [
+                CustodyContact(id: "rival", name: "Calvin", role: .rival, status: .strained, danger: 60)
+            ]
+        )
+
+        let outcome = orchestrator.beginYearChapter(state: &state)
+        let event = outcome.cards.compactMap { card -> GameEvent? in
+            guard case .event(let event) = card else { return nil }
+            return event
+        }.first
+
+        #expect(event?.id.hasPrefix("custody-") == true)
+        #expect((event?.choices.count ?? 0) <= 3)
+        #expect(state.legal.custodyProfile.lastIncidentAge == 32)
+    }
+
+    @Test func convictionSeedsBoundedCustodyRosterAndCreditCap() {
+        let system = LegalSystem()
+        var player = Player()
+        player.age = 37
+        var legal = LegalState(
+            stage: .awaitingResolution,
+            caseSeverity: .aggravated,
+            allegedOffenses: [.enterpriseCrime],
+            evidenceStrength: 100,
+            pendingDecision: .negotiatePlea
+        )
+
+        _ = system.advanceYear(
+            player: player,
+            legal: &legal,
+            wasInCustodyAtYearStart: false,
+            fame: FameProfile(notoriety: 65),
+            crimeTier: .enterprise,
+            enterprise: CriminalEnterpriseState(),
+            seed: 3
+        )
+
+        #expect(legal.isInCustody)
+        #expect((2...5).contains(legal.custodyProfile.contacts.count))
+        #expect(legal.custodyProfile.contacts.contains(where: { $0.role == .officer }))
+        #expect(legal.custodyProfile.maximumGoodTimeCredits <= max(0, legal.sentenceYears / 3))
+    }
+
+    @Test func releaseCarriesOnlyRelevantCustodyContactIntoResidue() {
+        let system = LegalSystem()
+        var player = Player()
+        player.age = 42
+        var legal = LegalState(
+            stage: .custody,
+            convictions: [
+                LegalConviction(age: 40, offense: .organizedCrime, severity: .serious, jurisdiction: .civilian, sentenceYears: 2, fine: 12_000)
+            ],
+            sentenceYears: 2,
+            timeServed: 1,
+            paroleEligibleAfter: 1,
+            custodyStartedAge: 40
+        )
+        legal.custodyProfile = CustodyProfile(
+            facility: .statePrison,
+            experienceTier: .organization,
+            conductScore: 72,
+            contacts: [
+                CustodyContact(id: "mentor", name: "Ms. Holloway", role: .programCounselor, trust: 70, danger: 5, influence: 55, releaseRelevant: true),
+                CustodyContact(id: "rival", name: "Calvin", role: .rival, status: .hostile, trust: 2, danger: 75)
+            ]
+        )
+
+        _ = system.advanceYear(player: player, legal: &legal, wasInCustodyAtYearStart: true, seed: 8)
+
+        #expect(legal.stage == .released)
+        #expect(legal.prisonResidue?.outsideContact?.name == "Ms. Holloway")
+        #expect(legal.prisonResidue?.tags.contains("unfinishedInsideConflict") == true)
+    }
+
     @Test func seededLegalResolutionIsDeterministic() {
         let system = LegalSystem()
         var player = Player()
@@ -5233,11 +6551,12 @@ struct OneLifeTests {
         var finance = FinanceState()
         var fame = FameProfile()
 
-        _ = system.applyAction(.cooperateWithGuards, legal: &legal, finance: &finance, fame: &fame)
+        let result = system.applyAction(.cooperateWithGuards, legal: &legal, finance: &finance, fame: &fame)
 
         #expect(legal.custodyProfile.cooperatedWithAuthorities)
         #expect(legal.custodyProfile.snitchRisk >= 15)
-        #expect(fame.knownFor.contains("Informant"))
+        #expect(!fame.knownFor.contains("Informant"))
+        #expect(result.fameEffects?.addKnownFor == "Informant")
     }
 
     @Test func custodyProfileRoundTripsThroughGameStatePersistence() throws {
@@ -5968,6 +7287,158 @@ struct CombatCareerTests {
         #expect(vm.state.startupState == .active)
         #expect(vm.state.player.name == "Test Player")
         #expect(vm.originPreview == nil)
+    }
+
+    @Test func staticInstantCore_identityHomeGridHasSevenAlwaysActions() {
+        var state = GameState()
+        state.player.age = 25
+        let registry = DomainActionRegistry(context: DomainActionContext(
+            state: state,
+            isTeenExperience: false,
+            isStudentLifeExperience: false,
+            canAccessInvesting: false,
+            investmentEmergencyReserve: 2_500
+        ))
+        let core = registry.availableQuick(for: .identity)
+        #expect(core.contains(.morningReflection))
+        #expect(core.contains(.journalTheShape))
+        #expect(core.contains(.quietTheNoise))
+        #expect(core.contains(.protectYourEnergy))
+        #expect(core.contains(.processCrisis))
+        #expect(core.count >= 7)
+        #expect(registry.isStaticCoreInstantAction(.morningReflection, domain: .identity))
+    }
+
+    @Test func staticInstantCore_mainDomainsMatchGuideline() {
+        var state = GameState()
+        state.player.age = 28
+        state.career.status = .fullTime
+        state.career.specializedTrack = nil
+        state.specialCareer.track = .inactive
+        let registry = DomainActionRegistry(context: DomainActionContext(
+            state: state,
+            isTeenExperience: false,
+            isStudentLifeExperience: false,
+            canAccessInvesting: false,
+            investmentEmergencyReserve: 2_500
+        ))
+
+        let health = registry.availableQuick(for: .health)
+        #expect(health.contains(.sleepLikeItMatters))
+        #expect(health.contains(.recurringTherapy))
+        #expect(health.contains(.seeDoctor))
+
+        let people = registry.availableQuick(for: .relationships)
+        #expect(people.contains(.setBoundary))
+        #expect(people.contains(.realConversation))
+        #expect(people.contains(.deepenSpecificBond))
+
+        let finance = registry.availableQuick(for: .finance)
+        #expect(finance.contains(.negotiateBetterTerms))
+        #expect(finance.contains(.quietlyBuildCushion))
+        #expect(finance.contains(.reviewNumbersRuthlessly))
+
+        let work = registry.availableQuick(for: .career)
+        #expect(work.contains(.putYourHeadDown))
+        #expect(work.contains(.protectWorkLifeLine))
+
+        let play = registry.availableQuick(for: .play)
+        #expect(play.contains(.hobbySession))
+        #expect(play.contains(.relaxRoutine))
+    }
+
+    @Test func morningReflectionInstantAction_updatesIdentityCoherence() {
+        var state = GameState()
+        state.player.age = 22
+        state.identityCoherence = 40
+        let orchestrator = LifeSimulationOrchestrator()
+        let result = orchestrator.applyInstantActionWithAutonomousReaction(.morningReflection, domain: .identity, state: &state)
+        #expect(state.identityCoherence > 40)
+        #expect(!result.notes.isEmpty)
+    }
+
+    @Test func staticInstantCore_healthBodyGridHasSixAlwaysActions() {
+        var state = GameState()
+        state.player.age = 30
+        let registry = DomainActionRegistry(context: DomainActionContext(
+            state: state,
+            isTeenExperience: false,
+            isStudentLifeExperience: false,
+            canAccessInvesting: false,
+            investmentEmergencyReserve: 2_500
+        ))
+        let core = registry.availableQuick(for: .health)
+        #expect(core.count >= 6)
+        #expect(core.contains(.recurringTherapy))
+        #expect(core.contains(.sleepLikeItMatters))
+        #expect(core.contains(.seeDoctor))
+        #expect(registry.isStaticCoreInstantAction(.bodyConditioning, domain: .health))
+    }
+
+    @Test func sleepLikeItMattersInstantAction_boostsMentalWellnessAndCareerBurnout() {
+        var state = GameState()
+        state.player.age = 28
+        state.healthProfile.mentalWellness = 38
+        state.career.burnout = 55
+        let orchestrator = LifeSimulationOrchestrator()
+        _ = orchestrator.applyInstantActionWithAutonomousReaction(.sleepLikeItMatters, domain: .health, state: &state)
+        #expect(state.healthProfile.mentalWellness > 38)
+        #expect(state.career.burnout < 55)
+        #expect(state.activities.recoveryBalance > 0)
+    }
+
+    @Test func staticInstantCore_peopleAndMoneyAreInstantFirst() {
+        var state = GameState()
+        state.player.age = 32
+        state.family.children = [ChildRecord(name: "Sam", age: 10, livesAtHome: true, otherParentName: "Alex", supportLoad: 50, temperament: .sensitive)]
+        let registry = DomainActionRegistry(context: DomainActionContext(
+            state: state,
+            isTeenExperience: false,
+            isStudentLifeExperience: false,
+            canAccessInvesting: false,
+            investmentEmergencyReserve: 2_500
+        ))
+        let people = registry.availableQuick(for: .relationships)
+        #expect(people.contains(.checkInOnChild))
+        #expect(people.contains(.realConversation))
+
+        let finance = registry.availableQuick(for: .finance)
+        #expect(finance.contains(.curateCollection))
+        #expect(finance.contains(.hostSignatureEvent))
+    }
+
+    @Test func relaxRoutineInstantAction_boostsRecoveryAndMomentum() {
+        var state = GameState()
+        state.player.age = 27
+        state.resilience = .grounded
+        state.activities.recoveryBalance = 20
+        state.healthProfile.mentalWellness = 40
+        state.career.burnout = 50
+        let orchestrator = LifeSimulationOrchestrator()
+        _ = orchestrator.applyInstantActionWithAutonomousReaction(.relaxRoutine, domain: .play, state: &state)
+        #expect(state.activities.recoveryBalance > 20)
+        #expect(state.healthProfile.mentalWellness > 40)
+        #expect(state.career.burnout < 50)
+    }
+
+    @Test func journalTheShapeInstantAction_publishesIdentityPulse() {
+        var state = GameState()
+        state.player.age = 26
+        state.identityCoherence = 35
+        let orchestrator = LifeSimulationOrchestrator()
+        let result = orchestrator.applyInstantActionWithAutonomousReaction(.journalTheShape, domain: .identity, state: &state)
+        #expect(state.identityCoherence > 35)
+        #expect(!result.notes.isEmpty)
+    }
+
+    @Test func manageMedsInstantAction_easesActiveConditions() {
+        var state = GameState()
+        state.player.age = 40
+        state.healthProfile.activeConditions = [HealthCondition(name: "Anxiety", severity: 24)]
+        let orchestrator = LifeSimulationOrchestrator()
+        _ = orchestrator.applyInstantActionWithAutonomousReaction(.manageMeds, domain: .health, state: &state)
+        let remaining = state.healthProfile.activeConditions.first?.severity ?? 0
+        #expect(remaining < 24 || state.healthProfile.activeConditions.isEmpty)
     }
 }
 

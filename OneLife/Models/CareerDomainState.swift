@@ -375,8 +375,42 @@ struct AthleteState: Codable, Equatable {
     }
 }
 
+enum FounderProductStage: String, Codable, CaseIterable, Equatable {
+    case idea
+    case seed
+    case early
+    case scale
+    case mature
+
+    var displayName: String {
+        switch self {
+        case .idea: return "Idea"
+        case .seed: return "Seed"
+        case .early: return "Early"
+        case .scale: return "Scale"
+        case .mature: return "Mature"
+        }
+    }
+}
+
+enum FounderValuationTrend: String, Codable, CaseIterable, Equatable {
+    case falling
+    case flat
+    case growing
+    case surging
+
+    var displayName: String {
+        switch self {
+        case .falling: return "Falling"
+        case .flat: return "Flat"
+        case .growing: return "Growing"
+        case .surging: return "Surging"
+        }
+    }
+}
+
 /// Dedicated state for the Founder / CEO / Entrepreneur special career path.
-/// E1 foundation: real CEO mechanics with vision, execution, team, stage, control, and mental load.
+/// `productStage` remains the persisted progress score for legacy save compatibility.
 struct FounderState: Codable, Equatable {
     var vision: Int = 55                   // Big picture, storytelling, fundraising
     var execution: Int = 55                // Operational delivery and discipline
@@ -388,8 +422,46 @@ struct FounderState: Codable, Equatable {
     var keyHires: Int = 10                 // Quality and number of critical hires made
     var competitiveMoat: Int = 15          // Differentiation and defensibility
     var personalLegend: Int = 20           // Founder-specific reputation (feeds FameProfile strongly)
+    var burnRate: Int = 35                 // Operating cost pressure, normalized to 0-100
+    var valuationTrend: FounderValuationTrend = .flat
     /// Tracks consecutive high-burnout years for board-pressure events.
     var lastHighBurnoutAge: Int = 0
+
+    var stage: FounderProductStage {
+        switch productStage {
+        case ..<20: return .idea
+        case 20..<40: return .seed
+        case 40..<65: return .early
+        case 65..<85: return .scale
+        default: return .mature
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case vision, execution, teamHealth, productStage, control, founderMentalLoad
+        case companyCulture, keyHires, competitiveMoat, personalLegend
+        case burnRate, valuationTrend, lastHighBurnoutAge
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        vision = try container.decodeIfPresent(Int.self, forKey: .vision) ?? 55
+        execution = try container.decodeIfPresent(Int.self, forKey: .execution) ?? 55
+        teamHealth = try container.decodeIfPresent(Int.self, forKey: .teamHealth) ?? 60
+        productStage = try container.decodeIfPresent(Int.self, forKey: .productStage) ?? 20
+        control = try container.decodeIfPresent(Int.self, forKey: .control) ?? 85
+        founderMentalLoad = try container.decodeIfPresent(Int.self, forKey: .founderMentalLoad) ?? 30
+        companyCulture = try container.decodeIfPresent(Int.self, forKey: .companyCulture) ?? 50
+        keyHires = try container.decodeIfPresent(Int.self, forKey: .keyHires) ?? 10
+        competitiveMoat = try container.decodeIfPresent(Int.self, forKey: .competitiveMoat) ?? 15
+        personalLegend = try container.decodeIfPresent(Int.self, forKey: .personalLegend) ?? 20
+        burnRate = try container.decodeIfPresent(Int.self, forKey: .burnRate) ?? 35
+        valuationTrend = try container.decodeIfPresent(FounderValuationTrend.self, forKey: .valuationTrend) ?? .flat
+        lastHighBurnoutAge = try container.decodeIfPresent(Int.self, forKey: .lastHighBurnoutAge) ?? 0
+        clamp()
+    }
 
     mutating func clamp() {
         vision = vision.clamped(to: 15...95)
@@ -402,6 +474,8 @@ struct FounderState: Codable, Equatable {
         keyHires = keyHires.clamped(to: 0...100)
         competitiveMoat = competitiveMoat.clamped(to: 0...100)
         personalLegend = personalLegend.clamped(to: 0...100)
+        burnRate = burnRate.clamped(to: 0...100)
+        lastHighBurnoutAge = max(0, lastHighBurnoutAge)
     }
 }
 
@@ -1822,6 +1896,54 @@ enum CustodySecurityRegime: String, Codable, CaseIterable {
     }
 }
 
+enum CustodyContactRole: String, Codable, CaseIterable {
+    case cellmate
+    case ally
+    case rival
+    case factionRepresentative
+    case officer
+    case programCounselor
+
+    var displayName: String {
+        switch self {
+        case .cellmate: return "Cellmate"
+        case .ally: return "Ally"
+        case .rival: return "Rival"
+        case .factionRepresentative: return "Faction"
+        case .officer: return "Officer"
+        case .programCounselor: return "Counselor"
+        }
+    }
+}
+
+enum CustodyContactStatus: String, Codable, CaseIterable {
+    case active
+    case strained
+    case protective
+    case hostile
+    case transferred
+    case released
+}
+
+struct CustodyContact: Codable, Identifiable, Equatable {
+    var id: String = UUID().uuidString
+    var name: String
+    var role: CustodyContactRole
+    var status: CustodyContactStatus = .active
+    var trust: Int = 35
+    var danger: Int = 20
+    var leverage: Int = 0
+    var influence: Int = 20
+    var releaseRelevant: Bool = false
+
+    mutating func clamp() {
+        trust = trust.clamped(to: 0...100)
+        danger = danger.clamped(to: 0...100)
+        leverage = leverage.clamped(to: 0...100)
+        influence = influence.clamped(to: 0...100)
+    }
+}
+
 struct OutsideEmpireSnapshot: Codable, Equatable {
     var loyalty: Int = 50
     var networkStrength: Int = 30
@@ -1835,6 +1957,7 @@ struct PrisonResidue: Codable, Equatable {
     var yearsRemaining: Int = 0
     var experienceTier: CustodyExperienceTier = .street
     var recordPressureFloor: Int = 0
+    var outsideContact: AmbientContact? = nil
 }
 
 struct CustodyProfile: Codable, Equatable {
@@ -1852,6 +1975,8 @@ struct CustodyProfile: Codable, Equatable {
     var cooperatedWithAuthorities: Bool = false
     var programProgress: Int = 0
     var goodTimeCredits: Int = 0
+    var goodTimeProgress: Int = 0
+    var maximumGoodTimeCredits: Int = 0
     var lockdownYearsRemaining: Int = 0
     var paroleHearingDeniedYears: Int = 0
     var familyCallsThisYear: Int = 0
@@ -1859,6 +1984,107 @@ struct CustodyProfile: Codable, Equatable {
     var lifetimeFamilyContactsMax: Int = 0
     var totalFamilyCallsMade: Int = 0
     var outsideEmpireSnapshot: OutsideEmpireSnapshot? = nil
+    var contacts: [CustodyContact] = []
+    var lastIncidentAge: Int? = nil
+    var incidentHistory: [String] = []
+
+    private enum CodingKeys: String, CodingKey {
+        case facility, experienceTier, securityRegime, conductScore, infractions
+        case violenceRisk, yardReputation, faction, factionLoyalty, protectionDebt
+        case snitchRisk, cooperatedWithAuthorities, programProgress, goodTimeCredits
+        case goodTimeProgress, maximumGoodTimeCredits, lockdownYearsRemaining
+        case paroleHearingDeniedYears, familyCallsThisYear, discretionaryActionsRemaining
+        case lifetimeFamilyContactsMax, totalFamilyCallsMade, outsideEmpireSnapshot
+        case contacts, lastIncidentAge, incidentHistory
+    }
+
+    init(
+        facility: CustodyFacility = .countyJail,
+        experienceTier: CustodyExperienceTier = .street,
+        securityRegime: CustodySecurityRegime = .standard,
+        conductScore: Int = 50,
+        infractions: Int = 0,
+        violenceRisk: Int = 20,
+        yardReputation: Int = 30,
+        faction: PrisonFaction? = nil,
+        factionLoyalty: Int = 0,
+        protectionDebt: Int = 0,
+        snitchRisk: Int = 0,
+        cooperatedWithAuthorities: Bool = false,
+        programProgress: Int = 0,
+        goodTimeCredits: Int = 0,
+        goodTimeProgress: Int = 0,
+        maximumGoodTimeCredits: Int = 0,
+        lockdownYearsRemaining: Int = 0,
+        paroleHearingDeniedYears: Int = 0,
+        familyCallsThisYear: Int = 0,
+        discretionaryActionsRemaining: Int = 0,
+        lifetimeFamilyContactsMax: Int = 0,
+        totalFamilyCallsMade: Int = 0,
+        outsideEmpireSnapshot: OutsideEmpireSnapshot? = nil,
+        contacts: [CustodyContact] = [],
+        lastIncidentAge: Int? = nil,
+        incidentHistory: [String] = []
+    ) {
+        self.facility = facility
+        self.experienceTier = experienceTier
+        self.securityRegime = securityRegime
+        self.conductScore = conductScore
+        self.infractions = infractions
+        self.violenceRisk = violenceRisk
+        self.yardReputation = yardReputation
+        self.faction = faction
+        self.factionLoyalty = factionLoyalty
+        self.protectionDebt = protectionDebt
+        self.snitchRisk = snitchRisk
+        self.cooperatedWithAuthorities = cooperatedWithAuthorities
+        self.programProgress = programProgress
+        self.goodTimeCredits = goodTimeCredits
+        self.goodTimeProgress = goodTimeProgress
+        self.maximumGoodTimeCredits = max(maximumGoodTimeCredits, goodTimeCredits)
+        self.lockdownYearsRemaining = lockdownYearsRemaining
+        self.paroleHearingDeniedYears = paroleHearingDeniedYears
+        self.familyCallsThisYear = familyCallsThisYear
+        self.discretionaryActionsRemaining = discretionaryActionsRemaining
+        self.lifetimeFamilyContactsMax = lifetimeFamilyContactsMax
+        self.totalFamilyCallsMade = totalFamilyCallsMade
+        self.outsideEmpireSnapshot = outsideEmpireSnapshot
+        self.contacts = contacts
+        self.lastIncidentAge = lastIncidentAge
+        self.incidentHistory = incidentHistory
+        clamp()
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        facility = try container.decodeIfPresent(CustodyFacility.self, forKey: .facility) ?? .countyJail
+        experienceTier = try container.decodeIfPresent(CustodyExperienceTier.self, forKey: .experienceTier) ?? .street
+        securityRegime = try container.decodeIfPresent(CustodySecurityRegime.self, forKey: .securityRegime) ?? .standard
+        conductScore = try container.decodeIfPresent(Int.self, forKey: .conductScore) ?? 50
+        infractions = try container.decodeIfPresent(Int.self, forKey: .infractions) ?? 0
+        violenceRisk = try container.decodeIfPresent(Int.self, forKey: .violenceRisk) ?? 20
+        yardReputation = try container.decodeIfPresent(Int.self, forKey: .yardReputation) ?? 30
+        faction = try container.decodeIfPresent(PrisonFaction.self, forKey: .faction)
+        factionLoyalty = try container.decodeIfPresent(Int.self, forKey: .factionLoyalty) ?? 0
+        protectionDebt = try container.decodeIfPresent(Int.self, forKey: .protectionDebt) ?? 0
+        snitchRisk = try container.decodeIfPresent(Int.self, forKey: .snitchRisk) ?? 0
+        cooperatedWithAuthorities = try container.decodeIfPresent(Bool.self, forKey: .cooperatedWithAuthorities) ?? false
+        programProgress = try container.decodeIfPresent(Int.self, forKey: .programProgress) ?? 0
+        goodTimeCredits = try container.decodeIfPresent(Int.self, forKey: .goodTimeCredits) ?? 0
+        goodTimeProgress = try container.decodeIfPresent(Int.self, forKey: .goodTimeProgress) ?? 0
+        maximumGoodTimeCredits = try container.decodeIfPresent(Int.self, forKey: .maximumGoodTimeCredits) ?? goodTimeCredits
+        lockdownYearsRemaining = try container.decodeIfPresent(Int.self, forKey: .lockdownYearsRemaining) ?? 0
+        paroleHearingDeniedYears = try container.decodeIfPresent(Int.self, forKey: .paroleHearingDeniedYears) ?? 0
+        familyCallsThisYear = try container.decodeIfPresent(Int.self, forKey: .familyCallsThisYear) ?? 0
+        discretionaryActionsRemaining = try container.decodeIfPresent(Int.self, forKey: .discretionaryActionsRemaining) ?? 0
+        lifetimeFamilyContactsMax = try container.decodeIfPresent(Int.self, forKey: .lifetimeFamilyContactsMax) ?? 0
+        totalFamilyCallsMade = try container.decodeIfPresent(Int.self, forKey: .totalFamilyCallsMade) ?? 0
+        outsideEmpireSnapshot = try container.decodeIfPresent(OutsideEmpireSnapshot.self, forKey: .outsideEmpireSnapshot)
+        contacts = try container.decodeIfPresent([CustodyContact].self, forKey: .contacts) ?? []
+        lastIncidentAge = try container.decodeIfPresent(Int.self, forKey: .lastIncidentAge)
+        incidentHistory = try container.decodeIfPresent([String].self, forKey: .incidentHistory) ?? []
+        clamp()
+    }
 
     static let discretionaryActionIDs: Set<ActionChoiceID> = [
         .standYourGround, .alignWithFaction, .payProtection, .refuseSnitchDeal, .cooperateWithGuards,
@@ -1872,6 +2098,28 @@ struct CustodyProfile: Codable, Equatable {
 
     static func familyContactCap(for sentenceYears: Int) -> Int {
         min(4, max(2, sentenceYears / 2 + 1))
+    }
+
+    static func goodTimeCap(
+        for sentenceYears: Int,
+        severity: LegalOffenseSeverity,
+        offense: LegalOffenseKind
+    ) -> Int {
+        let sentenceCap = sentenceYears / 3
+        let offenseCap = offense == .enterpriseCrime || severity == .aggravated ? 2 : (severity == .serious ? 3 : 2)
+        return max(0, min(sentenceCap, offenseCap))
+    }
+
+    mutating func addGoodTimeProgress(_ amount: Int) {
+        guard amount > 0, goodTimeCredits < maximumGoodTimeCredits else { return }
+        goodTimeProgress += amount
+        while goodTimeProgress >= 100, goodTimeCredits < maximumGoodTimeCredits {
+            goodTimeProgress -= 100
+            goodTimeCredits += 1
+        }
+        if goodTimeCredits >= maximumGoodTimeCredits {
+            goodTimeProgress = 0
+        }
     }
 
     func instantToolkit(
@@ -1924,13 +2172,23 @@ struct CustodyProfile: Codable, Equatable {
         protectionDebt = protectionDebt.clamped(to: 0...100)
         snitchRisk = snitchRisk.clamped(to: 0...100)
         programProgress = programProgress.clamped(to: 0...100)
-        goodTimeCredits = max(0, goodTimeCredits)
+        maximumGoodTimeCredits = max(0, maximumGoodTimeCredits)
+        goodTimeCredits = goodTimeCredits.clamped(to: 0...maximumGoodTimeCredits)
+        goodTimeProgress = goodTimeProgress.clamped(to: 0...99)
         lockdownYearsRemaining = max(0, lockdownYearsRemaining)
         paroleHearingDeniedYears = max(0, paroleHearingDeniedYears)
         familyCallsThisYear = max(0, familyCallsThisYear)
         discretionaryActionsRemaining = max(0, discretionaryActionsRemaining)
         lifetimeFamilyContactsMax = max(0, lifetimeFamilyContactsMax)
         totalFamilyCallsMade = max(0, totalFamilyCallsMade)
+        contacts = Array(contacts.prefix(5)).map {
+            var contact = $0
+            contact.clamp()
+            return contact
+        }
+        if incidentHistory.count > 8 {
+            incidentHistory = Array(incidentHistory.suffix(8))
+        }
     }
 
     mutating func resetYearlyCounters() {
@@ -2079,6 +2337,14 @@ struct LegalState: Codable, Equatable {
             residue.yearsRemaining = max(0, residue.yearsRemaining)
             prisonResidue = residue
         }
+        if isInCustody, custodyProfile.maximumGoodTimeCredits == 0, sentenceYears >= 3 {
+            let conviction = convictions.last
+            custodyProfile.maximumGoodTimeCredits = CustodyProfile.goodTimeCap(
+                for: sentenceYears,
+                severity: conviction?.severity ?? caseSeverity,
+                offense: conviction?.offense ?? .streetCrime
+            )
+        }
         custodyProfile.clamp()
         pendingExposures = pendingExposures.map {
             var exposure = $0
@@ -2104,4 +2370,3 @@ struct CareerRoleDefinition: Equatable {
     var bridgeTags: [CareerExperienceTag] = []
     var isManagementRole: Bool = false
 }
-

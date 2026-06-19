@@ -271,8 +271,28 @@ struct FinanceSystem {
         finance.normalizeInvestmentBalances()
     }
 
+    func applyAction(_ choiceID: ActionChoiceID, state: inout GameState) -> DomainYearResult {
+        var finance = state.finance
+        var player = state.player
+        var result = applyAction(choiceID, finance: &finance, player: &player, state: &state)
+        state.finance = finance
+        state.player = player
+        return result
+    }
+
     func applyAction(_ choiceID: ActionChoiceID, finance: inout FinanceState, player: inout Player) -> DomainYearResult {
+        var state = GameState()
+        state.finance = finance
+        state.player = player
+        let result = applyAction(choiceID, state: &state)
+        finance = state.finance
+        player = state.player
+        return result
+    }
+
+    private func applyAction(_ choiceID: ActionChoiceID, finance: inout FinanceState, player: inout Player, state: inout GameState) -> DomainYearResult {
         var result = DomainYearResult()
+        let grounded = StaticInstantActionFlavor.isGrounded(state)
 
         switch choiceID {
         case .cutSpending:
@@ -428,14 +448,153 @@ struct FinanceSystem {
         case .curateCollection:
             finance.cashOnHand -= 1500
             finance.financialStress = (finance.financialStress + 1).clamped(to: 0...100)
-            result.notes.append(DomainNote(title: "Collection Curated", text: "You spent the weekend cataloging and sourcing. The collection feels more complete.", tags: [.finance, .assets]))
+            state.fame.culturalFame = min(100, state.fame.culturalFame + 2)
+            state.relationships.publicReputation = min(100, state.relationships.publicReputation + 2)
+            var curateText = "You spent the weekend cataloging and sourcing. The collection feels more complete."
+            if state.specialCareer.track == .athlete {
+                curateText = "Gear, trophies, proof — the athlete archive got sharper."
+            } else if state.specialCareer.track == .founder {
+                curateText = "The compound's trophies and toys tell a founder story now."
+            }
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 14)
+            result.notes.append(DomainNote(title: "Collection Curated", text: curateText, tags: [.finance, .assets]))
+        case .flexLuxuryAsset:
+            guard let showpiece = AssetCatalog.premierShowpiece(from: state.assets) else {
+                result.notes.append(DomainNote(title: "Nothing to Flex", text: "You looked at the collection and realized there wasn't a headline piece worth showing off yet.", tags: [.assets, .finance]))
+                return result
+            }
+            let toneDeaf = state.currentEra == .recession || state.currentEra == .highInflation
+            let narrative = AssetCatalog.flexNarrative(for: showpiece, toneDeaf: toneDeaf)
+            state.assets.lastShowcasedPieceName = showpiece.name
+            if toneDeaf {
+                state.specialCareer.heat = min(100, state.specialCareer.heat + 6)
+            } else {
+                state.fame.culturalFame = min(100, state.fame.culturalFame + 4)
+                state.relationships.publicReputation = min(100, state.relationships.publicReputation + 3)
+            }
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 16)
+            result.notes.append(DomainNote(title: narrative.title, text: narrative.text, tags: [.assets, .social, .fame]))
+        case .liquidateLuxury:
+            let liquidatableCount = state.assets.jewelry.count + state.assets.vehicles.count + state.assets.marine.count
+            guard liquidatableCount > 0 else {
+                result.notes.append(DomainNote(title: "Nothing to Liquidate", text: "There aren't enough liquid luxury pieces to cash out right now.", tags: [.finance, .assets]))
+                return result
+            }
+            if let item = state.assets.jewelry.max(by: { $0.resaleValue < $1.resaleValue }) {
+                state.finance.cashOnHand += item.resaleValue
+                state.assets.jewelry.removeAll { $0.id == item.id }
+                result.notes.append(DomainNote(title: "Piece Sold", text: "You cashed out the \(item.name). The money feels cleaner, but the collection feels thinner.", tags: [.finance, .assets]))
+            } else if let item = state.assets.vehicles.first {
+                state.finance.cashOnHand += 5_000
+                state.assets.vehicles.removeAll { $0.id == item.id }
+                result.notes.append(DomainNote(title: "Vehicle Sold", text: "You moved the \(item.name) for quick cash. Practical, not glamorous.", tags: [.finance, .assets]))
+            }
+            state.fame.culturalFame = max(0, state.fame.culturalFame - 2)
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 12)
+        case .upgradeCollection:
+            let cost = 25_000
+            guard state.finance.cashOnHand >= cost else {
+                result.notes.append(DomainNote(title: "Upgrade Blocked", text: "You need $\(cost) on hand to level up the collection.", tags: [.finance, .assets]))
+                return result
+            }
+            state.finance.cashOnHand -= cost
+            state.fame.culturalFame = min(100, state.fame.culturalFame + 3)
+            if let showpiece = AssetCatalog.premierShowpiece(from: state.assets) {
+                result.notes.append(DomainNote(title: "Escalation", text: "You made the \(showpiece.name) even harder to ignore. Now you have to live up to it.", tags: [.finance, .social, .assets]))
+            } else {
+                result.notes.append(DomainNote(title: "Escalation", text: "You made the toys better. Now you have to live up to them.", tags: [.finance, .social]))
+            }
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 14)
+        case .hostAtSignatureEstate:
+            guard state.assets.primaryResidence != nil || !state.assets.signatureAssets.isEmpty else {
+                result.notes.append(DomainNote(title: "No Estate", text: "You need a signature property before the big house before you can host at scale.", tags: [.assets, .social]))
+                return result
+            }
+            state.finance.cashOnHand -= 8_000
+            state.fame.culturalFame = min(100, state.fame.culturalFame + 5)
+            state.relationships.publicReputation = min(100, state.relationships.publicReputation + 5)
+            let venue = state.assets.signatureAssets.first?.name ?? "Primary Residence"
+            result.notes.append(DomainNote(title: "Power Gathering", text: "You opened \(venue). The right people came. Favors were traded over good wine.", tags: [.social, .career, .assets]))
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 18)
         case .hostSignatureEvent:
             finance.cashOnHand -= 5000
             finance.financialStress = (finance.financialStress + 2).clamped(to: 0...100)
-            result.notes.append(DomainNote(title: "Signature Event", text: "You hosted a gathering that people noticed. The prestige is real.", tags: [.finance, .assets, .social]))
+            state.fame.culturalFame = min(100, state.fame.culturalFame + 4)
+            var hostText = "You hosted a gathering that people noticed. The prestige is real."
+            hostText += StaticInstantActionFlavor.fameGravitySuffix(state, highFame: " High notoriety made one guest's phone feel like a liability.", lowFame: "")
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 18)
+            result.notes.append(DomainNote(title: "Signature Event", text: hostText, tags: [.finance, .assets, .social]))
         case .maintainAsset:
             finance.cashOnHand -= 800
-            result.notes.append(DomainNote(title: "Asset Maintained", text: "You paid for the specialist to check the pieces. They remain in top condition.", tags: [.finance, .assets]))
+            state.fame.culturalFame = min(100, state.fame.culturalFame + 1)
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 14)
+            result.notes.append(DomainNote(title: "Asset Maintained", text: "You paid for upkeep before decay could tell a worse story.", tags: [.finance, .assets]))
+        case .negotiateBetterTerms, .negotiateBill:
+            let bump: Int = {
+                if choiceID == .negotiateBill {
+                    return min(250, max(75, finance.financialStress * 3))
+                }
+                var amount = 180 + (StaticInstantActionFlavor.dossierEntrepreneurial(state) || StaticInstantActionFlavor.dossierAnalytical(state) ? 80 : 0)
+                if state.specialCareer.track == .founder && state.specialCareer.boardPressure >= 50 {
+                    amount = max(90, amount - 40)
+                }
+                return amount
+            }()
+            finance.cashOnHand += bump
+            finance.financialStress = max(0, finance.financialStress - (choiceID == .negotiateBill ? 4 : 5))
+            var negText = choiceID == .negotiateBill
+                ? "You stayed on hold long enough to win. A small victory, but the stress dropped."
+                : "You pushed for better terms and got something real."
+            if choiceID == .negotiateBetterTerms, StaticInstantActionFlavor.dossierAnalytical(state) {
+                negText = "The numbers in your head were sharper than theirs on the call."
+            }
+            if choiceID == .negotiateBetterTerms,
+               state.specialCareer.track == .founder,
+               state.specialCareer.boardPressure >= 50 {
+                negText += " The board is watching every concession."
+            }
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 16)
+            result.notes.append(DomainNote(
+                title: choiceID == .negotiateBill ? "Bill Negotiated" : "Terms Improved",
+                text: negText,
+                tags: [.finance, .career]
+            ))
+        case .quietlyBuildCushion:
+            let deposit = min(400, max(100, finance.cashOnHand / 25))
+            finance.cashOnHand -= deposit
+            finance.indexFundBalance += deposit
+            finance.normalizeInvestmentBalances()
+            finance.financialStress = max(0, finance.financialStress - StaticInstantActionFlavor.resilienceScaled(state, grounded: 6, resilient: 3))
+            finance.stabilityStreakYears = min(20, finance.stabilityStreakYears + 1)
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 3).clamped(to: 0...100)
+            let cushionText = grounded
+                ? "Another quiet layer of slack. In a Grounded life, that buffer feels like oxygen."
+                : "You moved money out of sight so panic wouldn't find it as easily."
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 18)
+            result.notes.append(DomainNote(title: "Cushion Built", text: cushionText, tags: [.finance, .health]))
+        case .reviewNumbersRuthlessly:
+            finance.financialStress = max(0, finance.financialStress - 4)
+            state.healthProfile.mentalWellness = (state.healthProfile.mentalWellness + 2).clamped(to: 0...100)
+            if state.yearlyStance.recentStances.first == .pushCareer || LifeShapeResolver.resolveOrPragmatic(from: state) == .drivenCurrent {
+                finance.cashOnHand += 120
+            }
+            var reviewText = "You stared at the spreadsheet until it told the truth."
+            if StaticInstantActionFlavor.dossierAnalytical(state) {
+                reviewText = "The analytical wiring from 14 made the review surgical, not scary."
+            }
+            StaticInstantActionFlavor.publishPulse(&state, domain: "finance", strength: 15)
+            result.notes.append(DomainNote(title: "Numbers Reviewed", text: reviewText, tags: [.finance, .career]))
+        case .sideGig:
+            finance.cashOnHand += 350
+            finance.financialStress = max(0, finance.financialStress - 2)
+            result.healthEffects = HealthEffects(physical: nil, mental: -2, exercise: nil, nutrition: nil, stressManagement: -1, addCondition: nil, removeCondition: nil, hasPrimaryCare: nil)
+            result.notes.append(DomainNote(title: "Side Gig", text: "You picked up quick money on the side. It helped the ledger and cost a little peace.", tags: [.finance, .career]))
+        case .treatYourself:
+            let spend = min(180, max(40, finance.cashOnHand / 20))
+            finance.cashOnHand -= spend
+            result.coreEffects = CoreStatEffects(happiness: 4)
+            result.healthEffects = HealthEffects(physical: nil, mental: 3, exercise: nil, nutrition: nil, stressManagement: 2, addCondition: nil, removeCondition: nil, hasPrimaryCare: nil)
+            result.notes.append(DomainNote(title: "Treat Yourself", text: "You bought something purely for joy. Responsible adulthood can wait an hour.", tags: [.finance, .health]))
         case .sellStocks, .sellPosition:
             InvestmentSystem().applyAction(.sellStocks, finance: &finance, player: player, result: &result)
         case .buyCrypto:
@@ -538,18 +697,17 @@ struct FinanceSystem {
             notes.append(DomainNote(title: "Strategic Retreat", text: "You stopped trying to win the game everyone else is still playing. The quiet feels expensive but necessary.", tags: [.finance, .health]))
             state.finance.financialStress = max(0, state.finance.financialStress - 6)
 
-        // Assets3 instant reactions
+        // Assets3 instant reactions — flex primary narrative lives in applyAction
         case .flexLuxuryAsset:
-            if state.currentEra == .recession || state.currentEra == .highInflation {
-                notes.append(DomainNote(title: "Tone-Deaf Flex", text: "You showed off the toys. Some people were impressed. More people were annoyed.", tags: [.social, .risk]))
-                state.specialCareer.heat = min(100, state.specialCareer.heat + 6)
-            } else {
-                notes.append(DomainNote(title: "The Flex Landed", text: "People noticed. The right rooms got a little more open.", tags: [.social]))
-                state.fame.culturalFame = min(100, state.fame.culturalFame + 3)
+            if Int.random(in: 0...100) < 30,
+               let showpiece = AssetCatalog.premierShowpiece(from: state.assets),
+               !(state.currentEra == .recession || state.currentEra == .highInflation) {
+                notes.append(DomainNote(title: "Collector Buzz", text: "Word spread about the \(showpiece.name). A stranger asked if it was real.", tags: [.social, .fame, .assets]))
+                state.fame.culturalFame = min(100, state.fame.culturalFame + 1)
             }
 
         case .liquidateLuxury:
-            notes.append(DomainNote(title: "Lifestyle Reset", text: "You cashed out the symbols. The money feels cleaner, but the house feels a little emptier.", tags: [.finance, .progress]))
+            break
 
         // Econ1 (Stock Market)
         case .checkPortfolio:
@@ -576,12 +734,6 @@ struct FinanceSystem {
 
         case .sellPosition, .sellStocks:
             notes.append(DomainNote(title: "Position Liquidated", text: "You locked in the value. The cash hit your account immediately.", tags: [.finance]))
-
-        case .upgradeCollection:
-            notes.append(DomainNote(title: "Escalation", text: "You made the toys better. Now you have to live up to them.", tags: [.finance, .social]))
-
-        case .hostAtSignatureEstate:
-            notes.append(DomainNote(title: "Power Gathering", text: "You opened the big house. The right people came. Favors were traded over good wine.", tags: [.social, .career]))
 
         // D2: Collector loops - path/era aware, maintenance + prestige
         case .curateCollection:

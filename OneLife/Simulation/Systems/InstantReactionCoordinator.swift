@@ -16,6 +16,34 @@ import Foundation
 /// See LifeSimulationOrchestrator.swift for the "Player Micro Move vs Year Commitment" mental model documentation.
 struct InstantReactionCoordinator {
 
+    private static let financeStaticInstantCore: Set<ActionChoiceID> = [
+        .curateCollection, .hostSignatureEvent, .maintainAsset, .negotiateBetterTerms,
+        .quietlyBuildCushion, .reviewNumbersRuthlessly
+    ]
+
+    private static let relationshipsStaticInstantCore: Set<ActionChoiceID> = [
+        .deepenSpecificBond, .fuelRivalry, .splitReputation, .realConversation,
+        .setBoundary, .networkWithoutMask, .checkInOnChild
+    ]
+
+    private static let playStaticInstantCore: Set<ActionChoiceID> = [
+        .hobbySession, .socialOuting, .creativeOutlet, .adventure, .relaxRoutine
+    ]
+
+    private static let careerStaticInstantCore: Set<ActionChoiceID> = [
+        .putYourHeadDown, .protectWorkLifeLine
+    ]
+
+    private static let healthStaticInstantCore: Set<ActionChoiceID> = [
+        .bodyConditioning, .recurringTherapy, .manageMeds, .seeDoctor, .sleepLikeItMatters, .coldExposureDrill,
+        .improveSleep
+    ]
+
+    private static let identityStaticInstantCore: Set<ActionChoiceID> = [
+        .morningReflection, .reconcileWithPast, .protectYourEnergy, .tryNewPersona, .processCrisis,
+        .journalTheShape, .quietTheNoise
+    ]
+
     private var npcAutonomySystem: NPCAutonomySystem
     private var healthSystem: HealthSystem
     private var financeSystem: FinanceSystem
@@ -53,12 +81,30 @@ struct InstantReactionCoordinator {
             for note in notes {
                 state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
             }
+            if Self.relationshipsStaticInstantCore.contains(choiceID) {
+                state.instantMomentum.recordReaction(domain: .relationships, strength: 13, currentAge: state.player.age)
+            }
 
         case .health:
             let notes = healthSystem.reactToPlayerHealthAction(choiceID, state: &state)
             autonomousNotes.append(contentsOf: notes)
             for note in notes {
                 state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
+            }
+            if Self.healthStaticInstantCore.contains(choiceID) {
+                state.activities.recoveryBalance = (state.activities.recoveryBalance + 4).clamped(to: 0...100)
+                state.correlationLedger.publish(
+                    CorrelationSignal(kind: .instantActionPulse, domain: "health", strength: 16, age: state.player.age)
+                )
+                state.instantMomentum.recordReaction(domain: .health, strength: 14, currentAge: state.player.age)
+            }
+
+        case .identity:
+            if Self.identityStaticInstantCore.contains(choiceID) {
+                state.correlationLedger.publish(
+                    CorrelationSignal(kind: .instantActionPulse, domain: "identity", strength: 18, age: state.player.age)
+                )
+                state.instantMomentum.recordReaction(domain: .identity, strength: 12, currentAge: state.player.age)
             }
 
         case .finance:
@@ -73,8 +119,8 @@ struct InstantReactionCoordinator {
             let luxuryNotes = luxurySystem.reactToLuxuryAction(choiceID, state: &state)
             autonomousNotes.append(contentsOf: luxuryNotes)
 
-            // D2 Collector loops: generic momentum and texture
-            if [.curateCollection, .hostSignatureEvent, .maintainAsset].contains(choiceID) {
+            // D2 Collector loops + core finance statics: generic momentum and texture
+            if Self.financeStaticInstantCore.contains(choiceID) {
                 state.instantMomentum.recordReaction(domain: .finance, strength: 12, currentAge: state.player.age)
                 if choiceID == .hostSignatureEvent {
                     state.fame.culturalFame = min(100, state.fame.culturalFame + 3)
@@ -99,6 +145,17 @@ struct InstantReactionCoordinator {
                     autonomousNotes.append(note)
                     state.history.insert(HistoryEntry(age: state.player.age, title: note.title, text: note.text, tags: note.tags), at: 0)
                 }
+            }
+
+        case .career:
+            if Self.careerStaticInstantCore.contains(choiceID) {
+                state.instantMomentum.recordReaction(domain: .career, strength: 14, currentAge: state.player.age)
+            }
+
+        case .play:
+            if Self.playStaticInstantCore.contains(choiceID) {
+                state.activities.recoveryBalance = (state.activities.recoveryBalance + 3).clamped(to: 0...100)
+                state.instantMomentum.recordReaction(domain: .play, strength: 12, currentAge: state.player.age)
             }
 
         default:
