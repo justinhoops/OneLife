@@ -1,0 +1,446 @@
+[
+  {
+    "id": "eventChoice-partner-1",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "partner",
+    "text": "{person} weighed what you chose before answering."
+  },
+  {
+    "id": "eventChoice-partner-2",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "partner",
+    "text": "{person} heard the part you left unsaid."
+  },
+  {
+    "id": "eventChoice-family-1",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "family",
+    "text": "{person} took your choice personally."
+  },
+  {
+    "id": "eventChoice-family-2",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "family",
+    "text": "{person} waited to see whether you meant it."
+  },
+  {
+    "id": "eventChoice-boss-1",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "boss",
+    "text": "{person} watched how you handled the offer."
+  },
+  {
+    "id": "eventChoice-boss-2",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "boss",
+    "text": "{person} filed your answer away for later."
+  },
+  {
+    "id": "eventChoice-coworker-1",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "coworker",
+    "text": "{person} noticed which side of the line you chose."
+  },
+  {
+    "id": "eventChoice-coworker-2",
+    "action": null,
+    "trigger": "eventChoice",
+    "audience": "coworker",
+    "text": "{person} asked what made you decide."
+  },
+  {
+    "id": "gift-partner-1",
+    "action": null,
+    "trigger": "gift",
+    "audience": "partner",
+    "text": "{person} accepted the gift as something more than its price."
+  },
+  {
+    "id": "gift-partner-2",
+    "action": null,
+    "trigger": "gift",
+    "audience": "partner",
+    "text": "{person} smiled, then asked what it cost you."
+  },
+  {
+    "id": "gift-family-1",
+    "action": null,
+    "trigger": "gift",
+    "audience": "family",
+    "text": "{person} thanked you without making it awkward."
+  },
+  {
+    "id": "gift-family-2",
+    "action": null,
+    "trigger": "gift",
+    "audience": "family",
+    "text": "{person} wondered what brought the gift on."
+  },
+  {
+    "id": "gift-boss-1",
+    "action": null,
+    "trigger": "gift",
+    "audience": "boss",
+    "text": "{person} took the gesture as a sign of trust."
+  },
+  {
+    "id": "gift-boss-2",
+    "action": null,
+    "trigger": "gift",
+    "audience": "boss",
+    "text": "{person} remembered that you thought of them."
+  },
+  {
+    "id": "gift-coworker-1",
+    "action": null,
+    "trigger": "gift",
+    "audience": "coworker",
+    "text": "{person} seemed surprised you remembered."
+  },
+  {
+    "id": "gift-coworker-2",
+    "action": null,
+    "trigger": "gift",
+    "audience": "coworker",
+    "text": "{person} accepted, and the room softened a little."
+  },
+  {
+    "id": "crime-family-1",
+    "action": null,
+    "trigger": "crime",
+    "audience": "family",
+    "text": "{person} heard there was a case, and the calls changed."
+  },
+  {
+    "id": "crime-family-2",
+    "action": null,
+    "trigger": "crime",
+    "audience": "family",
+    "text": "{person} asked what the arrest means for everyone."
+  },
+  {
+    "id": "workShift-coworker-1",
+    "action": "workShift",
+    "audience": "coworker",
+    "text": "{person} saw you stay after the others left."
+  },
+  {
+    "id": "workShift-coworker-2",
+    "action": "workShift",
+    "audience": "coworker",
+    "text": "{person} remembered who carried the late shift."
+  },
+  {
+    "id": "workShift-coworker-3",
+    "action": "workShift",
+    "audience": "coworker",
+    "text": "{person} noticed how often you were still there."
+  },
+  {
+    "id": "workShift-coworker-4",
+    "action": "workShift",
+    "audience": "coworker",
+    "text": "{person} asked if this pace was temporary."
+  },
+  {
+    "id": "workShift-coworker-5",
+    "action": "workShift",
+    "audience": "coworker",
+    "text": "{person} stayed until the last screen went dark."
+  },
+  {
+    "id": "workShift-coworker-6",
+    "action": "workShift",
+    "audience": "coworker",
+    "text": "{person} saw the extra hours becoming ordinary."
+  },
+  {
+    "id": "acceptOvertime-boss-1",
+    "action": "acceptOvertime",
+    "audience": "boss",
+    "text": "{person} marked you down as dependable."
+  },
+  {
+    "id": "acceptOvertime-boss-2",
+    "action": "acceptOvertime",
+    "audience": "boss",
+    "text": "{person} made the extra hours sound routine."
+  },
+  {
+    "id": "acceptOvertime-boss-3",
+    "action": "acceptOvertime",
+    "audience": "boss",
+    "text": "{person} thanked you before asking about next week."
+  },
+  {
+    "id": "acceptOvertime-boss-4",
+    "action": "acceptOvertime",
+    "audience": "boss",
+    "text": "{person} told the team you had stepped up."
+  },
+  {
+    "id": "acceptOvertime-boss-5",
+    "action": "acceptOvertime",
+    "audience": "boss",
+    "text": "{person} started planning around your yes."
+  },
+  {
+    "id": "acceptOvertime-coworker-1",
+    "action": "acceptOvertime",
+    "audience": "coworker",
+    "text": "{person} watched the schedule tilt your way."
+  },
+  {
+    "id": "acceptOvertime-coworker-2",
+    "action": "acceptOvertime",
+    "audience": "coworker",
+    "text": "{person} noticed who got asked to stay late."
+  },
+  {
+    "id": "acceptOvertime-coworker-3",
+    "action": "acceptOvertime",
+    "audience": "coworker",
+    "text": "{person} kept your desk company after closing."
+  },
+  {
+    "id": "acceptOvertime-coworker-4",
+    "action": "acceptOvertime",
+    "audience": "coworker",
+    "text": "{person} asked how much the extra shift pays."
+  },
+  {
+    "id": "acceptOvertime-coworker-5",
+    "action": "acceptOvertime",
+    "audience": "coworker",
+    "text": "{person} saw another evening disappear into work."
+  },
+  {
+    "id": "negotiateRaise-boss-1",
+    "action": "negotiateRaise",
+    "audience": "boss",
+    "text": "{person} listened, then looked at the numbers again."
+  },
+  {
+    "id": "negotiateRaise-boss-2",
+    "action": "negotiateRaise",
+    "audience": "boss",
+    "text": "{person} said they would remember the conversation."
+  },
+  {
+    "id": "negotiateRaise-boss-3",
+    "action": "negotiateRaise",
+    "audience": "boss",
+    "text": "{person} asked what would make the number fair."
+  },
+  {
+    "id": "negotiateRaise-boss-4",
+    "action": "negotiateRaise",
+    "audience": "boss",
+    "text": "{person} wanted proof before promising anything."
+  },
+  {
+    "id": "negotiateRaise-boss-5",
+    "action": "negotiateRaise",
+    "audience": "boss",
+    "text": "{person} left the next step deliberately vague."
+  },
+  {
+    "id": "negotiateRaise-coworker-1",
+    "action": "negotiateRaise",
+    "audience": "coworker",
+    "text": "{person} wondered whether your raise changes the team."
+  },
+  {
+    "id": "negotiateRaise-coworker-2",
+    "action": "negotiateRaise",
+    "audience": "coworker",
+    "text": "{person} heard you finally asked for more."
+  },
+  {
+    "id": "negotiateRaise-coworker-3",
+    "action": "negotiateRaise",
+    "audience": "coworker",
+    "text": "{person} watched to see how the room took it."
+  },
+  {
+    "id": "negotiateRaise-coworker-4",
+    "action": "negotiateRaise",
+    "audience": "coworker",
+    "text": "{person} asked if you got the answer you wanted."
+  },
+  {
+    "id": "negotiateRaise-coworker-5",
+    "action": "negotiateRaise",
+    "audience": "coworker",
+    "text": "{person} wondered whether they should ask too."
+  },
+  {
+    "id": "buildWorkplaceRelationship-boss-1",
+    "action": "buildWorkplaceRelationship",
+    "audience": "boss",
+    "text": "{person} remembered your name in the meeting."
+  },
+  {
+    "id": "buildWorkplaceRelationship-boss-2",
+    "action": "buildWorkplaceRelationship",
+    "audience": "boss",
+    "text": "{person} gave you a little more room to speak."
+  },
+  {
+    "id": "buildWorkplaceRelationship-boss-3",
+    "action": "buildWorkplaceRelationship",
+    "audience": "boss",
+    "text": "{person} noticed you followed through after the meeting."
+  },
+  {
+    "id": "buildWorkplaceRelationship-boss-4",
+    "action": "buildWorkplaceRelationship",
+    "audience": "boss",
+    "text": "{person} started bringing you into the early conversation."
+  },
+  {
+    "id": "buildWorkplaceRelationship-boss-5",
+    "action": "buildWorkplaceRelationship",
+    "audience": "boss",
+    "text": "{person} trusted you with the unfinished version."
+  },
+  {
+    "id": "buildWorkplaceRelationship-coworker-1",
+    "action": "buildWorkplaceRelationship",
+    "audience": "coworker",
+    "text": "{person} noticed you making the rounds."
+  },
+  {
+    "id": "buildWorkplaceRelationship-coworker-2",
+    "action": "buildWorkplaceRelationship",
+    "audience": "coworker",
+    "text": "{person} made space for you at lunch."
+  },
+  {
+    "id": "buildWorkplaceRelationship-coworker-3",
+    "action": "buildWorkplaceRelationship",
+    "audience": "coworker",
+    "text": "{person} started including you in the small talk."
+  },
+  {
+    "id": "buildWorkplaceRelationship-coworker-4",
+    "action": "buildWorkplaceRelationship",
+    "audience": "coworker",
+    "text": "{person} shared the shortcut nobody writes down."
+  },
+  {
+    "id": "buildWorkplaceRelationship-coworker-5",
+    "action": "buildWorkplaceRelationship",
+    "audience": "coworker",
+    "text": "{person} stopped treating you like a passing face."
+  },
+  {
+    "id": "familyDinner-family-1",
+    "action": "familyDinner",
+    "audience": "family",
+    "text": "{person} relaxed once everyone sat down."
+  },
+  {
+    "id": "familyDinner-family-2",
+    "action": "familyDinner",
+    "audience": "family",
+    "text": "{person} brought up something they had been holding back."
+  },
+  {
+    "id": "familyDinner-family-3",
+    "action": "familyDinner",
+    "audience": "family",
+    "text": "{person} stayed at the table after the plates were cleared."
+  },
+  {
+    "id": "familyDinner-family-4",
+    "action": "familyDinner",
+    "audience": "family",
+    "text": "{person} found a reason to tell one more story."
+  },
+  {
+    "id": "familyDinner-family-5",
+    "action": "familyDinner",
+    "audience": "family",
+    "text": "{person} asked when you could do this again."
+  },
+  {
+    "id": "workShift-partner-1",
+    "action": "workShift",
+    "audience": "partner",
+    "text": "{person} asked when work gets the rest of you."
+  },
+  {
+    "id": "workShift-partner-2",
+    "action": "workShift",
+    "audience": "partner",
+    "text": "{person} ate without waiting up."
+  },
+  {
+    "id": "workShift-partner-3",
+    "action": "workShift",
+    "audience": "partner",
+    "text": "{person} left the porch light on again."
+  },
+  {
+    "id": "acceptOvertime-partner-1",
+    "action": "acceptOvertime",
+    "audience": "partner",
+    "text": "{person} kept dinner warm a little longer."
+  },
+  {
+    "id": "acceptOvertime-partner-2",
+    "action": "acceptOvertime",
+    "audience": "partner",
+    "text": "{person} heard the shift take another evening."
+  },
+  {
+    "id": "acceptOvertime-partner-3",
+    "action": "acceptOvertime",
+    "audience": "partner",
+    "text": "{person} started planning around the overtime."
+  },
+  {
+    "id": "negotiateRaise-partner-1",
+    "action": "negotiateRaise",
+    "audience": "partner",
+    "text": "{person} wanted to know how the meeting went."
+  },
+  {
+    "id": "negotiateRaise-partner-2",
+    "action": "negotiateRaise",
+    "audience": "partner",
+    "text": "{person} hoped asking would be worth the strain."
+  },
+  {
+    "id": "negotiateRaise-partner-3",
+    "action": "negotiateRaise",
+    "audience": "partner",
+    "text": "{person} said you should not apologize for asking."
+  },
+  {
+    "id": "buildWorkplaceRelationship-partner-1",
+    "action": "buildWorkplaceRelationship",
+    "audience": "partner",
+    "text": "{person} liked hearing a work story with names in it."
+  },
+  {
+    "id": "buildWorkplaceRelationship-partner-2",
+    "action": "buildWorkplaceRelationship",
+    "audience": "partner",
+    "text": "{person} noticed you seemed less alone at work."
+  },
+  {
+    "id": "buildWorkplaceRelationship-partner-3",
+    "action": "buildWorkplaceRelationship",
+    "audience": "partner",
+    "text": "{person} was glad work felt easier to enter."
+  }
+]

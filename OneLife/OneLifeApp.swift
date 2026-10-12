@@ -1,27 +1,30 @@
-//
-//  OneLifeApp.swift
-//  OneLife
-//
-//  Created by Justin Jeffery on 2/8/26.
-//
-
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
+
+private struct UITestReduceMotionKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var uiTestReduceMotion: Bool {
+        get { self[UITestReduceMotionKey.self] }
+        set { self[UITestReduceMotionKey.self] = newValue }
+    }
+}
 
 @main
 struct OneLifeApp: App {
-    @StateObject private var rootViewModel = GameViewModel()
-
     var body: some Scene {
         WindowGroup {
-            ContentView(vm: rootViewModel)
-                #if canImport(UIKit)
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-                    rootViewModel.handleMemoryPressure()
-                }
-                #endif
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-uiTestReduceMotion") {
+                ContentView()
+                    .environment(\.uiTestReduceMotion, true)
+            } else {
+                ContentView()
+            }
+            #else
+            ContentView()
+            #endif
         }
     }
 }

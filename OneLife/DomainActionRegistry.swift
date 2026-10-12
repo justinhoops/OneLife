@@ -1,1244 +1,521 @@
 import Foundation
 
-struct DomainActionContext: Equatable {
-    let state: GameState
-    let isTeenExperience: Bool
-    let isStudentLifeExperience: Bool
-    let canAccessInvesting: Bool
-    let investmentEmergencyReserve: Int
-}
+enum DomainActionRegistry {
+    static let all: [DomainAction] = [
+        action(.negotiateDebt, .cash, "Negotiate debt relief", "Review a five-year repayment plan before committing.",
+            text: "A changed financial future is possible, with a real cost.",
+            requirements: Requirement(minimumAge: 18, values: [.debtWorkoutEligible]),
+            tags: ["5-year plan", "Review first"], category: .money, domainEffects: DomainActionEffects(finance: .openWorkout)),
+        // High school — one defining commitment per year
+        action(
+            .focusGrades, .school, "Chase grades", "Make schoolwork the center of this year.",
+            school: 4...6, health: -2 ... -1,
+            influence: InfluenceVector(work: 2, stability: 1),
+            text: "You decide the transcript will not happen by accident.",
+            requirements: Requirement(requiresSchool: true, allowedStages: [.adolescence], values: [.schoolCommitmentOpen]),
+            tags: ["Grades+", "Future+", "Health−"],
+            beat: "The calendar fills. Your margin gets thinner.",
+            npcRole: .teacher,
+            category: .education,
+            domainEffects: DomainActionEffects(education: .focusGrades)
+        ),
+        action(
+            .findYourPeople, .school, "Find your people", "Risk being known instead of staying invisible.",
+            love: 3...5, play: 2...4,
+            influence: InfluenceVector(family: 2, risk: 1),
+            text: "You stop waiting for the right people to discover you.",
+            requirements: Requirement(requiresSchool: true, allowedStages: [.adolescence], values: [.schoolCommitmentOpen]),
+            tags: ["Belonging+", "Social"],
+            beat: "A seat opens. You take it.",
+            npcRole: .friend,
+            category: .education,
+            domainEffects: DomainActionEffects(education: .findYourPeople)
+        ),
+        action(
+            .commitActivity, .school, "Commit to an activity", "Let one thing after school become yours.",
+            school: 1...2, love: 2...3, play: 2...4,
+            influence: InfluenceVector(work: 1, family: 1),
+            text: "The activity gives the week a place where your name means something.",
+            requirements: Requirement(requiresSchool: true, allowedStages: [.adolescence], values: [.schoolCommitmentOpen, .schoolActivityOpen]),
+            tags: ["Belonging+", "Future+"],
+            beat: "Practice runs late. You stay anyway.",
+            npcRole: .friend,
+            category: .education,
+            domainEffects: DomainActionEffects(education: .commitActivity)
+        ),
+        action(
+            .helpAtHome, .school, "Help at home", "Carry what your household cannot ignore.",
+            cash: EconomyPolicy.actionQuote(.helpAtHome), play: -3 ... -1, health: -2 ... -1,
+            influence: InfluenceVector(family: 3, stability: 1),
+            text: "You take on work nobody at school will put on your transcript.",
+            requirements: Requirement(requiresSchool: true, allowedStages: [.adolescence], values: [.schoolCommitmentOpen]),
+            tags: ["Cash+", "Family", "Grades−"],
+            beat: "The house needs hours. You give it yours.",
+            category: .education,
+            domainEffects: DomainActionEffects(education: .helpAtHome)
+        ),
+        // School — static core
+        action(
+            .study, .school, "Study", "Build useful knowledge.",
+            school: 5...8, health: -2 ... -1,
+            influence: InfluenceVector(work: 2),
+            text: "You made the hours count.",
+            requirements: Requirement(requiresSchool: true, allowedStages: [.launch, .build, .pressure]),
+            tags: ["Smart+", "Health−"],
+            beat: "Pages stack. Something sticks.",
+            npcRole: .teacher,
+            npcBranches: [
+                npcBranch("study-encouraging", .teacher, [.encouraging], school: 2, rapport: 1, headline: "Your Teacher Noticed The Work", narrative: "Their encouragement made the extra effort feel worth sustaining.", hint: "They reward visible effort."),
+                npcBranch("study-critical", .teacher, [.critical], school: 1, rapport: -1, headline: "The Work Faced A Harder Eye", narrative: "They saw the effort, but held you to a sharper standard.", hint: "They expect precision.")
+            ]
+        ),
+        action(
+            .attendClass, .school, "Attend class", "Keep your footing at school.",
+            school: 3...5, play: -1 ... 0, rep: 0...1,
+            influence: InfluenceVector(work: 1, stability: 1),
+            text: "You showed up and stayed engaged.",
+            requirements: Requirement(requiresSchool: true, allowedStages: [.launch, .build, .pressure]),
+            tags: ["Smart+", "Steady"],
+            beat: "You were in the room when it mattered.",
+            npcRole: .teacher,
+            npcBranches: [
+                npcBranch("class-fair", .teacher, [.fair], school: 1, rep: 1, rapport: 1, headline: "Your Teacher Saw You Show Up", narrative: "Consistency earned a little more trust in the room.", hint: "They value consistency."),
+                npcBranch("class-critical", .teacher, [.critical], school: 1, rapport: -1, headline: "Attendance Was Only The Start", narrative: "Showing up counted, but they still expect you to do more with the hour.", hint: "They expect more than presence.")
+            ]
+        ),
+        action(
+            .joinClub, .school, "Join a club", "Meet people around an interest.",
+            school: 1...3, love: 2...4, play: 2...4, rep: 1...2,
+            text: "A shared interest made the week feel bigger.",
+            requirements: Requirement(requiresSchool: true, allowedStages: [.launch, .build]),
+            tags: ["Social", "Rep+"],
+            beat: "Names stick. The hall feels less empty.",
+            npcRole: .friend,
+            npcBranches: [
+                npcBranch("club-sociable", .friend, [.sociable], love: 2, play: 1, rapport: 1, headline: "Someone Made Room For You", narrative: "Their easy welcome turned an interest into a real opening.", hint: "They make connection easier."),
+                npcBranch("club-dependable", .friend, [.dependable], rep: 1, rapport: 1, headline: "A Steady Connection Took Root", narrative: "They followed up after the meeting instead of letting the moment disappear.", hint: "They value follow-through.")
+            ]
+        ),
+        // Skills track — after school (same tab; chapter swap)
+        action(
+            .networkContacts, .school, "Network", "Keep useful people in orbit.",
+            school: 1...2, cash: EconomyPolicy.actionQuote(.networkContacts), love: 1...3, rep: 2...4,
+            influence: InfluenceVector(work: 2, risk: 1),
+            text: "You put your name in rooms that remember names.",
+            requirements: Requirement(requiresLeftSchool: true, allowedStages: [.build, .pressure, .legacy]),
+            tags: ["Rep+", "Career"],
+            beat: "A coffee. A follow-up. A door that is not closed."
+        ),
+        action(
+            .sideHustle, .school, "Side hustle", "Commit nights to side work this year; taxes are withheld.",
+            cash: EconomyPolicy.actionQuote(.sideHustle), play: -2 ... -1, health: -3 ... -1, rep: 0...1,
+            influence: InfluenceVector(work: 2, risk: 2),
+            text: "You sell hours the day job does not own.",
+            requirements: Requirement(requiresLeftSchool: true, allowedStages: [.launch, .build, .pressure]),
+            tags: ["Cash+", "Health−"],
+            beat: "Invoice sent. Sleep postponed.",
+            domainEffects: DomainActionEffects(finance: .creditSideHustle)
+        ),
+        action(
+            .applyToCollege, .school, "Apply to college", "Turn your diploma into another opening.",
+            cash: EconomyPolicy.actionQuote(.applyToCollege), health: -1 ... 0, rep: 0...1,
+            influence: InfluenceVector(work: 1, risk: 1),
+            text: "You send the record you have instead of waiting to become certain.",
+            requirements: Requirement(
+                minimumAge: 18,
+                requiresLeftSchool: true,
+                allowedStages: [.launch],
+                values: [.collegeApplicationEligible]
+            ),
+            tags: ["College", "Choice"],
+            beat: "Forms sent. The answer is no longer imaginary.",
+            personalityImpulse: PersonalityImpulse(drive: 1, riskTolerance: 1, adaptability: 2),
+            domainEffects: DomainActionEffects(education: .openCollegeOffers)
+        ),
+        action(
+            .returnToEducation, .school, "Return to education", "Recover a credential or resume work already started.",
+            cash: EconomyPolicy.actionQuote(.returnToEducation), health: -1 ... 0, rep: 0...1,
+            influence: InfluenceVector(work: 1, stability: 2),
+            text: "You reopen the part of your record that never felt finished.",
+            requirements: Requirement(
+                minimumAge: 18,
+                requiresLeftSchool: true,
+                allowedStages: [.launch, .build, .pressure],
+                values: [.educationRecoveryEligible]
+            ),
+            tags: ["Second chance", "Choice"],
+            beat: "The old record opens. This time the terms are clearer.",
+            personalityImpulse: PersonalityImpulse(drive: 1, riskTolerance: -1, adaptability: 2),
+            domainEffects: DomainActionEffects(education: .openRecoveryOffers)
+        ),
+        action(
+            .skillCourse, .school, "Skill course", "Learn something the market pays for.",
+            school: 4...7, cash: EconomyPolicy.actionQuote(.skillCourse), play: -1 ... 0, rep: 1...2,
+            influence: InfluenceVector(work: 2, stability: 1),
+            text: "You put new tools in your hands on purpose.",
+            requirements: Requirement(minimumCash: 2500, requiresLeftSchool: true, allowedStages: [.build, .pressure, .legacy]),
+            tags: ["Smart+", "Cash−"],
+            beat: "A certificate is paper. The practice is not."
+        ),
+        // Cash — static core
+        action(
+            .workShift, .cash, "Work extra hours", "Commit extra hours this year for 5% of annual base pay, before tax.",
+            cash: EconomyPolicy.actionQuote(.workShift), health: -2 ... -1, rep: 0...1,
+            influence: InfluenceVector(work: 3),
+            text: "You sustained extra hours across the working year.",
+            tags: ["Cash+", "Health−"],
+            beat: "The extra hours add up across the year.",
+            npcRole: .boss,
+            npcBranches: [
+                npcBranch("shift-fair", .boss, [.fair], cash: 200, rep: 1, rapport: 1, headline: "Your Boss Counted The Effort", narrative: "They noticed the shift was handled cleanly and gave you a little credit.", hint: "They reward reliable work."),
+                npcBranch("shift-ambitious", .boss, [.ambitious], cash: 100, rapport: -1, headline: "The Shift Raised The Bar", narrative: "They saw what you could do and immediately expected more of it.", hint: "They reward results, then raise expectations.")
+            ],
+            domainEffects: DomainActionEffects(finance: .creditExtraWork)
+        ),
+        action(
+            .budget, .cash, "Reduce spending", "Limit this year’s discretionary spending to $600.",
+            influence: InfluenceVector(work: 1, stability: 2),
+            text: "You made a plan and kept it.",
+            tags: ["Lower spending", "Steady"],
+            beat: "You say no to the easy spend.",
+            category: .money,
+            domainEffects: DomainActionEffects(finance: .budget)
+        ),
+        action(
+            .applyForBetterWork, .cash, "Apply for better work", "Take a shot at more stability.",
+            school: 1...2, cash: EconomyPolicy.actionQuote(.applyForBetterWork), rep: 1...2,
+            influence: InfluenceVector(work: 3, risk: 1),
+            text: "You sent out applications that could change your footing.",
+            requirements: Requirement(minimumAge: 18, minimumStat: 55, statDomain: .school, requiresCredential: true, allowedStages: [.launch, .build, .pressure]),
+            tags: ["Career", "Risk"],
+            beat: "You put your name where better money lives.",
+            npcRole: .boss,
+            npcBranches: [
+                npcBranch("apply-encouraging", .boss, [.encouraging], rep: 2, rapport: 1, headline: "Your Boss Backed The Move", narrative: "Their recommendation made your application carry more weight.", hint: "They will advocate for earned growth."),
+                npcBranch("apply-critical", .boss, [.critical], rep: -1, rapport: -1, headline: "Your Boss Questioned The Leap", narrative: "They were not convinced you had proved enough yet.", hint: "They want a stronger record first.")
+            ]
+        ),
+        // Love — static core
+        action(
+            .reachOut, .love, "Reach out", "Make time for your people.",
+            love: 4...7, play: 1...2,
+            influence: InfluenceVector(family: 2, stability: 1),
+            partnerEffect: PartnerEffect(bond: 1, resentment: -1),
+            text: "You made someone feel remembered.",
+            tags: ["Happy+", "Bond"],
+            beat: "A text lands. Someone answers.",
+            personalityBranches: [
+                branch("reach-reassurance", [.demanding, .cautious], bond: 2, resentment: -2, headline: "Reassurance Landed This Time", narrative: "Your concrete check-in gave them something dependable to hold onto.", hint: "Reassurance matters more to them."),
+                branch("reach-space", [.independent, .supportive], bond: 1, resentment: -1, headline: "Space Did Not Mean Distance", narrative: "They read the message as care, not an attempt to manage them.", hint: "They value care without pressure."),
+                branch("reach-steady", [.supportive, .loyal], bond: 1, resentment: -1, headline: "They Felt Remembered Again", narrative: "Your consistency mattered more than a grand gesture.", hint: "Steady contact builds trust."),
+                learnedBranch("reach-secure", .secure, bond: 1, resentment: 0, headline: "Trust Made Contact Easier", narrative: "The security you built made the ordinary message land warmly.", hint: "Their trust amplifies care."),
+                learnedBranch("reach-guarded", .guarded, bond: 0, resentment: -1, headline: "They Stayed Carefully Guarded", narrative: "They accepted the outreach, but are still waiting for a pattern.", hint: "Trust needs repeated proof.")
+            ]
+        ),
+        action(
+            .goOnDate, .love, "Go on a date", "See where a connection goes.",
+            cash: EconomyPolicy.actionQuote(.goOnDate), love: 4...7, play: 2...4, looks: 0...1,
+            influence: InfluenceVector(family: 3),
+            partnerEffect: PartnerEffect(bond: 3, resentment: -1),
+            text: "You gave the connection some room to grow.",
+            tags: ["Happy+", "Cash−"],
+            beat: "The table for two is not empty.",
+            personalityBranches: [
+                branch("date-novelty", [.adventurous, .loyal], bond: 2, resentment: -1, headline: "Shared Novelty Pulled You Closer", narrative: "A little spontaneity reminded them why the relationship still has momentum.", hint: "Shared novelty brings them closer."),
+                branch("date-steady", [.cautious, .supportive], bond: 1, resentment: -1, headline: "A Quiet Date Felt Safe", narrative: "The care you put into the plan mattered more than spectacle.", hint: "Reliability makes dates land."),
+                branch("date-reassurance", [.demanding, .cautious], bond: 1, resentment: -1, headline: "You Made Time Feel Real", narrative: "Showing up deliberately answered a question they had not stopped asking.", hint: "Visible effort reassures them."),
+                learnedBranch("date-secure", .secure, bond: 1, resentment: 0, headline: "Trust Made The Date Easy", narrative: "They could relax into the time together because the relationship feels secure.", hint: "Their trust softens the moment."),
+                learnedBranch("date-guarded", .guarded, bond: 0, resentment: 0, headline: "They Kept Some Distance", narrative: "The date was good, but they are not ready to treat one night as proof.", hint: "Trust needs repeated proof.")
+            ]
+        ),
+        action(
+            .repairConflict, .love, "Repair conflict", "Have the hard conversation.",
+            love: 5...8, health: -1 ... 0,
+            influence: InfluenceVector(family: 3, stability: 2),
+            partnerEffect: PartnerEffect(bond: 4, resentment: -5),
+            text: "You did not let the distance harden.",
+            requirements: Requirement(requiresPartner: true),
+            tags: ["Bond+", "Hard talk"],
+            beat: "You stay in the room until it softens.",
+            personalityBranches: [
+                branch("repair-steady", [.supportive, .loyal], bond: 2, resentment: -2, headline: "The Hard Talk Held", narrative: "Their loyalty gave the conversation enough room to become repair.", hint: "They respond to honest repair."),
+                branch("repair-proof", [.demanding, .cautious], bond: -1, resentment: 1, headline: "They Needed More Than Words", narrative: "The apology helped, but they need a concrete change before the tension lifts.", hint: "Promises need a visible plan."),
+                branch("repair-practical", [.cautious, .supportive], bond: 1, resentment: -2, headline: "A Practical Repair Landed", narrative: "A clear plan made the conversation feel safer than a vague promise.", hint: "Specific plans build safety."),
+                learnedBranch("repair-secure", .secure, bond: 1, resentment: -1, headline: "Trust Left Room For Repair", narrative: "The security between you kept the conflict from becoming a verdict.", hint: "Their trust helps repair land."),
+                learnedBranch("repair-guarded", .guarded, bond: -2, resentment: 2, headline: "They Stayed Guarded Through It", narrative: "They heard you, but old distance made a quick repair feel unearned.", hint: "Trust needs repeated proof.")
+            ]
+        ),
+        // Play — static core
+        action(
+            .seeFriends, .play, "See friends", "Make time for real company.",
+            love: 2...4, play: 5...8, rep: 0...1,
+            text: "You left with more energy than you brought.",
+            tags: ["Fun+", "Happy+"],
+            beat: "Laughter is not on the schedule — and that is the point.",
+            npcRole: .friend,
+            npcBranches: [
+                npcBranch("friends-sociable", .friend, [.sociable], love: 2, play: 1, rapport: 1, headline: "Your Friend Pulled You Back In", narrative: "Their ease made the time together feel effortless.", hint: "They make social time restorative."),
+                npcBranch("friends-dependable", .friend, [.dependable], love: 1, rapport: 2, headline: "A Reliable Friend Showed Up", narrative: "They made time because they said they would.", hint: "They value keeping plans.")
+            ]
+        ),
+        action(
+            .pursueHobby, .play, "Pursue a hobby", "Do something that is yours.",
+            play: 5...8, health: 1...2, looks: 0...1,
+            influence: InfluenceVector(stability: 1),
+            text: "You made space for yourself.",
+            tags: ["Fun+", "You"],
+            beat: "An hour that belongs only to you."
+        ),
+        action(
+            .quietNight, .play, "Quiet night", "Keep the evening small on purpose.",
+            love: 0...2, play: 3...5, health: 1...3,
+            influence: InfluenceVector(stability: 2),
+            text: "You choose a soft night and mean it.",
+            requirements: Requirement(allowedStages: [.pressure, .legacy]),
+            tags: ["Steady", "Health+"],
+            beat: "Lights low. Phone face-down."
+        ),
+        action(
+            .familyDinner, .play, "Family dinner", "Put people around a table.",
+            cash: EconomyPolicy.actionQuote(.familyDinner), love: 3...6, play: 2...4,
+            influence: InfluenceVector(family: 3, stability: 1),
+            partnerEffect: PartnerEffect(bond: 2, resentment: -2),
+            text: "Food, noise, and the ordinary work of belonging.",
+            requirements: Requirement(allowedStages: [.build, .pressure, .legacy]),
+            tags: ["Happy+", "Bond"],
+            beat: "Plates empty. Someone laughs too hard."
+        ),
+        action(
+            .party, .play, "Party", "Take a loud night out.",
+            cash: EconomyPolicy.actionQuote(.party), love: 1...4, play: 6...10, health: -5 ... -2, rep: 1...3,
+            influence: InfluenceVector(risk: 3),
+            partnerEffect: PartnerEffect(),
+            text: "It was fun, and it cost you some recovery.",
+            requirements: Requirement(allowedStages: [.launch, .build, .pressure]),
+            tags: ["Fun++", "Health−", "Rep+"],
+            beat: "The night is loud. Morning will be honest.",
+            personalityBranches: [
+                branch("party-novelty", [.adventurous, .loyal], bond: 2, resentment: -1, headline: "The Night Gave You Both Air", narrative: "They enjoyed the risk because it still felt shared.", hint: "They enjoy a little shared risk."),
+                branch("party-caution", [.cautious, .supportive], bond: -2, resentment: 3, headline: "The Noise Cost More At Home", narrative: "They did not begrudge your fun, but the risk felt careless to them.", hint: "Risk can land badly with them."),
+                branch("party-demand", [.demanding, .cautious], bond: -1, resentment: 2, headline: "They Felt Left Out Again", narrative: "The loud night looked like another choice made without them.", hint: "They need visible consideration."),
+                learnedBranch("party-guarded", .guarded, bond: -1, resentment: 1, headline: "Distance Followed You Home", narrative: "They read the night through the distance that is already there.", hint: "Existing distance sharpens risk.")
+            ],
+            npcRole: .friend,
+            npcBranches: [
+                npcBranch("party-sociable", .friend, [.sociable], play: 2, rep: 1, rapport: 1, headline: "Your Friend Kept The Night Moving", narrative: "Their energy made the night feel shared instead of performative.", hint: "They thrive in a crowd."),
+                npcBranch("party-dependable", .friend, [.dependable], health: 1, rapport: 1, headline: "Your Friend Got You Home", narrative: "They knew when the night had gone far enough and made sure you were safe.", hint: "They look out for people.")
+            ]
+        ),
+        // Health — static core
+        action(
+            .exercise, .health, "Exercise", "Train your body.",
+            play: 1...2, health: 5...8, looks: 1...3,
+            influence: InfluenceVector(stability: 2),
+            text: "You kept a promise to your body.",
+            tags: ["Health+", "Looks+"],
+            beat: "Breath hard. Legs honest."
+        ),
+        action(
+            .rest, .health, "Rest", "Give yourself a quieter day.",
+            play: 1...3, health: 4...7,
+            influence: InfluenceVector(stability: 2),
+            text: "You let your system settle.",
+            tags: ["Health+", "Steady"],
+            beat: "You stop performing recovery and actually recover."
+        ),
+        action(
+            .seekCare, .health, "Seek care", "Get professional support.",
+            influence: InfluenceVector(stability: 2),
+            text: "You asked for help and followed through.",
+            tags: ["Health++", "Cash−"],
+            beat: "You pay the bill because the alternative costs more.",
+            category: .health,
+            domainEffects: DomainActionEffects(health: .seekCare)
+        ),
+        // Phase 1 — career paths and ordinary progression
+        action(.chooseOffice, .cash, "Choose office work", "Build leverage inside organizations.", influence: InfluenceVector(work: 2), text: "You chose structured work and its quiet pressures.", requirements: Requirement(values: [.careerTrack(.undecided)]), tags: ["Career path"], category: .career, domainEffects: DomainActionEffects(career: .chooseOffice)),
+        action(.chooseTrades, .cash, "Choose a trade", "Build security through practical skill.", influence: InfluenceVector(work: 2, stability: 1), text: "You chose work with visible results and physical cost.", requirements: Requirement(values: [.careerTrack(.undecided)]), tags: ["Career path"], category: .career, domainEffects: DomainActionEffects(career: .chooseTrades)),
+        action(.chooseCareService, .cash, "Choose care work", "Earn modestly through human work.", influence: InfluenceVector(work: 1, family: 1), text: "You chose work that asks for emotional presence.", requirements: Requirement(values: [.careerTrack(.undecided)]), tags: ["Career path"], category: .career, domainEffects: DomainActionEffects(career: .chooseCareService)),
+        action(.chooseFreelance, .cash, "Choose freelance", "Trade security for control of your time.", influence: InfluenceVector(work: 2, risk: 2), text: "You chose flexibility without a safety rail.", requirements: Requirement(values: [.careerTrack(.undecided)]), tags: ["Career path"], category: .career, domainEffects: DomainActionEffects(career: .chooseFreelance)),
+        action(.chooseOfficeAdministrator, .cash, "Choose office administration", "Keep organizations moving from the inside.", influence: InfluenceVector(work: 2), text: "You chose the work that makes other work possible.", requirements: Requirement(values: [.careerTrack(.office), .careerOccupationNotChosen]), tags: ["Occupation", "Office"], category: .career, domainEffects: DomainActionEffects(career: .chooseOfficeAdministrator)),
+        action(.chooseAccountant, .cash, "Choose accounting", "Build a career around precision, trust, and numbers.", influence: InfluenceVector(work: 2, stability: 1), text: "You chose a profession where small errors have long shadows.", requirements: Requirement(values: [.careerTrack(.office), .careerOccupationNotChosen]), tags: ["Occupation", "Office"], category: .career, domainEffects: DomainActionEffects(career: .chooseAccountant)),
+        action(.chooseHumanResourcesSpecialist, .cash, "Choose human resources", "Manage the people inside the organization.", influence: InfluenceVector(work: 2, family: 1), text: "You chose work built around other people's working lives.", requirements: Requirement(values: [.careerTrack(.office), .careerOccupationNotChosen]), tags: ["Occupation", "Office"], category: .career, domainEffects: DomainActionEffects(career: .chooseHumanResourcesSpecialist)),
+        action(.chooseSalesRepresentative, .cash, "Choose sales", "Turn relationships and persuasion into a living.", influence: InfluenceVector(work: 2, risk: 1), text: "You chose a career where every month asks you to begin again.", requirements: Requirement(values: [.careerTrack(.office), .careerOccupationNotChosen]), tags: ["Occupation", "Office"], category: .career, domainEffects: DomainActionEffects(career: .chooseSalesRepresentative)),
+        action(.chooseElectrician, .cash, "Become an electrician", "Build practical skill people need to trust.", influence: InfluenceVector(work: 2, stability: 1), text: "You chose work where the answer has to hold when the power comes back on.", requirements: Requirement(values: [.careerTrack(.trades), .careerOccupationNotChosen]), tags: ["Occupation", "Trades"], category: .career, domainEffects: DomainActionEffects(career: .chooseElectrician)),
+        action(.choosePlumber, .cash, "Become a plumber", "Solve urgent problems with durable skill.", influence: InfluenceVector(work: 2, stability: 1), text: "You chose work that rarely waits for a convenient day.", requirements: Requirement(values: [.careerTrack(.trades), .careerOccupationNotChosen]), tags: ["Occupation", "Trades"], category: .career, domainEffects: DomainActionEffects(career: .choosePlumber)),
+        action(.chooseMechanic, .cash, "Become an automotive mechanic", "Keep other people's lives moving.", influence: InfluenceVector(work: 2), text: "You chose a trade where every strange sound means something.", requirements: Requirement(values: [.careerTrack(.trades), .careerOccupationNotChosen]), tags: ["Occupation", "Trades"], category: .career, domainEffects: DomainActionEffects(career: .chooseMechanic)),
+        action(.chooseConstructionWorker, .cash, "Choose construction work", "Build something real with your body and time.", influence: InfluenceVector(work: 2, risk: 1), text: "You chose work that leaves a mark on the landscape and on you.", requirements: Requirement(values: [.careerTrack(.trades), .careerOccupationNotChosen]), tags: ["Occupation", "Trades"], category: .career, domainEffects: DomainActionEffects(career: .chooseConstructionWorker)),
+        action(.chooseTeacher, .cash, "Become a teacher", "Make a living by helping the next person grow.", influence: InfluenceVector(work: 1, family: 2), text: "You chose a profession that follows you home in other people's questions.", requirements: Requirement(values: [.careerTrack(.careService), .careerOccupationNotChosen]), tags: ["Occupation", "Care / Service"], category: .career, domainEffects: DomainActionEffects(career: .chooseTeacher)),
+        action(.chooseNurse, .cash, "Become a nurse", "Carry skill and steadiness into difficult rooms.", influence: InfluenceVector(work: 2, family: 1), text: "You chose work that asks for competence and presence at the same time.", requirements: Requirement(values: [.careerTrack(.careService), .careerOccupationNotChosen]), tags: ["Occupation", "Care / Service"], category: .career, domainEffects: DomainActionEffects(career: .chooseNurse)),
+        action(.chooseCaregiver, .cash, "Become a caregiver", "Make practical care the center of your work.", influence: InfluenceVector(work: 1, family: 2), text: "You chose work whose victories are often quiet and necessary.", requirements: Requirement(values: [.careerTrack(.careService), .careerOccupationNotChosen]), tags: ["Occupation", "Care / Service"], category: .career, domainEffects: DomainActionEffects(career: .chooseCaregiver)),
+        action(.chooseRestaurantManager, .cash, "Manage a restaurant", "Keep a demanding room fed, staffed, and moving.", influence: InfluenceVector(work: 2, risk: 1), text: "You chose a job where someone else's bad day still needs a table cleared.", requirements: Requirement(values: [.careerTrack(.careService), .careerOccupationNotChosen]), tags: ["Occupation", "Care / Service"], category: .career, domainEffects: DomainActionEffects(career: .chooseRestaurantManager)),
+        action(.chooseDesigner, .cash, "Become a freelance designer", "Sell taste, judgment, and a point of view.", influence: InfluenceVector(work: 2, risk: 1), text: "You chose to make a living by turning a blank page into a client decision.", requirements: Requirement(values: [.careerTrack(.freelance), .careerOccupationNotChosen]), tags: ["Occupation", "Freelance"], category: .career, domainEffects: DomainActionEffects(career: .chooseDesigner)),
+        action(.chooseDeveloper, .cash, "Become a freelance developer", "Build useful systems without a permanent desk.", influence: InfluenceVector(work: 2, risk: 1), text: "You chose to make a living wherever the next problem could be solved.", requirements: Requirement(values: [.careerTrack(.freelance), .careerOccupationNotChosen]), tags: ["Occupation", "Freelance"], category: .career, domainEffects: DomainActionEffects(career: .chooseDeveloper)),
+        action(.chooseConsultant, .cash, "Become an independent consultant", "Turn experience into advice people will pay for.", influence: InfluenceVector(work: 2, risk: 2), text: "You chose a career where the product is what you notice before everyone else does.", requirements: Requirement(values: [.careerTrack(.freelance), .careerOccupationNotChosen]), tags: ["Occupation", "Freelance"], category: .career, domainEffects: DomainActionEffects(career: .chooseConsultant)),
+        action(.chooseIndependentContractor, .cash, "Become an independent contractor", "Trade permanent structure for control over the next job.", influence: InfluenceVector(work: 2, risk: 2), text: "You chose independence with no promise that next month is booked.", requirements: Requirement(values: [.careerTrack(.freelance), .careerOccupationNotChosen]), tags: ["Occupation", "Freelance"], category: .career, domainEffects: DomainActionEffects(career: .chooseIndependentContractor)),
+        action(.jobSearch, .cash, "Search for work", "Find a practical foothold.", influence: InfluenceVector(work: 2), text: "You made finding work the work.", requirements: Requirement(values: [.careerLevels([.unemployed]), .careerDirectionChosen]), tags: ["Career"], category: .career, personalityImpulse: PersonalityImpulse(drive: 2, adaptability: 2), domainEffects: DomainActionEffects(career: .search)),
+        action(.changeCareer, .cash, "Change career", "Leave the known path and start again.", cash: EconomyPolicy.actionQuote(.changeCareer), influence: InfluenceVector(work: 2, risk: 2), text: "You traded seniority for another chance at fit.", requirements: Requirement(values: [.careerLevels([.entry, .established, .senior])]), tags: ["Pivot", "Risk"], category: .career, personalityImpulse: PersonalityImpulse(drive: 1, riskTolerance: 2, adaptability: 3), domainEffects: DomainActionEffects(career: .pivot)),
+        action(.pursuePromotion, .cash, "Pursue promotion", "Ask your record to carry more weight.", influence: InfluenceVector(work: 3), text: "You made ambition visible.", requirements: Requirement(values: [.careerLevels([.entry, .established])]), tags: ["Performance+", "Burnout+"], category: .career, domainEffects: DomainActionEffects(career: .promote)),
+        action(.developSkill, .cash, "Develop work skill", "Practice the part that raises your ceiling.", influence: InfluenceVector(work: 2, stability: 1), text: "You invested in competence nobody can fake for long.", requirements: Requirement(minimumCash: 2500, values: [.careerLevels([.entry, .established, .senior])]), tags: ["Skill+", "Cash−"], category: .career, domainEffects: DomainActionEffects(career: .skill)),
+        action(.negotiateRaise, .cash, "Negotiate a raise", "Make your contribution and your next number explicit.", influence: InfluenceVector(work: 3, risk: 1), text: "You asked the job to admit what it was getting from you.", requirements: Requirement(values: [.employed, .careerClass(.normal)]), tags: ["Leverage+", "Burnout+"], category: .career, domainEffects: DomainActionEffects(career: .negotiateRaise)),
+        action(.acceptOvertime, .cash, "Accept overtime", "Trade recovery time for immediate income and visible effort.", influence: InfluenceVector(work: 3, risk: 1), text: "You gave the job more of the week and took the money it offered back.", requirements: Requirement(values: [.employed]), tags: ["Cash+", "Burnout+", "Workload+"], category: .career, domainEffects: DomainActionEffects(career: .overtime)),
+        action(.buildProfessionalNetwork, .cash, "Build your professional network", "Spend time and money making your next opportunity easier to see.", influence: InfluenceVector(work: 2, stability: 1), text: "You stayed after the formal conversation and learned who remembered names.", requirements: Requirement(minimumCash: 500, values: [.employed]), tags: ["Leverage+", "Reputation+", "Cash−"], category: .career, domainEffects: DomainActionEffects(career: .professionalNetwork)),
+        action(.pursueCertification, .cash, "Pursue certification", "Turn focused study into a credential your career can use.", influence: InfluenceVector(work: 2, stability: 2), text: "You paid for proof that the next title could trust.", requirements: Requirement(minimumCash: 2500, values: [.employed]), tags: ["Skill+", "Credential+", "Cash−"], category: .career, domainEffects: DomainActionEffects(career: .certification)),
+        action(.takeCareerLeave, .cash, "Take career leave", "Protect your capacity before work consumes it.", influence: InfluenceVector(family: 1, stability: 3), text: "You let the calendar stop asking for proof every day.", requirements: Requirement(values: [.employed, .careerClass(.normal)]), tags: ["Burnout−", "Workload−", "Performance−"], category: .career, domainEffects: DomainActionEffects(career: .careerLeave)),
+        action(.changeEmployer, .cash, "Change employer", "Keep the occupation; change the workplace around it.", influence: InfluenceVector(work: 2, risk: 1), text: "The work stayed familiar. The manager, culture, and risks around it did not.", requirements: Requirement(values: [.employed]), tags: ["Workplace", "Reset tenure"], category: .career, domainEffects: DomainActionEffects(career: .changeEmployer)),
+        action(.buildWorkplaceRelationship, .cash, "Build workplace relationships", "Become easier for managers and coworkers to trust.", influence: InfluenceVector(work: 2, family: 1), text: "You stayed after the formal conversation and learned who remembered names.", requirements: Requirement(values: [.employed]), tags: ["Manager+", "Coworkers+"], category: .career, domainEffects: DomainActionEffects(career: .workplaceRelationship)),
+        action(.requestFlexibleSchedule, .cash, "Request flexible schedule", "Trade a little visibility for more room in the week.", influence: InfluenceVector(family: 1, risk: 0, stability: 2), text: "You negotiated a little more air into the workweek.", requirements: Requirement(values: [.employed]), tags: ["Flexibility+", "Workload−"], category: .career, domainEffects: DomainActionEffects(career: .flexibleSchedule)),
+        action(.buildCareerPortfolio, .cash, "Build a career portfolio", "Make your best work visible beyond the current employer.", influence: InfluenceVector(work: 2, stability: 1), text: "You gathered proof that can travel with you.", requirements: Requirement(minimumCash: 250, values: [.employed]), tags: ["Reputation+", "Skill+", "Cash−"], category: .career, domainEffects: DomainActionEffects(career: .buildCareerPortfolio)),
+        action(.requestReference, .cash, "Request a reference", "Turn a working relationship into future credibility.", influence: InfluenceVector(work: 2), text: "You asked someone to put their name behind your work.", requirements: Requirement(values: [.employed]), tags: ["References+", "Reputation+"], category: .career, domainEffects: DomainActionEffects(career: .requestReference)),
+        action(.testJobMarket, .cash, "Test the job market", "Learn what your current experience is worth before you need to leave.", influence: InfluenceVector(work: 2, risk: 1), text: "You looked around without promising to walk away.", requirements: Requirement(values: [.employed]), tags: ["Leverage+", "Options+"], category: .career, domainEffects: DomainActionEffects(career: .testJobMarket)),
+        action(.specializeTechnical, .cash, "Deepen technical expertise", "Become harder to replace through focused capability.", influence: InfluenceVector(work: 3, stability: 1), text: "You chose to go deeper instead of merely moving upward.", requirements: Requirement(values: [.employed]), tags: ["Skill+", "Focus"], category: .career, domainEffects: DomainActionEffects(career: .specializeTechnical)),
+        action(.specializeLeadership, .cash, "Develop as a people leader", "Build influence by carrying more of the team.", influence: InfluenceVector(work: 3, family: 1), text: "You chose to make other people's work better too.", requirements: Requirement(values: [.careerLevels([.established, .senior])]), tags: ["Leadership+", "Workload+"], category: .career, domainEffects: DomainActionEffects(career: .specializeLeadership)),
+        action(.specializeClientTrust, .cash, "Build client trust", "Make relationships and reliability part of your professional value.", influence: InfluenceVector(work: 2, risk: 1), text: "You made trust the product people remembered.", requirements: Requirement(values: [.employed]), tags: ["Reputation+", "Leverage+"], category: .career, domainEffects: DomainActionEffects(career: .specializeClientTrust)),
+        action(.negotiateBenefits, .cash, "Negotiate benefits", "Improve the terms that protect your life outside the paycheck.", influence: InfluenceVector(stability: 3), text: "You negotiated the rest of the offer, not just the number on the check.", requirements: Requirement(values: [.employed]), tags: ["Benefits+", "Leave+", "Leverage−"], category: .career, domainEffects: DomainActionEffects(career: .negotiateBenefits)),
+        action(.usePaidLeave, .cash, "Use paid leave", "Spend earned time before exhaustion spends it for you.", influence: InfluenceVector(family: 2, stability: 2), text: "You used the time you had earned.", requirements: Requirement(values: [.employed, .careerPaidLeave(5)]), tags: ["Burnout−", "Workload−", "Leave−"], category: .career, domainEffects: DomainActionEffects(career: .usePaidLeave)),
+        action(.mentorCoworker, .cash, "Mentor a coworker", "Make your value visible through someone else's growth.", influence: InfluenceVector(work: 2, family: 1), text: "You left someone better equipped, even though it added to your week.", requirements: Requirement(values: [.careerLevels([.established, .senior])]), tags: ["Mentorship+", "Reputation+", "Workload+"], category: .career, domainEffects: DomainActionEffects(career: .mentorCoworker)),
+        action(.prepareRetirement, .cash, "Prepare for retirement", "Lower the shock of eventually leaving full-time work.", influence: InfluenceVector(stability: 3), text: "Retirement became a transition to prepare for, not a cliff to fall off.", requirements: Requirement(minimumAge: 55, values: [.employed]), tags: ["Readiness+", "Workload−"], category: .career, domainEffects: DomainActionEffects(career: .prepareRetirement)),
+        action(.protectBoundaries, .cash, "Protect boundaries", "Keep the job from taking the whole week.", influence: InfluenceVector(stability: 3), text: "You let good-enough work remain good enough.", requirements: Requirement(values: [.careerLevels([.entry, .established, .senior])]), tags: ["Burnout−", "Performance−"], category: .career, domainEffects: DomainActionEffects(career: .boundaries)),
+        action(.takePartTimeWork, .cash, "Move to part-time", "Trade income and progression speed for room elsewhere in life.", influence: InfluenceVector(family: 1, stability: 2), text: "You made work smaller on purpose.", requirements: Requirement(minimumAge: 18, values: [.careerLevels([.entry, .established, .senior]), .careerClass(.normal)]), tags: ["Part-time", "Income−", "Burnout−"], category: .career, domainEffects: DomainActionEffects(career: .partTime)),
+        action(.pursueSpecialCareer, .cash, "Enter a Special career", "Turn a proven record or rare talent into a higher-variance career.", influence: InfluenceVector(work: 3, risk: 2), text: "The opening existed because your earlier work made it plausible.", requirements: Requirement(values: [.specialCareerEligible]), tags: ["Special", "Earned gate", "Risk"], category: .career, domainEffects: DomainActionEffects(career: .enterSpecial)),
+        action(.buildDiamondCareer, .cash, "Build a Diamond career", "Risk $100,000 and a proven public career to build something larger than a job.", cash: -CareerPolicy.diamondCapitalThreshold ... -CareerPolicy.diamondCapitalThreshold, health: -4 ... -2, influence: InfluenceVector(work: 4, risk: 4), text: "You put your name, money, and private life behind an institution.", requirements: Requirement(values: [.diamondCareerEligible]), tags: ["Diamond", "$100K", "Legacy"], category: .career, domainEffects: DomainActionEffects(career: .enterDiamond)),
+        // Phase 2 — household finance and housing
+        action(.payDebt, .cash, "Pay debt", "Move cash against the most urgent balance.", influence: InfluenceVector(stability: 3), text: "The balance got smaller; your margin did too.", requirements: Requirement(minimumCash: 1, values: [.hasDebt]), tags: ["Debt−"], category: .money, domainEffects: DomainActionEffects(finance: .payDebt)),
+        action(.adjustRetirement, .cash, "Adjust retirement", "Cycle saving through 0%, 5%, 10%, and 15%.", influence: InfluenceVector(stability: 2), text: "You moved money from now toward later.", requirements: Requirement(values: [.employed]), tags: ["Retirement"], category: .money, domainEffects: DomainActionEffects(finance: .retirement)),
+        action(.buyHome, .cash, "Buy a home", "Use a down payment for stable housing.", influence: InfluenceVector(risk: 2, stability: 3), text: "You bought a place and a long obligation.", requirements: Requirement(minimumCash: 30000, values: [.housing([.renting]), .careerLevels([.entry, .established, .senior])]), tags: ["Equity", "Mortgage"], category: .housing, domainEffects: DomainActionEffects(finance: .buyHome)),
+        action(.sellOrDownsize, .cash, "Sell / downsize", "Trade space and equity for breathing room.", influence: InfluenceVector(stability: 3), text: "You chose margin over square footage.", requirements: Requirement(values: [.housing([.owning, .delinquent])]), tags: ["Housing"], category: .housing, personalityImpulse: PersonalityImpulse(riskTolerance: -1, adaptability: 2), domainEffects: DomainActionEffects(finance: .sellOrDownsize)),
+        // Phase 3 — relationship and family lifecycle
+        action(.deepenCommitment, .love, "Commit", "Name the relationship you are building.", influence: InfluenceVector(family: 3), text: "You made the future part of the conversation.", requirements: Requirement(values: [.partner, .relationshipStages([.dating])]), tags: ["Partner"], category: .relationship, domainEffects: DomainActionEffects(family: .commit)),
+        action(.marry, .love, "Marry", "Make a durable public commitment.", influence: InfluenceVector(family: 3, stability: 2), text: "You joined two lives without pretending that makes them easy.", requirements: Requirement(minimumCash: 8000, values: [.partner, .relationshipStages([.committed])]), tags: ["Partner", "Cash−"], category: .relationship, domainEffects: DomainActionEffects(family: .marry)),
+        action(.separate, .love, "Separate", "End a relationship that cannot keep holding.", influence: InfluenceVector(risk: 2), text: "You ended the shared version of the future.", requirements: Requirement(values: [.partner]), tags: ["Major"], category: .relationship, personalityImpulse: PersonalityImpulse(empathy: -1, riskTolerance: 2, adaptability: 3), domainEffects: DomainActionEffects(family: .separate)),
+        action(.chooseChildfree, .love, "Choose childfree", "Build a full life without parenthood.", influence: InfluenceVector(family: 2, stability: 2), text: "You made the absence of parenthood an intentional future.", requirements: Requirement(values: [.partner, .relationshipStages([.committed, .married]), .familyIntention([.openToChildren, .buildingFamily]), .noChildren]), tags: ["Family path"], category: .family, domainEffects: DomainActionEffects(family: .chooseChildfree)),
+        action(.familyPlanning, .love, "Family planning", "Choose or advance an inclusive family path.", influence: InfluenceVector(family: 3), text: "You made family intention explicit.", requirements: Requirement(values: [.partner, .relationshipStages([.committed, .married])]), tags: ["Family"], category: .family, domainEffects: DomainActionEffects(family: .planFamily)),
+        action(.parentingPresence, .love, "Be present", "Give dependent children undivided time.", influence: InfluenceVector(family: 3), text: "You showed up in a way a child can remember.", requirements: Requirement(values: [.hasDependents]), tags: ["Bond+"], category: .family, domainEffects: DomainActionEffects(family: .parent)),
+        action(.caregiving, .love, "Caregive", "Support family through a difficult season.", influence: InfluenceVector(family: 3, stability: 1), text: "You carried part of what someone else could not.", requirements: Requirement(allowedStages: [.build, .pressure, .legacy]), tags: ["Family", "Health−"], category: .family, domainEffects: DomainActionEffects(family: .caregive)),
+        // Phase 4 — conditions and aging
+        action(.therapySupport, .health, "Therapy / support", "Get help for the mind carrying the life.", influence: InfluenceVector(stability: 2), text: "You stopped treating support like a private failure.", tags: ["Mental+", "Cash−"], category: .health, domainEffects: DomainActionEffects(health: .therapy)),
+        action(.manageCondition, .health, "Manage condition", "Follow through on active care.", influence: InfluenceVector(stability: 3), text: "Management did not erase the condition; it gave you room.", requirements: Requirement(values: [.hasCondition]), tags: ["Condition"], category: .health, domainEffects: DomainActionEffects(health: .manage)),
+        action(.preventiveCare, .health, "Preventive care", "Spend before a problem becomes a crisis.", influence: InfluenceVector(stability: 2), text: "You paid attention before your body demanded it.", tags: ["Physical+"], category: .health, domainEffects: DomainActionEffects(health: .preventive)),
+        action(.cutBack, .health, "Cut back", "Reduce the habits that keep raising pressure.", influence: InfluenceVector(stability: 3), text: "You made the next urge smaller than the last one.", requirements: Requirement(values: [.any([.hasCondition, .minimumStat(.health, 0)])]), tags: ["Pressure−"], category: .health, domainEffects: DomainActionEffects(health: .cutBack))
+    ]
 
-struct SuggestedPlayerAction: Codable, Equatable {
-    var domain: ActionDomain
-    var choiceID: ActionChoiceID
-    var headline: String
-}
+    private static let byID: [ActionID: DomainAction] = {
+        let indexed = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+        precondition(indexed.count == all.count, "DomainActionRegistry contains duplicate action IDs")
+        precondition(Set(indexed.keys) == Set(ActionID.allCases), "DomainActionRegistry does not cover every ActionID")
+        return indexed
+    }()
 
-struct FinanceActionSection: Identifiable, Equatable {
-    let id: String
-    let title: String
-    let choices: [ActionChoiceID]
-}
+    private static let byDomain: [Domain: [DomainAction]] =
+        Dictionary(grouping: all, by: \.domain)
 
-struct DomainActionRegistry {
-    let context: DomainActionContext
+    static func action(for id: ActionID) -> DomainAction {
+        guard let action = byID[id] else {
+            preconditionFailure("Missing registered action: \(id.rawValue)")
+        }
+        return action
+    }
 
-    private var state: GameState { context.state }
+    static func actions(in domain: Domain) -> [DomainAction] {
+        byDomain[domain] ?? []
+    }
 
-    // MARK: - Public API
-
-    // Character Creation Overhaul support (console-first)
-    func handleCreationAction(_ choiceID: ActionChoiceID, draft: inout CharacterCreationDraft, previewState: inout GameState?) -> DomainYearResult? {
-        var result = DomainYearResult()
-        switch choiceID {
-        case .createRandomCharacter:
-            let character = Character.generateRandom()
-            result.notes.append(DomainNote(title: "Random Life Spawned", text: "A new life begins with \(character.background.displayName) roots and starter assets: \(character.startingAssets.joined(separator: ", ")).", tags: [.lifeEvent]))
-            // In real flow, this would trigger beginLife with the character
-            return result
-        case .createFromTemplate:
-            if let template = CharacterTemplate.presets.first {
-                result.notes.append(DomainNote(title: "Template Applied", text: "Starting as \(template.name): \(template.description)", tags: [.lifeEvent]))
-            }
-            return result
-        case .customizeCharacter:
-            result.notes.append(DomainNote(title: "Morphing Started", text: "Limited points to shape your start. Deeper changes come later through life.", tags: [.lifeEvent]))
-            return result
-        case .applyBackground:
-            if let bg = draft.selectedBackground {
-                result.notes.append(DomainNote(title: "Background Set", text: "Your roots are now \(bg.displayName). Trade-offs and starter assets applied.", tags: [.lifeEvent]))
-            }
-            return result
-        case .generateStarterAssets:
-            result.notes.append(DomainNote(title: "Starter Assets Generated", text: "Assets tied to background are now in your possession. Maintain them or lose value.", tags: [.finance, .lifeEvent]))
-            return result
-        case .buyStarterAsset:
-            result.notes.append(DomainNote(title: "Starter Asset Secured", text: "You now own an early asset. It has condition, maintenance, and depreciation from day one.", tags: [.finance]))
-            return result
-        case .morphIdentity:
-            result.notes.append(DomainNote(title: "Identity Shift", text: "The person you are is beginning to change. This will echo in future chapters.", tags: [.lifeEvent]))
-            return result
-        default:
-            return nil
+    static func visibleActions(in domain: Domain, state: LifeState) -> [DomainAction] {
+        actions(in: domain).filter {
+            $0.id != .buyHome && $0.id != .sellOrDownsize
+                && $0.requirements.isRelevant(in: state)
+                && (state.lifeStage != .adolescence || isAdolescenceRelevant($0))
         }
     }
 
-    func availableCommitted(for domain: ActionDomain) -> [ActionChoiceID] {
-        if state.legal.isInCustody {
-            switch domain {
-            case .legal:
-                return custodyInstantCore()
-            case .finance:
-                return [.minimumPayments, .payDownDebt].filter { financeCommittedChoices().contains($0) }
-            case .relationships:
-                return relationshipCommittedChoices().filter { [.reachOut, .strengthenBond, .repairTension].contains($0) }
-            case .health:
-                return healthCommittedChoices().filter { [.rest, .protectSleep, .recurringTherapy, .manageMeds].contains($0) }
-            case .family:
-                return familyPhaseCommittedChoices().filter { [.checkInOnChild, .spendTimeWithKids].contains($0) }
-            default:
-                return []
-            }
-        }
-        switch domain {
-        case .education: return educationCommittedChoices()
-        case .career: return careerCommittedChoices()
-        case .military: return militaryCommittedChoices()
-        case .crime: return crimeCommittedChoices()
-        case .legal: return legalCommittedChoices()
-        case .finance: return financeCommittedChoices()
-        case .relationships: return relationshipCommittedChoices()
-        case .health: return healthCommittedChoices()
-        case .family: return familyPhaseCommittedChoices()
-        case .identity: return []
-        case .play: return []
-        }
+    static func isAdolescenceRelevant(_ action: DomainAction) -> Bool {
+        [
+            .focusGrades, .findYourPeople, .commitActivity, .helpAtHome,
+            .reachOut, .seeFriends, .pursueHobby, .quietNight, .exercise, .rest
+        ].contains(action.id)
     }
 
-    private func militaryCommittedChoices() -> [ActionChoiceID] {
-        guard state.player.age >= 18 else { return [] }
-        
-        var choices: [ActionChoiceID] = []
-
-        if state.military.track == .inactive {
-            choices.append(contentsOf: [
-                .enlistArmy, .enlistNavy, .enlistAirForce, .enlistMarines, .enlistCoastGuard, .enlistSpaceForce
-            ])
-            if state.education.credentials.contains("Degree") {
-                choices.append(contentsOf: [
-                    .commissionArmy, .commissionNavy, .commissionAirForce, .commissionMarines, .commissionCoastGuard, .commissionSpaceForce
-                ])
-            }
-            choices.append(contentsOf: [
-                .joinReservesArmy, .joinReservesNavy, .joinReservesAirForce, .joinReservesMarines, .joinReservesCoastGuard, .joinReservesSpaceForce
-            ])
-
-            if state.military.hasPension {
-                choices.append(.claimPension)
-            }
-            if state.military.isVeteran && state.military.combatTrauma > 0 {
-                choices.append(.seekVAHealthcare)
-            }
-            return choices
-        } else {
-            choices.append(contentsOf: [.militaryService, .goAWOL, .desert, .militaryRetirement, .deployTour])
-
-            if state.military.specialty == nil {
-                choices.append(contentsOf: [.selectCombatMOS, .selectMedicalMOS, .selectAviationMOS, .selectIntelMOS, .selectLogisticsMOS])
-            }
-
-            if state.military.deploymentStatus == .home || state.military.deploymentStatus == .stationed {
-                choices.append(.deploy)
-            }
-            if state.military.combatTrauma > 0 {
-                choices.append(.seekVAHealthcare)
-            }
-            // D1 static military instants also appear in committed for the subdomain
-            choices.append(contentsOf: [.ptFocus, .seekCounsel, .studyTradition])
-            return choices
-        }
+    static func staticCore(in domain: Domain) -> [DomainAction] {
+        actions(in: domain).filter(\.isStaticCore)
     }
 
-    func isStaticCoreInstantAction(_ choiceID: ActionChoiceID, domain: ActionDomain) -> Bool {
-        staticCoreInstantActions(for: domain).contains(choiceID)
-    }
-
-    func availableQuick(for domain: ActionDomain) -> [ActionChoiceID] {
-        let committed = Set(availableCommitted(for: domain))
-        // Static core is always fully visible — never truncated.
-        let core = staticCoreInstantActions(for: domain).filter {
-            committed.contains($0) || resolutionTier(for: $0, domain: domain) == .instant
-        }
-        var quick = core
-        let coreSet = Set(core)
-        for choice in conditionalInstantExtras(for: domain) + availableInstantPromotions(for: domain) {
-            guard committed.contains(choice) || resolutionTier(for: choice, domain: domain) == .instant else { continue }
-            if !quick.contains(choice) { quick.append(choice) }
-        }
-        if domain == .finance, state.finance.debtPressureBand == .crushing || state.finance.debtPressureBand == .heavy {
-            for debtQuick in [ActionChoiceID.minimumPayments, .consolidateDebt, .payDownDebt] where committed.contains(debtQuick) {
-                if !quick.contains(debtQuick) { quick.insert(debtQuick, at: core.count) }
-            }
-        }
-        let extras = quick.filter { !coreSet.contains($0) }
-        return core + Array(extras.prefix(6))
-    }
-
-    func resolutionTier(for choiceID: ActionChoiceID, domain: ActionDomain) -> ActionResolutionTier {
-        return .instant
-    }
-
-    func suggestedChoice(for domain: ActionDomain) -> ActionChoiceID? {
-        switch domain {
-        case .education:
-            if state.education.burnoutRisk >= 55 || state.healthProfile.mentalWellness < 45 { return .keepThePeace }
-            if state.education.applicationReadiness >= 60 { return .buildPortfolio }
-            if state.relationships.friends.isEmpty { return .joinClub }
-            return .studyConsistently
-        case .career:
-            if state.career.status == .unemployed { return .jobHunt }
-            if state.career.activeOpportunityDoor == .burnoutExit { return .protectYourEnergy }
-            if state.career.activeOpportunityDoor == .credentialPivot { return .retrain }
-            if state.career.activeOpportunityDoor == .lateralEscapeRoute { return .jobHunt }
-            if state.career.activeOpportunityDoor == .internalPromotionTrack { return .network }
-            if state.career.activeOpportunityDoor == .contractWindfall { return .takeOvertime }
-            if state.career.burnout >= 68 || state.career.relationshipSpillover >= 58 { return .protectYourEnergy }
-            if state.specialCareer.track == .recordLabelOwner {
-                if state.specialCareer.recordLabel.artistTrust < 40 || state.specialCareer.recordLabel.industryHeat >= 55 { return .handleArtistDrama }
-                if state.specialCareer.recordLabel.roster.count < 3 { return .signArtist }
-                return .releaseRecord
-            }
-            if state.specialCareer.track == .movieProducer {
-                if state.specialCareer.movieProducer.productionChaos >= 55 { return .handleProductionCrisis }
-                if state.specialCareer.movieProducer.slateCount == 0 { return .optionScript }
-                if state.specialCareer.movieProducer.distributionLeverage >= 45 { return .secureDistribution }
-                return .shootFilm
-            }
-            if state.specialCareer.track == .movieActor {
-                if state.specialCareer.movieActor.typecastRisk >= 55 || state.specialCareer.heat >= 45 { return .managePublicist }
-                if state.specialCareer.movieActor.actingSkill < 55 { return .actingClass }
-                return .auditionRole
-            }
-            if state.specialCareer.track == .coach {
-                if state.specialCareer.coaching.boosterPressure >= 60 { return .handleBoosterPressure }
-                if state.specialCareer.coaching.lockerRoom < 45 { return .manageLockerRoom }
-                if state.specialCareer.coaching.rosterTalent < 55 { return .recruitTalent }
-                return .callBigGame
-            }
-            if state.specialCareer.track == .musicProducer {
-                if state.specialCareer.musicProducer.creditDisputes >= 45 { return .manageProducerCredits }
-                if state.specialCareer.musicProducer.demand < 45 { return .shopBeats }
-                return .produceTrack
-            }
-            if state.career.performance < 55 { return .workHard }
-            if state.career.retrainingProgress == 0 && state.career.profile != .credentialedProfessional && state.career.yearsWorked >= 2 { return .retrain }
-            if state.specialCareer.track == .entertainment && state.specialCareer.burnout < 70 { return .chaseSpotlight }
-            if state.career.performance >= 74 { return .network }
-            return .coast
-        case .military:
-            if state.military.track == .inactive { return .enlistArmy }
-            if state.military.isAWOL { return .desert }
-            if state.military.deploymentStatus == .activeCombat { return .militaryService }
-            if state.military.contractYearsRemaining == 0 { return .militaryRetirement }
-            return .militaryService
-        case .crime:
-            if state.crime.heat >= 65 { return .layLow }
-            if state.finance.cashOnHand < 0 { return .cleanMoney }
-            return .runScheme
-        case .legal:
-            if state.legal.isInCustody { return custodyInstantCore().first }
-            return legalCommittedChoices().first
-        case .finance:
-            if context.isStudentLifeExperience {
-                if state.finance.studentDebt > 0 && state.finance.debtPressureBand == .heavy { return .deferStudentLoans }
-                return state.finance.financialStress >= 40 ? .cutSpending : .takeExtraShifts
-            }
-            if state.finance.canUseDebtReset { return .declareBankruptcy }
-            if state.finance.debtPressureBand == .crushing { return .consolidateDebt }
-            if state.finance.debtPressureBand == .heavy { return .minimumPayments }
-            if state.assets.ownsHome && state.assets.primaryResidence?.status == .delinquent { return .refinanceMortgage }
-            if state.finance.lastYearBalanceDelta < 0 || state.finance.cashOnHand < 0 { return .cutSpending }
-            if context.canAccessInvesting && !state.finance.hasInvestments { return .buyIndexFund }
-            if state.assets.isSavingForHome || state.finance.homeDownPaymentSavings > 0 { return .saveForDownPayment }
-            return context.canAccessInvesting ? .buildEmergencyFund : .takeSideWork
-        case .relationships:
-            let strained = (state.relationships.friends + state.relationships.romanticPartners).filter { $0.status == .strained }.count
-            if strained > 0 { return .repairTension }
-            if context.isTeenExperience && state.relationships.friends.isEmpty && !state.relationships.hasPartner { return .findYourCrowd }
-            if state.relationships.hasPartner { return .strengthenBond }
-            return .reachOut
-        case .health:
-            if !state.healthProfile.activeConditions.isEmpty { return context.isStudentLifeExperience ? .rest : .seeDoctor }
-            if state.healthProfile.mentalWellness < 45 { return context.isStudentLifeExperience ? .protectSleep : .rest }
-            return .rest
-        case .family:
-            return .spendTimeWithKids
-        case .identity:
-            return nil
-        case .play:
-            if state.healthProfile.mentalWellness < 45 { return .relaxRoutine }
-            return .hobbySession
-        }
-    }
-
-    func isCrimeLaneActive() -> Bool {
-        state.player.age >= 18 && (
-            state.crime.status != .inactive ||
-            state.pendingActions.contains(where: { $0.domain == .crime }) ||
-            state.finance.cashOnHand < 600 ||
-            state.specialCareer.track == .crime
+    private static func action(
+        _ id: ActionID,
+        _ domain: Domain,
+        _ name: String,
+        _ description: String,
+        school: ClosedRange<Int> = 0...0,
+        cash: ClosedRange<Int> = 0...0,
+        love: ClosedRange<Int> = 0...0,
+        play: ClosedRange<Int> = 0...0,
+        health: ClosedRange<Int> = 0...0,
+        looks: ClosedRange<Int> = 0...0,
+        rep: ClosedRange<Int> = 0...0,
+        influence: InfluenceVector = InfluenceVector(),
+        partnerEffect: PartnerEffect = PartnerEffect(),
+        text: String,
+        requirements: Requirement = Requirement(),
+        tags: [String] = [],
+        beat: String = "",
+        personalityBranches: [PersonalityBranch] = [],
+        npcRole: NPCRole? = nil,
+        npcBranches: [NPCPersonalityBranch] = [],
+        isStaticCore: Bool = true,
+        category: ActionCategory? = nil,
+        personalityImpulse: PersonalityImpulse? = nil,
+        domainEffects: DomainActionEffects? = nil
+    ) -> DomainAction {
+        DomainAction(
+            id: id,
+            domain: domain,
+            category: category ?? defaultCategory(for: domain),
+            name: name,
+            shortDescription: description,
+            requirements: requirements,
+            effects: EffectRange(
+                school: school,
+                cash: cash,
+                love: love,
+                play: play,
+                health: health,
+                looks: looks,
+                rep: rep,
+                gainsPartner: id == .goOnDate,
+                gainsJob: id == .applyForBetterWork || id == .sideHustle
+            ),
+            influence: influence,
+            partnerEffect: partnerEffect,
+            narrative: text,
+            isStaticCore: isStaticCore,
+            previewTags: tags,
+            microBeat: beat.isEmpty ? text : beat,
+            personalityBranches: personalityBranches,
+            npcRole: npcRole,
+            npcPersonalityBranches: npcBranches,
+            personalityImpulse: personalityImpulse,
+            domainEffects: domainEffects
         )
     }
 
-    func financeActionSections() -> [FinanceActionSection] {
-        let choices = financeCommittedChoices()
-        var cash: [ActionChoiceID] = []
-        var debt: [ActionChoiceID] = []
-        var invest: [ActionChoiceID] = []
-        var home: [ActionChoiceID] = []
-
-        let debtIDs: Set<ActionChoiceID> = [.payDownDebt, .consolidateDebt, .minimumPayments, .deferStudentLoans, .declareBankruptcy]
-        let investIDs: Set<ActionChoiceID> = [.buildEmergencyFund, .buyIndexFund, .speculateStocks, .holdPositions, .sellToCover, .dayTrade, .analyzeMarkets, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition, .hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection]
-        let homeIDs: Set<ActionChoiceID> = [.saveForDownPayment, .depositToHouseFund, .buyStarterHome, .refinanceMortgage, .buildMaintenanceReserve, .topUpHouseReserve, .sellHome]
-        // Econ4: New era-aware economic actions
-        let econEraIDs: Set<ActionChoiceID> = [.panicSell, .aggressiveSideHustle, .bigLifestylePurchase, .rideTheWave, .quietFinancialQuit, .flexLuxuryAsset, .liquidateLuxury, .upgradeCollection, .hostAtSignatureEstate, .hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection]
-
-        for choice in choices {
-            if debtIDs.contains(choice) { debt.append(choice) }
-            else if investIDs.contains(choice) { invest.append(choice) }
-            else if homeIDs.contains(choice) { home.append(choice) }
-            else if econEraIDs.contains(choice) { invest.append(choice) } // treat as high-stakes investment decisions
-            else { cash.append(choice) }
-        }
-
-        var sections: [FinanceActionSection] = []
-        if !cash.isEmpty { sections.append(FinanceActionSection(id: "cash", title: "Cash Flow", choices: cash)) }
-        if !debt.isEmpty { sections.append(FinanceActionSection(id: "debt", title: "Debt", choices: debt)) }
-        if !invest.isEmpty { sections.append(FinanceActionSection(id: "invest", title: "Invest", choices: invest)) }
-        if !home.isEmpty { sections.append(FinanceActionSection(id: "home", title: "Home", choices: home)) }
-        return sections
-    }
-
-    func familyPhaseIsActive() -> Bool {
-        state.family.isPregnant || state.family.childCount > 0 || state.family.postpartumYearsRemaining > 0
-    }
-
-    func familyPhaseCommittedChoices() -> [ActionChoiceID] {
-        guard familyPhaseIsActive() else { return [] }
-        var choices: [ActionChoiceID] = [.strengthenBond, .repairTension, .discussFuture, .spendTimeWithKids, .enforceRoutine, .encourageIndependence, .checkInOnChild]
-        if state.family.isPregnant {
-            choices.append(contentsOf: [.avoidPregnancy, .tryForBaby])
-        }
-        if !state.healthProfile.activeConditions.isEmpty {
-            choices.append(.seeDoctor)
-        }
-        let relationshipDeck = Set(availableCommitted(for: .relationships))
-        return dedupe(choices.filter { relationshipDeck.contains($0) || $0 == .seeDoctor })
-    }
-
-    func familyPhaseQuickChoices() -> [ActionChoiceID] {
-        guard familyPhaseIsActive() else { return [] }
-        return dedupe([.protectSleep, .rest, .repairTension, .seeDoctor, .spendTimeWithKids, .checkInOnChild].filter {
-            resolutionTier(for: $0, domain: .health) == .instant || resolutionTier(for: $0, domain: .relationships) == .instant
-                || availableQuick(for: .health).contains($0) || availableQuick(for: .relationships).contains($0)
-        })
-    }
-
-    /// NPC / pressure callback surfaced on Home (max one).
-    func suggestedCallbackAction() -> SuggestedPlayerAction? {
-        if let stored = state.suggestedPlayerAction,
-           storedMatchesPlayable(stored) {
-            return stored
-        }
-        return deriveSuggestedCallbackAction()
-    }
-
-    static func refreshSuggestedAction(in state: inout GameState, isTeenExperience: Bool) {
-        let registry = DomainActionRegistry(
-            context: DomainActionContext(
-                state: state,
-                isTeenExperience: isTeenExperience,
-                isStudentLifeExperience: state.player.age <= 22 && (state.education.pathway == .student || state.education.pathway == .training),
-                canAccessInvesting: state.player.age >= 18 && state.finance.isEligibleToCompound(emergencyReserve: max(2_500, state.finance.annualNetIncome / 4)),
-                investmentEmergencyReserve: max(2_500, state.finance.annualNetIncome / 4)
-            )
-        )
-        state.suggestedPlayerAction = registry.deriveSuggestedCallbackAction()
-    }
-
-    static func quickActionTitle(for choiceID: ActionChoiceID) -> String {
-        switch choiceID {
-        case .studyConsistently: return "Study"
-        case .joinClub: return "Join Club"
-        case .buildPortfolio: return "Build Portfolio"
-        case .skipClass: return "Skip Class"
-        case .lockInRoutine: return "Routine"
-        case .teenAthleticDrill: return "Athletic Drill"
-        case .teenSideHustle: return "Side Hustle"
-        case .teenCreativeProject: return "Creative Project"
-        case .teenLeadInitiative: return "Lead Initiative"
-        case .teenRiskyExperiment: return "Risky Experiment"
-        case .workHard: return "Work Hard"
-        case .network: return "Network"
-        case .jobHunt: return "Job Hunt"
-        case .protectYourEnergy: return "Protect Energy"
-        case .takeOvertime: return "Overtime"
-        case .cutSpending: return "Budget"
-        case .takeSideWork: return "Side Work"
-        case .payDownDebt: return "Pay Debt"
-        case .buildEmergencyFund: return "Emergency Fund"
-        case .depositToHouseFund: return "House Fund"
-        case .topUpHouseReserve: return "Repair Reserve"
-        case .saveForDownPayment: return "Save For Home"
-        case .buyStarterHome: return "Buy Home"
-        case .refinanceMortgage: return "Refinance"
-        case .buildMaintenanceReserve: return "Build Reserve"
-        case .sellHome: return "Sell Home"
-        case .panicSell: return "Panic Sell"
-        case .aggressiveSideHustle: return "Aggressive Hustle"
-        case .bigLifestylePurchase: return "Victory Lap Spend"
-        case .rideTheWave: return "Ride The Wave"
-        case .quietFinancialQuit: return "Quiet Financial Quit"
-        case .flexLuxuryAsset: return "Flex Collection"
-        case .liquidateLuxury: return "Liquidate Toys"
-        case .upgradeCollection: return "Upgrade Fleet"
-        case .hostAtSignatureEstate: return "Host at Estate"
-        case .spendForRelief: return "Spend For Relief"
-        case .reachOut: return "Reach Out"
-        case .findYourCrowd: return "Find Friends"
-        case .dateCarefully: return "Date"
-        case .strengthenBond: return "Strengthen Bond"
-        case .repairTension: return "Repair"
-        case .rest: return "Rest"
-        case .protectSleep: return "Sleep"
-        case .pushThrough: return "Push Through"
-        case .seeDoctor: return "Doctor"
-        case .layLow: return "Lay Low"
-        case .stepAway: return "Step Away"
-        case .cleanMoney: return "Clean Money"
-        case .ghostProtocol: return "Ghost Protocol"
-        case .burnEvidence: return "Burn Evidence"
-        case .payTheFixer: return "Pay The Fixer"
-        case .launderThroughShell: return "Launder Shells"
-        case .hostStrategicGala: return "Strategic Gala"
-        case .aggressiveTakeover: return "Aggressive Takeover"
-        case .streetCornerHustle: return "Corner Hustle"
-        case .dodgePatrol: return "Dodge Patrol"
-        case .holdTerritory: return "Hold Block"
-        case .disciplineCrew: return "Discipline"
-        case .delegateOperation: return "Delegate"
-        case .expandDomesticEmpire: return "Expand Empire"
-        case .connectCartelNetwork: return "Cartel Link"
-        case .analyzeMarkets: return "Markets"
-        case .checkPortfolio: return "Portfolio"
-        case .rebalancePortfolio: return "Rebalance"
-        case .researchTip: return "Research"
-        case .buyIndex: return "Buy Index"
-        case .sellPosition: return "Sell Pos"
-        case .holdPositions: return "Hold"
-        // Luxury L1
-        case .hostLuxuryEvent: return "Host Gala"
-        case .acquireLuxuryAsset: return "Buy Luxury"
-        case .indulgeInExcess: return "Indulge"
-        case .displayWealth: return "Flex"
-        case .maintainLuxuryCollection: return "Maintain"
-        case .minimumPayments: return "Min Pay"
-        case .consolidateDebt: return "Consolidate"
-        case .stayInvisible: return "Lay Low Social"
-        case .chaseStatus: return "Chase Status"
-        // S2 athlete static short titles for BitLife grid
-        case .extraTrainingSession: return "Extra Session"
-        case .recoveryFocus: return "Recover"
-        case .mediaAppearance: return "Media Spot"
-        case .teamBonding: return "Team Bond"
-        case .edgeProtocol: return "Edge Protocol"
-        // E2/C2/P2 short for static always grids when subdomain active
-        case .closeMajorDeal: return "Close Deal"
-        case .allHandsRally: return "All Hands"
-        case .fundraiseSprint: return "Fundraise"
-        case .takeRealBreak: return "Real Break"
-        case .hireKeyTalent: return "Hire Talent"
-        case .startMovieActor: return "Actor Track"
-        case .auditionRole: return "Audition"
-        case .actingClass: return "Class"
-        case .buildActingReel: return "Reel"
-        case .takeIndieRole: return "Indie Role"
-        case .managePublicist: return "Publicist"
-        case .startMusicProducer: return "Music Producer"
-        case .produceTrack: return "Produce"
-        case .runStudioSession: return "Session"
-        case .shopBeats: return "Shop Beats"
-        case .collaborateWithArtist: return "Collaborate"
-        case .polishSignatureSound: return "Signature"
-        case .manageProducerCredits: return "Credits"
-        case .startMovieProducer: return "Movie Producer"
-        case .optionScript: return "Script"
-        case .castProject: return "Cast"
-        case .shootFilm: return "Shoot Film"
-        case .handleProductionCrisis: return "Crisis"
-        case .secureDistribution: return "Distribution"
-        case .manageBackEndPoints: return "Backend"
-        case .startRecordLabel: return "Label"
-        case .signArtist: return "Sign Artist"
-        case .developArtist: return "Develop"
-        case .releaseRecord: return "Release"
-        case .bookTour: return "Book Tour"
-        case .payArtists: return "Pay Artists"
-        case .pushSingle: return "Push Single"
-        case .handleArtistDrama: return "Drama"
-        case .startCoachingCareer: return "Coach"
-        case .recruitTalent: return "Recruit"
-        case .hireCoachingStaff: return "Staff"
-        case .installSystem: return "System"
-        case .runTrainingCamp: return "Camp"
-        case .manageLockerRoom: return "Locker Room"
-        case .callBigGame: return "Big Game"
-        case .handleBoosterPressure: return "Boosters"
-        case .startSportsOwnership: return "Owner"
-        case .acquireFranchise: return "Buy Team"
-        case .hireGeneralManager: return "Hire GM"
-        case .negotiateMediaDeal: return "Media Deal"
-        case .investInBrand: return "Brand"
-        case .expandPortfolio: return "Expand"
-        case .sellFranchise: return "Sell Team"
-        case .postDaily: return "Post Daily"
-        case .goLive: return "Go Live"
-        case .filmBanger: return "Film Banger"
-        case .collab: return "Collab"
-        case .addressDrama: return "Drama"
-        case .takeMentalBreak: return "Log Off"
-        case .dropBrandDeal: return "Brand Deal"
-        case .townHall: return "Town Hall"
-        case .politicalFundraise: return "Fundraise"
-        case .scandalResponse: return "Scandal"
-        case .policyPush: return "Policy Push"
-        case .backroomDeal: return "Backroom"
-        case .mediaHit: return "Media Hit"
-        case .takeAStand: return "Take Stand"
-        case .attackOpponent: return "Attack"
-        // D1 short titles for static always grids
-        case .morningReflection: return "Reflect"
-        case .journalTheShape: return "Journal"
-        case .quietTheNoise: return "Quiet Noise"
-        case .reconcileWithPast: return "Reconcile"
-        case .tryNewPersona: return "New Persona"
-        case .publicReset: return "Public Reset"
-        case .therapySession: return "Therapy"
-        case .processCrisis: return "Process Crisis"
-        case .ptFocus: return "PT Focus"
-        case .seekCounsel: return "Counsel"
-        case .studyTradition: return "Tradition"
-        case .deployTour: return "Deploy Tour"
-        case .familyMeal: return "Family Meal"
-        case .storyTime: return "Story Time"
-        // D2 short titles for mastery/collector grids
-        case .curateCollection: return "Curate"
-        case .hostSignatureEvent: return "Host Signature"
-        case .maintainAsset: return "Maintain"
-        case .recurringTherapy: return "Therapy"
-        case .manageMeds: return "Meds"
-        case .bodyConditioning: return "Train"
-        case .deepenSpecificBond: return "Deepen Bond"
-        case .fuelRivalry: return "Fuel Rivalry"
-        case .splitReputation: return "Split Rep"
-        // D3 short titles
-        case .pursueTradeCert: return "Trade Cert"
-        case .honorsTrack: return "Honors"
-        case .uniApplication: return "Uni Apply"
-        case .lifelongLearning: return "Lifelong Learn"
-        case .credentialRefresh: return "Refresh Cred"
-        case .corporateClimb: return "Corp Climb"
-        case .freelanceHustle: return "Freelance"
-        case .tradesMastery: return "Trades Mastery"
-        case .pivotToGig: return "Gig Pivot"
-        case .publicServiceGrind: return "Public Grind"
-        case .techDeepWork: return "Tech Deep"
-        case .corporateStayLate: return "Stay Late"
-        case .corporatePolitick: return "Politick"
-        case .corporateDocumentWin: return "Doc Win"
-        case .tradesExtraFocus: return "Extra Focus"
-        case .tradesMaintainTools: return "Tools"
-        case .tradesSafetyPush: return "Safety"
-        case .salesClientOutreach: return "Outreach"
-        case .salesPipelineGrind: return "Pipeline"
-        case .salesRecoveryCall: return "Recovery"
-        case .gigAcceptSurge: return "Surge"
-        case .gigMaintainRating: return "Rating"
-        case .gigRestDay: return "Rest Day"
-        case .improveSleep: return "Sleep"
-        case .sleepLikeItMatters: return "Sleep Hard"
-        case .coldExposureDrill: return "Discipline"
-        case .setBoundary: return "Boundary"
-        case .realConversation: return "Real Talk"
-        case .networkWithoutMask: return "Unmasked"
-        case .checkInOnChild: return "Check Kids"
-        case .putYourHeadDown: return "Head Down"
-        case .protectWorkLifeLine: return "Work-Life"
-        case .sideGig: return "Side Gig"
-        case .negotiateBill: return "Negotiate"
-        case .negotiateBetterTerms: return "Push Terms"
-        case .quietlyBuildCushion: return "Cushion"
-        case .reviewNumbersRuthlessly: return "Review #s"
-        case .treatYourself: return "Treat Self"
-        case .extraEffort: return "Extra Effort"
-        case .seekMentor: return "Mentor"
-        case .documentWins: return "Doc Wins"
-        case .improveSkill: return "Skill Up"
-        case .managePolitics: return "Politics"
-        case .hobbySession: return "Hobby"
-        case .socialOuting: return "Go Out"
-        case .creativeOutlet: return "Create"
-        case .adventure: return "Adventure"
-        case .relaxRoutine: return "Relax"
-        default: return ActionChoiceCatalog.definition(for: choiceID).title
-        }
-    }
-
-    // MARK: - Instant tier
-
-    private func contextualInstantChoices(for domain: ActionDomain) -> Set<ActionChoiceID> {
-        return Set(ActionChoiceID.allCases)
-    }
-
-    private func availableInstantPromotions(for domain: ActionDomain) -> [ActionChoiceID] {
-        return availableCommitted(for: domain)
-    }
-
-    private var investmentsActive: Bool {
-        state.player.age >= 18 && (
-            state.finance.hasInvestments ||
-            (state.finance.lastYearBalanceDelta >= 0 && state.finance.cashOnHand >= 6_000)
-        )
-    }
-
-    /// Conditional instant extras layered on top of the static core (housing, debt, luxury, etc.).
-    private func conditionalInstantExtras(for domain: ActionDomain) -> [ActionChoiceID] {
+    private static func defaultCategory(for domain: Domain) -> ActionCategory {
         switch domain {
-        case .finance:
-            var extras: [ActionChoiceID] = [.cutSpending, .takeSideWork, .buildEmergencyFund, .spendForRelief]
-            if state.player.age >= 18 && !state.assets.ownsHome {
-                extras.insert(.depositToHouseFund, at: 0)
-            }
-            if state.assets.ownsHome {
-                extras.insert(.topUpHouseReserve, at: 0)
-            }
-            if state.finance.totalNonHousingDebt > 0 {
-                extras.append(.payDownDebt)
-            }
-            if investmentsActive {
-                extras.append(contentsOf: [.analyzeMarkets, .holdPositions, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition])
-            }
-            if state.finance.totalWealth >= 50_000_000 || state.assets.lifestyleScore >= 75 {
-                extras.append(contentsOf: [.hostLuxuryEvent, .acquireLuxuryAsset, .indulgeInExcess, .displayWealth, .maintainLuxuryCollection])
-            }
-            extras.append(contentsOf: [.sideGig, .treatYourself, .negotiateBill])
-            return dedupe(extras)
-        case .career:
-            if state.career.status == .unemployed || state.career.status == .partTime {
-                return [.jobHunt]
-            }
-            return []
-        case .health:
-            var extras: [ActionChoiceID] = []
-            if state.healthProfile.mentalWellness < 45 || state.player.health < 45 {
-                extras.append(contentsOf: [.rest, .protectSleep])
-            }
-            if !state.healthProfile.activeConditions.isEmpty {
-                if !extras.contains(.seeDoctor) { extras.append(.seeDoctor) }
-            }
-            if state.military.combatTrauma > 0 {
-                extras.append(.seekVAHealthcare)
-            }
-            return dedupe(extras)
-        default:
-            return []
+        case .school: .career
+        case .cash: .money
+        case .love: .relationship
+        case .play: .leisure
+        case .health: .health
         }
     }
 
-    // MARK: - Quick catalog
-
-    // Static core instant actions for domains and subdomains.
-    // These are the reliable, always-present "BitLife-style" quick taps that instantly calculate
-    // and can always be clicked (bypass normal quick memory limits for core feel).
-    // Subdomains (teen education, special career tracks, crime lane, etc.) get their dedicated static set.
-    /// D5: Regular career Right Now deck — path pickers until committed, then native toolkit.
-    private func regularCareerInstantCore() -> [ActionChoiceID] {
-        var fallback: [ActionChoiceID] = [.putYourHeadDown, .protectWorkLifeLine, .network, .seekMentor, .documentWins, .improveSkill, .managePolitics]
-        if state.career.status == .unemployed || state.career.status == .partTime {
-            fallback.insert(.jobHunt, at: 0)
-        }
-        guard state.specialCareer.track == .inactive, state.player.age >= 18 else { return dedupe(fallback) }
-
-        if let arch = state.career.regularArchetype {
-            var toolkit = arch.instantToolkit
-            if state.career.status == .unemployed || state.career.status == .partTime {
-                toolkit.insert(.jobHunt, at: 0)
-            }
-            return dedupe(toolkit)
-        }
-
-        fallback.append(contentsOf: CareerArchetype.pathPickerActions)
-        return dedupe(fallback)
+    private static func branch(_ id: String, _ flags: [PartnerFlag], bond: Int, resentment: Int, headline: String, narrative: String, hint: String) -> PersonalityBranch {
+        PersonalityBranch(id: id, requiredFlags: flags, modifier: PartnerEffect(bond: bond, resentment: resentment), headline: headline, narrative: narrative, previewHint: hint, isLearned: false)
     }
 
-    private func staticCoreInstantActions(for domain: ActionDomain) -> [ActionChoiceID] {
-        switch domain {
-        case .education:
-            if context.isTeenExperience {
-                var core: [ActionChoiceID] = [.studyConsistently, .joinClub, .buildPortfolio, .lockInRoutine, .layLow]
-                if let d = state.childhoodDossier {
-                    if d.aptitudes.physical >= 50 { core.append(.teenAthleticDrill) }
-                    if d.aptitudes.entrepreneurial >= 50 { core.append(.teenSideHustle) }
-                    if d.aptitudes.creative >= 50 { core.append(.teenCreativeProject) }
-                    if d.aptitudes.social >= 50 { core.append(.teenLeadInitiative) }
-                    if d.aptitudes.entrepreneurial >= 55 || d.aptitudes.physical >= 55 { core.append(.teenRiskyExperiment) }
-                }
-                return core
-            }
-            if context.isStudentLifeExperience {
-                return [.studyConsistently, .joinClub, .buildPortfolio, .lockInRoutine, .cramAndSurvive]
-            }
-            // D3: education statics now include branch choices for trade/uni/honors and lifelong
-            var eduCore: [ActionChoiceID] = [.studyConsistently, .joinClub, .buildPortfolio, .lockInRoutine]
-            eduCore.append(contentsOf: [.pursueTradeCert, .honorsTrack, .uniApplication, .lifelongLearning, .credentialRefresh])
-            return eduCore
-        case .career:
-            if state.specialCareer.track == .athlete {
-                var core: [ActionChoiceID] = [.workHard, .network, .protectYourEnergy, .takeOvertime]
-                core.append(contentsOf: [.intenseTraining, .compete, .extraTrainingSession, .recoveryFocus, .mediaAppearance, .teamBonding])
-                return dedupe(core)
-            }
-            if state.specialCareer.track == .founder {
-                var core: [ActionChoiceID] = [.workHard, .network, .protectYourEnergy]
-                core.append(contentsOf: [.pivotBusiness, .raiseCapital, .aggressiveExpansion, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent])
-                return dedupe(core)
-            }
-            if state.specialCareer.track == .contentCreator {
-                var core: [ActionChoiceID] = [.workHard, .network, .protectYourEnergy]
-                core.append(contentsOf: [.postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal])
-                return dedupe(core)
-            }
-            if state.specialCareer.track == .politics {
-                return dedupe([.townHall, .workHard, .chaseSpotlight, .reachOut, .network, .protectYourEnergy])
-            }
-            return regularCareerInstantCore()
-        case .finance:
-            return [.curateCollection, .hostSignatureEvent, .maintainAsset, .negotiateBetterTerms, .quietlyBuildCushion, .reviewNumbersRuthlessly]
-        case .relationships:
-            var relCore: [ActionChoiceID] = [.deepenSpecificBond, .fuelRivalry, .splitReputation, .realConversation, .setBoundary, .networkWithoutMask]
-            if !state.family.children.isEmpty {
-                relCore.append(.checkInOnChild)
-            }
-            return relCore
-        case .health:
-            return [.bodyConditioning, .recurringTherapy, .manageMeds, .seeDoctor, .sleepLikeItMatters, .coldExposureDrill]
-        case .crime:
-            return crimeInstantCore()
-        case .legal:
-            if state.legal.isInCustody { return custodyInstantCore() }
-            return legalCommittedChoices()
-        case .military:
-            return [.militaryService, .goAWOL, .deploy, .ptFocus, .seekCounsel, .studyTradition]
-        case .family:
-            var f = familyPhaseQuickChoices()
-            f.append(contentsOf: [.familyMeal, .storyTime])
-            return dedupe(f)
-        case .identity:
-            return [.morningReflection, .reconcileWithPast, .protectYourEnergy, .tryNewPersona, .processCrisis, .journalTheShape, .quietTheNoise]
-        case .play:
-            return [.hobbySession, .socialOuting, .creativeOutlet, .adventure, .relaxRoutine]
-        }
+    private static func learnedBranch(_ id: String, _ flag: PartnerFlag, bond: Int, resentment: Int, headline: String, narrative: String, hint: String) -> PersonalityBranch {
+        PersonalityBranch(id: id, requiredFlags: [flag], modifier: PartnerEffect(bond: bond, resentment: resentment), headline: headline, narrative: narrative, previewHint: hint, isLearned: true)
     }
 
-    private func baseQuickChoices(for domain: ActionDomain) -> [ActionChoiceID] {
-        // Base is now the reliable static core for the domain/subdomain.
-        // Always-present instant actions that you can always click.
-        var choices = staticCoreInstantActions(for: domain)
-
-        // Add light conditional extras on top (without duplicating)
-        switch domain {
-        case .education:
-            if !context.isTeenExperience && !context.isStudentLifeExperience {
-                if state.education.attendancePressure >= 50 || state.education.burnoutRisk >= 45 {
-                    if !choices.contains(.layLow) { choices.append(.layLow) }
-                }
-            }
-            return choices
-        case .career:
-            if state.career.status == .unemployed { 
-                if !choices.contains(.jobHunt) { choices.insert(.jobHunt, at: 0) }
-            }
-            return choices
-        case .finance:
-            if state.finance.totalNonHousingDebt > 0 && !choices.contains(.payDownDebt) {
-                choices.append(.payDownDebt)
-            }
-            return choices
-        default:
-            return choices
-        }
-    }
-
-    // MARK: - Committed decks
-
-    private func educationCommittedChoices() -> [ActionChoiceID] {
-        if context.isTeenExperience {
-            var choices: [ActionChoiceID] = [.studyConsistently, .cramAndSurvive, .joinClub, .buildPortfolio, .skipAndDrift, .keepThePeace]
-            // Teen 2: dossier-aware precursors only appear if your childhood wiring matches (makes teen feel personalized to origin)
-            if let d = state.childhoodDossier {
-                if d.aptitudes.physical >= 50 { choices.append(.teenAthleticDrill) }
-                if d.aptitudes.entrepreneurial >= 50 { choices.append(.teenSideHustle) }
-                if d.aptitudes.creative >= 50 { choices.append(.teenCreativeProject) }
-                if d.aptitudes.social >= 50 { choices.append(.teenLeadInitiative) }
-                if d.aptitudes.entrepreneurial >= 55 || d.aptitudes.physical >= 55 { choices.append(.teenRiskyExperiment) }
-            } else {
-                // fallback: show a couple generically
-                choices.append(contentsOf: [.teenAthleticDrill, .teenCreativeProject])
-            }
-            return choices
-        }
-        if context.isStudentLifeExperience {
-            var choices: [ActionChoiceID] = [.studyConsistently, .cramAndSurvive, .buildPortfolio, .keepThePeace, .skipAndDrift, .lockInRoutine]
-            if state.education.pathway != .rotc {
-                choices.append(.joinROTC)
-            } else {
-                choices.append(.leaveROTC)
-            }
-            if state.military.isVeteran && !state.military.hasGIBill {
-                choices.append(.useGIBill)
-            }
-            // D3: student committed branches (trade/honors/uni + lifelong always via static)
-            choices.append(contentsOf: [.pursueTradeCert, .honorsTrack, .uniApplication, .lifelongLearning, .credentialRefresh])
-            return choices
-        }
-        return [.studyHard, .layLow, .skipClass]
-    }
-
-    private func careerCommittedChoices() -> [ActionChoiceID] {
-        if state.player.age < 16 { return [] }
-        if state.military.track != .inactive && state.military.track != .reserve { return [] }
-        
-        var options: [ActionChoiceID] = []
-
-        // Phase 5: Specialized Transitions
-        if state.career.status == .unemployed || state.career.status == .partTime {
-            if state.education.credentials.contains("MD") && state.career.specializedTrack == nil {
-                options.append(.applyForResidency)
-            }
-            if state.education.credentials.contains("JD") && state.career.specializedTrack == nil {
-                options.append(.passBarExam)
-            }
-        }
-        
-        if state.career.professionalRank == "Senior Developer" {
-            options.append(.becomeCTO)
-        }
-
-        if state.specialCareer.track == .founder {
-            var founder: [ActionChoiceID] = [.pivotBusiness, .raiseCapital, .aggressiveExpansion, .closeMajorDeal, .allHandsRally, .fundraiseSprint, .takeRealBreak, .hireKeyTalent, .protectYourEnergy, .network]
-            if state.specialCareer.audience >= 75 { founder.append(.ipoExit) }
-            if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil { founder.append(.manageFund) }
-            if SpecialCareerSystem.qualificationIssue(for: .acquireCompetitor, state: state) == nil { founder.append(.acquireCompetitor) }
-            if SpecialCareerSystem.qualificationIssue(for: .dayTrade, state: state) == nil { founder.append(.dayTrade) }
-            if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil { founder.append(.gatherIntelligence) }
-            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil { founder.append(.startSportsOwnership) }
-            return founder
-        }
-        if state.specialCareer.track == .entertainment {
-            var entertainment: [ActionChoiceID] = [.chaseSpotlight, .compete, .intenseTraining, .protectYourEnergy, .network, .coast]
-            if SpecialCareerSystem.qualificationIssue(for: .startMovieActor, state: state) == nil {
-                entertainment.insert(.startMovieActor, at: 1)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startMusicProducer, state: state) == nil {
-                entertainment.insert(.startMusicProducer, at: 1)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startMovieProducer, state: state) == nil {
-                entertainment.insert(.startMovieProducer, at: 1)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil {
-                entertainment.insert(.startRecordLabel, at: 1)
-            }
-            return entertainment
-        }
-        if state.specialCareer.track == .movieActor {
-            var actor: [ActionChoiceID] = [.auditionRole, .actingClass, .buildActingReel, .takeIndieRole, .managePublicist, .protectYourEnergy, .network]
-            if SpecialCareerSystem.qualificationIssue(for: .startMovieProducer, state: state) == nil {
-                actor.append(.startMovieProducer)
-            }
-            return actor
-        }
-        if state.specialCareer.track == .musicProducer {
-            var producer: [ActionChoiceID] = [.produceTrack, .runStudioSession, .shopBeats, .collaborateWithArtist, .polishSignatureSound, .manageProducerCredits, .protectYourEnergy, .network]
-            if SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil {
-                producer.append(.startRecordLabel)
-            }
-            return producer
-        }
-        if state.specialCareer.track == .movieProducer {
-            return [.optionScript, .castProject, .shootFilm, .secureDistribution, .handleProductionCrisis, .manageBackEndPoints, .protectYourEnergy, .network]
-        }
-        if state.specialCareer.track == .recordLabelOwner {
-            return [.signArtist, .developArtist, .releaseRecord, .pushSingle, .bookTour, .payArtists, .handleArtistDrama, .protectYourEnergy, .network]
-        }
-        if state.specialCareer.track == .coach {
-            var coach: [ActionChoiceID] = [.recruitTalent, .hireCoachingStaff, .installSystem, .runTrainingCamp, .manageLockerRoom, .callBigGame, .handleBoosterPressure, .protectYourEnergy, .network]
-            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil {
-                coach.insert(.startSportsOwnership, at: 0)
-            }
-            return coach
-        }
-        if state.specialCareer.track == .sportsOwner {
-            var owner: [ActionChoiceID] = [.hireGeneralManager, .negotiateMediaDeal, .investInBrand, .protectYourEnergy, .network]
-            if SpecialCareerSystem.qualificationIssue(for: .acquireFranchise, state: state) == nil {
-                owner.insert(.acquireFranchise, at: 0)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .expandPortfolio, state: state) == nil {
-                owner.insert(.expandPortfolio, at: 1)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .sellFranchise, state: state) == nil {
-                owner.append(.sellFranchise)
-            }
-            return owner
-        }
-        if state.specialCareer.track == .contentCreator {
-            // C2: Full set of dedicated creator quick actions
-            var creator: [ActionChoiceID] = [.postDaily, .goLive, .filmBanger, .collab, .addressDrama, .takeMentalBreak, .dropBrandDeal, .protectYourEnergy, .network, .chaseSpotlight]
-            if SpecialCareerSystem.qualificationIssue(for: .startMovieProducer, state: state) == nil { creator.append(.startMovieProducer) }
-            if SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil { creator.append(.startRecordLabel) }
-            if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil { creator.append(.manageFund) }
-            if SpecialCareerSystem.qualificationIssue(for: .dayTrade, state: state) == nil { creator.append(.dayTrade) }
-            if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil { creator.append(.gatherIntelligence) }
-            return creator
-        }
-        if state.specialCareer.track == .politics {
-            // P2: Full set of dedicated politics quick actions
-            return [.townHall, .politicalFundraise, .scandalResponse, .policyPush, .backroomDeal, .mediaHit, .takeAStand, .attackOpponent, .protectYourEnergy, .network, .chaseSpotlight]
-        }
-        if state.specialCareer.track == .crime {
-            return crimeInstantCore()
-        }
-        if state.specialCareer.track == .athlete {
-            if state.specialCareer.athlete.sport == .combatSports {
-                let combat = state.specialCareer.athlete.combat
-                guard combat.discipline != nil else {
-                    return [.startBoxingCareer, .startMMACareer]
-                }
-                if combat.stage == .retired {
-                    var retired: [ActionChoiceID] = [.mediaAppearance, .protectYourEnergy, .network]
-                    if SpecialCareerSystem.qualificationIssue(for: .startFightEmpire, state: state) == nil {
-                        retired.insert(.startFightEmpire, at: 0)
-                    }
-                    if !combat.crossoverUsed {
-                        retired.append(.crossoverCombatDiscipline)
-                    }
-                    return retired
-                }
-
-                var fighter: [ActionChoiceID] = []
-                if combat.scheduledOpponent == nil, combat.suspensionYears == 0 {
-                    fighter.append(contentsOf: [.acceptSafeFight, .acceptRankedFight, .acceptDangerousFight])
-                }
-                if combat.discipline == .boxing {
-                    fighter.append(contentsOf: [.boxingPowerCamp, .boxingTechniqueCamp, .combatConditioningCamp, .combatRecoveryCamp])
-                    fighter.append(contentsOf: [.boxingPressureStrategy, .boxingCounterStrategy, .boxingOutsideStrategy])
-                } else {
-                    fighter.append(contentsOf: [.mmaStrikingCamp, .mmaGrapplingCamp, .combatConditioningCamp, .combatRecoveryCamp])
-                    fighter.append(contentsOf: [.mmaStrikeStrategy, .mmaWrestleStrategy, .mmaMixedStrategy])
-                }
-                fighter.append(contentsOf: [.mediaAppearance, .recoveryFocus])
-                if !combat.crossoverUsed { fighter.append(.crossoverCombatDiscipline) }
-                fighter.append(.retireFromCombat)
-                return fighter
-            }
-            // Phase S2 + S3a: Athlete actions + edge temptation (doping)
-            var athlete: [ActionChoiceID] = [.extraTrainingSession, .mediaAppearance, .recoveryFocus, .teamBonding, .edgeProtocol, .protectYourEnergy, .network]
-            if SpecialCareerSystem.qualificationIssue(for: .startCoachingCareer, state: state) == nil {
-                athlete.append(.startCoachingCareer)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil {
-                athlete.append(.startSportsOwnership)
-            }
-            return athlete
-        }
-        if state.specialCareer.track == .fightEmpire {
-            return [.recruitFightProspect, .buildFightCamp, .developFightProspect, .bookFightEvent, .negotiateBroadcastDeal, .protectFighterHealth, .promoteGrudgeMatch, .protectYourEnergy, .network]
-        }
-        if state.specialCareer.track == .shadowOperative {
-            return [.gatherIntelligence, .exploitLeverage, .protectYourEnergy, .network]
-        }
-        if state.specialCareer.track == .trader {
-            return [.analyzeMarkets, .dayTrade, .protectYourEnergy, .network]
-        }
-        if state.specialCareer.track == .ventureCapitalist {
-            return [.manageFund, .hireAdvisor, .protectYourEnergy, .network]
-        }
-        if state.specialCareer.track == .corporateRaider {
-            return [.acquireCompetitor, .stripAssets, .protectYourEnergy, .network]
-        }
-
-        if state.player.age >= 18 {
-            options.append(contentsOf: [ActionChoiceID.workHard, .protectYourEnergy, .network, .retrain, .takeOvertime, .coast, .jobHunt, .chaseSpotlight])
-            if state.specialCareer.track == .inactive {
-                if let arch = state.career.regularArchetype {
-                    options.append(contentsOf: arch.instantToolkit)
-                } else {
-                    options.append(contentsOf: CareerArchetype.pathPickerActions)
-                    options.append(contentsOf: [.publicServiceGrind, .techDeepWork, .pivotToGig])
-                }
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startCompany, state: state) == nil {
-                options.append(.startCompany)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startMovieActor, state: state) == nil {
-                options.append(.startMovieActor)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startMusicProducer, state: state) == nil {
-                options.append(.startMusicProducer)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startMovieProducer, state: state) == nil {
-                options.append(.startMovieProducer)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startRecordLabel, state: state) == nil {
-                options.append(.startRecordLabel)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startSportsOwnership, state: state) == nil {
-                options.append(.startSportsOwnership)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .manageFund, state: state) == nil {
-                options.append(.manageFund)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .acquireCompetitor, state: state) == nil {
-                options.append(.acquireCompetitor)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .intenseTraining, state: state) == nil {
-                options.append(.intenseTraining)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .compete, state: state) == nil {
-                options.append(.compete)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startBoxingCareer, state: state) == nil {
-                options.append(.startBoxingCareer)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .startMMACareer, state: state) == nil {
-                options.append(.startMMACareer)
-            }
-            if SpecialCareerSystem.qualificationIssue(for: .gatherIntelligence, state: state) == nil {
-                options.append(contentsOf: [.gatherIntelligence, .exploitLeverage])
-            }
-        } else {
-            options.append(contentsOf: [.workHard, .coast, .jobHunt])
-        }
-
-        return options
-    }
-
-    /// CT5: Tier-native crime Right Now deck — street / organization / enterprise toolkits.
-    private func crimeInstantCore() -> [ActionChoiceID] {
-        guard isCrimeLaneActive() else { return [] }
-        if let tier = CrimeTier.resolve(crime: state.crime, specialCareer: state.specialCareer) {
-            let cartel = state.specialCareer.enterprise.subtype == .transnationalCartel
-                || state.specialCareer.enterprise.empireBranch == .transnationalCartel
-            return dedupe(tier.instantToolkit(cartelBranch: cartel))
-        }
-        return dedupe(CrimeTier.street.instantToolkit())
-    }
-
-    private func crimeCommittedChoices() -> [ActionChoiceID] {
-        guard isCrimeLaneActive() else { return [] }
-        return crimeInstantCore()
-    }
-
-    private func custodyInstantCore() -> [ActionChoiceID] {
-        let profile = state.legal.custodyProfile
-        let lockdown = profile.lockdownYearsRemaining > 0
-        let paroleEligible = state.legal.paroleEligible && profile.paroleHearingDeniedYears == 0
-        let enterpriseProxyEligible = profile.experienceTier == .enterprise
-            && (profile.facility == .federalPen
-                || state.fame.notoriety >= 45
-                || state.legal.convictions.contains(where: { $0.offense == .enterpriseCrime }))
-        return dedupe(profile.instantToolkit(
-            paroleEligible: paroleEligible,
-            lockdown: lockdown,
-            enterpriseProxyEligible: enterpriseProxyEligible
-        ))
-    }
-
-    private func legalCommittedChoices() -> [ActionChoiceID] {
-        if state.legal.isInCustody { return custodyInstantCore() }
-        switch state.legal.stage {
-        case .investigation:
-            var choices: [ActionChoiceID] = []
-            if state.legal.counselQuality == 0 {
-                choices.append(.retainCounsel)
-            }
-            choices.append(contentsOf: [.cooperateWithInvestigation, .refuseInterview])
-            return choices
-        case .charged:
-            var choices: [ActionChoiceID] = []
-            if state.legal.counselQuality == 0 {
-                choices.append(.retainCounsel)
-            }
-            if state.legal.bailAmount > 0, !state.legal.bailPosted {
-                choices.append(.postBail)
-            }
-            choices.append(contentsOf: [.negotiatePlea, .fightCharges])
-            return choices
-        case .supervision:
-            return state.legal.supervisionYearsRemaining <= 1
-                ? [.complyWithSupervision, .requestEarlyRelease]
-                : [.complyWithSupervision]
-        default:
-            return []
-        }
-    }
-
-    private func financeCommittedChoices() -> [ActionChoiceID] {
-        if context.isStudentLifeExperience {
-            var studentOptions: [ActionChoiceID] = [.takeExtraShifts, .saveForEscape, .cutSpending, .spendToCope]
-            if state.finance.studentDebt > 0 { studentOptions.append(.deferStudentLoans) }
-            return studentOptions
-        }
-        var financeOptions: [ActionChoiceID] = []
-        if (14...15).contains(state.player.age) {
-            financeOptions = [.smallHustle, .cutSpending, .spendForRelief]
-        } else if state.player.age >= 18 {
-            financeOptions = [.cutSpending, .spendForRelief, .takeSideWork]
-            if state.finance.totalNonHousingDebt > 0 {
-                financeOptions.append(contentsOf: [.payDownDebt, .consolidateDebt, .minimumPayments])
-                if state.finance.studentDebt > 0 { financeOptions.append(.deferStudentLoans) }
-                if state.finance.canUseDebtReset { financeOptions.append(.declareBankruptcy) }
-            }
-            
-            // Phase 2 Investments
-            if state.finance.cashOnHand >= 5000 { financeOptions.append(.buyStocks) }
-            if state.finance.cashOnHand >= 2000 { financeOptions.append(.buyCrypto) }
-            if state.finance.cashOnHand >= 50000 { financeOptions.append(.buyRentalProperty) }
-            
-            if !state.finance.portfolio.stocks.isEmpty { financeOptions.append(.sellStocks) }
-            if !state.finance.portfolio.crypto.isEmpty { financeOptions.append(.sellCrypto) }
-            if !state.finance.portfolio.rentals.isEmpty { 
-                financeOptions.append(contentsOf: [.manageRentals, .sellRentalProperty]) 
-            }
-
-            if state.finance.cashOnHand >= 2_000 {
-                financeOptions.append(contentsOf: [.dayTrade, .analyzeMarkets, .checkPortfolio, .rebalancePortfolio, .researchTip, .buyIndex, .sellPosition])
-            }
-
-            // Phase 2 char: starter asset buy available early if none
-            if state.player.age < 25 && state.assets.vehicles.isEmpty && state.assets.jewelry.isEmpty {
-                financeOptions.append(.buyStarterAsset)
-            }
-        }
-
-        if state.assets.ownsHome {
-            financeOptions.append(contentsOf: [.buildMaintenanceReserve, .refinanceMortgage, .sellHome])
-        }
-
-        if state.player.age >= 18 && state.career.status == .fullTime {
-            let canBuyStarterHome =
-                state.career.yearsWorked >= 2 &&
-                state.finance.lastYearBalanceDelta >= 0 &&
-                state.finance.homeDownPaymentSavings + state.finance.cashOnHand >= 35_000 &&
-                state.finance.debtPressureBand != .heavy &&
-                state.finance.debtPressureBand != .crushing &&
-                state.finance.recentDebtReliefYears == 0
-            if canBuyStarterHome || state.assets.isSavingForHome || state.finance.homeDownPaymentSavings > 0 {
-                financeOptions.append(contentsOf: canBuyStarterHome
-                    ? [.saveForDownPayment, .buyStarterHome, .buyIndexFund]
-                    : [.saveForDownPayment, .cutSpending, .takeSideWork])
-            }
-        }
-
-        if context.canAccessInvesting {
-            let isUnderPressure = state.finance.lastYearBalanceDelta < 0 || state.finance.cashOnHand < context.investmentEmergencyReserve
-            if isUnderPressure, state.finance.hasInvestments {
-                financeOptions.append(contentsOf: [.buildEmergencyFund, .holdPositions, .sellToCover])
-            } else if state.finance.hasInvestments {
-                financeOptions.append(contentsOf: [.buyIndexFund, .speculateStocks, .holdPositions])
-            } else {
-                financeOptions.append(contentsOf: [.buildEmergencyFund, .buyIndexFund, .speculateStocks])
-            }
-        }
-        return Array(Set(financeOptions))
-    }
-
-    private func relationshipCommittedChoices() -> [ActionChoiceID] {
-        if context.isTeenExperience {
-            return [.findYourCrowd, .dateCarefully, .chaseStatus, .stayInvisible, .leanOnMentor]
-        }
-        
-        var options: [ActionChoiceID] = [.reachOut, .keepDistance, .repairTension]
-        if state.player.age >= 18 { options.append(.callInFavor) }
-
-        if let partner = state.relationships.primaryPartner {
-            options.append(contentsOf: [.strengthenBond, .discussFuture])
-            if !partner.isCohabiting { options.append(.moveInTogether) }
-            
-            if partner.stage == .engaged {
-                options.append(.planWedding)
-            } else if partner.stage == .married {
-                options.append(contentsOf: [.tryForBaby, .avoidPregnancy, .letChanceDecide, .fileForDivorce])
-            } else if partner.stage == .committed {
-                if !partner.hasPrenup { options.append(.signPrenup) }
-                options.append(.proposeMarriage)
-                options.append(.buyEngagementRing)
-            }
-        } else {
-            options.append(.dateCarefully)
-        }
-        
-        if state.relationships.romanticPartners.contains(where: { $0.isSecret }) {
-            options.append(.endAffair)
-        } else if state.relationships.hasPartner {
-            options.append(.startAffair)
-        }
-        
-        return options
-    }
-
-    private func healthCommittedChoices() -> [ActionChoiceID] {
-        context.isStudentLifeExperience ? [.protectSleep, .pushThrough, .rest, .seeDoctor] : [.rest, .pushThrough, .seeDoctor]
-    }
-
-    // MARK: - Suggested callback
-
-    private func deriveSuggestedCallbackAction() -> SuggestedPlayerAction? {
-        if let strainedFriend = state.relationships.friends.first(where: { $0.status == .strained }) {
-            return SuggestedPlayerAction(
-                domain: .relationships,
-                choiceID: .repairTension,
-                headline: "Repair things with \(strainedFriend.name)"
-            )
-        }
-        if state.relationships.hasPartner, state.relationships.partnerBond < 50, let partner = state.relationships.primaryPartner {
-            return SuggestedPlayerAction(
-                domain: .relationships,
-                choiceID: .strengthenBond,
-                headline: "Invest in \(partner.name)"
-            )
-        }
-        if state.consequences.narrativeFlags["npc_autonomy_pulse", default: 0] > 0,
-           let friend = state.relationships.friends.first {
-            return SuggestedPlayerAction(
-                domain: .relationships,
-                choiceID: .reachOut,
-                headline: "Check in with \(friend.name)"
-            )
-        }
-        let topPressure = state.consequences.pressureByDomain.max(by: { $0.value < $1.value })
-        if let topPressure, topPressure.value >= 28, let domain = ActionDomain(rawValue: topPressure.key),
-           let choice = suggestedChoice(for: domain) {
-            return SuggestedPlayerAction(
-                domain: domain,
-                choiceID: choice,
-                headline: "Respond to \(topPressure.key) pressure"
-            )
-        }
-        return nil
-    }
-
-    private func storedMatchesPlayable(_ suggested: SuggestedPlayerAction) -> Bool {
-        availableCommitted(for: suggested.domain).contains(suggested.choiceID)
-            || availableQuick(for: suggested.domain).contains(suggested.choiceID)
-            || resolutionTier(for: suggested.choiceID, domain: suggested.domain) == .instant
-    }
-
-    private func dedupe(_ choices: [ActionChoiceID]) -> [ActionChoiceID] {
-        var seen: Set<ActionChoiceID> = []
-        return choices.filter { seen.insert($0).inserted }
-    }
-}
-
-extension GameViewModel {
-    func makeActionRegistry() -> DomainActionRegistry {
-        DomainActionRegistry(
-            context: DomainActionContext(
-                state: state,
-                isTeenExperience: isTeenExperience,
-                isStudentLifeExperience: isStudentLifeExperience,
-                canAccessInvesting: canAccessInvesting,
-                investmentEmergencyReserve: investmentEmergencyReserve
-            )
-        )
+    private static func npcBranch(_ id: String, _ role: NPCRole, _ flags: [NPCFlag], school: Int = 0, cash: Int = 0, love: Int = 0, play: Int = 0, health: Int = 0, rep: Int = 0, rapport: Int, headline: String, narrative: String, hint: String) -> NPCPersonalityBranch {
+        NPCPersonalityBranch(id: id, role: role, requiredFlags: flags, modifier: EffectRange(school: school...school, cash: cash...cash, love: love...love, play: play...play, health: health...health, rep: rep...rep), rapportDelta: rapport, headline: headline, narrative: narrative, previewHint: hint)
     }
 }

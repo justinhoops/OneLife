@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "events": [
+    {
+      "id": "driven-teacher-raises-bar",
+      "headline": "Your Teacher Raises The Bar",
+      "detail": "Your effort is visible enough that an ambitious teacher stops accepting your first answer.",
+      "narrativeVariants": [
+        "Your effort is visible enough that an ambitious teacher stops accepting your first answer.",
+        "The work earns attention, then immediately earns a harder standard."
+      ],
+      "baseWeight": 7,
+      "cooldown": 4,
+      "stages": ["adolescence"],
+      "predicate": {
+        "playerFlags": ["driven"],
+        "npcRole": "teacher",
+        "npcFlags": ["driven"],
+        "minimumPlayerAxes": { "drive": 60 },
+        "requiredDomainStates": ["attendsSchool"],
+        "minimumStats": { "school": 55 }
+      },
+      "choices": [
+        {
+          "id": "focus",
+          "title": "Meet the standard",
+          "detail": "Accept more work and less margin.",
+          "narrative": "You meet the demand. Pride and exhaustion arrive together.",
+          "effects": { "school": 5, "health": -2 },
+          "npcRapportDelta": 2,
+          "personalityImpulse": { "drive": 3, "adaptability": 1 }
+        },
+        {
+          "id": "decline",
+          "title": "Protect your margin",
+          "detail": "Let good work be enough this time.",
+          "narrative": "You leave the extra work undone and keep a piece of the evening.",
+          "effects": { "play": 3, "rep": -1 },
+          "personalityImpulse": { "drive": -1, "riskTolerance": -1 }
+        }
+      ]
+    },
+    {
+      "id": "outgoing-friend-opens-door",
+      "headline": "A Friend Opens Another Door",
+      "detail": "An outgoing friend pulls you into a room where nobody knows your old story.",
+      "baseWeight": 6,
+      "cooldown": 4,
+      "stages": ["adolescence", "launch"],
+      "predicate": {
+        "playerFlags": ["outgoing"],
+        "npcRole": "friend",
+        "npcFlags": ["outgoing"],
+        "minimumPlayerAxes": { "sociability": 60 }
+      },
+      "choices": [
+        {
+          "id": "accept",
+          "title": "Go with them",
+          "detail": "Spend energy on unfamiliar people.",
+          "narrative": "You enter as somebody's guest and leave with names of your own.",
+          "effects": { "love": 4, "play": 3, "health": -1 },
+          "npcRapportDelta": 2,
+          "personalityImpulse": { "sociability": 3, "riskTolerance": 1 }
+        },
+        {
+          "id": "decline",
+          "title": "Keep tonight small",
+          "detail": "Choose familiarity over another room.",
+          "narrative": "You stay home. The invitation does not become a memory.",
+          "effects": { "health": 2 },
+          "personalityImpulse": { "sociability": -2, "riskTolerance": -1 }
+        }
+      ]
+    },
+    {
+      "id": "cautious-life-meets-recession",
+      "headline": "The Recession Rewards Your Caution",
+      "detail": "The economy contracts, but the margin you protected keeps one bad month from becoming a collapse.",
+      "baseWeight": 6,
+      "cooldown": 5,
+      "stages": ["launch", "build", "pressure"],
+      "predicate": {
+        "playerFlags": ["cautious"],
+        "maximumPlayerAxes": { "riskTolerance": 40 },
+        "worldFlags": ["recession"]
+      },
+      "choices": [
+        {
+          "id": "focus",
+          "title": "Hold the buffer",
+          "detail": "Keep protecting the floor.",
+          "narrative": "You choose safety again. It is not glamorous, but it holds.",
+          "effects": { "cash": 3500, "play": -2 },
+          "personalityImpulse": { "riskTolerance": -2, "adaptability": 1 }
+        },
+        {
+          "id": "accept",
+          "title": "Use the opening",
+          "detail": "Risk some safety while others retreat.",
+          "narrative": "You spend part of the buffer on a narrow opening.",
+          "effects": { "cash": -2000, "rep": 3 },
+          "personalityImpulse": { "riskTolerance": 3, "drive": 1 }
+        }
+      ]
+    },
+    {
+      "id": "leadership-talent-finds-room",
+      "headline": "Your Voice Starts Carrying Further",
+      "detail": "A routine group decision bends toward you because people trust how you frame the stakes.",
+      "baseWeight": 5,
+      "cooldown": 5,
+      "stages": ["adolescence", "launch", "build"],
+      "predicate": {
+        "talent": "publicLeadership",
+        "minimumStats": { "love": 50 }
+      },
+      "choices": [
+        {
+          "id": "accept",
+          "title": "Take responsibility",
+          "detail": "Own the decision and its consequences.",
+          "narrative": "People follow the plan. They also remember whose plan it was.",
+          "effects": { "love": 2, "rep": 4, "health": -1 },
+          "personalityImpulse": { "drive": 2, "empathy": 1, "sociability": 2 }
+        },
+        {
+          "id": "decline",
+          "title": "Share the room",
+          "detail": "Use influence without claiming control.",
+          "narrative": "You make space for another voice and lose none of your own.",
+          "effects": { "love": 3, "rep": 1 },
+          "personalityImpulse": { "empathy": 2, "adaptability": 2 }
+        }
+      ]
+    },
+    {
+      "id": "quiet-anchor-carries-crisis",
+      "headline": "Your Care Becomes Someone's Shelter",
+      "detail": "A friend brings you something heavy because your quiet loyalty has always felt safer than advice.",
+      "baseWeight": 7,
+      "cooldown": 5,
+      "stages": ["adolescence", "launch", "build", "pressure"],
+      "predicate": { "identitySignatures": ["quietAnchor"], "npcRole": "friend" },
+      "choices": [
+        {
+          "id": "talk", "title": "Stay with them", "detail": "Give the problem your full attention.",
+          "narrative": "You make room for the whole truth and carry some of it afterward.",
+          "effects": { "love": 5, "health": -3 }, "npcRapportDelta": 3,
+          "personalityImpulse": { "empathy": 3, "sociability": -1 }
+        },
+        {
+          "id": "decline", "title": "Protect your capacity", "detail": "Admit that care has a limit tonight.",
+          "narrative": "You draw a boundary before concern becomes collapse.",
+          "effects": { "health": 3, "love": -2 }, "npcRapportDelta": -1,
+          "personalityImpulse": { "empathy": -1, "adaptability": 1 }
+        }
+      ]
+    },
+    {
+      "id": "bold-striver-narrow-opening",
+      "headline": "Ambition Meets A Narrow Opening",
+      "detail": "A volatile labor market creates one risky opening that fits your appetite for motion.",
+      "baseWeight": 7,
+      "cooldown": 5,
+      "stages": ["launch", "build", "pressure"],
+      "predicate": { "identitySignatures": ["boldStriver"], "worldFlags": ["volatileLabor"] },
+      "choices": [
+        {
+          "id": "accept", "title": "Take the opening", "detail": "Trade stability for a larger ceiling.",
+          "narrative": "You step through before certainty can catch up.",
+          "effects": { "cash": 4500, "health": -4, "rep": 4 },
+          "personalityImpulse": { "drive": 2, "riskTolerance": 3 }
+        },
+        {
+          "id": "decline", "title": "Keep your footing", "detail": "Let this chance belong to someone else.",
+          "narrative": "The opening closes, leaving relief and a question behind.",
+          "effects": { "health": 2, "rep": -1 },
+          "personalityImpulse": { "riskTolerance": -3, "adaptability": -1 }
+        }
+      ]
+    },
+    {
+      "id": "lone-pillar-refuses-rescue",
+      "headline": "Your Independence Leaves Help Outside",
+      "detail": "Someone offers practical help, but accepting it would expose how much you have been carrying alone.",
+      "baseWeight": 6,
+      "cooldown": 5,
+      "stages": ["launch", "build", "pressure", "legacy"],
+      "predicate": { "identitySignatures": ["lonePillar"] },
+      "choices": [
+        {
+          "id": "accept", "title": "Let them help", "detail": "Trade control for breathing room.",
+          "narrative": "The load gets lighter before the vulnerability does.",
+          "effects": { "cash": 2500, "love": 4, "rep": -1 },
+          "personalityImpulse": { "empathy": 3, "adaptability": 2 }
+        },
+        {
+          "id": "decline", "title": "Carry it yourself", "detail": "Keep the terms entirely yours.",
+          "narrative": "You preserve control and absorb the full cost.",
+          "effects": { "rep": 3, "health": -4, "love": -2 },
+          "personalityImpulse": { "empathy": -2, "adaptability": -2 }
+        }
+      ]
+    },
+    {
+      "id": "bridge-builder-workplace-standoff",
+      "headline": "Flexibility Defuses The Workplace Standoff",
+      "detail": "Two rigid positions stall the room until your ability to translate the conflict becomes visible.",
+      "baseWeight": 6,
+      "cooldown": 5,
+      "stages": ["launch", "build", "pressure"],
+      "predicate": { "identitySignatures": ["bridgeBuilder"], "npcRole": "boss", "requiredDomainStates": ["employed"] },
+      "choices": [
+        {
+          "id": "negotiate", "title": "Translate both sides", "detail": "Spend social capital on a workable middle.",
+          "narrative": "Nobody gets everything, and the work starts moving again.",
+          "effects": { "rep": 5, "health": -2 }, "npcRapportDelta": 2,
+          "personalityImpulse": { "empathy": 2, "adaptability": 2 }
+        },
+        {
+          "id": "decline", "title": "Stay out of it", "detail": "Keep someone else's conflict off your back.",
+          "narrative": "You protect your energy while the standoff hardens.",
+          "effects": { "health": 2, "rep": -2 }, "npcRapportDelta": -1,
+          "personalityImpulse": { "empathy": -1, "adaptability": -1 }
+        }
+      ]
+    },
+    {
+      "id": "steadfast-health-routine",
+      "headline": "Routine Outlasts A Health Setback",
+      "detail": "A chronic condition disrupts the week, but the routine you kept building is still there.",
+      "baseWeight": 6,
+      "cooldown": 5,
+      "stages": ["build", "pressure", "legacy"],
+      "predicate": { "playerFlags": ["steadfast"], "requiredDomainStates": ["hasCondition"] },
+      "choices": [
+        {
+          "id": "focus", "title": "Keep the routine", "detail": "Choose consistency over immediate relief.",
+          "narrative": "The routine does not cure you; it keeps the setback from taking everything.",
+          "effects": { "health": 5, "play": -2 },
+          "personalityImpulse": { "adaptability": -3, "drive": 1 }
+        },
+        {
+          "id": "recover", "title": "Change the plan", "detail": "Adapt the routine to the body you have now.",
+          "narrative": "You loosen the structure without abandoning care.",
+          "effects": { "health": 3, "play": 2 },
+          "personalityImpulse": { "adaptability": 3 }
+        }
+      ]
+    },
+    {
+      "id": "grounded-keeper-protects-home",
+      "headline": "Contentment Protects What Growth Threatened",
+      "detail": "A bigger opportunity would improve the numbers and consume the ordinary life you worked to keep.",
+      "baseWeight": 6,
+      "cooldown": 5,
+      "stages": ["build", "pressure"],
+      "predicate": { "identitySignatures": ["groundedKeeper"], "requiredDomainStates": ["partnered"] },
+      "choices": [
+        {
+          "id": "prioritizeFamily", "title": "Protect the ordinary", "detail": "Keep time and accept the smaller ceiling.",
+          "narrative": "Nothing dramatic happens. The life you value remains inhabitable.",
+          "effects": { "love": 5, "cash": -2000, "rep": -2 },
+          "partnerEffect": { "bond": 3, "resentment": -2, "committed": null, "endRelationship": false, "ruptureStage": null, "repairPromise": null },
+          "personalityImpulse": { "drive": -3, "adaptability": -2 }
+        },
+        {
+          "id": "chooseWork", "title": "Take the growth", "detail": "Use the opening and absorb the absence.",
+          "narrative": "The numbers improve while home learns your new shape.",
+          "effects": { "cash": 5500, "rep": 4, "love": -3 },
+          "partnerEffect": { "bond": -2, "resentment": 3, "committed": null, "endRelationship": false, "ruptureStage": null, "repairPromise": null },
+          "personalityImpulse": { "drive": 3, "adaptability": 1 }
+        }
+      ]
+    },
+    {
+      "id": "reserved-practice-becomes-skill",
+      "headline": "Private Practice Becomes Visible Skill",
+      "detail": "Hours spent away from the room have quietly become competence that other people can finally see.",
+      "baseWeight": 7,
+      "cooldown": 4,
+      "stages": ["adolescence", "launch", "build"],
+      "predicate": { "playerFlags": ["reserved"], "minimumStats": { "school": 50 } },
+      "choices": [
+        {
+          "id": "accept", "title": "Show the work", "detail": "Let private ability become public evidence.",
+          "narrative": "The work survives attention, and so do you.",
+          "effects": { "school": 4, "rep": 4, "health": -1 },
+          "personalityImpulse": { "sociability": 2, "drive": 2 }
+        },
+        {
+          "id": "decline", "title": "Keep it private", "detail": "Protect the practice from outside judgment.",
+          "narrative": "The skill deepens without becoming an opportunity.",
+          "effects": { "school": 5, "rep": -1, "play": 2 },
+          "personalityImpulse": { "sociability": -3 }
+        }
+      ]
+    },
+    {
+      "id": "adventure-meets-thin-safety-net",
+      "headline": "Risk Feels Different In Thin Times",
+      "detail": "The same gamble carries farther when public support is too thin to catch a bad landing.",
+      "baseWeight": 6,
+      "cooldown": 5,
+      "stages": ["launch", "build", "pressure"],
+      "predicate": { "playerFlags": ["adventurous"], "worldFlags": ["thinSafetyNet"] },
+      "choices": [
+        {
+          "id": "accept", "title": "Take the gamble", "detail": "Keep the upside and the exposed floor.",
+          "narrative": "You move before fear can turn into policy.",
+          "effects": { "cash": 5000, "rep": 4, "health": -5 },
+          "personalityImpulse": { "riskTolerance": 3, "drive": 2 }
+        },
+        {
+          "id": "decline", "title": "Respect the floor", "detail": "Treat the missing safety net as real.",
+          "narrative": "You keep your footing and watch the possible future pass.",
+          "effects": { "health": 3, "play": -2 },
+          "personalityImpulse": { "riskTolerance": -3, "adaptability": 1 }
+        }
+      ]
+    },
+    {
+      "id": "driven-pace-costs-connection", "headline": "Driven Pace Leaves Someone Waiting",
+      "detail": "The work keeps moving, but someone close has stopped pretending the absence is temporary.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure"],
+      "predicate": { "playerFlags": ["driven"], "requiredDomainStates": ["partnered"] },
+      "choices": [
+        { "id": "prioritizeFamily", "title": "Make room", "detail": "Protect the bond and surrender some momentum.", "narrative": "You leave the work unfinished and arrive while repair is still possible.", "effects": { "love": 4, "rep": -2 }, "partnerEffect": { "bond": 3, "resentment": -2 }, "personalityImpulse": { "drive": -3, "empathy": 2 } },
+        { "id": "chooseWork", "title": "Keep pushing", "detail": "Protect the opening and accept the distance.", "narrative": "The work advances. The silence at home becomes less ambiguous.", "effects": { "rep": 4, "health": -2 }, "partnerEffect": { "bond": -2, "resentment": 3 }, "personalityImpulse": { "drive": 3, "empathy": -2 } }
+      ]
+    },
+    {
+      "id": "content-restores-margin", "headline": "Content Restores What Ambition Kept Spending",
+      "detail": "A quieter season offers recovery without pretending that rest is free.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure", "legacy"], "predicate": { "playerFlags": ["content"] },
+      "choices": [
+        { "id": "recover", "title": "Protect the quiet", "detail": "Take less and recover more.", "narrative": "The pace softens enough for your body to believe you.", "effects": { "health": 4, "play": 3, "rep": -2 }, "personalityImpulse": { "drive": -3 } },
+        { "id": "focus", "title": "Use the margin", "detail": "Turn recovery into another push.", "narrative": "The rest becomes fuel instead of a destination.", "effects": { "school": 2, "rep": 3, "health": -2 }, "personalityImpulse": { "drive": 3 } }
+      ]
+    },
+    {
+      "id": "content-rising-cost-floor", "headline": "Contentment Meets A Rising Cost Floor",
+      "detail": "A sustainable pace becomes harder to defend while ordinary costs climb.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure"], "predicate": { "playerFlags": ["content"], "worldFlags": ["inflationShock"] },
+      "choices": [
+        { "id": "focus", "title": "Take extra work", "detail": "Trade recovery for financial room.", "narrative": "You meet the bill by spending energy you meant to keep.", "effects": { "cash": 4500, "health": -3, "play": -2 }, "personalityImpulse": { "drive": 3 } },
+        { "id": "decline", "title": "Keep the pace", "detail": "Protect yourself and absorb the squeeze.", "narrative": "The days remain livable. The ledger does not become kinder.", "effects": { "cash": -3000, "health": 3 }, "personalityImpulse": { "drive": -2, "riskTolerance": -1 } }
+      ]
+    },
+    {
+      "id": "empathetic-honest-repair", "headline": "Empathy Turns Conflict Into Honest Repair",
+      "detail": "You understand what was said and what fear was hiding underneath it.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["adolescence", "launch", "build", "pressure"], "predicate": { "playerFlags": ["empathetic"] },
+      "choices": [
+        { "id": "talk", "title": "Stay in the room", "detail": "Use understanding without erasing yourself.", "narrative": "The conflict becomes specific enough to repair.", "effects": { "love": 4, "health": -2 }, "personalityImpulse": { "empathy": 3, "adaptability": 1 } },
+        { "id": "decline", "title": "Set the boundary", "detail": "Refuse to carry both sides.", "narrative": "You leave the problem where it belongs, even though connection cools.", "effects": { "health": 3, "love": -2 }, "personalityImpulse": { "empathy": -3 } }
+      ]
+    },
+    {
+      "id": "empathetic-absorbs-too-much", "headline": "Empathy Absorbs More Than It Should",
+      "detail": "Someone else's crisis has quietly become the structure of your week.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["build", "pressure", "legacy"], "predicate": { "playerFlags": ["empathetic"] },
+      "choices": [
+        { "id": "accept", "title": "Keep carrying", "detail": "Protect them and absorb the cost.", "narrative": "They get room to breathe. Your own margin disappears.", "effects": { "love": 4, "health": -4, "play": -2 }, "personalityImpulse": { "empathy": 3 } },
+        { "id": "recover", "title": "Return the weight", "detail": "Offer care with a limit.", "narrative": "The boundary stings, then makes the relationship more honest.", "effects": { "health": 3, "love": -1 }, "personalityImpulse": { "empathy": -2, "drive": 1 } }
+      ]
+    },
+    {
+      "id": "self-reliant-private-buffer", "headline": "Self Reliance Builds A Private Buffer",
+      "detail": "Quiet preparation leaves you less exposed when the numbers turn hostile.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure"], "predicate": { "playerFlags": ["selfReliant"] },
+      "choices": [
+        { "id": "focus", "title": "Keep control", "detail": "Use the buffer without inviting help.", "narrative": "The crisis stays contained, and so do you.", "effects": { "cash": 4500, "health": 2, "love": -2 }, "personalityImpulse": { "empathy": -3 } },
+        { "id": "talk", "title": "Share the plan", "detail": "Trade some control for support.", "narrative": "The buffer becomes something another person can help protect.", "effects": { "love": 4, "cash": 2000 }, "personalityImpulse": { "empathy": 3, "sociability": 1 } }
+      ]
+    },
+    {
+      "id": "self-reliant-refuses-help", "headline": "Self Reliance Refuses Needed Help",
+      "detail": "A problem has grown beyond what private competence can solve cleanly.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["build", "pressure", "legacy"], "predicate": { "playerFlags": ["selfReliant"] },
+      "choices": [
+        { "id": "accept", "title": "Let them help", "detail": "Accept dependence without surrendering agency.", "narrative": "Relief arrives with the discomfort of being witnessed.", "effects": { "health": 4, "love": 3, "rep": -1 }, "personalityImpulse": { "empathy": 3 } },
+        { "id": "decline", "title": "Handle it alone", "detail": "Keep control and carry the full cost.", "narrative": "Nobody can disappoint you; nobody can lighten it either.", "effects": { "rep": 3, "health": -4, "love": -2 }, "personalityImpulse": { "empathy": -3 } }
+      ]
+    },
+    {
+      "id": "outgoing-visibility-opening", "headline": "Outgoing Visibility Creates A Real Opening",
+      "detail": "A loose connection remembers your name when an opportunity appears.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure"], "predicate": { "playerFlags": ["outgoing"] },
+      "choices": [
+        { "id": "accept", "title": "Follow the opening", "detail": "Spend social capital and show up.", "narrative": "Familiarity becomes access, though participation still costs.", "effects": { "rep": 4, "cash": -2500, "health": -1 }, "personalityImpulse": { "sociability": 3 } },
+        { "id": "decline", "title": "Keep the evening", "detail": "Protect your time instead.", "narrative": "The door closes without becoming a catastrophe.", "effects": { "health": 3, "play": 2, "rep": -1 }, "personalityImpulse": { "sociability": -3 } }
+      ]
+    },
+    {
+      "id": "outgoing-crowd-cost", "headline": "The Crowd Takes More Than Expected",
+      "detail": "Being available to everyone has made your own needs difficult to hear.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["adolescence", "launch", "build", "pressure"], "predicate": { "playerFlags": ["outgoing"] },
+      "choices": [
+        { "id": "recover", "title": "Leave early", "detail": "Accept disappointing people and recover.", "narrative": "The messages keep arriving after you stop answering.", "effects": { "health": 4, "love": -2 }, "personalityImpulse": { "sociability": -3 } },
+        { "id": "accept", "title": "Keep circulating", "detail": "Protect visibility and spend the energy.", "narrative": "You remain central to the room and absent from yourself.", "effects": { "love": 3, "rep": 3, "health": -4 }, "personalityImpulse": { "sociability": 3 } }
+      ]
+    },
+    {
+      "id": "reserved-attention-catches-detail", "headline": "Reserved Attention Catches What Others Miss",
+      "detail": "Watching before speaking reveals a detail that changes the work.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["adolescence", "launch", "build", "pressure"], "predicate": { "playerFlags": ["reserved"] },
+      "choices": [
+        { "id": "accept", "title": "Name what you saw", "detail": "Trade privacy for useful visibility.", "narrative": "The room turns toward you because the observation holds.", "effects": { "school": 3, "rep": 3, "health": -1 }, "personalityImpulse": { "sociability": 2, "drive": 1 } },
+        { "id": "decline", "title": "Keep observing", "detail": "Protect the private advantage.", "narrative": "You retain the insight and surrender the credit.", "effects": { "school": 3, "rep": -2, "play": 2 }, "personalityImpulse": { "sociability": -3 } }
+      ]
+    },
+    {
+      "id": "reserved-bond-drifts", "headline": "Silence Lets An Important Bond Drift",
+      "detail": "Someone who once understood your quiet has begun reading it as distance.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure", "legacy"], "predicate": { "playerFlags": ["reserved"], "requiredDomainStates": ["partnered"] },
+      "choices": [
+        { "id": "talk", "title": "Say the difficult part", "detail": "Risk exposure before distance hardens.", "narrative": "The words arrive awkwardly and still arrive in time.", "effects": { "love": 4, "health": -2 }, "partnerEffect": { "bond": 3, "resentment": -2 }, "personalityImpulse": { "sociability": 3 } },
+        { "id": "decline", "title": "Wait for ease", "detail": "Keep the quiet and accept the ambiguity.", "narrative": "Nothing explodes. Something important keeps thinning.", "effects": { "health": 2, "love": -3 }, "partnerEffect": { "bond": -2, "resentment": 2 }, "personalityImpulse": { "sociability": -3 } }
+      ]
+    },
+    {
+      "id": "adventure-unclaimed-opening", "headline": "Adventure Finds An Unclaimed Opening",
+      "detail": "A volatile opportunity exists largely because safer people declined it.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure"], "predicate": { "playerFlags": ["adventurous"], "worldFlags": ["expansion"] },
+      "choices": [
+        { "id": "accept", "title": "Move first", "detail": "Take the exposed upside.", "narrative": "Speed becomes leverage before it becomes evidence.", "effects": { "cash": 5500, "rep": 4, "health": -4 }, "personalityImpulse": { "riskTolerance": 3 } },
+        { "id": "decline", "title": "Demand evidence", "detail": "Let uncertainty settle first.", "narrative": "You keep the floor and surrender the first-mover advantage.", "effects": { "health": 3, "rep": -1 }, "personalityImpulse": { "riskTolerance": -3 } }
+      ]
+    },
+    {
+      "id": "caution-preserves-shock-room", "headline": "Caution Preserves Room During A Shock",
+      "detail": "The buffer looked excessive until the world supplied a use for it.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["launch", "build", "pressure"], "predicate": { "playerFlags": ["cautious"], "worldFlags": ["recession"] },
+      "choices": [
+        { "id": "focus", "title": "Use the buffer", "detail": "Stabilize the present without pretending it is free.", "narrative": "Preparation turns panic into a smaller decision.", "effects": { "cash": 3500, "health": 3, "play": -2 }, "personalityImpulse": { "riskTolerance": -3 } },
+        { "id": "accept", "title": "Spend for position", "detail": "Use safety to take a measured opening.", "narrative": "The buffer becomes a launchpad instead of a wall.", "effects": { "cash": -2500, "rep": 4 }, "personalityImpulse": { "riskTolerance": 3, "adaptability": 1 } }
+      ]
+    },
+    {
+      "id": "caution-window-closes", "headline": "Caution Lets The Window Close",
+      "detail": "More evidence arrives only after the useful moment has started disappearing.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["adolescence", "launch", "build", "pressure"], "predicate": { "playerFlags": ["cautious"] },
+      "choices": [
+        { "id": "accept", "title": "Move before certainty", "detail": "Take a bounded risk while the route exists.", "narrative": "The decision feels early because it is still useful.", "effects": { "rep": 4, "health": -2 }, "personalityImpulse": { "riskTolerance": 3 } },
+        { "id": "decline", "title": "Keep the floor", "detail": "Protect what cannot be replaced.", "narrative": "The opportunity passes. The floor remains yours.", "effects": { "health": 3, "play": -2 }, "personalityImpulse": { "riskTolerance": -3 } }
+      ]
+    },
+    {
+      "id": "adaptable-workable-route", "headline": "Adaptability Finds Another Workable Route",
+      "detail": "The original plan fails without making the underlying goal impossible.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["adolescence", "launch", "build", "pressure"], "predicate": { "playerFlags": ["adaptable"] },
+      "choices": [
+        { "id": "accept", "title": "Take the new route", "detail": "Trade sunk effort for forward motion.", "narrative": "The route changes while the purpose survives.", "effects": { "school": 2, "rep": 3, "cash": -2000 }, "personalityImpulse": { "adaptability": 3 } },
+        { "id": "focus", "title": "Repair the original", "detail": "Keep faith with the first plan.", "narrative": "You recover some mastery at the cost of time.", "effects": { "school": 4, "health": -2 }, "personalityImpulse": { "adaptability": -3 } }
+      ]
+    },
+    {
+      "id": "adaptable-pivots-without-roots", "headline": "Constant Pivots Prevent Roots From Forming",
+      "detail": "Every change has been reasonable, but together they have interrupted compounding.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["build", "pressure", "legacy"], "predicate": { "playerFlags": ["adaptable"] },
+      "choices": [
+        { "id": "focus", "title": "Stay through discomfort", "detail": "Let one commitment become deep.", "narrative": "Novelty fades and mastery finally gets time.", "effects": { "school": 3, "rep": 3, "play": -2 }, "personalityImpulse": { "adaptability": -3, "drive": 1 } },
+        { "id": "accept", "title": "Pivot again", "detail": "Protect fit and surrender accumulated position.", "narrative": "The new route fits better and starts closer to zero.", "effects": { "health": 3, "rep": -2, "cash": -2000 }, "personalityImpulse": { "adaptability": 3 } }
+      ]
+    },
+    {
+      "id": "steadfast-practice-mastery", "headline": "Steadfast Practice Compounds Into Mastery",
+      "detail": "Repetition that once looked ordinary has become difficult for others to imitate.",
+      "baseWeight": 6, "cooldown": 5, "stages": ["adolescence", "launch", "build", "pressure", "legacy"], "predicate": { "playerFlags": ["steadfast"] },
+      "choices": [
+        { "id": "focus", "title": "Keep the routine", "detail": "Take the earned depth and its narrowness.", "narrative": "The practice stops looking repetitive and starts looking rare.", "effects": { "school": 4, "rep": 3, "play": -2 }, "personalityImpulse": { "adaptability": -3 } },
+        { "id": "recover", "title": "Change the pattern", "detail": "Protect flexibility before mastery becomes a cage.", "narrative": "You surrender some edge and recover a wider life.", "effects": { "health": 3, "play": 3, "rep": -2 }, "personalityImpulse": { "adaptability": 3 } }
+      ]
+    },
+    {
+      "id": "methodical-builder-quiet-leverage", "headline": "Methodical Preparation Finds Quiet Leverage",
+      "detail": "A controlled plan creates an opening that spectacle would have missed.",
+      "baseWeight": 5, "cooldown": 6, "stages": ["launch", "build", "pressure"], "predicate": { "identitySignatures": ["methodicalBuilder"] },
+      "choices": [
+        { "id": "accept", "title": "Use the leverage", "detail": "Move carefully while the advantage exists.", "narrative": "Preparation becomes movement instead of permanent rehearsal.", "effects": { "cash": 4000, "rep": 3, "health": -2 }, "personalityImpulse": { "drive": 2, "riskTolerance": -2 } },
+        { "id": "decline", "title": "Keep preparing", "detail": "Protect the floor and risk overplanning.", "narrative": "The plan improves after the opening has narrowed.", "effects": { "school": 3, "rep": -2, "health": 2 }, "personalityImpulse": { "riskTolerance": -3 } }
+      ]
+    },
+    {
+      "id": "social-caretaker-overextends", "headline": "Social Caretaker Carries Everyone Too Long",
+      "detail": "Connection and care have combined into a role nobody remembers to relieve.",
+      "baseWeight": 5, "cooldown": 6, "stages": ["build", "pressure", "legacy"], "predicate": { "identitySignatures": ["socialCaretaker"] },
+      "choices": [
+        { "id": "recover", "title": "Ask for relief", "detail": "Risk disappointing people and recover capacity.", "narrative": "The network becomes mutual or reveals that it never was.", "effects": { "health": 4, "love": -2 }, "personalityImpulse": { "empathy": -2, "sociability": -2 } },
+        { "id": "accept", "title": "Keep everyone held", "detail": "Protect belonging and absorb the load.", "narrative": "Nobody falls tonight. You carry tomorrow's cost.", "effects": { "love": 5, "health": -5 }, "personalityImpulse": { "empathy": 2, "sociability": 2 } }
+      ]
+    },
+    {
+      "id": "social-catalyst-stranger-momentum", "headline": "Social Catalyst Turns Strangers Into Momentum",
+      "detail": "Energy and risk tolerance make a temporary room behave like a network.",
+      "baseWeight": 5, "cooldown": 6, "stages": ["adolescence", "launch", "build"], "predicate": { "identitySignatures": ["socialCatalyst"] },
+      "choices": [
+        { "id": "accept", "title": "Gather the room", "detail": "Create momentum and carry the exposure.", "narrative": "A crowd becomes a route, and the route remembers your name.", "effects": { "love": 3, "rep": 4, "health": -3 }, "personalityImpulse": { "sociability": 2, "riskTolerance": 2 } },
+        { "id": "decline", "title": "Let it stay casual", "detail": "Keep the night from becoming work.", "narrative": "The room remains pleasant and temporary.", "effects": { "play": 3, "rep": -2 }, "personalityImpulse": { "sociability": -2, "riskTolerance": -1 } }
+      ]
+    },
+    {
+      "id": "restless-adapter-leaves-roots", "headline": "Restless Adapter Leaves Before Roots Form",
+      "detail": "The next possibility arrives before the current commitment has had time to compound.",
+      "baseWeight": 5, "cooldown": 6, "stages": ["launch", "build", "pressure"], "predicate": { "identitySignatures": ["restlessAdapter"] },
+      "choices": [
+        { "id": "accept", "title": "Take the next route", "detail": "Choose possibility over accumulated position.", "narrative": "The horizon opens while another set of roots comes loose.", "effects": { "play": 4, "rep": 2, "cash": -3000 }, "personalityImpulse": { "adaptability": 2, "riskTolerance": 2 } },
+        { "id": "focus", "title": "Stay this time", "detail": "Accept boredom long enough for depth.", "narrative": "The urge passes slowly. The commitment remains.", "effects": { "school": 3, "rep": 3, "play": -3 }, "personalityImpulse": { "adaptability": -3, "riskTolerance": -1 } }
+      ]
+    },
+    {
+      "id": "deliberate-individualist-boundary", "headline": "Deliberate Individualist Protects A Difficult Boundary",
+      "detail": "A careful refusal preserves autonomy while making the social cost impossible to ignore.",
+      "baseWeight": 5, "cooldown": 6, "stages": ["launch", "build", "pressure", "legacy"], "predicate": { "identitySignatures": ["deliberateIndividualist"] },
+      "choices": [
+        { "id": "decline", "title": "Hold the boundary", "detail": "Keep control and accept the distance.", "narrative": "The refusal is clean enough to survive the anger around it.", "effects": { "health": 3, "love": -3, "rep": 2 }, "personalityImpulse": { "empathy": -2, "riskTolerance": -2 } },
+        { "id": "talk", "title": "Negotiate the edge", "detail": "Trade some autonomy for a workable bond.", "narrative": "The boundary bends without disappearing.", "effects": { "love": 4, "health": -2 }, "personalityImpulse": { "empathy": 2, "adaptability": 2 } }
+      ]
+    }
+  ]
+}

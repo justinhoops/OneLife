@@ -1,0 +1,18 @@
+# Local assistant state
+.aider*
+
+# Apple/Xcode generated state
+.DS_Store
+DerivedData/
+**/DerivedData/
+*.xcuserstate
+xcuserdata/
+**/xcuserdata/
+*.xcresult
+
+# Local build and diagnostic output
+/tmp/
+*.log
+compile_errors*.txt
+build/
+.build/
